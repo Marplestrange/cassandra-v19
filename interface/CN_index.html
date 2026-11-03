@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=44c0fd ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=047110 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -180,10 +180,10 @@
            les écrans. Dans le rail, elles auraient disparu au repli ; dans une
            page, il aurait fallu les reposer partout. -->
       <div class="nav-fleches">
-        <button class="nav-f" id="nav-retour" onclick="navRetour()" disabled
-                title="Retour (Alt + ←)" aria-label="Retour">‹</button>
-        <button class="nav-f" id="nav-suivant" onclick="navSuivant()" disabled
-                title="Suivant (Alt + →)" aria-label="Suivant">›</button>
+        <button class="nav-f" id="nav-retour" onclick="navRetour()" aria-disabled="true" aria-haspopup="menu" aria-expanded="false"
+                title="Pas de page précédente (Alt + ←)" aria-label="Pas de page précédente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="nav-f" id="nav-suivant" onclick="navSuivant()" aria-disabled="true" aria-haspopup="menu" aria-expanded="false"
+                title="Pas de page suivante (Alt + →)" aria-label="Pas de page suivante"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
       </div>
       <span class="marque-toit" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5l8-7 8 7"></path><path d="M6.5 20h11"></path><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"></circle></svg></span>
       <div class="marque-txt">

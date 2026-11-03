@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=a901d4 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=b6794e ▼▼▼ */
 /* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
    Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
 body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
@@ -41,10 +41,25 @@ body.d19 .app-body{position:relative}
 .d19-ib:hover{background:var(--d-doux);opacity:1}
 .d19-ib:disabled{opacity:.35;cursor:default;background:none}
 .d19-ib.actif{background:var(--d-doux);opacity:1}
-#d19-top .nav-fleches{display:flex;gap:0}
-#d19-top .nav-f{width:36px;height:36px;border-radius:10px;border:0;background:none;color:var(--d-encre);font-size:20px;cursor:pointer;opacity:.9}
-#d19-top .nav-f:hover:not(:disabled){background:var(--d-doux)}
-#d19-top .nav-f:disabled{opacity:.35}
+/* précédent · suivant · actualiser : une seule capsule, trois gestes de même taille, des icônes, des états lisibles */
+#d19-navcap{display:flex;align-items:center;gap:1px;padding:3px;margin:0 8px 0 2px;border-radius:13px;background:rgba(255,255,255,.12);flex:none}
+#d19-navcap .d19-navsep{width:1px;height:18px;margin:0 3px;background:currentColor;opacity:.28}
+#d19-top .nav-fleches{display:flex;gap:1px}
+#d19-top .nav-f,#d19-navcap #d19-rafr{width:34px;height:34px;border-radius:10px;border:0;background:none;color:var(--d-encre);cursor:pointer;opacity:.95;display:grid;place-items:center;padding:0;transition:background .12s,transform .08s,opacity .12s}
+#d19-top .nav-f svg,#d19-navcap #d19-rafr svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#d19-top .nav-f:hover:not([aria-disabled="true"]),#d19-navcap #d19-rafr:hover{background:rgba(255,255,255,.2);opacity:1}
+#d19-top .nav-f:active:not([aria-disabled="true"]),#d19-navcap #d19-rafr:active{transform:scale(.93)}
+#d19-top .nav-f[aria-disabled="true"]{opacity:.34;cursor:not-allowed}
+#d19-top .nav-f[aria-expanded="true"]{background:rgba(255,255,255,.26)}
+#d19-top .nav-f:focus-visible,#d19-navcap #d19-rafr:focus-visible{outline:2px solid #fff;outline-offset:1px}
+#d19-navcap #d19-rafr.tourne svg{animation:d19-tourne .7s linear}
+@keyframes d19-tourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#d19-navcap #d19-rafr.tourne svg{animation:none}#d19-top .nav-f,#d19-navcap #d19-rafr{transition:none}}
+/* l'historique d'un côté ou de l'autre */
+#d19-hist{position:fixed;z-index:80;min-width:230px;max-width:340px;padding:6px;display:flex;flex-direction:column;gap:2px;border-radius:14px;background:var(--surface-solid,#fff);color:var(--txt);border:1px solid var(--line);box-shadow:0 18px 40px -12px rgba(16,24,40,.35)}
+#d19-hist .d19-hist-t{font:600 10px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint);padding:6px 10px 4px}
+#d19-hist button{text-align:left;border:0;background:none;color:inherit;font:500 13px 'Inter',system-ui,sans-serif;padding:8px 10px;border-radius:9px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#d19-hist button:hover,#d19-hist button:focus-visible{background:color-mix(in srgb,var(--accent) 12%,transparent);outline:none}
 #d19-top .d19-logo{color:var(--d-encre)}
 .d19-logo:not(.img){background:var(--d-doux);border-radius:12px}
 .d19-logo svg.toit{width:26px;height:26px;stroke-width:1.9}

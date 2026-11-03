@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #359512
+// VERSION CN : 0.1.0  #c2f141
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=359512 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=c2f141 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -147,7 +147,7 @@
 
   // ── l'état ─────────────────────────────────────────────────────────────────
   const E = {
-    d: null, moi: null, compte: "", g: "", e: "", vue: "", actif: null, side: "full", sideAvant: "full", sideTouche: false, ouv: new Set(),
+    d: null, moi: null, compte: "", g: "", e: "", vue: "", actif: null, side: "full", sideAvant: "full", sideTouche: false, ouv: new Set(), deplies: new Set(),
     panel: false, manual: null, sel: { itare: "page", cassandra: "page", inv: "page" }, fils: { itare: [], cassandra: [], inv: [] }, msgs: {}, dernier: {},
     invites: new Set(["itare"]), fmenu: false, sug: false, regOuvert: false, idees: { mode: "itare", idees: [], urgent: false, actes: {} }, actes: { itare: [], cassandra: [], inv: [] },
     fil: null, lateral: null, pageNom: "", crMenu: null, crumbs: [],
@@ -309,7 +309,7 @@
     const e = g.entrees.find((x) => x.id === eid) || g.entrees[0];
     const fils = e.enfants || [];
     const f = fils.find((x) => (x.vue || x.id) === vue) || null;
-    E.g = g.id; E.e = e.id; E.vue = f ? (f.vue || f.id) : (fils[0] && !vue ? (fils[0].vue || fils[0].id) : ""); E.ouv.add(e.id); E.hors = "";
+    E.g = g.id; E.e = e.id; E.vue = f ? (f.vue || f.id) : (fils[0] && !vue ? (fils[0].vue || fils[0].id) : ""); E.hors = "";
     E.actif = { g: E.g, e: E.e, vue: E.vue };
     noter();
     if (!sansOuvrir) { const cible = fils.find((x) => (x.vue || x.id) === E.vue); ouvrirNoeud(cible && (cible.onglet || cible.ecran) ? cible : e, E.vue); }
@@ -337,7 +337,7 @@
       else for (const f of e.enfants) if (f.ecran && CASS.nomOnglet && CASS.nomOnglet(f.ecran) === nom) trouve = { g: g.id, e: e.id, vue: f.vue || f.id };
     }
     if (trouve && !trouve.vue) { const ee = E.d.groupes.find((g) => g.id === trouve.g).entrees.find((e) => e.id === trouve.e); if (ee && ee.enfants.length && ee.onglet === nom) trouve.vue = ee.enfants[0].vue || ee.enfants[0].id; }   // sans vue dite : la première (Aujourd'hui)
-    if (trouve) { E.g = trouve.g; E.e = trouve.e; E.vue = trouve.vue; E.actif = trouve; E.hors = ""; E.ouv.add(trouve.e); }
+    if (trouve) { E.g = trouve.g; E.e = trouve.e; E.vue = trouve.vue; E.actif = trouve; E.hors = ""; }
     else { E.actif = null; E.hors = nom; }
     rendre();
   }
@@ -408,15 +408,15 @@
     // les rubriques d'une page (Logithèque, Société, coffre) se déplient sous son entrée quand elle est ouverte
     const sousPage = () => (E.lateral && E.lateral.items ? E.lateral.items.map((i) => '<button class="d19-si sub ic' + (i.id === E.lateral.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '" data-tip="' + esc(i.libelle) + '">' + ico(i.icone || "puzzle") + "<span>" + esc(i.libelle) + "</span>" + (i.n == null ? "" : '<span class="d19-nb">' + i.n + "</span>") + "</button>").join("") : "");
     const dAvatar = (a) => {      // la page ouverte déplie ses rubriques ; un second clic sur son entrée les replie
-      const sur = surAvatar(a), replie = sur && E.repliees && E.repliees.has(a.id);
-      const b = bouton('data-sw="av:' + esc(a.id) + '"', sur && !(E.lateral && E.lateral.items), a.icone, a.libelle);
-      return (sur && E.lateral && E.lateral.items ? b.replace("</button>", ico("right", "car" + (replie ? "" : " ouv")) + "</button>") : b) + (sur && !replie ? sousPage() : "");
+      const sur = surAvatar(a), ouvert = sur && E.deplies.has(a.id), avecRubriques = sur && E.lateral && E.lateral.items;
+      const b = bouton('data-sw="av:' + esc(a.id) + '"' + (avecRubriques ? ' aria-expanded="' + (ouvert ? "true" : "false") + '"' : ""), sur && !(avecRubriques && ouvert), a.icone, a.libelle);
+      return (avecRubriques ? b.replace("</button>", ico("right", "car" + (ouvert ? " ouv" : "")) + "</button>") : b) + (sur && ouvert ? sousPage() : "");
     };
     // une entrée à sous-pages (Utilisateurs, Groupes) se déplie quand elle est la page courante
     const dEntree = (e) => {
       const actif = !!(E.actif && E.g === "parametres" && E.e === e.id), fils = e.enfants || [];
-      const deplie = (actif || (INST_E.indexOf(e.id) >= 0 && fils.length > 0)) && !(E.repliees && E.repliees.has(e.id));      // Utilisateurs et Groupes montrent leurs pages, sauf si on les replie
-      let h = '<button class="d19-si ent' + (actif && !fils.length ? " on" : "") + '" data-sw="e:' + esc(e.id) + '" data-tip="' + esc(e.libelle) + '">' + ico(e.icone || "puzzle") + "<span>" + esc(e.libelle) + "</span>" + (fils.length ? ico("right", "car" + (deplie ? " ouv" : "")) : "") + "</button>";
+      const deplie = fils.length > 0 && E.deplies.has(e.id);                                  // rien ne se déplie tout seul : on l'a demandé
+      let h = '<button class="d19-si ent' + (actif && (!fils.length || !deplie) ? " on" : "") + '" data-sw="e:' + esc(e.id) + '"' + (fils.length ? ' aria-expanded="' + (deplie ? "true" : "false") + '"' : "") + (actif && !deplie ? ' aria-current="page"' : "") + ' data-tip="' + esc(e.libelle) + '">' + ico(e.icone || "puzzle") + "<span>" + esc(e.libelle) + "</span>" + (fils.length ? ico("right", "car" + (deplie ? " ouv" : "")) : "") + "</button>";
       if (deplie) h += fils.map((f) => { const vid = f.vue || f.id; return '<button class="d19-si sub' + (icoSub(e, f) ? " ic" : "") + (E.vue === vid ? " on" : "") + '" data-sw="e:' + esc(e.id) + ":" + esc(vid) + '">' + (icoSub(e, f) ? ico(icoSub(e, f)) : '<span class="pt"></span>') + "<span>" + esc(f.libelle) + "</span></button>"; }).join("");
       return h;
     };
@@ -457,14 +457,14 @@
     for (const e of g.entrees) {
       const aEnfants = e.enfants.length > 0 || e.id === "flotte";
       const ouv = E.ouv.has(e.id) && aEnfants, actif = E.actif && E.e === e.id && E.g === g.id;
-      h += '<button class="d19-si ent' + (actif && (!ouv || rail) ? " on" : "") + '" data-tip="' + esc(e.libelle) + '" data-e="' + esc(e.id) + '">' + (glEnt(e.id) || ico(e.icone)) + "<span>" + esc(e.libelle) + "</span>" + (!ouv ? nbDe(e) : "") + (aEnfants ? chev(ouv) : "") + "</button>";
+      h += '<button class="d19-si ent' + (actif && (!ouv || rail) ? " on" : "") + '" data-tip="' + esc(e.libelle) + '" data-e="' + esc(e.id) + '"' + (aEnfants ? ' aria-expanded="' + (ouv ? "true" : "false") + '"' : "") + (actif && (!ouv || rail) ? ' aria-current="page"' : "") + '>' + (glEnt(e.id) || ico(e.icone)) + "<span>" + esc(e.libelle) + "</span>" + (!ouv ? nbDe(e) : "") + (aEnfants ? chev(ouv) : "") + "</button>";
       if (ouv) {
         if (e.id === "flotte") {
           h += rendreFlotteRail();
         } else {
           h += e.enfants.map((f) => {
             const vid = f.vue || f.id, etat = e.id === "panorama" && SECTIONS_ETAT.indexOf(vid) >= 0, emo = e.id === "panorama" ? EMO_PANORAMA[vid] : "", ik = icoSub(e, f), gl = glVue(e.id, vid);
-            return (e.id === "agents-ia" && vid === "relecteur" ? '<div class="d19-lbl">Services agentiques</div>' : "") + (e.id === "agents-ia" && vid === "conv" && e.enfants.some((x) => x.vue === "relecteur" || x.vue === "vision") ? '<hr class="d19-sep d19-sepsrv">' : "") + '<button class="d19-si sub' + (ik || gl ? " ic" : "") + (emo ? " emo" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '"' + (emo && INFO_PANORAMA[vid] ? ' title="' + esc(INFO_PANORAMA[vid]) + '"' : "") + '>' + (gl || (ik ? ico(ik) : '<span class="pt"></span>')) + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '" hidden></span>' : "") + nbDe(f) + "</button>";
+            return (e.id === "agents-ia" && vid === "relecteur" ? '<div class="d19-lbl">Services agentiques</div>' : "") + (e.id === "agents-ia" && vid === "conv" && e.enfants.some((x) => x.vue === "relecteur" || x.vue === "vision") ? '<hr class="d19-sep d19-sepsrv">' : "") + '<button class="d19-si sub' + (ik || gl ? " ic" : "") + (emo ? " emo" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '"' + (actif && E.vue === vid ? ' aria-current="page"' : "") + (emo && INFO_PANORAMA[vid] ? ' title="' + esc(INFO_PANORAMA[vid]) + '"' : "") + '>' + (gl || (ik ? ico(ik) : '<span class="pt"></span>')) + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '" hidden></span>' : "") + nbDe(f) + "</button>";
           }).join("");
         }
       }
@@ -472,7 +472,70 @@
     sd.innerHTML = h;
     recopierEtatPanorama();
   }
+
   function fermerSide() { E.side = false; rendreGauche(); }
+  // après un repli ou un dépli, la colonne est redessinée : on rend le focus au bouton qu'on vient d'utiliser (sinon le clavier repart du haut de la page)
+  function focaliser(sel) { const b = document.querySelector("#d19-side " + sel); if (b) b.focus({ preventScroll: true }); }
+
+  // ── le clavier de la colonne de gauche : flèches, début, fin ; → déplie, ← replie ou remonte à l'entrée ──
+  function clavierColonne(ev) {
+    const b = ev.target.closest && ev.target.closest("#d19-side .d19-si"); if (!b || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+    const tous = Array.prototype.slice.call(document.querySelectorAll("#d19-side .d19-si")).filter((x) => x.offsetParent !== null), i = tous.indexOf(b), k = ev.key;
+    const va = (n) => { if (tous[n]) { ev.preventDefault(); tous[n].focus(); } };
+    if (k === "ArrowDown") va(Math.min(tous.length - 1, i + 1));
+    else if (k === "ArrowUp") va(Math.max(0, i - 1));
+    else if (k === "Home") va(0);
+    else if (k === "End") va(tous.length - 1);
+    else if (k === "ArrowRight" && b.getAttribute("aria-expanded") === "false") { ev.preventDefault(); b.click(); }
+    else if (k === "ArrowLeft") {
+      if (b.getAttribute("aria-expanded") === "true") { ev.preventDefault(); b.click(); }
+      else if (b.classList.contains("sub")) { for (let n = i - 1; n >= 0; n--) if (tous[n].classList.contains("ent")) { ev.preventDefault(); tous[n].focus(); break; } }
+    }
+  }
+
+  // ── la navigation : précédent, suivant, actualiser ────────────────────────
+  const navEtat = () => (typeof ETAT !== "undefined" && ETAT.navigation) ? ETAT.navigation : null;
+  function nomPage(e) {
+    if (!e) return "";
+    const n = typeof NAV_NOMS !== "undefined" ? NAV_NOMS[e.tab] : "";
+    if (n) return n;
+    const h = document.querySelector("#tab-" + e.tab + " h1") || document.querySelector("#tab-" + e.tab + " .sh-titre");
+    return (h && h.textContent.trim()) || e.tab;
+  }
+  function fermerHist() {
+    const h = document.getElementById("d19-hist"); if (h) h.remove();
+    document.querySelectorAll("#d19-nav .nav-f[aria-expanded]").forEach((b) => b.setAttribute("aria-expanded", "false"));
+  }
+  // la liste des pages d'un côté ou de l'autre : un clic, un clic droit, un appui long ou la flèche du bas l'ouvrent
+  function ouvrirHist(sens) {
+    const N = navEtat(); if (!N) return; fermerHist();
+    const pile = N._navPile, pos = N._navPos, idx = [];
+    if (sens < 0) for (let i = pos - 1; i >= 0 && idx.length < 10; i--) idx.push(i);
+    else for (let i = pos + 1; i < pile.length && idx.length < 10; i++) idx.push(i);
+    if (!idx.length) { toast(sens < 0 ? "Pas de page précédente" : "Pas de page suivante"); return; }
+    const b = document.getElementById(sens < 0 ? "nav-retour" : "nav-suivant"), r = b.getBoundingClientRect(), h = document.createElement("div");
+    h.id = "d19-hist"; h.setAttribute("role", "menu"); h.setAttribute("aria-label", sens < 0 ? "Pages précédentes" : "Pages suivantes");
+    h.innerHTML = '<div class="d19-hist-t">' + (sens < 0 ? "Pages précédentes" : "Pages suivantes") + "</div>" + idx.map((i) => '<button type="button" role="menuitem" data-hi="' + i + '">' + esc(nomPage(pile[i])) + "</button>").join("");
+    h.style.left = Math.max(8, r.left) + "px"; h.style.top = (r.bottom + 6) + "px";
+    document.body.appendChild(h); b.setAttribute("aria-expanded", "true"); h.querySelector("button").focus();
+  }
+  function sauterA(i) {
+    const N = navEtat(); if (!N || !N._navPile[i]) return;
+    N._navPos = i; if (typeof _navAller === "function") _navAller(N._navPile[i]); fermerHist();
+  }
+  // Actualiser : relit la vue courante sans toucher à l'historique ; Maj + clic recharge toute l'application
+  function actualiser(ev) {
+    if (ev && ev.shiftKey) { window.location.reload(); return; }
+    const b = document.getElementById("d19-rafr"); if (!b || b.classList.contains("tourne")) return;
+    const act = document.querySelector(".tab-content.active"), nom = act ? act.id.replace(/^tab-/, "") : (window.__d19Onglet || "");
+    b.classList.add("tourne"); b.setAttribute("aria-busy", "true");
+    try {
+      if (nom && typeof window.switchTab === "function") window.switchTab(nom, true);
+      window.dispatchEvent(new CustomEvent("cassandra:actualiser", { detail: { onglet: nom } }));
+      toast("Page actualisée");
+    } catch (e) { toast("Actualisation impossible : " + ((e && e.message) || e), "err"); }
+    setTimeout(() => { b.classList.remove("tourne"); b.removeAttribute("aria-busy"); }, 800);
+  }
 
   // ── le rendu : bandeau de page / pastilles ────────────────────────────────
   const estPin = () => !!(E.d && (E.d.epingles || []).some((p) => p.cle === cleDe(E.g, E.e, E.vue)));
@@ -960,8 +1023,8 @@
     const app = $("#app-container"), corps = $(".app-body"), main = $(".app-main");
     if (!app || !corps || !main) return;
     const top = document.createElement("div"); top.id = "d19-top";
-    top.innerHTML = '<button class="d19-logo" id="d19-logo" aria-label="Accueil"></button><button class="d19-ib" id="d19-burger" title="Replier / déplier le menu de gauche" aria-label="Menu">' + ico("menu") + '</button><span id="d19-nav"></span>'
-      + '<button class="d19-ib" id="d19-rafr" title="Actualiser la page" aria-label="Actualiser">' + ico("refresh") + '</button><nav id="d19-groupes" aria-label="Groupes"></nav>'
+    top.innerHTML = '<button class="d19-logo" id="d19-logo" aria-label="Accueil"></button><button class="d19-ib" id="d19-burger" title="Replier / déplier le menu de gauche" aria-label="Menu">' + ico("menu") + '</button><div id="d19-navcap" role="group" aria-label="Navigation : précédent, suivant, actualiser"><span id="d19-nav"></span><i class="d19-navsep" aria-hidden="true"></i>'
+      + '<button class="d19-ib" id="d19-rafr" title="Actualiser la vue (Alt + R) · Maj + clic : recharger toute l’application" aria-label="Actualiser la vue">' + ico("refresh") + '</button></div><nav id="d19-groupes" aria-label="Groupes"></nav>'
       + '<div id="d19-droite"><button class="d19-ib" id="d19-btn-cass" title="Itare et Cassandra" aria-label="Itare et Cassandra">' + ico("spark") + '</button><button class="d19-ib" id="d19-search" title="Rechercher (Ctrl+K)" aria-label="Rechercher">' + ico("search") + '</button><span id="d19-bell"></span><span id="d19-theme"></span><span id="d19-vtxt"></span><span id="d19-soc"></span><span id="d19-corner"></span></div>';
     app.insertBefore(top, $(".header", app) || corps);
     // les morceaux de l'ancienne barre qui servent encore : les flèches, la cloche, le thème, l'avatar et son menu
@@ -998,7 +1061,9 @@
       const c = (s) => ev.target.closest(s); let x;
       if ((x = c("#d19-logo"))) { if (typeof window.navAccueil === "function") window.navAccueil(); else if (E.d && E.d.groupes[0]) aller(E.d.groupes[0].id, ""); return; }
       if ((x = c("#d19-burger"))) { if (isXs()) { ouvrirMs(); return; } E.sideTouche = true; E.side = E.side === "rail" ? "full" : !E.side ? "full" : false; rendreGauche(); return; }
-      if ((x = c("#d19-rafr"))) { const t = window.__d19Onglet || (E.actif && entree() && entree().onglet); if (t && typeof window.switchTab === "function") window.switchTab(t); toast("Page actualisée"); return; }
+      if ((x = c("#d19-rafr"))) { actualiser(ev); return; }
+      if ((x = c("#d19-hist [data-hi]"))) { sauterA(+x.dataset.hi); return; }
+      if (!c("#d19-hist") && !c("#d19-nav .nav-f")) fermerHist();
       if ((x = c("#d19-search"))) { palOuvrir(); return; }
       if ((x = c("#d19-btn-cass")) || (x = c("[data-cbas]"))) { $("#d19-plus").classList.remove("ouvert"); ouvrirPanel(); return; }
       if ((x = c("[data-cclose]"))) { ouvrirPanel(false); return; }
@@ -1030,13 +1095,13 @@
         const k = x.dataset.sw; if (typeof window.fermerCompte === "function") window.fermerCompte();
         if (k === "moi" || k === "machine") { E.silence = false; window.switchTab("settings"); if (typeof window.setVision === "function") window.setVision(k); rendreGauche(); }
         else if (k === "vault") { E.silence = false; window.ouvrirMonCoffre(); }
-        else if (k.indexOf("e:") === 0 && INST_E_PLIABLES.indexOf(k.slice(2)) >= 0) { E.repliees = E.repliees || new Set(); const id = k.slice(2); if (E.repliees.has(id)) E.repliees.delete(id); else E.repliees.add(id); rendreGauche(); }
+        else if (k.indexOf("e:") === 0 && INST_E_PLIABLES.indexOf(k.slice(2)) >= 0) { const id = k.slice(2); if (E.deplies.has(id)) E.deplies.delete(id); else E.deplies.add(id); rendreGauche(); focaliser('[data-sw="e:' + id + '"]'); }
         else if (k.indexOf("e:") === 0) { E.silence = false; const r = k.slice(2), pe = ((E.d.groupes.find((g) => g.id === "parametres") || {}).entrees) || [], en = pe.filter((e) => r === e.id || r.indexOf(e.id + ":") === 0).sort((a, b) => b.id.length - a.id.length)[0];    // l'identifiant d'une entrée contient lui-même des « : » (comptes:groupes)
+          if (en && en.enfants && en.enfants.length) E.deplies.add(en.id);
           aller("parametres", en ? en.id : r, en ? r.slice(en.id.length + 1) : ""); }
         else if (k.indexOf("av:") === 0) { const av = (E.d.avatar || []).find((y) => y.id === k.slice(3)); if (av) {
-          E.repliees = E.repliees || new Set();
-          if (E.pageNom && av.ecran && CASS.nomOnglet && E.pageNom === CASS.nomOnglet(av.ecran) && E.lateral && E.lateral.items) { if (E.repliees.has(av.id)) E.repliees.delete(av.id); else E.repliees.add(av.id); rendreGauche(); return; }
-          E.repliees.delete(av.id); E.silence = false; marquerPage(av); ouvrirNoeud(av);
+          if (E.pageNom && av.ecran && CASS.nomOnglet && E.pageNom === CASS.nomOnglet(av.ecran) && E.lateral && E.lateral.items) { if (E.deplies.has(av.id)) E.deplies.delete(av.id); else E.deplies.add(av.id); rendreGauche(); focaliser('[data-sw="av:' + av.id + '"]'); return; }
+          E.deplies.add(av.id); E.silence = false; marquerPage(av); ouvrirNoeud(av);
         } }
         return;
       }
@@ -1057,7 +1122,8 @@
         const id = x.dataset.e, e = ent().entrees.find((y) => y.id === id);
         if (E.side === "rail") { aller(E.g, id); return; }
         const aEnfants = e.enfants.length > 0 || id === "flotte";
-        if (aEnfants && E.ouv.has(id) && E.e === id && E.actif) { E.ouv.delete(id); rendreGauche(); } else { E.ouv.add(id); aller(E.g, id); }
+        if (aEnfants && E.ouv.has(id)) { E.ouv.delete(id); rendreGauche(); focaliser('[data-e="' + id + '"].ent'); }
+        else { if (aEnfants) E.ouv.add(id); aller(E.g, id); focaliser('[data-e="' + id + '"].ent'); }
         return;
       }
       if (c("#d19-scrim")) { fermerSide(); return; }
@@ -1092,6 +1158,18 @@
     app.addEventListener("change", function (ev) { if (/^d19-gen-(maj|min|chi|sym)$/.test(ev.target.id)) genererMdp(); });
     app.addEventListener("submit", function (ev) { if (ev.target.id === "d19-f") { ev.preventDefault(); const i = $("#d19-in"), v = i.value; i.value = ""; E.brouillon = ""; envoyer(v); } });
     app.addEventListener("input", function (ev) { if (ev.target.id === "d19-gen-long") { genererMdp(); return; } if (ev.target.id === "d19-pal-in") { palSel = 0; palRender(); } else if (ev.target.id === "d19-in") E.brouillon = ev.target.value; });
+    let appuiLong = 0, longFait = false;
+    app.addEventListener("pointerdown", function (ev) {
+      const b = ev.target.closest && ev.target.closest("#d19-nav .nav-f"); if (!b || ev.button !== 0) return;
+      longFait = false; clearTimeout(appuiLong);
+      appuiLong = setTimeout(() => { longFait = true; ouvrirHist(b.id === "nav-retour" ? -1 : 1); }, 450);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach((t) => app.addEventListener(t, function () { clearTimeout(appuiLong); }));
+    document.addEventListener("click", function (ev) {
+      const b = ev.target.closest && ev.target.closest("#d19-nav .nav-f"); if (!b) return;
+      if (longFait) { longFait = false; ev.stopImmediatePropagation(); ev.preventDefault(); }
+    }, true);
+    app.addEventListener("contextmenu", function (ev) { const b = ev.target.closest && ev.target.closest("#d19-nav .nav-f"); if (!b) return; ev.preventDefault(); ouvrirHist(b.id === "nav-retour" ? -1 : 1); });
     app.addEventListener("mouseover", function (ev) {
       const it = ev.target.closest("#d19-side.rail [data-tip]"), tp = $("#d19-tip");
       if (!it) { tp.classList.remove("v"); return; }
@@ -1101,6 +1179,17 @@
       if (!$("#d19-top") || $("#app-container").classList.contains("hidden")) return;
       const typ = /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "");
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "k") { ev.preventDefault(); palOuvrir(); return; }
+      if (ev.altKey && !ev.ctrlKey && !ev.metaKey && !typ && ev.key.toLowerCase() === "r") { ev.preventDefault(); actualiser(); return; }
+      const hh = document.getElementById("d19-hist");
+      if (hh) {
+        const bs = Array.prototype.slice.call(hh.querySelectorAll("button")), i = bs.indexOf(document.activeElement);
+        if (ev.key === "ArrowDown") { ev.preventDefault(); bs[Math.min(bs.length - 1, i + 1)].focus(); return; }
+        if (ev.key === "ArrowUp") { ev.preventDefault(); bs[Math.max(0, i - 1)].focus(); return; }
+        if (ev.key === "Escape" || ev.key === "Tab") { const sens = document.getElementById("nav-retour").getAttribute("aria-expanded") === "true" ? "nav-retour" : "nav-suivant"; fermerHist(); if (ev.key === "Escape") { ev.preventDefault(); const b = document.getElementById(sens); if (b) b.focus(); } return; }
+      }
+      const bn = document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("nav-f") ? document.activeElement : null;
+      if (bn && ev.key === "ArrowDown") { ev.preventDefault(); ouvrirHist(bn.id === "nav-retour" ? -1 : 1); return; }
+      clavierColonne(ev);
       if (ev.key === "Escape" && E.crMenu != null) { E.crMenu = null; rendreStrip(); return; }
       if (ev.altKey && ev.key === "ArrowUp") { ev.preventDefault(); remonter(); return; }
       if (ev.key === "Escape") { if (E.fmenu) { E.fmenu = false; rendrePanel(); return; } if (E.sug) { E.sug = false; rendrePanel(); return; } palFermer(); if (E.panel) ouvrirPanel(false); return; }

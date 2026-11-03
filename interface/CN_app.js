@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a459d6
+// VERSION CN : 0.1.0  #6a28ff
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a459d6 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=6a28ff ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -1829,17 +1829,28 @@ function navSous(f,a){
     }
     navPousser({tab:ETAT.navigation._navTab, sub:{f:f,a:a}});
 }
+// Les flèches ne sont jamais « disabled » : un bouton désactivé n'a ni tooltip ni focus, donc ne dit pas POURQUOI il ne sert à rien. aria-disabled garde les deux.
+function navNom(e){
+    if(!e) return '';
+    if(NAV_NOMS[e.tab]) return NAV_NOMS[e.tab];
+    const h=document.querySelector('#tab-'+e.tab+' h1')||document.querySelector('#tab-'+e.tab+' .sh-titre');
+    return (h && h.textContent.trim()) || e.tab;
+}
 function navMaj(){
     const r=document.getElementById('nav-retour'), s=document.getElementById('nav-suivant');
     if(r){
-        r.disabled = ETAT.navigation._navPos<=0;
-        const p=ETAT.navigation._navPile[ETAT.navigation._navPos-1];
-        r.title = p ? ('Retour : '+(NAV_NOMS[p.tab]||p.tab)+' (Alt + ←)') : 'Retour (Alt + ←)';
+        const ok=ETAT.navigation._navPos>0, p=ETAT.navigation._navPile[ETAT.navigation._navPos-1];
+        r.setAttribute('aria-disabled', ok?'false':'true');
+        const lib=ok ? ('Précédent : '+navNom(p)) : 'Pas de page précédente';
+        r.title = lib+' (Alt + ←)'+(ok?' · clic droit ou appui long : historique':'');
+        r.setAttribute('aria-label', lib);
     }
     if(s){
-        s.disabled = ETAT.navigation._navPos>=ETAT.navigation._navPile.length-1;
-        const n=ETAT.navigation._navPile[ETAT.navigation._navPos+1];
-        s.title = n ? ('Suivant : '+(NAV_NOMS[n.tab]||n.tab)+' (Alt + →)') : 'Suivant (Alt + →)';
+        const ok=ETAT.navigation._navPos<ETAT.navigation._navPile.length-1, n=ETAT.navigation._navPile[ETAT.navigation._navPos+1];
+        s.setAttribute('aria-disabled', ok?'false':'true');
+        const lib=ok ? ('Suivant : '+navNom(n)) : 'Pas de page suivante';
+        s.title = lib+' (Alt + →)'+(ok?' · clic droit ou appui long : historique':'');
+        s.setAttribute('aria-label', lib);
     }
 }
 function _navAller(e){
