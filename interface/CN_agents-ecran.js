@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #83f507
+// VERSION CN : 0.1.0  #6c2884
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=83f507 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=6c2884 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -529,31 +529,17 @@
     }
 
     // ── modèles et clés ──────────────────────────────────────────────────────
-    function registreHtml(reg) {
-      const eq = S.eq.equipe;
-      const ms = (reg && reg.modeles) || [], roles = (reg && reg.roles) || {}, nomM = (m) => esc(m.nom || m.id || m.modele || "modèle"), tm = (v) => (v && typeof v === "object" ? (v.modele || v.nom || v.id || "") : v || "");
-      const chaine = eq.filter((a) => a.genre === "agent").map((a) => '<div class="ag-ligne"><span class="g">' + esc(a.nom) + "</span><b>" + esc(a.modele || tm(roles[a.id]) || "rôle par défaut") + ' <span class="note">→</span> ' + esc(a.secours || "pas de secours") + ' <span class="note">→</span> ' + (a.plafond_atteint ? "plafond atteint : le secours seul" : "arrêt propre, jamais un silence") + "</b></div>").join("");
-      return '<section class="carte"><div class="barre"><h3 style="flex:1">Le registre des modèles</h3><button class="btn" id="ag-reg">Ouvrir le registre des modèles</button></div>' +
-        (reg ? (ms.length ? '<div class="liste">' + ms.map((m) => '<div class="li"><div class="sp"><b>' + nomM(m) + '</b><div class="note">' + esc([m.fournisseur, m.modele && m.modele !== m.nom ? m.modele : "", m.cle === false || m.cle_presente === false ? "clé manquante" : ""].filter(Boolean).join(" · ")) + "</div></div></div>").join("") + "</div>" : '<p class="note">Aucun modèle enregistré pour l\'instant : ajoute un fournisseur et sa clé dans le registre. Les clés sont des réglages « secret » du noyau, jamais relues ici.</p>') : '<p class="note">Le registre n\'a pas répondu.</p>') +
-        (Object.keys(roles).length ? '<div class="note" style="margin:8px 2px 2px"><b>Rôles</b></div>' + Object.keys(roles).sort().map((k) => '<div class="ag-ligne"><span class="g">' + esc(k) + "</span><b>" + esc(tm(roles[k])) + "</b></div>").join("") : "") + "</section>" +
-        '<section class="carte"><h3>La chaîne de secours</h3><p class="note">Ce que chaque agent essaie, dans l\'ordre. Un modèle déconseillé aux épreuves de sûreté n\'est pas employé quand l\'exigence est active.</p>' + chaine + "</section>";
-    }
-    // le registre des modèles est lent à lire (il sonde le serveur local) : la page s'ouvre sur ce qu'on sait déjà, il se peint dès qu'il arrive
-    function peindreRegistre() {
-      const z = racine.querySelector("#ag-mreg"); if (!z || typeof S.reg !== "string") return;
-      z.innerHTML = S.reg; sur("#ag-reg", "click", () => { if (CASS.ouvrirConsole) CASS.ouvrirConsole("modeles", "Modèles"); });
-    }
+    // « Modèles & clés » n'est plus un résumé en lecture seule : c'est l'écran de gestion du module modeles (clés d'API, modèles locaux, rôles, et le modèle de chaque agent), monté ici.
     async function vModeles() {
-      const eq = S.eq.equipe; S.reg = null; const moi = dessin;
-      API.registre().then((r) => r, () => null).then((reg) => { if (moi !== dessin) return; S.reg = registreHtml(reg); peindreRegistre(); });
-      return '<div id="ag-mreg" style="display:flex;flex-direction:column;gap:12px"><section class="carte"><h3>Le registre des modèles</h3>' + SQ_PETIT + "</section></div>" + '<section class="carte"><div class="barre"><h3 style="flex:1">Quel modèle fait parler qui</h3></div>' +
-        '<div class="ag-tw"><table><tr><th>Agent</th><th>Modèle</th><th>Secours</th><th>Coût du jour</th></tr>' + eq.map((a) => "<tr><td>" + esc(a.nom) + "</td><td>" + esc(a.modele || "par défaut") + "</td><td>" + esc(a.secours || "aucun") + "</td><td>" + (a.cout_jour && a.cout_jour.euros ? eur(a.cout_jour.euros) : "gratuit") + "</td></tr>").join("") + "</table></div>" +
-        '<p class="note">Le registre (fournisseurs, clés, tarifs) reste dans le module Modèles ; les clés sont des réglages « secret » du noyau, jamais lues ici. Le modèle d\'un agent se règle dans sa fiche, onglet « Réglages ».</p></section>';
+      const moi = dessin;
+      setTimeout(() => { if (moi !== dessin) return; const z = racine.querySelector("#ag-modmount"); if (z && CASS.monterModeles) CASS.monterModeles(z, {}); }, 0);
+      return '<div id="ag-modmount"></div>';
     }
 
     // ── le dessin et les gestes ──────────────────────────────────────────────
     // l'équipe se lit lentement à froid : un seul appel en vol pour tous ceux qui l'attendent, et seul le dernier dessin compte (ouverture + clic du menu + retour d'onglet arrivent ensemble)
     let eqEnVol = null, dessin = 0;
+    window.addEventListener("cassandra:agents-change", () => { MEM.eq = null; LECT.clear(); });                  // l'écran des modèles règle le modèle d'un agent : la fiche relit
     const equipe = () => (MEM.eq && Date.now() - MEM.t < 30000 ? Promise.resolve(MEM.eq) : eqEnVol || (eqEnVol = API.equipe().then((r) => { MEM.eq = r; MEM.t = Date.now(); return r; }).finally(() => { eqEnVol = null; })));
     let enCours = null, cle = "";
     function dessiner() {                                          // la même page demandée deux fois de suite (ouverture + menu) ne se dessine qu'une fois
@@ -600,7 +586,7 @@
     });
 
     function brancher() {
-      peindreGestes(); peindreRegistre();
+      peindreGestes();
       sur("[data-agent]", "click", (b) => (b.dataset.agent === "auditeur" ? aller("auditeur") : aller("fiche", b.dataset.agent, b.dataset.onglet || "apercu")));
       sur("#ag-ong [data-o]", "click", (b) => { S.onglet = b.dataset.o; dessiner(); });
       sur("[data-onglet-vers]", "click", (b) => { S.onglet = b.getAttribute("data-onglet-vers"); dessiner(); });

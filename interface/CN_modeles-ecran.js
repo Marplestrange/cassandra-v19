@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #264edf
+// VERSION CN : 0.1.0  #af522d
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Modèles et clés » du module modeles : les modèles en ligne (fournisseur, clé d’API, essai), le catalogue des modèles locaux (Ollama : installer, déclarer, supprimer) et les rôles.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) ; tout passe par les capacités modeles.* ; une clé saisie part au noyau et n’est jamais relue ni réaffichée.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=264edf ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=af522d ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -59,19 +59,21 @@
   const octets = (n) => n >= 1e9 ? (n / 1e9).toFixed(1).replace(".", ",") + " Go" : Math.round((n || 0) / 1e6) + " Mo";
   const RANG = { principal: "le modèle principal de Cassandra", itare_citadelle: "Itare, la passerelle", vision: "la lecture d’images", relecteur: "la relecture", second_avis: "le second avis" };
 
-  CASS.sceneSurMesure = CASS.sceneSurMesure || {};
-  CASS.sceneSurMesure.modeles = async function (corps, ctx) {
+  const DEFAUT = { cassandra: "principal", itare: "itare_citadelle", amizo: "principal", relecteur: "relecteur", vision: "vision" };      // le rôle que prend un agent sans modèle à lui (le module agents)
+
+  // Monté deux fois : comme console du module (Console technique) et comme page « Modèles & clés » des agents.
+  async function monter(corps, ctx) {
     const anc = document.getElementById("md-css"); if (anc) anc.remove();
     const st = document.createElement("style"); st.id = "md-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "md"; corps.appendChild(racine);
 
-    const S = { l: null, f: [], loc: null, occupe: false, erreur: "", prov: "", retirer: "", suppr: "", essais: {}, form: { nom: "", cle: "", base: "" }, mini: "" };
+    const S = { eq: [], l: null, f: [], loc: null, occupe: false, erreur: "", prov: "", retirer: "", suppr: "", essais: {}, form: { nom: "", cle: "", base: "" }, mini: "" };
     let minuterie = null;
 
     async function charger(tout) {
       try {
-        const [l, f, loc] = await Promise.all([agir("modeles.lister"), S.f.length && !tout ? Promise.resolve({ fournisseurs: S.f, roles: S.roles }) : agir("modeles.fournisseurs"), agir("modeles.locaux").catch((e) => ({ repond: false, raison: e.message, modeles: [], telechargements: [] }))]);
-        S.l = l; S.f = f.fournisseurs || []; S.roles = f.roles || {}; S.loc = loc; S.erreur = "";
+        const [l, f, loc, eq] = await Promise.all([agir("modeles.lister"), S.f.length && !tout ? Promise.resolve({ fournisseurs: S.f, roles: S.roles }) : agir("modeles.fournisseurs"), agir("modeles.locaux").catch((e) => ({ repond: false, raison: e.message, modeles: [], telechargements: [] })), agir("agents.equipe").catch(() => ({ equipe: [] }))]);
+        S.eq = eq.equipe || []; S.l = l; S.f = f.fournisseurs || []; S.roles = f.roles || {}; S.loc = loc; S.erreur = "";
         if (!S.prov && S.f.length) S.prov = S.f[0].id;
       } catch (e) { S.erreur = e.message || String(e); }
       dessiner(); armer();
@@ -107,6 +109,29 @@
         '<div class="m">' + (m.a_cle ? '<span class="pastille ok">clé enregistrée</span> ' : '<span class="pastille mu">sans clé</span> ') + (m.roles || []).map((r) => '<span class="pastille al">' + esc(r) + "</span>").join(" ") + "<br>" + essai + "</div>" +
         '<div class="acts"><button class="btn mini" data-a="essayer" data-id="' + esc(m.id) + '"' + (S.occupe ? " disabled" : "") + ">Essayer</button>" +
         (S.retirer === m.id ? '<span class="confirme">Retirer ? <button class="btn mini dng" data-a="retirer-oui" data-id="' + esc(m.id) + '">Oui</button><button class="btn mini" data-a="retirer-non">Non</button></span>' : '<button class="btn mini dng" data-a="retirer" data-id="' + esc(m.id) + '">Retirer</button>') + "</div></div>";
+    }
+
+    // Ce que dit un réglage « modèle » d’agent : un rôle (principal…), un modèle déclaré (son identifiant), ou rien (le rôle par défaut de l’agent).
+    function etatAgent(a) {
+      const v = a.modele || DEFAUT[a.id] || "", roles = S.l.roles || {}, ms = declares();
+      if (!v) return ["mu", "rôle par défaut"];
+      if (ms.some((m) => m.id === v)) return ["ok", "répond"];
+      if (roles[v]) return ["ok", "répond"];
+      return ["dg", "ne répondra pas : rôle sans modèle"];
+    }
+    function options(courant, vide) {
+      const ms = declares(), roles = Object.assign({}, RANG, S.roles || {});
+      let h = '<option value="">' + esc(vide) + "</option><optgroup label=\"Un rôle\">" + Object.keys(roles).map((r) => '<option value="' + esc(r) + '"' + (r === courant ? " selected" : "") + ">" + esc(r) + "</option>").join("") + "</optgroup>";
+      if (ms.length) h += '<optgroup label="Un modèle déclaré">' + ms.map((m) => '<option value="' + esc(m.id) + '"' + (m.id === courant ? " selected" : "") + ">" + esc(m.nom) + " (" + esc(m.fournisseur) + ")</option>").join("") + "</optgroup>";
+      if (courant && !roles[courant] && !ms.some((m) => m.id === courant)) h += '<option value="' + esc(courant) + '" selected>' + esc(courant) + " (inconnu)</option>";
+      return h;
+    }
+    function carteAgents() {
+      if (!S.eq.length) return "";
+      return '<div class="carte"><h2>Les agents</h2><p class="note">Le modèle de chaque agent, et celui qui prend le relais s’il échoue. Vide : l’agent prend son rôle par défaut (' + esc(Object.keys(DEFAUT).map((k) => k + " → " + DEFAUT[k]).slice(0, 3).join(", ")) + ").</p>" +
+        S.eq.map((a) => { const e = etatAgent(a); return '<div class="rang" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1.6fr) minmax(0,1.6fr)"><div><span class="nom" style="font-family:inherit">' + esc(a.nom) + '</span> <span class="pastille ' + e[0] + '">' + esc(e[1]) + '</span><br><span class="note">' + esc(a.genre === "agent" ? "agent" : "service agentique") + (a.cout_jour && a.cout_jour.euros ? " · " + a.cout_jour.euros + " € aujourd’hui" : " · gratuit aujourd’hui") + "</span></div>" +
+          '<label class="ch m"><span class="note">Modèle</span><select data-ag="' + esc(a.id) + '" data-champ="modele">' + options(a.modele, DEFAUT[a.id] ? "par défaut : " + DEFAUT[a.id] : "— rôle par défaut —") + "</select></label>" +
+          '<label class="ch m"><span class="note">Secours</span><select data-ag="' + esc(a.id) + '" data-champ="secours">' + options(a.secours, "— aucun —") + "</select></label></div>"; }).join("") + "</div>";
     }
 
     function carteLigne() {
@@ -155,7 +180,7 @@
         '<p class="sous">Les modèles de langage qui font parler Cassandra, Itare et les autres : ceux des fournisseurs en ligne (avec ta clé d’API) et ceux que la machine fait tourner elle-même.</p></div>';
       if (S.erreur) h += '<div class="carte err">' + esc(S.erreur) + "</div>";
       if (!S.l) { racine.innerHTML = h + '<div class="attente">Lecture des modèles…</div>'; return; }
-      h += carteLigne() + carteAjout() + carteLocale() + carteRoles();
+      h += carteAgents() + carteLigne() + carteAjout() + carteLocale() + carteRoles();
       // on garde ce qui se tape pendant qu’on redessine
       const foc = document.activeElement && document.activeElement.id, val = foc ? document.activeElement.value : "";
       racine.innerHTML = h;
@@ -169,6 +194,7 @@
       const n = racine.querySelector("#md-nom"); if (n) n.addEventListener("input", () => { S.form.nom = n.value; });
       const b = racine.querySelector("#md-base"); if (b) b.addEventListener("input", () => { S.form.base = b.value; });
       const m = racine.querySelector("#md-pull"); if (m) m.addEventListener("input", () => { S.mini = m.value; });
+      racine.querySelectorAll("[data-ag]").forEach((x) => x.addEventListener("change", () => { const c = {}; c[x.dataset.champ] = x.value; faire(async () => { await agir("agents.agent_regler", { id: x.dataset.ag, champs: c }); window.dispatchEvent(new Event("cassandra:agents-change")); }, "Réglé : " + x.dataset.ag); }));
       racine.querySelectorAll("[data-role]").forEach((s) => s.addEventListener("change", () => faire(() => agir("modeles.role_lier", { role: s.dataset.role, modele_id: s.value }), "Rôle mis à jour : " + s.dataset.role)));
     }
 
@@ -212,7 +238,10 @@
 
     racine.innerHTML = '<div class="attente">Lecture des modèles…</div>';
     await charger(true);
-  };
+  }
+  CASS.monterModeles = monter;
+  CASS.sceneSurMesure = CASS.sceneSurMesure || {};
+  CASS.sceneSurMesure.modeles = monter;
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 
