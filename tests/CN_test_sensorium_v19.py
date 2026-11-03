@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cdb3cd
+# VERSION CN : 0.1.0  #3db05d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le Sensorium voit la V19 elle-même (unité cassandra-noyau, sonde HTTP, bases, code scellé, courtier root) et que le module relève la santé de chaque module du noyau.
 # MÉTHODE    : charge CN_sensorium.py sur une base temporaire, simule systemctl et l'API HTTP (aucun réseau, aucune commande système), fabrique de vraies bases SQLite (saines, abîmées, tronquées) et une version scellée, puis monte un vrai noyau avec ses modules pour la santé de dedans.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cdb3cd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3db05d ▼▼▼
 import importlib.util
 import json
 import os
@@ -1172,6 +1172,21 @@ class Lecture(unittest.TestCase):
         self.assertEqual(len(self.lec.lignes_du_monde({"rows": MONDE})), 5)
         self.assertEqual(self.lec.lignes_du_monde("ERROR"), [])
         self.assertEqual(self.lec.lignes_du_monde([{"sans": "cle"}]), [])
+
+
+class MondeDuDemon(Demon):
+    def test_les_releves_v19_arrivent_dans_le_monde(self):
+        """Argos (03-11) : le démon relevait noyau.*, store.*, code.*, courtier.* dans mesures_diverses, mais le modèle du monde
+        ne relisait que ses préfixes V18 : l'écran et le module ne voyaient rien, sans erreur nulle part."""
+        self.m.init_all_tables()
+        conn = self.m.get_conn()
+        for cle in ("noyau.service", "store.noyau", "code.scelle", "courtier.commandes"):
+            conn.execute("INSERT OR REPLACE INTO mesures_diverses (cle, categorie, valeur, severite, last_check) VALUES (?, 'application', 'v', 'info', 'x')", (cle,))
+        conn.commit()
+        self.m.build_world_model()
+        pris = {r[0] for r in self.m.get_conn().execute("SELECT wkey FROM world_model").fetchall()}
+        for cle in ("noyau.service", "store.noyau", "code.scelle", "courtier.commandes"):
+            self.assertIn(cle, pris)
 
 
 class EtatDuDemon(Demon):
