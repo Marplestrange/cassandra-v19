@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.3.0  #758da0
+# VERSION CN : 0.3.0  #b5bf10
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Certificats TLS : la veille (ce que voient les visiteurs, le quota) et le cycle de vie (demande, validation, révocation, archivage, audit).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=758da0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=b5bf10 ▼▼▼
 """Certificats TLS : ce que les visiteurs voient, combien d'émissions il reste, et le cycle de vie d'un certificat.
 
 Porté de la V18 (`_ssl_probe`, `ssl_quota_state`, `_ssl_quota_note`, `_cert_sonde_jours`), avec ses leçons :
@@ -607,23 +607,32 @@ def brancher(ctx):
 
     def archiver(c, hote=""):
         h = _suivi(hote)
-        etat_f = metas().get(h, {}).get("etat_force", "")
-        if etat_f == "revoque":
-            raise ValueError("un certificat révoqué ne s'archive pas : il reste visible")
+        m = metas().get(h, {})
+        etat_f = m.get("etat_force", "")
         if etat_f == "archive":
             raise ValueError("déjà archivé")
-        meta_poser(h, etat_force="archive")
-        journaliser("archivage", h)
+        if etat_f == "revoque":
+            # un révoqué s'archive pour sortir de la liste : la raison de sa révocation suit, et le désarchivage le rend révoqué
+            meta_poser(h, etat_force="archive", note="révoqué : " + m.get("note", ""))
+        else:
+            meta_poser(h, etat_force="archive")
+        journaliser("archivage", h, "ok", "révoqué" if etat_f == "revoque" else "")
         c.emettre("certificat.archive", objet=("certificat", h), donnees={"hote": h})
-        return {"hote": h, "avant": "", "etat": "archive"}
+        return {"hote": h, "avant": etat_f, "etat": "archive"}
 
     def desarchiver(c, hote=""):
         h = _suivi(hote)
         if metas().get(h, {}).get("etat_force") != "archive":
             raise ValueError("ce certificat n'est pas archivé")
-        meta_poser(h, etat_force="")
+        note = metas().get(h, {}).get("note", "")
+        if note.startswith("révoqué : "):
+            meta_poser(h, etat_force="revoque", note=note[len("révoqué : "):])
+            apres = "revoque"
+        else:
+            meta_poser(h, etat_force="")
+            apres = ""
         journaliser("desarchivage", h)
-        return {"hote": h, "avant": "archive", "etat": ""}
+        return {"hote": h, "avant": "archive", "etat": apres}
 
     def force_defaire(c, res):
         meta_poser(res["hote"], etat_force=res["avant"])

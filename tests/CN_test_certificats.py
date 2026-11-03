@@ -257,7 +257,10 @@ class Cycle(Monde):
         self.assertEqual(self.ex("revoquer", hote="a.exemple.fr", raison="clé compromise")["statut"], "faite")
         f = {x["hote"]: x for x in self.ex("lister")["resultat"]["certificats"]}["a.exemple.fr"]
         self.assertEqual((f["etat"], f["force"]), ("revoque", "revoque"))
-        self.assertEqual(self.ex("archiver", hote="a.exemple.fr")["statut"], "echec")                      # un révoqué reste visible
+        self.assertEqual(self.ex("archiver", hote="a.exemple.fr")["statut"], "faite")                      # un révoqué s'archive pour sortir de la liste
+        self.assertEqual(self.ex("archiver", hote="a.exemple.fr")["statut"], "echec")
+        self.assertEqual(self.ex("desarchiver", hote="a.exemple.fr")["resultat"]["etat"], "revoque")       # et redevient révoqué, raison comprise
+        self.assertEqual(self.ctx.stockage.lire("SELECT note FROM cert_meta WHERE hote='a.exemple.fr'")[0]["note"], "clé compromise")
         self.assertEqual(self.ex("archiver", hote="jamais.exemple.fr")["statut"], "echec")                  # jamais lu : pas suivi
         self.assertEqual(self.ex("archiver", hote="z.exemple.net")["statut"], "faite")
         self.assertEqual(self.ex("desarchiver", hote="z.exemple.net")["statut"], "faite")

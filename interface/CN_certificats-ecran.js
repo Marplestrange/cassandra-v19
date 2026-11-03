@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #c83887
+// VERSION CN : 0.1.0  #91cd26
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les huit pages du module certificats (vue d'ensemble, liste et fiche, demandes, autorités, modèles, clés, rapports, réglages).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.certificats) ; la page vient de l'écran ouvert (ctx.ecran = « certificats:c_… ») ; toutes les données par certificats.* ; le renouvellement est celui du panneau (fastpanel.ssl_renouveler), jamais un appel direct à l'autorité.
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=c83887 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=91cd26 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -134,7 +134,7 @@
       }[S.tab];
       return '<div class="barre"><button class="btn mini" data-a="retour">‹ Liste</button><div class="titre" style="flex:1;min-width:0"><h1 class="mono">' + esc(c.hote) + "</h1></div>" + pill(c) + "</div>" + bandeaux() +
         '<div class="acts"><button class="btn" data-a="relire" data-h="' + esc(c.hote) + '">Relire maintenant</button><button class="btn pri" data-a="renouveler" data-h="' + esc(c.hote) + '"' + (peut("renouveler") && c.source === "fastpanel" && !c.force ? "" : ' disabled title="' + (c.source !== "fastpanel" ? "Se renouvelle hors de Cassandra" : "Droit requis : certificats.renouveler") + '"') + ">Renouveler</button>" +
-        (c.force === "archive" ? '<button class="btn" data-a="desarchiver" data-h="' + esc(c.hote) + '"' + (peut("administrer") ? "" : " disabled") + ">Désarchiver</button>" : '<button class="btn" data-a="archiver" data-h="' + esc(c.hote) + '"' + (peut("administrer") && !c.force ? "" : " disabled") + ">Archiver</button>") +
+        (c.force === "archive" ? '<button class="btn" data-a="desarchiver" data-h="' + esc(c.hote) + '"' + (peut("administrer") ? "" : " disabled") + ">Désarchiver</button>" : '<button class="btn" data-a="archiver" data-h="' + esc(c.hote) + '"' + (peut("administrer") && (!c.force || c.force === "revoque") ? "" : " disabled") + ">Archiver</button>") +
         '<button class="btn dng" data-a="revoquer" data-h="' + esc(c.hote) + '"' + (peut("revoquer") && mod ? "" : " disabled") + ">Révoquer…</button></div>" +
         (c.source === "sonde" ? '<div class="bandeau in"><div class="sp">Ce certificat est seulement observé : il se renouvelle dans l’outil qui le gère.</div></div>' : "") +
         '<div class="onglets" role="tablist">' + onglets.map((t) => '<button role="tab" aria-selected="' + (t === S.tab) + '" class="' + (t === S.tab ? "on" : "") + '" data-a="onglet" data-t="' + t + '">' + t + "</button>").join("") + "</div>" + corps;
