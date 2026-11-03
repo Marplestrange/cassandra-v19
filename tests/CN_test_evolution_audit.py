@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f28d1f
+# VERSION CN : 0.1.0  #db4337
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'audit d'Évolution : chaque défaut trouvé à l'audit (deux passages) a ici le banc qui le rejoue.
 # MÉTHODE    : les bancs de l'évolution (Banc de CN_test_evolution) et des points (Banc de CN_test_points), un banc par défaut trouvé ; les EC qui bouclent sont de vraies EC dans de vrais processus.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f28d1f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=db4337 ▼▼▼
 """Bancs de l'audit d'Évolution : chaque défaut trouvé à l'audit (deux passages) a ici le banc qui le rejoue.
 
 Isolation (le délai tue l'EC), échec fermé du routage, une seule pièce vivante par point, suspension qui ne tue pas le point, course entre deux propositions,
@@ -453,6 +453,23 @@ class BacOS(Banc):
         self.assertIn("--die-with-parent", cmd["bwrap"])
         self.assertIn("--net", cmd["unshare"])
         self.assertIn("--kill-child", cmd["unshare"])                                          # tuer l'enveloppe tue le processus d'EC
+
+    def test_le_tmp_vide_precede_les_dossiers_lies(self):
+        """Trouvé sur Orion (Linux réel) : le /tmp vide posé APRÈS les liaisons recouvrait le code du travailleur quand il vivait sous /tmp ; il mourait sans un mot."""
+        import shutil as sh
+        vrai = sh.which
+        sh.which = lambda n: "/usr/bin/" + n if n == "bwrap" else None
+        try:
+            cmd = dict(P._candidats_bac())["bwrap"]
+        finally:
+            sh.which = vrai
+        self.assertIn("/tmp", cmd)
+        self.assertLess(cmd.index("--tmpfs"), cmd.index("--ro-bind"))
+
+    def test_un_bac_n_est_cru_qu_apres_avoir_fait_tourner_le_travailleur(self):
+        """L'ancienne épreuve lançait `print(42)` : un bac qui cachait le travailleur la passait. Celle-ci charge une fonction dans le vrai travailleur."""
+        self.assertTrue(P._bac_marche([]))                                                      # sans enveloppe, le travailleur répond
+        self.assertFalse(P._bac_marche([sys.executable, "-c", "import sys; sys.exit(3)", "--"]))   # une enveloppe qui échoue ne passe pas
 
     @unittest.skipUnless(sys.platform.startswith("linux") and P.bac_os("auto")[1] != "aucun", "bac à sable Linux indisponible ici")
     def test_sous_linux_le_processus_d_ec_tourne_dans_le_bac(self):

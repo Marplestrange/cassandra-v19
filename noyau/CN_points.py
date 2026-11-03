@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fd75c8
+# VERSION CN : 0.1.0  #310ef2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fd75c8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=310ef2 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -343,12 +343,12 @@ def _candidats_bac() -> list:
     out = []
     b = shutil.which("bwrap")
     if b:
-        lie, vus = [], set()
+        lie, vus = ["--tmpfs", "/tmp"], set()                   # le /tmp vide d'abord : un dossier lié PLUS BAS (le code lui-même sous /tmp) reste visible, jamais recouvert
         for p in (sys.base_prefix, sys.prefix, sys.exec_prefix, "/usr", "/lib", "/lib64", "/bin", "/etc/alternatives", racine):
             if p not in vus and os.path.exists(p):
                 vus.add(p)
                 lie += ["--ro-bind", p, p]
-        out.append(("bwrap", [b, "--unshare-all", "--die-with-parent", "--new-session", "--clearenv", *lie, "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--chdir", "/tmp"]))
+        out.append(("bwrap", [b, "--unshare-all", "--die-with-parent", "--new-session", "--clearenv", *lie, "--proc", "/proc", "--dev", "/dev", "--chdir", "/tmp"]))
     u = shutil.which("unshare")
     if u:
         out.append(("unshare", [u, "--user", "--map-root-user", "--net", "--ipc", "--uts", "--pid", "--fork", "--kill-child"]))
@@ -356,12 +356,29 @@ def _candidats_bac() -> list:
 
 
 def _bac_marche(prefixe: list) -> bool:
-    """Un bac n'est cru qu'après avoir fait tourner Python dedans : un outil présent mais inutilisable (noyau sans espaces de noms, conteneur) ne compte pas."""
+    """Un bac n'est cru qu'après avoir fait tourner le TRAVAILLEUR dedans (il se charge, charge une fonction et répond) : un outil présent mais inutilisable, ou un bac qui cache le code du travailleur, ne compte pas."""
+    racine = Path(__file__).resolve().parent
+    dossier = tempfile.mkdtemp(prefix="cn_ec_bac_")
+    proc = None
     try:
-        r = subprocess.run([*prefixe, sys.executable, "-I", "-c", "print(41 + 1)"], capture_output=True, timeout=20)
-        return r.returncode == 0 and b"42" in r.stdout
+        proc = subprocess.Popen([*prefixe, sys.executable, "-I", str(racine / "CN_ec_worker.py"), str(racine / "CN_points.py"), str(256 * 1024 * 1024)],
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=dossier, bufsize=0, start_new_session=(os.name == "posix"))
+        msg = {"op": "charger", "texte": "def f(x):\n    return x\n", "fonction": "f"}
+        proc.stdin.write((json.dumps(msg) + "\n").encode("ascii"))
+        proc.stdin.flush()
+        reponse = queue.Queue()
+        threading.Thread(target=lambda: reponse.put(proc.stdout.readline()), daemon=True).start()
+        ligne = reponse.get(timeout=20)
+        return json.loads(ligne.decode("ascii")).get("ok") is True
     except Exception:
         return False
+    finally:
+        if proc is not None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        shutil.rmtree(dossier, ignore_errors=True)
 
 
 def bac_os_mode_valide(mode) -> bool:
