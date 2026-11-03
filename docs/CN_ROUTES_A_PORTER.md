@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le relevé, par domaine, des routes V18 encore à porter en V19. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=3bba0e ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=5c3173 ▼▼▼ -->
 # Routes V18 sans équivalent branché en V19
 
 Relevé du 02-11-2026 : les écrans repris de la V18 (`interface/CN_app.js`) appellent des routes `/api/…` que la couche de compatibilité (`interface/CN_compat.js` + `interface/routes/CN_*.js`) ne branche pas encore ; elles répondent 501 « pas encore porté ».
@@ -51,7 +51,7 @@ Dites telles quelles (la route répond, avec la raison — jamais un 501) :
 - `/api/fp/scans/run`, `configure`, `reports`, `report`, `/api/site/scan`, `/api/site/sauvegarde`, `/api/fp/websocket/apply`, `/api/fp/service/diagnose` (journal et vérification de configuration), `/api/site/thumb`, `/api/sites/act` (redémarrer, journaux) : ils demandent la commande `mogwai` ou des fichiers de root ; le courtier du module `fastpanel` n'a pas encore ces commandes. Reste à faire : une commande racine `mogwai` à table fermée (scan, backup run), puis ces routes.
 - `/api/securite/direct` : bannir une adresse ou un pays, la liste blanche, fermer un chemin d'un site, freiner un robot — pas encore portés (pare-feu du noyau et nginx) ; débannir, arrêter un service et lancer un outil le sont.
 
-## Bureau d'Itare, messagerie et outils — 104 routes
+## Bureau d'Itare, messagerie et outils — 102 routes
 Modules V19 proches : notes, canaux, telegram, canvas, coffre, notifications, journal, proactif, comptes. Fonctions : contacts (CardDAV, photos, documents), laboratoire, messages programmés, Telegram, Canva, carnet, préférences de notification, coffre personnel, agenda externe.
 
 **Porté dans cette section** (la V19 y répond autrement que par 501) : le carnet (`/api/carnet/*`, par le module notes), les réglages de la cloche (`/api/notif/*` : préférences, politique de canaux, sourdines, essai, webhook chiffré ; notifications 0.3.0),
@@ -60,9 +60,9 @@ les portraits, documents et vie privée d'une fiche du carnet (`/api/itare/conta
 Honnêtement, **ce qui reste est ci-dessous**. Limites connues de ce qui est porté : les canaux de la cloche (courriel, Telegram, webhook) n'envoient pas encore (la politique est enregistrée pour eux, l'essai le dit) ; `/api/notif/agir` répond qu'aucune action n'est attachée à une notification ;
 les fiches du coffre sont des documents JSON rangés dans la note sécurisée (l'application Bitwarden ne les voit pas comme des identifiants) et il n'y a plus de clé d'API personnelle ; `bcc` d'un message est enregistré mais le courrier ne le pose pas (comme en V18) ; `/api/msg/relire` et `/api/msg/fait` (relecture et faits relevés par un modèle) restent à porter.
 
-**Greffe du 03-11 (deuxième passe).** Avant de coder, chaque route restante a été rapprochée des capacités qui existent déjà. Sont maintenant servies, sans toucher à un module : le robot Telegram du compte (`/api/me/telegram/*`, `/api/telegram/proposes|adopter`), le rappel lié à une case, les liens et leur graphe (renvois des notes seulement : la table générique de liens de la V18 n'est pas portée), le récit de l'autonomie (politique de la machine), les anomalies du journal (silences seulement : les pics dans les lignes ne sont pas relevés), le post-mortem (ligne du temps + modèle, enregistré comme note), le portrait (poser, retirer), le verrou d'écran, l'agenda distant (enregistrer, détacher), `/api/conv/ecrire` (l'adresse est lue sur la fiche, jamais sur la requête), `/api/itare/task/from` et `/api/mail/test` (l'essai part à l'adresse du compte, jamais à une adresse de la requête). Les dossiers de comptes et les lignes sans propriétaire sont des notions de la V18 (dossiers sur disque, lignes sans compte) : la V19 répond « rien à inventorier » plutôt que d'inventer.
+**Greffe du 03-11 (deuxième passe).** Avant de coder, chaque route restante a été rapprochée des capacités qui existent déjà. Sont maintenant servies, sans toucher à un module : le robot Telegram du compte (`/api/me/telegram/*`, `/api/telegram/proposes|adopter`), le rappel lié à une case, les liens et leur graphe (renvois des notes seulement : la table générique de liens de la V18 n'est pas portée), le récit de l'autonomie (politique de la machine), les anomalies du journal (silences seulement : les pics dans les lignes ne sont pas relevés), le post-mortem (ligne du temps + modèle, enregistré comme note), le portrait (poser, retirer), le verrou d'écran, l'agenda distant (enregistrer, détacher), `/api/conv/ecrire` (l'adresse est lue sur la fiche, jamais sur la requête), `/api/itare/task/from` et `/api/msg/relire` (relecture mécanique, plus le fil si le courrier et un modèle répondent), `/api/rappel/comprendre` (le moment lu dans une phrase, calculé à l'écran : fonction pure) et `/api/mail/test` (l'essai part à l'adresse du compte, jamais à une adresse de la requête). Les dossiers de comptes et les lignes sans propriétaire sont des notions de la V18 (dossiers sur disque, lignes sans compte) : la V19 répond « rien à inventorier » plutôt que d'inventer.
 
-Ce qui reste (104 routes) : **40 à compléter** (une capacité existante, plus une composition ou un argument facultatif) et **64 à créer** (aucune capacité ne couvre). Le classement vient des manifestes et des noms de routes ; chaque ligne se relit dans la V18 avant d'être codée.
+Ce qui reste (102 routes) : **38 à compléter** () et **64 à créer** (aucune capacité ne couvre). Le classement vient des manifestes et des noms de routes ; chaque ligne se relit dans la V18 avant d'être codée.
 
 | Route | Reste | Ce qui existe, ou ce qu'il faut |
 |---|---|---|
@@ -148,13 +148,11 @@ Ce qui reste (104 routes) : **40 à compléter** (une capacité existante, plus 
 | `/api/me/history` | À compléter | sans appelant dans l'écran V19 (la carte d'activité lit /api/me/activity) : à rendre vide ou à retirer |
 | `/api/modeles/migrer` | À compléter | modeles.role_lier : migration d'un rôle vers un autre moteur |
 | `/api/msg/fait` | À compléter | modeles.completer + faits des modules certificats, sauvegardes, dns |
-| `/api/msg/relire` | À compléter | modeles.completer : relecture d'un message |
 | `/api/notif/agir` | À créer | une action attachée à une notification : la notification n'en porte pas encore |
 | `/api/proactive/act` | À compléter | proactif.incidents : l'incident V19 a une cause et une fin prouvée, pas d'action à la demande |
 | `/api/proactive/investigate` | À compléter | proactif.incidents + journal.timeline |
 | `/api/proactive/snooze` | À créer | mettre une alerte en sommeil : pas de capacité (la sourdine des notifications est à relier) |
 | `/api/ranger` | À compléter | classement du carnet (notes.menage) : comportement V18 à relire avant |
-| `/api/rappel/comprendre` | À compléter | agenda : lire_instant est une fonction du module, pas une capacité — exposer `agenda.comprendre` (lecture) |
 | `/api/reglages/veille/set` | À créer | interrupteurs de surveillance : portés par les détecteurs de chaque module, sans réglage commun |
 | `/api/settings/api-key` | À créer | clé d'API de l'administrateur : plus de clé personnelle en V19 |
 | `/api/settings/password` | À compléter | comptes.changer_mon_mot_de_passe (déjà servi par /api/me/password) |
