@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #91cd26
+// VERSION CN : 0.1.0  #4f4fec
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les huit pages du module certificats (vue d'ensemble, liste et fiche, demandes, autorités, modèles, clés, rapports, réglages).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.certificats) ; la page vient de l'écran ouvert (ctx.ecran = « certificats:c_… ») ; toutes les données par certificats.* ; le renouvellement est celui du panneau (fastpanel.ssl_renouveler), jamais un appel direct à l'autorité.
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=91cd26 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4f4fec ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -157,7 +157,7 @@
     // ── autorités, modèles, clés ──────────────────────────────────────────────────────────────────────────
     async function autorites() {
       const r = await lire("certificats.autorites"); if (!r) return entete() + bandeaux();
-      return entete() + bandeaux() + '<div class="grille">' + r.autorites.map((a) => '<div class="carte"><div class="barre"><b class="mono" style="flex:1">' + esc(a.nom) + "</b>" + K.pill(a.etat, a.etat === "actif" ? "ok" : "dg") + '</div><dl class="g"><dt>Voie</dt><dd>' + esc(a.voie) + "</dd><dt>Gestes</dt><dd>" + a.gestes.map(esc).join(" · ") + "</dd><dt>Révocation</dt><dd>" + esc(a.revocation) + "</dd><dt>Quota</dt><dd>" + esc(a.quota) + "</dd></dl></div>").join("") + '<div class="carte"><div class="barre"><b class="mono" style="flex:1">Autorité interne</b>' + K.pill("Non retenue", "") + '</div><p class="note">' + esc(r.interne) + ". Rouverte seulement sur demande.</p></div></div>";
+      return entete() + bandeaux() + '<div class="grille">' + r.autorites.map((a) => '<div class="carte"><div class="barre"><b class="mono" style="flex:1">' + esc(a.nom) + "</b>" + K.pill(a.etat, a.etat === "actif" ? "ok" : "dg") + '</div><dl class="g"><dt>Voie</dt><dd>' + esc(a.voie) + "</dd><dt>Gestes</dt><dd>" + a.gestes.map(esc).join(" · ") + "</dd><dt>Révocation</dt><dd>" + esc(a.revocation) + "</dd><dt>Quota</dt><dd>" + esc(a.quota) + "</dd></dl></div>").join("") + "</div>";
     }
     async function modeles() {
       const r = await lire("certificats.modeles"); if (!r) return entete() + bandeaux();

@@ -1,4 +1,19 @@
 <!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : maquette-certificats.html -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : maquette-certificats.html -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=038c55 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -327,8 +342,8 @@ const can=d=>ROLES[S.role].d.includes(d);
 const refus=d=>`title="Droit requis : certificats.${d}"`;
 
 /* ===== Données d'exemple (domaines fictifs) ===== */
-const SRC={fastpanel:'FastPanel',importe:'Importé',interne:'Autorité interne',sonde:'Sondé seulement'};
-const SRCNOTE={fastpanel:'Émis et renouvelé par le panneau (Let’s Encrypt).',importe:'Fourni par une autorité externe ; Cassandra ne détient pas la clé.',interne:'Phase 2 : émis par l’autorité interne de Cassandra.',sonde:'Certificat vu sur le port 443, géré ailleurs : lecture seule.'};
+const SRC={fastpanel:'FastPanel',importe:'Importé',sonde:'Sondé seulement'};
+const SRCNOTE={fastpanel:'Émis et renouvelé par le panneau (Let’s Encrypt).',importe:'Fourni par une autorité externe ; Cassandra ne détient pas la clé.',sonde:'Certificat vu sur le port 443, géré ailleurs : lecture seule.'};
 const LE='Let’s Encrypt (R11)';
 const CERTS=[
  {id:1,h:'shop.exemple.fr',san:['shop.exemple.fr','www.shop.exemple.fr'],src:'fastpanel',aut:LE,j:6,dur:90,algo:'ECDSA P-256',auto:false,site:'shop.exemple.fr',fp:412,emp:'3F:A1:9C:07:…:D2:5B'},
@@ -338,7 +353,6 @@ const CERTS=[
  {id:5,h:'coffre.exemple.fr',san:['coffre.exemple.fr'],src:'sonde',aut:LE,j:33,dur:90,algo:'ECDSA P-256',auto:true,site:'',emp:'0A:DD:91:42:…:EE:67'},
  {id:6,h:'legacy.exemple.fr',san:['legacy.exemple.fr'],src:'fastpanel',aut:LE,j:-4,dur:90,algo:'RSA 2048',auto:false,site:'legacy.exemple.fr',fp:377,emp:'B7:33:08:1C:…:42:F5'},
  {id:7,h:'billets.exemple.org',san:['billets.exemple.org'],src:'fastpanel',aut:LE,j:71,dur:90,algo:'ECDSA P-256',auto:true,site:'billets.exemple.org',fp:420,emp:'6D:90:E1:27:…:BC:30'},
- {id:8,h:'*.interne.exemple.test',san:['*.interne.exemple.test'],src:'interne',aut:'Autorité interne Cassandra',j:300,dur:365,algo:'ECDSA P-384',auto:true,site:'',emp:'F2:18:5A:CC:…:03:9D'},
  {id:9,h:'wiki.exemple.fr',san:['wiki.exemple.fr'],src:'fastpanel',aut:LE,j:null,dur:90,algo:'—',auto:false,site:'wiki.exemple.fr',fp:391,err:'délai dépassé (5 s) : le port 443 ne répond pas',emp:'—'},
  {id:10,h:'ancien.exemple.fr',san:['ancien.exemple.fr'],src:'fastpanel',aut:LE,j:20,dur:90,algo:'RSA 2048',auto:false,site:'',force:'revoque',emp:'1B:4F:D9:60:…:A7:E2'},
  {id:11,h:'dolibarr.exemple.fr',san:['dolibarr.exemple.fr'],src:'sonde',aut:LE,j:19,dur:90,algo:'ECDSA P-256',auto:false,site:'',emp:'88:C1:3E:5D:…:F4:10'},
@@ -363,20 +377,17 @@ const DEMANDES=[
  {id:'D-0411',h:'*.exemple.fr',san:'',mod:'Wildcard (DNS-01)',aut:LE,par:'Sandrine Lopez',etat:'a_valider',le:'01/11/2026',note:'Sous-domaines clients',wild:true},
  {id:'D-0410',h:'crm.exemple.fr',san:'',mod:'Site public',aut:LE,par:'Léo Martin',etat:'validee',le:'31/10/2026',note:''},
  {id:'D-0409',h:'status.exemple.fr',san:'',mod:'Site public',aut:LE,par:'Valérie Roux',etat:'emise',le:'28/10/2026',note:''},
- {id:'D-0408',h:'vpn.interne.exemple.test',san:'',mod:'Interne',aut:'Autorité interne Cassandra',par:'Drisse Atek',etat:'brouillon',le:'27/10/2026',note:''},
  {id:'D-0407',h:'promo.exemple.fr',san:'',mod:'Site public',aut:LE,par:'Léo Martin',etat:'refusee',le:'20/10/2026',note:'Domaine non géré par le panneau',motif:'Le domaine n’est pas rattaché à un site FastPanel.'}
 ];
 const DEM_ETATS={brouillon:['Brouillon',''],a_valider:['À valider','al'],validee:['Validée','in'],emise:['Émise','ok'],refusee:['Refusée','da'],echec:['Échec d’émission','da']};
 const CAS=[
  {id:'le',nom:'Let’s Encrypt',via:'FastPanel (PUT /api/certificates/{id}/renew/external)',etat:'Actif',cl:'ok',desc:'Autorité publique gratuite, certificats de 90 jours. Quota : 5 émissions abouties par semaine et par domaine enregistré. Émission et renouvellement par le panneau.',cap:['Émettre','Renouveler','Sonder'],rev:'Révocation non prouvée via le panneau (H3).'},
  {id:'imp',nom:'Autorité importée (Gandi)',via:'Saisie manuelle (PEM public)',etat:'Actif',cl:'ok',desc:'Certificats payants achetés ailleurs. Cassandra suit l’échéance et rappelle ; le renouvellement se fait chez l’autorité.',cap:['Importer','Sonder','Rappeler'],rev:'Révocation chez l’autorité (lien).'},
- {id:'int',nom:'Autorité interne Cassandra',via:'Module à créer (phase 2)',etat:'Non retenue',cl:'',desc:'Autorité privée pour les services internes (*.interne). Clé racine hors ligne, intermédiaire dans le coffre. Non retenue (décision Q1) : hors périmètre, rouverte seulement sur demande.',cap:['Émettre','Révoquer (CRL)'],rev:'CRL / OCSP à définir.'}
 ];
 const MODELES=[
  {n:'Site public',v:'90 j',a:'ECDSA P-256',san:'jusqu’à 5',auto:'oui, à 30 j',appr:'non (hôte déjà suivi)',aut:'Let’s Encrypt'},
  {n:'Wildcard (DNS-01)',v:'90 j',a:'ECDSA P-256',san:'1 + racine',auto:'oui, à 30 j',appr:'oui',aut:'Let’s Encrypt'},
  {n:'Courrier (SAN mail/imap/smtp)',v:'365 j',a:'RSA 2048',san:'jusqu’à 5',auto:'non (rappel)',appr:'oui',aut:'Importée'},
- {n:'Interne',v:'365 j',a:'ECDSA P-384',san:'jusqu’à 20',auto:'oui, à 60 j',appr:'oui',aut:'Interne'}
 ];
 const QUOTAS={'exemple.fr':3,'exemple.org':0,'exemple.com':1};
 const regDom=h=>{const p=h.replace(/^\*\./,'').split('.');return p.slice(-2).join('.')};
@@ -674,7 +685,7 @@ function demande(act,id){
     if(act==='emettre'){
       if(d.wild&&S.etat==='quota'){}
       const q=quotaDe(regDom(d.h));if(q.bloque){d.etat='echec';log('emission',d.h,'echec','quota atteint');toast('Quota atteint pour '+q.d+' : libre le '+q.libre+'.','ko');rendre();return}
-      d.etat='emise';CERTS.push({id:CERTS.length+1,h:d.h,san:[d.h],src:d.aut.includes('interne')?'interne':'fastpanel',aut:d.aut,j:90,dur:90,algo:'ECDSA P-256',auto:true,site:'',emp:'2D:9A:…:4C:E0',hist:[{t:'Émis suite à la demande '+d.id,d:NOW,a:'demande'}]});QUOTAS[regDom(d.h)]=(QUOTAS[regDom(d.h)]||0)+1;log('emission',d.h,'ok',d.id);toast('Certificat de '+d.h+' émis.')}
+      d.etat='emise';CERTS.push({id:CERTS.length+1,h:d.h,san:[d.h],src:'fastpanel',aut:d.aut,j:90,dur:90,algo:'ECDSA P-256',auto:true,site:'',emp:'2D:9A:…:4C:E0',hist:[{t:'Émis suite à la demande '+d.id,d:NOW,a:'demande'}]});QUOTAS[regDom(d.h)]=(QUOTAS[regDom(d.h)]||0)+1;log('emission',d.h,'ok',d.id);toast('Certificat de '+d.h+' émis.')}
   }
   if(act==='soumettre'){d.etat='a_valider';log('demande.soumise',d.h);toast('Demande soumise.')}
   if(act==='rouvrir'){d.etat='brouillon';toast('Demande rouverte en brouillon.')}
@@ -738,7 +749,6 @@ function acte(a,d){
   if(a==='suivre'){toast('Hôte ajouté à la liste de suivi.')}
   if(a==='demanderacces'){log('demande_acces',d.d,'ok','demande envoyée');toast('Demande d’accès envoyée aux administrateurs.')}
   if(a==='tester'){toast('Voie testée : la liste des certificats du panneau répond.')}
-  if(a==='activerCA'){modal(`<h2 id="fen-t">Autorité interne</h2><p class="sous">L’activer crée une racine et un intermédiaire à protéger. Décision prise : non retenue (Q1). À rouvrir seulement sur demande.</p><div class="pied"><button class="btn pri" data-fermer>Compris</button></div>`)}
   if(a==='modele'){modal(`<h2 id="fen-t">Modifier le modèle « ${esc(d.id)} »</h2><div class="champ"><label for="mm-v">Validité (jours)</label><input type="number" id="mm-v" min="1" max="398" value="90"><span class="aide">Maximum 398 jours pour un certificat public.</span></div><div class="pied"><button class="btn" data-fermer>Annuler</button><button class="btn pri" data-fermer>Enregistrer</button></div>`)}
 }
 document.addEventListener('change',e=>{
@@ -766,3 +776,9 @@ rendre();
 </script>
 </body>
 </html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

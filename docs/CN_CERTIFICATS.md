@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Module Certificats V19 — audit, cartographie et spécifications -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Module Certificats V19 — audit, cartographie et spécifications -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=4dbaf0 ▼▼▼ -->
 # Module Certificats V19 — audit, cartographie et spécifications
 
 Maquette cliquable : [`maquettes/CN_maquette-certificats.html`](maquettes/CN_maquette-certificats.html) (ouvrir dans un navigateur ; le panneau « Outil de maquette » en bas à gauche change le rôle et l'état de l'écran, il ne fait pas partie de la V19).
@@ -223,3 +238,9 @@ Synchronisation : relève du panneau toutes les 15 minutes (existant), sonde 443
 
 ## 11. Vérifications faites sur la maquette
 Syntaxe JS contrôlée ; huit écrans rendus sans erreur avec deux rôles (administrateur, lecteur ; validateur et opérateur seulement par leurs droits, non parcourus) et cinq états ; parcours testés : renouvellement avec preuve (quota décompté), échec de renouvellement, quota bloqué, lecteur sans droit (boutons désactivés, Réglages refusé), révocation par saisie de l'hôte, validation de nom d'hôte ; aucun débordement horizontal à 375 px sur les neuf vues. Non fait : contrôle de contraste automatisé, test tactile réel, lecture d'écran. Les données sont fictives (domaines `exemple.*`). L'en-tête « BORNE CN » des fichiers du dépôt n'a pas été généré : l'outil d'empreinte du projet doit être passé sur ce fichier et sur ce document.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

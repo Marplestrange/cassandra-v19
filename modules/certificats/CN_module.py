@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.3.0  #b5bf10
+# VERSION CN : 0.3.0  #01eda0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Certificats TLS : la veille (ce que voient les visiteurs, le quota) et le cycle de vie (demande, validation, révocation, archivage, audit).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=b5bf10 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=01eda0 ▼▼▼
 """Certificats TLS : ce que les visiteurs voient, combien d'émissions il reste, et le cycle de vie d'un certificat.
 
 Porté de la V18 (`_ssl_probe`, `ssl_quota_state`, `_ssl_quota_note`, `_cert_sonde_jours`), avec ses leçons :
@@ -47,7 +47,6 @@ MODELES = [
     {"id": "wildcard", "nom": "Wildcard (DNS-01)", "validite_j": 90, "algo": "ECDSA P-256", "max_sans": 1, "renouvelle_a_j": 30, "approbation": True, "autorite": "Let's Encrypt"},
     {"id": "courrier", "nom": "Courrier (SAN mail/imap/smtp)", "validite_j": 365, "algo": "RSA 2048", "max_sans": 5, "renouvelle_a_j": 0, "approbation": True, "autorite": "Importée"},
 ]
-# L'autorité interne n'est PAS retenue (décision du 02-11-2026) : elle n'a pas de carte active ici.
 AUTORITES = [
     {"id": "le", "nom": "Let's Encrypt", "voie": "FastPanel (PUT /api/certificates/{id}/renew/external)", "gestes": ["Renouveler", "Sonder"],
      "revocation": "Non prouvée par le panneau : Cassandra marque le certificat « révoqué » et le retire du suivi ; la révocation chez l'autorité reste à faire.",
@@ -359,7 +358,7 @@ def brancher(ctx):
         for a in AUTORITES:
             etat_a = ("actif" if p is not None else "injoignable") if a["id"] == "le" else "actif"
             out.append(dict(a, etat=etat_a))
-        return {"autorites": out, "interne": "non retenue (décision du 02-11-2026)"}
+        return {"autorites": out}
 
     def modeles(c):
         return {"modeles": MODELES}
