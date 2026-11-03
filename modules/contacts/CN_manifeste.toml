@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.3  #ad729c
+# VERSION CN : 0.3.4  #a63437
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.3 empreinte=ad729c ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.4 empreinte=a63437 ▼▼▼
 [module]
 id = "contacts"
 nom = "Carnet d'adresses"
-version = "0.3.3"
+version = "0.3.4"
 noyau_min = "0.1.0"
 description = "Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi."
 confiance = "interne"
@@ -122,6 +122,13 @@ id = "csv_apercu"
 libelle = "Ce qu'on a compris d'un fichier CSV, avant d'écrire quoi que ce soit"
 risque = "lecture"
 droit = "utiliser"
+
+[[capacites]]
+id = "photos"
+libelle = "Les portraits des fiches demandées, en un seul aller-retour (le carnet du compte seulement ; jamais pour un modèle)"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte"]
 
 # ------------------------------------------------------------------ gestes
 [[capacites]]

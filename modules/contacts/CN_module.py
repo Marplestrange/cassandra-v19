@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.3  #abaf54
+# VERSION CN : 0.3.4  #3d0726
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet d'adresses.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.3 empreinte=abaf54 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.4 empreinte=3d0726 ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :
@@ -932,9 +932,25 @@ def brancher(ctx):
         choisies.sort(key=lambda x: (0 if x["favorite"] else 1, x["display_name"].lower()))
         return {"fiches": [{"id": x["id"], "display_name": x["display_name"], "company": x["company"], "emails": x["emails"]} for x in choisies[:6]]}
 
+    def photos(c, ids=None):
+        """Les portraits demandés, en UN aller-retour : l'écran affiche d'abord les initiales, puis demande les images de ce qui est visible. Bornés au carnet du compte qui agit ;
+        un modèle n'en reçoit pas (un portrait est une donnée de contact comme une autre)."""
+        compte = compte_agit()
+        lot = []
+        for i in (ids or [])[:LOT_MAX]:
+            try:
+                lot.append(int(i))
+            except (TypeError, ValueError):
+                pass
+        if not lot or ctx.acteur in ("itare", "cassandra", "agent"):
+            return {"photos": {}, "sources": {}}
+        rows = db.lire("SELECT id, photo FROM contacts WHERE compte=? AND photo<>'' AND id IN (%s)" % ",".join("?" * len(lot)), [compte] + lot)
+        return {"photos": {str(r["id"]): r["photo"] for r in rows}, "sources": {str(r["id"]): "fiche" for r in rows}}
+
     # ------------------------------------------------------------------ inscription
     c = ctx
     c.implementer("adresses_pour_mandat", adresses_pour_mandat)
+    c.implementer("photos", photos)
     for cid, f in (("lister", lister), ("voir", voir), ("pour_adresse", pour_adresse), ("dossiers", dossiers), ("pour_cible", pour_cible), ("doublons", doublons),
                    ("vcard_exporter", vcard_exporter), ("csv_apercu", csv_apercu)):
         c.implementer(cid, f)

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #17a969
+// VERSION CN : 0.1.0  #cc99e8
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Contacts : /api/itare/contact/* et /api/itare/mail/contacts (V18) -> capacités contacts.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=17a969 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=cc99e8 ▼▼▼
 /* Contacts : /api/itare/contact/* et /api/itare/mail/contacts (V18) -> capacités contacts.* du noyau.
    Le noyau a gardé les noms de champs de la V18 ; il rend les dates en secondes, l'écran les lit en texte. */
 (function () {
@@ -57,6 +57,30 @@
   P("/api/itare/contact/vcard/export", "contacts.vcard_exporter", { args: (r) => ({ ids: r.body.ids }), binaire: (x) => ({ b64: btoa(unescape(encodeURIComponent(typeof x === "string" ? x : x.texte || x.vcard || ""))), type: "text/vcard", nom: "contacts.vcf" }) });
   P("/api/itare/contact/csv/apercu", "contacts.csv_apercu", { args: (r) => ({ contenu_b64: btoa(unescape(encodeURIComponent(r.body.contenu || ""))) }), sortie: ok });
   P("/api/itare/contact/csv/importer", "contacts.csv_importer", { args: (r) => ({ contenu_b64: btoa(unescape(encodeURIComponent(r.body.contenu || ""))), appariement: r.body.appariement, dossier_id: 0 }), sortie: ok });
+
+  // Les portraits en lot, les documents d'une fiche (lus dans la GED : le lien vit du côté du document), ce qui part vers un modèle.
+  P("/api/itare/contact/photos", "contacts.photos", { args: (r) => ({ ids: (Array.isArray(r.body.ids) ? r.body.ids : []).map(Number) }), sortie: ok });
+  P("/api/itare/contact/documents", null, {
+    faire: async (req, agir) => {
+      const id = +req.body.id;
+      await agir("contacts.voir", { id });                                   // la fiche doit être au carnet du compte : un identifiant deviné ne donne rien
+      const r = await agir("ged.documents_de", { kind: "contact", ref: String(id) }).catch(() => ({ documents: [] }));       // une GED absente : un carnet sans documents, pas une panne
+      return ok({ documents: r.documents || [] });
+    },
+  });
+  const vie = async (agir) => {
+    const rg = ((await agir("reglages.lire", { module: "contacts" })) || {}).reglages || [];
+    const v = (cle, def) => { const x = rg.find((y) => y.cle === "contacts." + cle); return x && x.valeur !== undefined && x.valeur !== "" ? x.valeur : def; };
+    const locale = v("vue_modele", "expurgee") === "complete", notes = v("notes_au_modele", true) !== false;
+    return { local: locale, notes_to_remote: notes, coordinates_sent: locale, notes_sent: locale || notes,
+             summary: locale ? "Vue complète : le modèle reçoit coordonnées et notes (à choisir quand il tourne sur ce serveur)." : "Vue expurgée : coordonnées jamais transmises, " + (notes ? "notes transmises." : "notes non transmises.") };
+  };
+  P("/api/itare/contact/privacy", null, {
+    faire: async (req, agir) => {
+      if ("notes_to_remote" in (req.body || {})) await agir("reglages.regler", { cle: "contacts.notes_au_modele", valeur: !!req.body.notes_to_remote });
+      return ok(await vie(agir));
+    },
+  });
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 

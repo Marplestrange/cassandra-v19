@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : ged
 # ZONE       : CN
-# VERSION CN : 0.1.1  #4080b0
+# VERSION CN : 0.1.2  #8b3c36
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=4080b0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=8b3c36 ▼▼▼
 """La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
 
 Porté de la V18 (`ged_*`), avec ses leçons :
@@ -1114,6 +1114,12 @@ def brancher(ctx):
             os.makedirs(p, exist_ok=True)
         return {"supprimes": n, "octets": octets, "octets_h": _octets(octets), "erreurs": erreurs[:6]}
 
+    def documents_de(c, kind="", ref=""):
+        """Les documents de CE compte qui désignent un objet (un contact, un projet, une tâche…). Le lien vit du côté du document, et nulle part ailleurs : on le lit à la demande, une seule vérité."""
+        rows = db.lire("SELECT f.id, f.nom, f.source, f.chemin, f.taille, f.kind, l.label FROM ged_liens l JOIN ged_fichiers f ON f.id=l.fichier_id "
+                       "WHERE l.kind=? AND l.ref=? AND f.compte=? ORDER BY f.nom LIMIT 200", (str(kind or "").lower(), str(ref or ""), (ctx.compte or "")))
+        return {"documents": [dict(r) for r in rows]}
+
     def lien(c, fid=0, kind="", ref="", label=""):
         kind = (kind or "").strip().lower()
         if kind not in _GED_LIEN_KINDS:
@@ -1253,6 +1259,7 @@ def brancher(ctx):
                     simuler=lambda x, fid=0, **_: "enverrait le document %s à la corbeille" % fid)
     ctx.implementer("corbeille_restaurer", corbeille_restaurer, prouver_corbeille_restaurer, defaire_corbeille_restaurer,
                     simuler=lambda x, **_: "restaurerait depuis la corbeille")
+    ctx.implementer("documents_de", documents_de)
     ctx.implementer("lien", lien, prouver_lien, defaire_lien, simuler=lambda x, kind="", ref="", **_: "rattacherait ce document à %s %s" % (kind, ref))
     ctx.implementer("delien", delien, prouver_delien, defaire_delien, simuler=lambda x, **_: "détacherait ce document")
     ctx.implementer("regle_save", regle_save, prouver_regle, defaire_regle, simuler=lambda x, libelle="", **_: "enregistrerait la règle « %s »" % libelle)
