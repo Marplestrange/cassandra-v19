@@ -12,7 +12,7 @@
 /* RÔLE       : tous les styles de l'interface extraits de la V18, versionnés. */
 /* MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=886920 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=687883 ▼▼▼ */
 
 /* ═══════════════════════════════════════════════════════════════════════
    CASSANDRA — SYSTÈME DE COULEURS
@@ -1650,7 +1650,7 @@ body{font-family:'Inter',sans-serif;color:var(--txt);height:100vh;overflow:hidde
    Un seul écart vertical, déclaré une fois. Des marges posées bloc par bloc
    donnaient un rythme différent d'une vue à l'autre — visible au passage. */
 .cf-page{flex:1;min-width:0;overflow-y:auto;padding:18px 22px 40px}
-.cf-view{display:flex;flex-direction:column;gap:18px;max-width:1240px;margin:0 auto}
+.cf-view{display:flex;flex-direction:column;gap:18px;max-width:none;margin:0}
 .cf-view[hidden]{display:none}
 .cf-head{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
 .cf-head h1{margin:0;font-family:'JetBrains Mono',monospace;font-size:15px;letter-spacing:.06em;
@@ -7218,7 +7218,7 @@ select,select.bu-inp,select.s-select,.s-select,select.mx-select{padding:6px 28px
 ════════════════════════════════════ */
 /* 1180 px comme la maquette : 860 etait etroit pour des cartes a trois
    colonnes, qui se repliaient en deux et donnaient un ecran plus haut que large. */
-.settings-layout{display:flex;flex-direction:column;gap:18px;padding:24px;max-width:1180px;margin:0 auto;overflow-y:auto;height:100%}
+.settings-layout{display:flex;flex-direction:column;gap:18px;padding:24px;max-width:none;margin:0;overflow-y:auto;height:100%}
 .settings-section{background:rgba(18,20,30,.75);border:1px solid var(--acc-10);
   border-radius:12px;padding:20px 22px 28px}
 /* Dans le nouveau rail, la carte suit la maquette : surface franche, filet
@@ -7384,7 +7384,7 @@ select,select.bu-inp,select.s-select,.s-select,select.mx-select{padding:6px 28px
   border:1px solid var(--acc-20);max-width:1180px}
 .set-nav-item .n{margin-left:auto;font-family:'JetBrains Mono',monospace;
   font-size:10px;color:var(--txt-ghost);padding-left:10px}
-.settings-head{padding:16px 24px 0;max-width:1180px;width:100%;margin:0 auto;box-sizing:border-box}
+.settings-head{padding:16px 24px 0;max-width:none;width:100%;margin:0;box-sizing:border-box}
 /* Navigation par famille : une barre horizontale de pastilles compactes. La
    version en grandes cartes portait chacune sa légende, ce qui faisait six
    pavés de texte avant même d'atteindre le premier réglage — lourd, et la
