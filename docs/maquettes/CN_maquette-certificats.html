@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cassandra V19 — maquette des certificats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Jetons : repris À L'IDENTIQUE de CN_maquette-menus.html (coque V19). Aucun jeton nouveau, sauf --info (déjà dans habillage.css : pastille pas_encore). */
+:root{
+  --sol:#eef1f5; --halo:#e9edf3; --verre:rgba(255,255,255,.66); --verre-fort:rgba(255,255,255,.92);
+  --encre:#101828; --encre-2:#475467; --encre-3:#8b95a3; --filet:rgba(16,24,40,.09); --filet-fort:rgba(16,24,40,.16);
+  --accent:#0b7c74; --accent-doux:rgba(11,124,116,.10); --accent-encre:#fff;
+  --barre:#0b7c74; --barre-haut:#0e8a81; --barre-encre:#ffffff; --barre-doux:rgba(255,255,255,.16);
+  --ok:#047857; --ok-doux:rgba(4,120,87,.10); --alerte:#b45309; --alerte-doux:rgba(180,83,9,.11); --danger:#be123c; --danger-doux:rgba(190,18,60,.10); --info:#1d4ed8; --info-doux:rgba(29,78,216,.10);
+  --ombre:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace; --sans:"Public Sans",system-ui,sans-serif;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --sol:#0d1117; --halo:#111a24; --verre:rgba(26,33,44,.66); --verre-fort:rgba(30,38,50,.96);
+  --encre:#e6ebf2; --encre-2:#aab4c3; --encre-3:#707c8d; --filet:rgba(230,235,242,.10); --filet-fort:rgba(230,235,242,.20);
+  --accent:#34b3a8; --accent-doux:rgba(52,179,168,.14); --accent-encre:#06201d;
+  --barre:#14524d; --barre-haut:#186059; --barre-encre:#eafaf8; --barre-doux:rgba(255,255,255,.12);
+  --ok:#3ecf9a; --ok-doux:rgba(62,207,154,.12); --alerte:#e7a14c; --alerte-doux:rgba(231,161,76,.13); --danger:#ff6b8b; --danger-doux:rgba(255,107,139,.12); --info:#7aa2ff; --info-doux:rgba(122,162,255,.14);
+  --ombre:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28); color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:radial-gradient(900px 420px at 50% -25%,var(--halo),transparent),var(--sol);color:var(--encre);font:14px/1.5 var(--sans);overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.app{display:grid;grid-template-rows:60px minmax(0,1fr);height:100vh}
+
+/* ---------- Barre haute (identique à la maquette des menus) ---------- */
+.top{display:flex;align-items:center;gap:4px;padding:0 14px 0 10px;background:linear-gradient(180deg,var(--barre-haut),var(--barre));color:var(--barre-encre);box-shadow:0 2px 10px rgba(16,24,40,.14);position:relative;z-index:30}
+.ib{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--barre-encre);opacity:.9}
+.ib:hover{background:var(--barre-doux);opacity:1}
+.nav3{display:flex}
+.logo{width:38px;height:38px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);display:grid;place-items:center;font:700 15px var(--mono);color:#0b7c74;margin:0 12px 0 6px;flex:none}
+.groupes{display:flex;align-items:center;gap:clamp(2px,2.2vw,30px);min-width:0;flex:1;height:100%;padding-left:8px}
+.mi.gr{position:relative;width:46px;height:60px;display:flex;align-items:center;justify-content:center;color:var(--barre-encre);opacity:.82}
+.mi.gr svg{width:23px;height:23px;stroke-width:1.9}
+.mi.gr:hover{background:var(--barre-doux);opacity:1}
+.mi.gr.on{opacity:1}
+.mi.gr.on::after{content:"";position:absolute;left:50%;bottom:0;width:16px;height:8px;margin-left:-8px;background:var(--sol);clip-path:polygon(50% 0,0 100%,100% 100%)}
+.mi.gr::before{content:attr(data-tip);position:absolute;top:56px;left:50%;transform:translateX(-50%);background:#101828;color:#fff;font:500 11.5px var(--mono);padding:5px 9px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;z-index:60}
+.mi.gr:hover::before,.mi.gr:focus-visible::before{opacity:1}
+.mi.gr .al{position:absolute;top:11px;right:7px;width:9px;height:9px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 2px var(--barre)}
+.mi.gr .al.a{background:var(--alerte)}
+.droite{display:flex;align-items:center;gap:4px;padding-left:6px;flex:none}
+.wrap{position:relative}
+.pastille{position:relative}
+.pastille i{position:absolute;top:2px;right:2px;box-shadow:0 0 0 2px var(--barre);min-width:15px;height:15px;border-radius:8px;background:var(--danger);color:#fff;font:600 9.5px/15px var(--mono);text-align:center;font-style:normal;padding:0 3px}
+.vtxt{font:500 12px var(--mono);opacity:.85;padding:0 6px}
+.av{display:flex;align-items:center;gap:6px;height:38px;padding:0 8px 0 4px;border-radius:999px;color:var(--barre-encre)}
+.av:hover{background:var(--barre-doux)}
+.av span{width:30px;height:30px;border-radius:50%;background:#fff;color:#0b7c74;display:grid;place-items:center;font:600 10.5px var(--mono)}
+.av svg{width:11px;height:11px}
+.pop{position:absolute;top:50px;color:var(--encre);right:0;min-width:270px;background:var(--verre-fort);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--filet);border-radius:16px;box-shadow:var(--ombre),0 18px 40px rgba(16,24,40,.12);padding:8px;display:none;z-index:40}
+.pop.ouvert{display:block}
+.pop .t{font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--encre-3);padding:8px 10px 4px}
+.pop button.l{display:flex;width:100%;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;text-align:left;font-size:13.5px}
+.pop button.l:hover{background:var(--accent-doux)}
+.pop button.l small{margin-left:auto;font:400 11px var(--mono);color:var(--encre-3)}
+.pop hr{border:0;border-top:1px solid var(--filet);margin:6px 4px}
+
+/* ---------- Corps ---------- */
+.corps{display:grid;grid-template-columns:auto minmax(0,1fr);min-height:0;position:relative}
+.side{width:240px;overflow:auto;padding:14px 8px 14px 14px;transition:width .18s ease,padding .18s ease;position:relative;z-index:20}
+.side.ferme{width:0;padding:14px 0;overflow:hidden}
+.side h2{font:600 11px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--encre-3);padding:2px 10px 10px;white-space:nowrap}
+.side .si{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border-radius:10px;color:var(--encre-2);text-align:left;white-space:nowrap}
+.side .si:hover{background:var(--verre);color:var(--encre)}
+.side .si.ent{font-weight:500;color:var(--encre)}
+.side .si.ent svg:first-child{color:var(--encre-3)}
+.side .si .car{margin-left:auto;width:14px;height:14px;transition:transform .15s}
+.side .si .car.ouv{transform:rotate(90deg)}
+.side .si .nb{margin-left:auto;font:600 10px var(--mono);background:var(--danger);color:#fff;border-radius:999px;padding:1px 7px}
+.side .si .nb+.car{margin-left:6px}
+.side .si.sub{padding-left:38px;font-size:13px}
+.side .si.on{background:var(--verre);color:var(--accent);font-weight:600;box-shadow:var(--ombre)}
+.side .si .pt{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.45}
+.side .si.prop{font-style:italic}
+.side .note{margin:12px 6px 0;padding:10px 12px;border-radius:12px;background:var(--alerte-doux);color:var(--alerte);font-size:12px;line-height:1.45}
+.scene{overflow:auto;padding:26px 30px 90px}
+.scene .in{max-width:1100px}
+.fil{font:500 11.5px var(--mono);color:var(--encre-3);margin-bottom:6px}
+.fil a{color:inherit;cursor:pointer;text-decoration:none}.fil a:hover{color:var(--accent)}
+.scene h1{font:600 20px var(--mono);margin-bottom:4px}
+.scene p.sous{color:var(--encre-2);margin-bottom:18px;max-width:70ch}
+
+/* ---------- Composants (tenue de habillage.css : boutons, pastilles, tuiles, tableaux, champs) ---------- */
+.carte{background:var(--verre);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:16px;box-shadow:var(--ombre);padding:16px 18px;border:1px solid var(--filet)}
+.carte>h3,.carte>b.t{display:block;font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--encre-3);margin-bottom:10px}
+.btn{font:600 13px/1.2 var(--sans);padding:7px 14px;border-radius:10px;border:1px solid var(--filet-fort);background:var(--verre-fort);color:var(--encre);transition:border-color .15s,color .15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:transparent;color:var(--accent-encre)}
+.btn.pri:hover:not([disabled]){color:var(--accent-encre);filter:brightness(1.08)}
+.btn.dng{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,transparent)}
+.btn.dng:hover:not([disabled]){border-color:var(--danger);color:var(--danger)}
+.btn.dng.pri{background:var(--danger);color:#fff}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:4px 10px;font-size:12px;border-radius:8px}
+.btn svg{width:15px;height:15px}
+.p{font:600 11px/1.2 var(--sans);border-radius:7px;padding:3px 8px;background:color-mix(in srgb,var(--encre-2) 10%,transparent);color:var(--encre-2);display:inline-block;white-space:nowrap}
+.p.ok{background:var(--ok-doux);color:var(--ok)}.p.al{background:var(--alerte-doux);color:var(--alerte)}.p.da{background:var(--danger-doux);color:var(--danger)}.p.in{background:var(--info-doux);color:var(--info)}
+.p.rev{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.p.prop{border:1px dashed var(--alerte)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{font:600 12.5px/1.2 var(--sans);padding:5px 12px;border-radius:999px;border:1px solid var(--filet);background:var(--verre);color:var(--encre-2)}
+.chip:hover{color:var(--accent);border-color:var(--accent)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-encre)}
+.tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.tuile{background:var(--verre);border:1px solid var(--filet);border-radius:14px;padding:12px 14px;box-shadow:var(--ombre);text-align:left;display:block;width:100%}
+.tuile span{display:block;font:600 12px var(--sans);color:var(--encre-2)}
+.tuile b{display:block;font:650 22px var(--mono)}
+.tuile small{font-size:11px;color:var(--encre-3)}
+button.tuile:hover{border-color:var(--accent)}
+.tuile.da b{color:var(--danger)}.tuile.al b{color:var(--alerte)}.tuile.ok b{color:var(--ok)}
+.grille2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.barre-q{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input[type=search],input[type=text],input[type=number],select,textarea{font:13.5px var(--sans);border:1px solid var(--filet-fort);background:var(--verre-fort);color:var(--encre);border-radius:10px;padding:7px 11px;transition:border-color .15s,box-shadow .15s;max-width:100%}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+input::placeholder,textarea::placeholder{color:var(--encre-3)}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;height:16px}
+input[disabled],select[disabled],textarea[disabled]{opacity:.55}
+input.inv,textarea.inv,select.inv{border-color:var(--danger)}
+.champ{display:grid;gap:4px;margin-bottom:12px}
+.champ label{font:600 12.5px/1.3 var(--sans);color:var(--encre-2)}
+.champ .aide{font-size:12px;color:var(--encre-3)}.champ .err{font-size:12px;color:var(--danger);min-height:0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font:650 10.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--encre-3);text-align:left;padding:8px 10px;border-bottom:1px solid var(--filet);white-space:nowrap}
+th.tri{cursor:pointer}th.tri:hover{color:var(--accent)}
+td{padding:9px 10px;border-bottom:1px solid var(--filet);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+tr.sel td{background:var(--accent-doux)}
+td.h{font:500 13px var(--mono)}
+td.h a{cursor:pointer;color:var(--encre)}td.h a:hover{color:var(--accent);text-decoration:underline}
+.num{font-variant-numeric:tabular-nums;text-align:right}
+.mono{font-family:var(--mono)}
+.actions{display:flex;gap:6px;justify-content:flex-end}
+.pied-tab{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-top:12px;font-size:12.5px;color:var(--encre-2)}
+.pag{display:flex;gap:4px}
+.pag button{min-width:30px;height:30px;border-radius:8px;border:1px solid var(--filet);background:var(--verre)}
+.pag button.on{background:var(--accent);color:var(--accent-encre);border-color:transparent}
+.pag button[disabled]{opacity:.4;cursor:not-allowed}
+.lot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;margin-bottom:10px;border-radius:12px;background:var(--accent-doux);color:var(--accent);font-weight:600;font-size:13px}
+.silence{border:1px solid var(--filet);border-radius:12px;background:color-mix(in srgb,var(--encre-2) 5%,transparent);color:var(--encre-2);padding:22px;text-align:center}
+.silence b{display:block;font:600 14px var(--mono);color:var(--encre);margin-bottom:4px}
+.bandeau{padding:10px 14px;border-radius:12px;font-size:13px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.bandeau.da{background:var(--danger-doux);color:var(--danger)}.bandeau.al{background:var(--alerte-doux);color:var(--alerte)}.bandeau.in{background:var(--info-doux);color:var(--info)}.bandeau.ok{background:var(--ok-doux);color:var(--ok)}
+.bandeau .sp{flex:1;min-width:200px}
+.sk{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--filet),var(--filet-fort),var(--filet));background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}.mi.gr::before{transition:none}}
+dl.g{display:grid;grid-template-columns:max-content 1fr;gap:7px 22px;font-size:13.5px}
+dl.g dt{font:500 12px var(--mono);color:var(--encre-3)}dl.g dd{margin:0;word-break:break-word}
+.lig{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--filet);font-size:13.5px;flex-wrap:wrap}
+.lig:first-of-type{border-top:0}
+.lig i{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}.lig i.a{background:var(--alerte)}.lig i.d{background:var(--danger)}.lig i.n{background:var(--encre-3)}
+.lig em{font-style:normal;flex:1;min-width:160px}.lig small{font:400 11.5px var(--mono);color:var(--encre-3)}
+.bar{height:10px;background:var(--filet);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}.bar i.a{background:var(--alerte)}.bar i.d{background:var(--danger)}
+.histo{display:flex;align-items:flex-end;gap:10px;height:130px;padding-top:6px}
+.histo div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%;font:500 10.5px var(--mono);color:var(--encre-3);text-align:center}
+.histo div i{display:block;width:100%;max-width:46px;border-radius:6px 6px 0 0;background:var(--accent);min-height:2px}
+.histo div.d i{background:var(--danger)}.histo div.a i{background:var(--alerte)}
+.histo b{font:600 12px var(--mono);color:var(--encre)}
+.chaine{display:grid;gap:0}
+.chaine .n{border:1px solid var(--filet);border-radius:12px;padding:10px 14px;background:var(--verre-fort);margin-left:calc(var(--d)*22px)}
+.chaine .n+.n{margin-top:8px}.chaine .n b{font:600 13px var(--mono)}.chaine .n small{display:block;color:var(--encre-3);font-size:12px}
+.tl{list-style:none;padding:0;margin:0;border-left:2px solid var(--filet);margin-left:6px}
+.tl li{position:relative;padding:0 0 14px 18px;font-size:13.5px}
+.tl li::before{content:"";position:absolute;left:-6px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--sol)}
+.tl li.d::before{background:var(--danger)}.tl li.a::before{background:var(--alerte)}
+.tl small{display:block;font:400 11.5px var(--mono);color:var(--encre-3)}
+.onglets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--filet);padding-bottom:10px}
+.onglets button{padding:6px 12px;border-radius:10px;font-weight:600;font-size:13px;color:var(--encre-2)}
+.onglets button:hover{color:var(--accent)}
+.onglets button[aria-selected=true]{background:var(--verre);color:var(--accent);box-shadow:var(--ombre)}
+.kanban{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.kanban .col{background:color-mix(in srgb,var(--encre-2) 5%,transparent);border-radius:14px;padding:10px;min-height:120px}
+.kanban .col h4{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--encre-3);margin-bottom:8px;display:flex;justify-content:space-between}
+.kanban .fiche{background:var(--verre-fort);border:1px solid var(--filet);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.kanban .fiche b{font:500 12.5px var(--mono);display:block;word-break:break-all}
+.kanban .fiche small{display:block;color:var(--encre-3);font-size:11.5px;margin:2px 0 8px}
+.kanban .fiche .actions{justify-content:flex-start;flex-wrap:wrap}
+.matrice td,.matrice th{text-align:center}.matrice td:first-child,.matrice th:first-child{text-align:left}
+.cartes-ca{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+
+/* ---------- Fenêtres et notifications ---------- */
+#fond{position:fixed;inset:0;background:rgba(16,24,40,.45);display:none;align-items:center;justify-content:center;z-index:80;padding:16px}
+#fond.ouvert{display:flex}
+.fen{background:var(--verre-fort);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--filet);border-radius:16px;box-shadow:var(--ombre),0 24px 60px rgba(16,24,40,.3);width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px 22px}
+.fen h2{font:600 16px var(--mono);margin-bottom:4px}.fen .sous{color:var(--encre-2);font-size:13px;margin-bottom:14px}
+.fen .pied{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.etapes{list-style:none;padding:0;margin:8px 0}
+.etapes li{display:flex;gap:10px;padding:6px 0;font-size:13.5px;align-items:flex-start}
+.etapes li::before{content:"○";color:var(--encre-3);font-family:var(--mono)}
+.etapes li.ok::before{content:"✓";color:var(--ok)}.etapes li.en::before{content:"…";color:var(--accent)}.etapes li.ko::before{content:"✕";color:var(--danger)}
+#toasts{position:fixed;right:16px;bottom:16px;display:grid;gap:8px;z-index:90;max-width:min(380px,calc(100vw - 32px))}
+.toast{background:var(--verre-fort);border:1px solid var(--filet);border-left:4px solid var(--ok);border-radius:12px;box-shadow:var(--ombre);padding:10px 14px;font-size:13px}
+.toast.ko{border-left-color:var(--danger)}.toast.al{border-left-color:var(--alerte)}
+/* Outil de maquette : n'existe pas dans la V19 */
+#outil{position:fixed;left:12px;bottom:12px;z-index:70;font-size:12px}
+#outil summary{cursor:pointer;background:#101828;color:#fff;border-radius:999px;padding:6px 12px;font:500 11.5px var(--mono);list-style:none;width:max-content}
+#outil .bte{margin-top:6px;background:var(--verre-fort);border:1px solid var(--filet);border-radius:14px;box-shadow:var(--ombre);padding:12px;display:grid;gap:8px;width:250px}
+#outil label{font:600 11px var(--mono);color:var(--encre-3);display:grid;gap:3px}
+
+/* ---------- Paliers du cadre (CN_AFFICHAGE §6 bis) ---------- */
+@media (max-width:900px){
+  .corps{grid-template-columns:minmax(0,1fr)}
+  .side{position:absolute;top:0;bottom:0;left:0;background:var(--verre-fort);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--ombre);width:280px;max-width:80%}
+  .side.ferme{width:0}.scene{padding:20px 16px 90px}.grille2{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .app{grid-template-columns:minmax(0,1fr)}.top{min-width:0;padding:0 6px 0 4px}
+  .nav3,.vtxt,.logo{display:none}.groupes{gap:0;justify-content:space-around;padding-left:0;min-width:0}.mi.gr{width:auto;flex:1 1 0;min-width:28px;max-width:44px}.ib{width:32px}.droite{padding-left:0}
+  .scene .in,.carte,.scene{min-width:0}
+  table.cartes,table.cartes tbody{display:block;width:100%}
+  table.cartes td{min-width:0;overflow-wrap:anywhere}
+  .barre-q input[type=search]{min-width:0!important;flex:1 1 100%}
+  .barre-q select{flex:1 1 140px;min-width:0}
+  table.cartes thead{display:none}
+  table.cartes tr{display:block;border:1px solid var(--filet);border-radius:12px;margin-bottom:10px;padding:6px 10px;background:var(--verre)}
+  table.cartes td{display:flex;justify-content:space-between;gap:10px;border:0;padding:5px 0;text-align:right}
+  table.cartes td::before{content:attr(data-l);font:600 10.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--encre-3);text-align:left}
+  table.cartes td.cm{display:none}
+  table.cartes tr.deplie td.cm{display:flex}
+  table.cartes td.act{display:flex;justify-content:flex-end}table.cartes td.act::before{content:none}
+  .histo{gap:4px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <button class="ib" id="burger" title="Replier / déplier le menu de gauche" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="nav3">
+    <button class="ib" title="Précédent" id="prec"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <button class="ib" title="Suivant" id="suiv"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button class="ib" title="Actualiser la scène" id="rafr"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/></svg></button>
+  </div>
+  <div class="logo" title="Logo de la société (Cassandra par défaut)">C</div>
+  <nav class="groupes" id="groupes" aria-label="Groupes de modules"></nav>
+  <div class="droite">
+    <div class="wrap pastille">
+      <button class="ib" data-pop="notifs" title="Notifications" aria-label="Notifications"><svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15zM10 21h4"/></svg></button><i id="nbnotif">3</i>
+      <div class="pop" id="pop-notifs" style="min-width:330px"></div>
+    </div>
+    <button class="ib" id="theme" title="Basculer clair / sombre" aria-label="Thème"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg></button>
+    <span class="vtxt">19.0</span>
+    <div class="wrap">
+      <button class="av" data-pop="params" title="Mon compte" aria-label="Mon compte"><span id="avin">DA</span><svg viewBox="0 0 12 12"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></button>
+      <div class="pop" id="pop-params" style="min-width:290px">
+        <div class="t">Paramètres généraux</div>
+        <button class="l" data-go="Paramètres › Modules">Modules</button>
+        <button class="l" data-go="Paramètres › Utilisateurs et groupes">Utilisateurs et groupes</button>
+        <hr><button class="l" data-go="Mon compte">Mon compte</button><button class="l" data-go="Mon coffre">Mon coffre-fort</button>
+        <hr><button class="l" data-go="Déconnexion">Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="corps">
+  <aside class="side" id="side" aria-label="Menu du module"></aside>
+  <main class="scene" id="scene" tabindex="-1"></main>
+</div>
+</div>
+<div id="fond" role="presentation"><div class="fen" role="dialog" aria-modal="true" aria-labelledby="fen-t" id="fen"></div></div>
+<div id="toasts" aria-live="polite"></div>
+
+<details id="outil">
+  <summary>Outil de maquette (hors V19)</summary>
+  <div class="bte">
+    <label>Rôle simulé<select id="o-role"><option value="admin">Administrateur (tous les droits)</option><option value="validateur">Validateur</option><option value="operateur">Opérateur</option><option value="lecteur">Lecteur (utiliser seulement)</option></select></label>
+    <label>État de l’écran<select id="o-etat"><option value="normal">Normal</option><option value="chargement">Chargement</option><option value="vide">Vide (aucun certificat)</option><option value="erreur">Erreur : panneau injoignable</option><option value="quota">Quota Let’s Encrypt épuisé</option></select></label>
+    <span style="color:var(--encre-3)">Sert à montrer les états et les permissions ; ce panneau ne fait pas partie de la V19.</span>
+  </div>
+</details>
+
+<script>
+/* ===== Utilitaires ===== */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TODAY=Date.UTC(2026,10,2);
+const jourDans=n=>new Date(TODAY+n*864e5).toISOString().slice(0,10);
+const fr=d=>{const [y,m,j]=d.split('-');return j+'/'+m+'/'+y};
+const NOW='02/11/2026 14:'+String(new Date().getMinutes()).padStart(2,'0');
+const IC={
+ desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
+ ticket:'<path d="M3 9a2 2 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1zM14 5v14" stroke-dasharray="2 2.5"/>',
+ fleet:'<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/>',
+ shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+ health:'<path d="M3 12h4l2-6 4 12 2-6h6"/>',bolt:'<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',
+ home:'<path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>',
+ cal:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+ panorama:'<rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/>',
+ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',scroll:'<path d="M7 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7M7 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2M9 9h7M9 13h7"/>',
+ cert:'<rect x="4" y="4" width="16" height="12" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M9 20l3-3 3 3v-4h-6z"/>',
+ evo:'<path d="M12 21V9M12 9c0-3 2-5 6-5 0 4-2 6-6 6M12 13c0-2-1.5-4-5-4 0 3 1.5 5 5 5"/>',
+ brain:'<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 3 3 3 0 0 0 1 5 3 3 0 0 0 4 4V4zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 3 3 3 0 0 1-1 5 3 3 0 0 1-4 4V4z"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',refresh:'<path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/>',dl:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',ul:'<path d="M12 16V5M7 9l5-5 5 5M5 20h14"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',archive:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>',ext:'<path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5"/>'
+};
+const ico=k=>`<svg viewBox="0 0 24 24">${IC[k]||IC.plus}</svg>`;
+
+/* ===== Navigation V19 (CN_AFFICHAGE §4, validé 18-10) ===== */
+const GROUPES=[
+ {id:'desk',nom:'Desk',ic:'desk',e:[{id:'accueil',nom:'Accueil',ic:'home',s:['Aujourd’hui','Suivre','Courrier','Répertoire','Documents']},{id:'agenda',nom:'Agenda',ic:'cal'}]},
+ {id:'metier',nom:'Métier',ic:'ticket',e:[{id:'billetterie',nom:'Billetterie',ic:'ticket'}]},
+ {id:'parc',nom:'Parc',ic:'fleet',e:[{id:'panorama',nom:'Panorama',ic:'panorama'},{id:'flotte',nom:'Flotte',ic:'fleet'},{id:'sites',nom:'Sites',ic:'globe',s:['Mes sites','Hébergement','DNS']},{id:'planifie',nom:'Automatismes',ic:'clock'}]},
+ {id:'secu',nom:'Sécurité',ic:'shield',e:[{id:'securite',nom:'Sécurité',ic:'shield',s:['Verdict','Pare-feu','Accès','Outils']},{id:'certificats',nom:'Certificats',ic:'cert',s:['Vue d’ensemble','Certificats','Demandes','Autorités','Modèles','Clés','Rapports','Réglages'],prop:true},{id:'sauvegardes',nom:'Sauvegardes',ic:'archive'},{id:'urgence',nom:'Urgence',ic:'bolt'}]},
+ {id:'obs',nom:'Observatoire',ic:'health',e:[{id:'sensorium',nom:'Sensorium',ic:'health'},{id:'historique',nom:'Historique',ic:'clock'},{id:'journaux',nom:'Journaux',ic:'scroll'}]},
+ {id:'auto',nom:'Autonomie',ic:'bolt',e:[{id:'evolution',nom:'Évolution',ic:'evo'},{id:'proactivite',nom:'Proactivité',ic:'bolt'},{id:'memoire',nom:'Mémoire',ic:'brain'}]}
+];
+
+/* ===== Droits (les deux premiers existent dans le manifeste ; les autres sont PROPOSÉS) ===== */
+const DROITS={utiliser:'Consulter',demander:'Demander un certificat',valider:'Valider une demande',renouveler:'Renouveler / émettre',revoquer:'Révoquer',importer:'Importer un certificat',voir_cles:'Voir les métadonnées des clés',administrer:'Administrer (réglages, autorités, modèles)'};
+const ROLES={admin:{nom:'Administrateur',in:'DA',d:Object.keys(DROITS)},validateur:{nom:'Validateur',in:'VA',d:['utiliser','demander','valider']},operateur:{nom:'Opérateur',in:'OP',d:['utiliser','demander','renouveler']},lecteur:{nom:'Lecteur',in:'LE',d:['utiliser']}};
+const S={role:'admin',etat:'normal',g:'secu',e:'certificats',sub:'Vue d’ensemble',sel:null,tab:'Résumé',vue:'liste',tri:{k:'jours',d:1},page:1,sels:new Set(),f:{q:'',etat:'',source:'',aut:'',auto:''},seuil:21,delai:5,hist:[],fut:[],regl:'Seuils et sonde',archives:false};
+const can=d=>ROLES[S.role].d.includes(d);
+const refus=d=>`title="Droit requis : certificats.${d}"`;
+
+/* ===== Données d'exemple (domaines fictifs) ===== */
+const SRC={fastpanel:'FastPanel',importe:'Importé',interne:'Autorité interne',sonde:'Sondé seulement'};
+const SRCNOTE={fastpanel:'Émis et renouvelé par le panneau (Let’s Encrypt).',importe:'Fourni par une autorité externe ; Cassandra ne détient pas la clé.',interne:'Phase 2 : émis par l’autorité interne de Cassandra.',sonde:'Certificat vu sur le port 443, géré ailleurs : lecture seule.'};
+const LE='Let’s Encrypt (R11)';
+const CERTS=[
+ {id:1,h:'shop.exemple.fr',san:['shop.exemple.fr','www.shop.exemple.fr'],src:'fastpanel',aut:LE,j:6,dur:90,algo:'ECDSA P-256',auto:false,site:'shop.exemple.fr',fp:412,emp:'3F:A1:9C:07:…:D2:5B'},
+ {id:2,h:'www.exemple.fr',san:['exemple.fr','www.exemple.fr'],src:'fastpanel',aut:LE,j:58,dur:90,algo:'ECDSA P-256',auto:true,site:'exemple.fr',fp:398,emp:'91:0E:44:B8:…:7A:11'},
+ {id:3,h:'mail.exemple.fr',san:['mail.exemple.fr','imap.exemple.fr','smtp.exemple.fr'],src:'importe',aut:'Autorité importée (Gandi)',j:140,dur:365,algo:'RSA 2048',auto:false,site:'',emp:'C4:77:20:3D:…:AE:09'},
+ {id:4,h:'api.exemple.fr',san:['api.exemple.fr'],src:'fastpanel',aut:LE,j:12,dur:90,algo:'ECDSA P-256',auto:false,site:'api.exemple.fr',fp:405,emp:'5E:B2:6A:F0:…:18:C3'},
+ {id:5,h:'coffre.exemple.fr',san:['coffre.exemple.fr'],src:'sonde',aut:LE,j:33,dur:90,algo:'ECDSA P-256',auto:true,site:'',emp:'0A:DD:91:42:…:EE:67'},
+ {id:6,h:'legacy.exemple.fr',san:['legacy.exemple.fr'],src:'fastpanel',aut:LE,j:-4,dur:90,algo:'RSA 2048',auto:false,site:'legacy.exemple.fr',fp:377,emp:'B7:33:08:1C:…:42:F5'},
+ {id:7,h:'billets.exemple.org',san:['billets.exemple.org'],src:'fastpanel',aut:LE,j:71,dur:90,algo:'ECDSA P-256',auto:true,site:'billets.exemple.org',fp:420,emp:'6D:90:E1:27:…:BC:30'},
+ {id:8,h:'*.interne.exemple.test',san:['*.interne.exemple.test'],src:'interne',aut:'Autorité interne Cassandra',j:300,dur:365,algo:'ECDSA P-384',auto:true,site:'',emp:'F2:18:5A:CC:…:03:9D'},
+ {id:9,h:'wiki.exemple.fr',san:['wiki.exemple.fr'],src:'fastpanel',aut:LE,j:null,dur:90,algo:'—',auto:false,site:'wiki.exemple.fr',fp:391,err:'délai dépassé (5 s) : le port 443 ne répond pas',emp:'—'},
+ {id:10,h:'ancien.exemple.fr',san:['ancien.exemple.fr'],src:'fastpanel',aut:LE,j:20,dur:90,algo:'RSA 2048',auto:false,site:'',force:'revoque',emp:'1B:4F:D9:60:…:A7:E2'},
+ {id:11,h:'dolibarr.exemple.fr',san:['dolibarr.exemple.fr'],src:'sonde',aut:LE,j:19,dur:90,algo:'ECDSA P-256',auto:false,site:'',emp:'88:C1:3E:5D:…:F4:10'},
+ {id:12,h:'recherche.exemple.fr',san:['recherche.exemple.fr'],src:'fastpanel',aut:LE,j:44,dur:90,algo:'ECDSA P-256',auto:true,site:'recherche.exemple.fr',fp:430,emp:'D3:0B:77:A9:…:51:8E'},
+ {id:13,h:'sso.exemple.fr',san:['sso.exemple.fr'],src:'sonde',aut:LE,j:62,dur:90,algo:'ECDSA P-256',auto:true,site:'',emp:'47:E6:C8:12:…:9A:BD'},
+ {id:14,h:'boutique.exemple.com',san:['boutique.exemple.com','www.boutique.exemple.com'],src:'importe',aut:'Autorité importée (Gandi)',j:9,dur:365,algo:'RSA 2048',auto:false,site:'',emp:'A0:5C:F3:98:…:66:21'},
+ {id:15,h:'test.exemple.fr',san:['test.exemple.fr'],src:'fastpanel',aut:LE,j:-30,dur:90,algo:'RSA 2048',auto:false,site:'',force:'archive',emp:'9E:21:B4:03:…:D8:7C'}
+];
+CERTS.forEach(c=>{c.hist=[{t:'Suivi par la sonde (relève horaire)',d:'créé',a:'cert.sonde'}]; if(c.j!=null&&c.src!=='sonde')c.hist.unshift({t:'Certificat émis par '+c.aut,d:fr(jourDans(c.j-c.dur)),a:c.src==='fastpanel'?'fastpanel':'import'});});
+const AUDIT=[
+ {t:'02/11/2026 13:02',a:'certificat.proche_expiration',o:'shop.exemple.fr',w:'cert.sonde',r:'ok',n:'6 jours restants'},
+ {t:'02/11/2026 12:41',a:'relire_expiration',o:'api.exemple.fr',w:'Drisse Atek',r:'ok',n:'lecture à la demande'},
+ {t:'02/11/2026 11:00',a:'certificat.proche_expiration',o:'boutique.exemple.com',w:'cert.sonde',r:'ok',n:'9 jours restants'},
+ {t:'01/11/2026 09:14',a:'ssl_renouveler',o:'recherche.exemple.fr',w:'Proactivité (maîtrise)',r:'ok',n:'preuve : date d’émission changée'},
+ {t:'31/10/2026 16:20',a:'ssl_renouveler',o:'legacy.exemple.fr',w:'Drisse Atek',r:'echec',n:'le panneau a accepté, date d’émission inchangée après 60 s'},
+ {t:'30/10/2026 10:05',a:'revocation',o:'ancien.exemple.fr',w:'Drisse Atek',r:'ok',n:'raison : cessation d’activité'},
+ {t:'29/10/2026 08:30',a:'demande.validee',o:'pay.exemple.fr',w:'Valérie Roux',r:'ok',n:'modèle Site public'},
+ {t:'28/10/2026 17:48',a:'permission.refusee',o:'ssl_renouveler',w:'Léo Martin (lecteur)',r:'refus',n:'droit certificats.renouveler absent'}
+];
+const DEMANDES=[
+ {id:'D-0412',h:'pay.exemple.fr',san:'',mod:'Site public',aut:LE,par:'Léo Martin',etat:'a_valider',le:'02/11/2026',note:'Nouveau service de paiement'},
+ {id:'D-0411',h:'*.exemple.fr',san:'',mod:'Wildcard (DNS-01)',aut:LE,par:'Sandrine Lopez',etat:'a_valider',le:'01/11/2026',note:'Sous-domaines clients',wild:true},
+ {id:'D-0410',h:'crm.exemple.fr',san:'',mod:'Site public',aut:LE,par:'Léo Martin',etat:'validee',le:'31/10/2026',note:''},
+ {id:'D-0409',h:'status.exemple.fr',san:'',mod:'Site public',aut:LE,par:'Valérie Roux',etat:'emise',le:'28/10/2026',note:''},
+ {id:'D-0408',h:'vpn.interne.exemple.test',san:'',mod:'Interne',aut:'Autorité interne Cassandra',par:'Drisse Atek',etat:'brouillon',le:'27/10/2026',note:''},
+ {id:'D-0407',h:'promo.exemple.fr',san:'',mod:'Site public',aut:LE,par:'Léo Martin',etat:'refusee',le:'20/10/2026',note:'Domaine non géré par le panneau',motif:'Le domaine n’est pas rattaché à un site FastPanel.'}
+];
+const DEM_ETATS={brouillon:['Brouillon',''],a_valider:['À valider','al'],validee:['Validée','in'],emise:['Émise','ok'],refusee:['Refusée','da'],echec:['Échec d’émission','da']};
+const CAS=[
+ {id:'le',nom:'Let’s Encrypt',via:'FastPanel (PUT /api/certificates/{id}/renew/external)',etat:'Actif',cl:'ok',desc:'Autorité publique gratuite, certificats de 90 jours. Quota : 5 émissions abouties par semaine et par domaine enregistré. Émission et renouvellement par le panneau.',cap:['Émettre','Renouveler','Sonder'],rev:'Révocation non prouvée via le panneau (H3).'},
+ {id:'imp',nom:'Autorité importée (Gandi)',via:'Saisie manuelle (PEM public)',etat:'Actif',cl:'ok',desc:'Certificats payants achetés ailleurs. Cassandra suit l’échéance et rappelle ; le renouvellement se fait chez l’autorité.',cap:['Importer','Sonder','Rappeler'],rev:'Révocation chez l’autorité (lien).'},
+ {id:'int',nom:'Autorité interne Cassandra',via:'Module à créer (phase 2)',etat:'Non retenue',cl:'',desc:'Autorité privée pour les services internes (*.interne). Clé racine hors ligne, intermédiaire dans le coffre. Non retenue (décision Q1) : hors périmètre, rouverte seulement sur demande.',cap:['Émettre','Révoquer (CRL)'],rev:'CRL / OCSP à définir.'}
+];
+const MODELES=[
+ {n:'Site public',v:'90 j',a:'ECDSA P-256',san:'jusqu’à 5',auto:'oui, à 30 j',appr:'non (hôte déjà suivi)',aut:'Let’s Encrypt'},
+ {n:'Wildcard (DNS-01)',v:'90 j',a:'ECDSA P-256',san:'1 + racine',auto:'oui, à 30 j',appr:'oui',aut:'Let’s Encrypt'},
+ {n:'Courrier (SAN mail/imap/smtp)',v:'365 j',a:'RSA 2048',san:'jusqu’à 5',auto:'non (rappel)',appr:'oui',aut:'Importée'},
+ {n:'Interne',v:'365 j',a:'ECDSA P-384',san:'jusqu’à 20',auto:'oui, à 60 j',appr:'oui',aut:'Interne'}
+];
+const QUOTAS={'exemple.fr':3,'exemple.org':0,'exemple.com':1};
+const regDom=h=>{const p=h.replace(/^\*\./,'').split('.');return p.slice(-2).join('.')};
+const quotaDe=d=>{const u=S.etat==='quota'&&d==='exemple.fr'?5:(QUOTAS[d]||0);return {d,u,r:Math.max(0,5-u),bloque:u>=5,libre:'07/11/2026 à 09:14'}};
+const etatDe=c=>c.force||(c.j==null?'inconnu':(c.j<=0?'echu':(c.j<=S.seuil?'proche':'valide')));
+const PILL={valide:['Valide','ok'],proche:['À renouveler','al'],echu:['Échu','da'],inconnu:['Inconnu','in'],revoque:['Révoqué','rev'],archive:['Archivé','']};
+const pillE=c=>{const [t,k]=PILL[etatDe(c)];return `<span class="p ${k}">${t}</span>`};
+const log=(a,o,r='ok',n='')=>AUDIT.unshift({t:NOW,a,o,w:ROLES[S.role].nom+' (simulé)',r,n});
+
+/* ===== Fenêtres, notifications ===== */
+let retourFocus=null;
+function modal(html){retourFocus=document.activeElement;$('#fen').innerHTML=html;$('#fond').classList.add('ouvert');const f=$('#fen').querySelector('input,select,textarea,button.pri,button');f&&f.focus()}
+function fermer(){$('#fond').classList.remove('ouvert');retourFocus&&retourFocus.focus&&retourFocus.focus()}
+$('#fond').addEventListener('mousedown',e=>{if(e.target.id==='fond')fermer()});
+addEventListener('keydown',e=>{if(e.key==='Escape'){fermer();fermerPops()}});
+function toast(t,k=''){const d=document.createElement('div');d.className='toast '+k;d.textContent=t;$('#toasts').append(d);setTimeout(()=>d.remove(),5200)}
+function fermerPops(){$$('.pop.ouvert').forEach(p=>p.classList.remove('ouvert'))}
+
+/* ===== Rendu de la coque ===== */
+const grp=()=>GROUPES.find(g=>g.id===S.g);
+const ent=()=>grp().e.find(e=>e.id===S.e);
+const constats=()=>CERTS.filter(c=>['proche','echu'].includes(etatDe(c))).length;
+function rendreHaut(){
+  const pire=CERTS.some(c=>etatDe(c)==='echu')?'':(constats()?'a':null);
+  $('#groupes').innerHTML=GROUPES.map(g=>{const al=g.id==='secu'&&constats()?`<span class="al ${pire==='a'?'a':''}"></span>`:'';return `<button class="mi gr ${g.id===S.g?'on':''}" data-g="${g.id}" data-tip="${g.nom}" aria-label="${g.nom}">${ico(g.ic)}${al}</button>`}).join('');
+  $('#avin').textContent=ROLES[S.role].in;
+  $('#nbnotif').textContent=constats();
+  $('#pop-notifs').innerHTML=`<div class="t">Notifications</div>`+CERTS.filter(c=>['proche','echu'].includes(etatDe(c))).sort((a,b)=>a.j-b.j).slice(0,4).map(c=>`<button class="l" data-cert="${c.id}"><span style="color:${c.j<=7?'var(--danger)':'var(--alerte)'}">●</span>${etatDe(c)==='echu'?'Certificat échu':'Certificat de '+esc(c.h)+' : '+c.j+' j'}<small>${etatDe(c)==='echu'?esc(c.h):'constat'}</small></button>`).join('')+`<hr><button class="l" data-go2="secu|certificats|Vue d’ensemble">Tout voir dans Certificats…</button>`;
+}
+function rendreGauche(){
+  const g=grp();let h=`<h2>${g.nom}</h2>`;
+  for(const en of g.e){
+    const ouvert=en.id===S.e,sub=en.s||[];
+    const nb=en.id==='certificats'&&constats()?`<span class="nb" title="Constats ouverts">${constats()}</span>`:'';
+    h+=`<button class="si ent ${ouvert&&!sub.length?'on':''}" data-e="${en.id}">${ico(en.ic)}<span>${en.nom}</span>${nb}${sub.length?`<svg class="car ${ouvert?'ouv':''}" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>`:''}</button>`;
+    if(ouvert)h+=sub.map(x=>`<button class="si sub ${en.prop?'prop':''} ${x===S.sub?'on':''}" data-s="${esc(x)}"><span class="pt"></span>${x}</button>`).join('');
+  }
+  if(S.e==='certificats')h+=`<div class="note">Sous-entrées proposées (en italique) : à valider. L’entrée, son groupe et son ordre sont ceux du manifeste.</div>`;
+  $('#side').innerHTML=h;
+}
+function fil(extra=[]){const parts=[`<a data-g="${S.g}">${grp().nom}</a>`,`<a data-e="${S.e}">${ent().nom}</a>`];if(S.sub)parts.push(`<a data-s="${esc(S.sub)}">${S.sub}</a>`);return `<div class="fil">${parts.concat(extra).join(' › ')}</div>`}
+function go(g,e,sub,reset=true){if(reset){S.hist.push([S.g,S.e,S.sub,S.sel]);S.fut=[]}S.g=g;S.e=e;S.sub=sub||'';S.sel=null;S.tab='Résumé';S.sels.clear();S.page=1;rendre();$('#scene').scrollTop=0}
+function rendre(){rendreHaut();rendreGauche();rendreScene()}
+function rendreScene(){
+  let h='';
+  if(S.e!=='certificats')h=placeholder();
+  else if(S.sel)h=detail(CERTS.find(c=>c.id===S.sel));
+  else{const m={'Vue d’ensemble':vueEnsemble,'Certificats':vueListe,'Demandes':vueDemandes,'Autorités':vueAutorites,'Modèles':vueModeles,'Clés':vueCles,'Rapports':vueRapports,'Réglages':vueReglages};h=(m[S.sub]||vueEnsemble)()}
+  $('#scene').innerHTML=`<div class="in">${h}</div>`;
+}
+function placeholder(){
+  const lien=S.lien?`<div class="bandeau in"><div class="sp">Vous arrivez depuis <b>Certificats › ${esc(S.lien)}</b>. Cet écran appartient à un autre module et n’est pas dessiné ici.</div><button class="btn sm" data-go2="secu|certificats|Certificats">Retour aux certificats</button></div>`:'';
+  return `${fil()}<h1>${esc(ent().nom)}${S.sub?' · '+esc(S.sub):''}</h1><p class="sous">Hors périmètre de cette maquette : le contenu de ce module n’est pas dessiné.</p>${lien}<div class="silence"><b>Écran d’un autre module</b>Voir la maquette de ce module ; seuls les liens depuis et vers Certificats sont montrés.</div>`;
+}
+
+/* ===== États communs ===== */
+function etatCommun(){
+  if(S.etat==='chargement')return `<div class="carte">${'<div class="sk" style="margin:12px 0;width:'+'90%'+'"></div><div class="sk" style="margin:12px 0;width:70%"></div><div class="sk" style="margin:12px 0;width:80%"></div>'.repeat(3)}</div><p class="sous" style="margin-top:10px" role="status">Lecture des certificats servis (relève horaire)…</p>`;
+  if(S.etat==='erreur')return `<div class="bandeau da"><div class="sp"><b>FastPanel est injoignable.</b> Les certificats du panneau ne peuvent pas être relus ; les valeurs affichées sont celles de la dernière relève (il y a 47 min). Aucun geste sur le panneau n’est possible.</div><button class="btn sm" data-act="reessayer">Réessayer</button><button class="btn sm" data-go2="secu|certificats|Réglages" data-regl="Intégration FastPanel">Voir l’intégration</button></div>`;
+  if(S.etat==='vide')return `<div class="silence"><b>Aucun certificat suivi</b>Les hôtes viennent des sites du panneau et de la liste « hôtes supplémentaires ». Rien n’est suivi pour l’instant.<div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn pri" data-act="nouvelle" ${can('demander')?'':'disabled '+refus('demander')}>Demander un certificat</button><button class="btn" data-go2="secu|certificats|Réglages">Ajouter des hôtes à suivre</button></div></div>`;
+  return '';
+}
+const bloque=()=>S.etat==='chargement'||S.etat==='vide';
+function refusEcran(d,txt){return `${fil()}<h1>${S.sub}</h1><div class="silence"><b>Permission refusée</b>${txt}<br><span class="mono" style="font-size:12px">droit requis : certificats.${d}</span><div style="margin-top:12px"><button class="btn" data-act="demanderacces" data-d="${d}">Demander l’accès à un administrateur</button></div></div>`}
+
+/* ===== Vue d’ensemble ===== */
+function vueEnsemble(){
+  const act=CERTS.filter(c=>!['archive','revoque'].includes(c.force));
+  const n=e=>act.filter(c=>etatDe(c)===e).length;
+  const conf=act.length?Math.round(100*(n('valide'))/act.length):0;
+  const tr=[['Échus',c=>c.j!=null&&c.j<=0,'d'],['0–7 j',c=>c.j>0&&c.j<=7,'d'],['8–21 j',c=>c.j>7&&c.j<=21,'a'],['22–30 j',c=>c.j>21&&c.j<=30,''],['31–60 j',c=>c.j>30&&c.j<=60,''],['61–90 j',c=>c.j>60&&c.j<=90,''],['> 90 j',c=>c.j>90,'']];
+  const hist=tr.map(([l,f,k])=>({l,k,n:act.filter(f).length}));const mx=Math.max(1,...hist.map(x=>x.n));
+  const doms=[...new Set(act.filter(c=>c.src==='fastpanel').map(c=>regDom(c.h)))];
+  const crit=[['Aucun certificat échu',n('echu')===0],['Tous lisibles par la sonde',n('inconnu')===0],['Aucun sous le seuil sans renouvellement auto',act.filter(c=>etatDe(c)==='proche'&&!c.auto).length===0],['Algorithme ≥ RSA 2048 / ECDSA P-256',act.every(c=>c.algo==='—'||!/1024/.test(c.algo))],['Chaîne complète servie',true],['Autorité autorisée par la politique',true]];
+  const aTraiter=act.filter(c=>['echu','proche','inconnu'].includes(etatDe(c))).sort((a,b)=>(a.j??-999)-(b.j??-999));
+  return `${fil()}<h1>Certificats · Vue d’ensemble</h1><p class="sous">Ce que voient les visiteurs, ce qui expire, et combien d’émissions il reste. Le certificat servi sur le port 443 fait foi.</p>
+  ${etatCommun()||`<div class="tuiles">
+   <button class="tuile" data-go2="secu|certificats|Certificats"><span>Suivis</span><b>${act.length}</b><small>hors archivés et révoqués</small></button>
+   <button class="tuile ok" data-filtre="valide"><span>Valides</span><b>${n('valide')}</b><small>au-delà de ${S.seuil} jours</small></button>
+   <button class="tuile al" data-filtre="proche"><span>À renouveler</span><b>${n('proche')}</b><small>sous le seuil de ${S.seuil} j</small></button>
+   <button class="tuile da" data-filtre="echu"><span>Échus</span><b>${n('echu')}</b><small>action immédiate</small></button>
+   <button class="tuile" data-filtre="inconnu"><span>Inconnus</span><b>${n('inconnu')}</b><small>sonde sans réponse</small></button></div>
+  <div class="grille2">
+   <div class="carte"><h3>Échéancier</h3><div class="histo">${hist.map(x=>`<div class="${x.k}"><b>${x.n}</b><i style="height:${Math.round(x.n/mx*80)+2}px"></i>${x.l}</div>`).join('')}</div></div>
+   <div class="carte"><h3>Conformité · ${conf} %</h3><div class="bar" style="margin-bottom:10px"><i class="${conf<60?'d':conf<85?'a':''}" style="width:${conf}%"></i></div>${crit.map(([l,ok])=>`<div class="lig"><i class="${ok?'':'d'}"></i><em>${l}</em><small>${ok?'conforme':'non conforme'}</small></div>`).join('')}</div>
+  </div>
+  <div class="grille2">
+   <div class="carte"><h3>À traiter (${aTraiter.length})</h3>${aTraiter.length?aTraiter.map(c=>`<div class="lig"><i class="${etatDe(c)==='echu'||c.j<=7?'d':etatDe(c)==='inconnu'?'n':'a'}"></i><em><a data-cert="${c.id}" class="mono" style="cursor:pointer">${esc(c.h)}</a><br><small>${etatDe(c)==='inconnu'?esc(c.err||'non lisible'):(c.j<=0?'échu depuis '+(-c.j)+' j':c.j+' j restants')} · ${SRC[c.src]}${c.auto?' · renouvellement auto':''}</small></em>${c.src==='fastpanel'?`<button class="btn sm" data-ren="${c.id}" ${can('renouveler')?'':'disabled '+refus('renouveler')}>Renouveler</button>`:`<button class="btn sm" data-cert="${c.id}">Ouvrir</button>`}</div>`).join(''):'<div class="silence"><b>Rien à traiter</b>Tous les certificats sont au-dessus du seuil.</div>'}</div>
+   <div class="carte"><h3>Quota Let’s Encrypt (7 jours glissants)</h3>${doms.map(d=>{const q=quotaDe(d);return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px"><span class="mono">${d}</span><span>${q.u} / 5 ${q.bloque?'<span class="p da">bloqué</span>':''}</span></div><div class="bar"><i class="${q.bloque?'d':q.u>=3?'a':''}" style="width:${q.u*20}%"></i></div>${q.bloque?`<small style="color:var(--danger)">Libre le ${q.libre}. Ce n’est pas contournable ; le certificat en place reste valide.</small>`:''}</div>`}).join('')}
+    <h3 style="margin-top:16px">Synchronisation FastPanel</h3>
+    <div class="lig"><i></i><em>Dernière relève</em><small>il y a 4 min</small></div><div class="lig"><i></i><em>Certificats du panneau</em><small>9</small></div><div class="lig"><i class="a"></i><em>Écarts à examiner</em><small>2</small></div>
+    <button class="btn sm" style="margin-top:8px" data-go2="secu|certificats|Réglages" data-regl="Intégration FastPanel">Détail de l’intégration</button></div>
+  </div>`}`;
+}
+
+/* ===== Liste des certificats ===== */
+function filtrer(){
+  const f=S.f;let l=CERTS.filter(c=>S.archives?['archive','revoque'].includes(c.force):!['archive'].includes(c.force));
+  if(f.q)l=l.filter(c=>(c.h+' '+c.san.join(' ')+' '+c.aut).toLowerCase().includes(f.q.toLowerCase()));
+  if(f.etat)l=l.filter(c=>etatDe(c)===f.etat);if(f.source)l=l.filter(c=>c.src===f.source);if(f.aut)l=l.filter(c=>c.aut===f.aut);if(f.auto)l=l.filter(c=>String(c.auto)===f.auto);
+  const k=S.tri.k,d=S.tri.d;
+  return l.sort((a,b)=>{const va=k==='h'?a.h:k==='src'?a.src:k==='aut'?a.aut:(a.j==null?-9999:a.j),vb=k==='h'?b.h:k==='src'?b.src:k==='aut'?b.aut:(b.j==null?-9999:b.j);return (va>vb?1:va<vb?-1:0)*d});
+}
+const PAR=10;
+function vueListe(){
+  const bc=etatCommun();
+  const tout=filtrer(),pages=Math.max(1,Math.ceil(tout.length/PAR));S.page=Math.min(S.page,pages);const l=tout.slice((S.page-1)*PAR,S.page*PAR);
+  const auts=[...new Set(CERTS.map(c=>c.aut))];
+  const th=(k,t)=>`<th class="tri" data-tri="${k}" aria-sort="${S.tri.k===k?(S.tri.d>0?'ascending':'descending'):'none'}">${t}${S.tri.k===k?(S.tri.d>0?' ▲':' ▼'):''}</th>`;
+  const lot=S.sels.size?`<div class="lot"><span>${S.sels.size} sélectionné(s)</span><button class="btn sm" data-lot="relire">Relire maintenant</button><button class="btn sm" data-lot="renouveler" ${can('renouveler')?'':'disabled '+refus('renouveler')}>Renouveler</button><button class="btn sm" data-lot="exporter">Exporter la sélection</button><button class="btn sm" data-lot="archiver" ${can('administrer')?'':'disabled '+refus('administrer')}>Archiver</button><button class="btn sm" data-lot="vider">Désélectionner</button></div>`:'';
+  return `${fil()}<h1>Certificats</h1><p class="sous">Tous les certificats suivis, quelle que soit leur origine. Ce qu’on peut faire dépend de la source : un certificat « sondé seulement » ne se renouvelle pas d’ici.</p>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><button class="btn pri" data-act="nouvelle" ${can('demander')?'':'disabled '+refus('demander')}>${ico('plus')}Demander un certificat</button><button class="btn" data-act="importer" ${can('importer')?'':'disabled '+refus('importer')}>${ico('ul')}Importer</button><button class="btn" data-act="exporter">${ico('dl')}Exporter (CSV)</button><button class="btn" data-act="relireTout">${ico('refresh')}Tout relire</button></div>
+  ${S.etat==='erreur'?bc:''}
+  ${bloque()?bc:`
+  <div class="carte"><div class="barre-q"><input type="search" id="q" placeholder="Rechercher un hôte, un SAN, une autorité" value="${esc(S.f.q)}" aria-label="Rechercher" style="flex:1;min-width:200px">
+   <select data-f="etat" aria-label="État"><option value="">Tous les états</option>${Object.entries(PILL).filter(([k])=>k!=='archive').map(([k,v])=>`<option value="${k}" ${S.f.etat===k?'selected':''}>${v[0]}</option>`).join('')}</select>
+   <select data-f="source" aria-label="Source"><option value="">Toutes les sources</option>${Object.entries(SRC).map(([k,v])=>`<option value="${k}" ${S.f.source===k?'selected':''}>${v}</option>`).join('')}</select>
+   <select data-f="aut" aria-label="Autorité"><option value="">Toutes les autorités</option>${auts.map(a=>`<option ${S.f.aut===a?'selected':''}>${esc(a)}</option>`).join('')}</select>
+   <select data-f="auto" aria-label="Renouvellement automatique"><option value="">Renouvellement : tous</option><option value="true" ${S.f.auto==='true'?'selected':''}>Automatique</option><option value="false" ${S.f.auto==='false'?'selected':''}>Manuel</option></select>
+   <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="arch" ${S.archives?'checked':''}> Archivés et révoqués</label>
+   ${S.f.q||S.f.etat||S.f.source||S.f.aut||S.f.auto?'<button class="btn sm" data-act="raz">Effacer les filtres</button>':''}</div>
+  ${lot}
+  ${l.length?`<div style="overflow-x:auto"><table class="cartes"><thead><tr><th style="width:30px"><input type="checkbox" id="all" aria-label="Tout sélectionner" ${l.every(c=>S.sels.has(c.id))?'checked':''}></th>${th('h','Hôte')}<th>État</th>${th('jours','Jours')}<th>Échéance</th>${th('src','Source')}${th('aut','Autorité')}<th>Auto</th><th></th></tr></thead><tbody>
+   ${l.map(c=>`<tr class="${S.sels.has(c.id)?'sel':''}"><td data-l="Sélection"><input type="checkbox" data-sel="${c.id}" aria-label="Sélectionner ${esc(c.h)}" ${S.sels.has(c.id)?'checked':''}></td><td class="h" data-l="Hôte"><a data-cert="${c.id}" tabindex="0">${esc(c.h)}</a>${c.san.length>1?`<br><small style="color:var(--encre-3);font-family:var(--sans)">+${c.san.length-1} nom(s)</small>`:''}</td><td data-l="État">${pillE(c)}</td><td class="num" data-l="Jours">${c.j==null?'—':c.j}</td><td class="cm" data-l="Échéance">${c.j==null?'—':fr(jourDans(c.j))}</td><td class="cm" data-l="Source">${SRC[c.src]}</td><td class="cm" data-l="Autorité">${esc(c.aut)}</td><td class="cm" data-l="Auto">${c.auto?'<span class="p ok">auto</span>':'<span class="p">manuel</span>'}</td><td class="act"><div class="actions"><button class="btn sm" data-relire="${c.id}">Relire</button><button class="btn sm" data-ren="${c.id}" ${can('renouveler')&&c.src==='fastpanel'&&!c.force?'':'disabled'} title="${c.src!=='fastpanel'?'Se renouvelle hors de Cassandra ('+SRC[c.src]+')':can('renouveler')?'':'Droit requis : certificats.renouveler'}">Renouveler</button><button class="btn sm" data-plus="1" aria-label="Déplier" style="display:none">⋯</button></div></td></tr>`).join('')}
+   </tbody></table></div>
+  <div class="pied-tab"><span>${tout.length} certificat(s) · ${(S.page-1)*PAR+1}–${Math.min(tout.length,S.page*PAR)}</span><div class="pag"><button data-p="${S.page-1}" ${S.page<=1?'disabled':''} aria-label="Page précédente">‹</button>${Array.from({length:pages},(_,i)=>`<button data-p="${i+1}" class="${i+1===S.page?'on':''}">${i+1}</button>`).join('')}<button data-p="${S.page+1}" ${S.page>=pages?'disabled':''} aria-label="Page suivante">›</button></div></div>`
+  :`<div class="silence"><b>Aucun résultat</b>Aucun certificat ne correspond à ces filtres.<div style="margin-top:10px"><button class="btn" data-act="raz">Effacer les filtres</button></div></div>`}</div>`}`;
+}
+
+/* ===== Détail ===== */
+const ONGLETS=['Résumé','Chaîne','Historique','Liens','Clé','Audit'];
+function detail(c){
+  const e=etatDe(c),mod=!c.force&&c.src!=='sonde';
+  const tab={Résumé:()=>`<div class="carte"><dl class="g"><dt>Hôte</dt><dd class="mono">${esc(c.h)}</dd><dt>Noms (SAN)</dt><dd class="mono">${c.san.map(esc).join('<br>')}</dd><dt>État</dt><dd>${pillE(c)} ${e==='inconnu'?'<br><small style="color:var(--danger)">'+esc(c.err)+'. « Inconnu » n’est pas « sans certificat » : on n’a simplement pas pu le lire.</small>':''}</dd><dt>Jours restants</dt><dd>${c.j==null?'—':c.j<=0?'échu depuis '+(-c.j)+' j':c.j}</dd><dt>Échéance</dt><dd>${c.j==null?'—':fr(jourDans(c.j))}</dd><dt>Émis le</dt><dd>${c.j==null?'—':fr(jourDans(c.j-c.dur))} (durée ${c.dur} j)</dd><dt>Autorité</dt><dd>${esc(c.aut)}</dd><dt>Source</dt><dd>${SRC[c.src]}<br><small style="color:var(--encre-3)">${SRCNOTE[c.src]}</small></dd><dt>Algorithme</dt><dd>${c.algo}</dd><dt>Empreinte SHA-256</dt><dd class="mono">${c.emp}</dd><dt>Renouvellement</dt><dd>${c.auto?'automatique (règle Proactivité « Renouveler un certificat », palier proposer)':'manuel'}</dd><dt>Quota ${regDom(c.h)}</dt><dd>${quotaDe(regDom(c.h)).u} / 5 cette semaine</dd></dl></div>`,
+   Chaîne:()=>c.j==null?`<div class="silence"><b>Chaîne illisible</b>La sonde n’a pas pu lire le certificat servi.</div>`:`<div class="carte"><div class="chaine"><div class="n" style="--d:0"><b>${esc(c.h)}</b><small>feuille · ${c.algo} · échéance ${fr(jourDans(c.j))}</small></div><div class="n" style="--d:1"><b>${c.src==='interne'?'Intermédiaire interne':'Let’s Encrypt R11'}</b><small>intermédiaire · ${c.src==='importe'?'complète':'complète'}</small></div><div class="n" style="--d:2"><b>${c.src==='interne'?'Racine interne Cassandra':'ISRG Root X1'}</b><small>racine · ${c.src==='interne'?'à distribuer aux clients internes':'dans les magasins de confiance'}</small></div></div></div>`,
+   Historique:()=>`<div class="carte"><ul class="tl">${c.hist.map(h=>`<li class="${/échec|révoqu/i.test(h.t)?'d':''}">${esc(h.t)}<small>${esc(h.d)} · ${esc(h.a)}</small></li>`).join('')}</ul></div>`,
+   Liens:()=>`<div class="carte"><h3>Ce que ce certificat touche</h3>${[['Site '+(c.site||'(aucun site rattaché)'),'parc|sites|Mes sites','Parc › Sites › Mes sites',!!c.site],['Hébergement FastPanel','parc|sites|Hébergement','Parc › Sites › Hébergement',c.src==='fastpanel'],['Enregistrement DNS (validation, CAA)','parc|sites|DNS','Parc › Sites › DNS',true],['Échéance dans l’agenda','desk|agenda|','Desk › Agenda',true],['Constat Proactivité','auto|proactivite|','Autonomie › Proactivité',etatDe(c)==='proche'||etatDe(c)==='echu'],['Mesure Sensorium (ssl.'+c.h+')','obs|sensorium|','Observatoire › Sensorium',true],['Journal letsencrypt','obs|journaux|','Observatoire › Journaux',c.src==='fastpanel']].map(([t,r,l,ok])=>`<div class="lig"><i class="${ok?'':'n'}"></i><em>${esc(t)}<br><small>${l}</small></em><button class="btn sm" ${ok?`data-lien="${r}" data-depuis="${esc(c.h)}"`:'disabled'}>${ico('ext')}Ouvrir</button></div>`).join('')}</div>`,
+   Clé:()=>can('voir_cles')?`<div class="carte"><div class="bandeau in"><div class="sp">Cassandra n’affiche, n’exporte et ne stocke jamais de clé privée. Seules ses métadonnées sont visibles.</div></div><dl class="g"><dt>Algorithme</dt><dd>${c.algo}</dd><dt>Emplacement</dt><dd>${c.src==='fastpanel'?'sur le serveur, géré par le panneau':c.src==='importe'?'chez le propriétaire de l’hôte (non connu)':c.src==='interne'?'coffre (Vaultwarden), intermédiaire':'inconnu (certificat sondé)'}</dd><dt>Dernière rotation</dt><dd>${c.j==null?'—':fr(jourDans(c.j-c.dur))}</dd><dt>Réutilisation de la clé au renouvellement</dt><dd>${c.src==='fastpanel'?'non (nouvelle clé à chaque émission) — hypothèse H4':'—'}</dd></dl></div>`:refusEcran('voir_cles','Les métadonnées des clés sont réservées aux administrateurs.').replace(/<h1>.*?<\/h1>/,''),
+   Audit:()=>`<div class="carte">${AUDIT.filter(a=>a.o===c.h).map(a=>`<div class="lig"><i class="${a.r==='ok'?'':a.r==='echec'?'d':'a'}"></i><em>${a.a}<br><small>${a.w} · ${a.n}</small></em><small>${a.t}</small></div>`).join('')||'<div class="silence"><b>Aucun événement</b>Rien n’est encore inscrit au journal pour cet hôte.</div>'}</div>`}[S.tab]();
+  return `<div class="fil"><a data-g="secu">Sécurité</a> › <a data-e="certificats">Certificats</a> › <a data-s="Certificats">Certificats</a> › ${esc(c.h)}</div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><button class="btn sm" data-act="retour">‹ Liste</button><h1 style="margin:0" class="mono">${esc(c.h)}</h1>${pillE(c)}</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px"><button class="btn" data-relire="${c.id}">${ico('refresh')}Relire maintenant</button><button class="btn pri" data-ren="${c.id}" ${can('renouveler')&&c.src==='fastpanel'&&!c.force?'':'disabled'} title="${c.src!=='fastpanel'?'Se renouvelle hors de Cassandra':can('renouveler')?'':'Droit requis : certificats.renouveler'}">Renouveler</button><button class="btn" data-act="exp1" data-id="${c.id}">${ico('dl')}Exporter la fiche</button>
+   ${c.force==='archive'?`<button class="btn" data-act="desarch" data-id="${c.id}" ${can('administrer')?'':'disabled'}>Désarchiver</button>`:`<button class="btn" data-act="arch" data-id="${c.id}" ${can('administrer')&&!c.force?'':'disabled'}>${ico('archive')}Archiver</button>`}
+   <button class="btn dng" data-rev="${c.id}" ${can('revoquer')&&mod?'':'disabled'} title="${!mod?'Non révocable d’ici':can('revoquer')?'':'Droit requis : certificats.revoquer'}">Révoquer…</button></div>
+  ${c.src==='sonde'?'<div class="bandeau in"><div class="sp">Ce certificat est seulement observé. Pour le renouveler, ouvrez l’outil qui le gère.</div></div>':''}
+  <div class="onglets" role="tablist">${ONGLETS.map(t=>`<button role="tab" aria-selected="${t===S.tab}" data-tab="${t}">${t}</button>`).join('')}</div>${tab}`;
+}
+
+/* ===== Demandes (cycle : brouillon → à valider → validée → émise ; refusée ; échec) ===== */
+function vueDemandes(){
+  const cols=[['brouillon','Brouillon'],['a_valider','À valider'],['validee','Validée'],['emise','Émise'],['refusee','Refusée']];
+  return `${fil()}<h1>Demandes</h1><p class="sous">Le parcours d’un nouveau certificat : demande, validation, émission. Une demande sur un hôte déjà suivi par le panneau peut être validée d’office par le modèle.</p>
+  <div style="margin-bottom:12px"><button class="btn pri" data-act="nouvelle" ${can('demander')?'':'disabled '+refus('demander')}>${ico('plus')}Nouvelle demande</button></div>
+  ${etatCommun()&&S.etat!=='vide'?etatCommun():''}
+  ${S.etat==='chargement'?'':`<div class="kanban">${cols.map(([k,t])=>{const l=DEMANDES.filter(d=>d.etat===k);return `<div class="col"><h4>${t}<span>${l.length}</span></h4>${l.map(d=>`<div class="fiche"><b>${esc(d.h)}</b><small>${d.id} · ${esc(d.mod)} · ${esc(d.par)} · ${d.le}${d.motif?'<br>Motif : '+esc(d.motif):''}</small><div class="actions">${k==='a_valider'?`<button class="btn sm pri" data-dem="valider" data-id="${d.id}" ${can('valider')?'':'disabled '+refus('valider')}>Valider</button><button class="btn sm dng" data-dem="refuser" data-id="${d.id}" ${can('valider')?'':'disabled '+refus('valider')}>Refuser</button>`:''}${k==='validee'?`<button class="btn sm pri" data-dem="emettre" data-id="${d.id}" ${can('renouveler')?'':'disabled '+refus('renouveler')}>Émettre</button>`:''}${k==='brouillon'?`<button class="btn sm" data-dem="soumettre" data-id="${d.id}" ${can('demander')?'':'disabled'}>Soumettre</button>`:''}${k==='refusee'?`<button class="btn sm" data-dem="rouvrir" data-id="${d.id}" ${can('demander')?'':'disabled'}>Rouvrir en brouillon</button>`:''}</div></div>`).join('')||'<small style="color:var(--encre-3)">Aucune demande.</small>'}</div>`}).join('')}</div>`}`;
+}
+/* ===== Autorités, modèles, clés ===== */
+function vueAutorites(){
+  return `${fil()}<h1>Autorités</h1><p class="sous">Qui signe les certificats, par quelle voie, et ce que chacune permet.</p>
+  <div class="cartes-ca">${CAS.map(a=>`<div class="carte"><div style="display:flex;justify-content:space-between;gap:8px"><b class="mono" style="font-size:14px">${a.nom}</b><span class="p ${a.cl}">${a.etat}</span></div><p style="font-size:13px;color:var(--encre-2);margin:8px 0">${a.desc}</p><dl class="g"><dt>Voie</dt><dd>${a.via}</dd><dt>Gestes</dt><dd>${a.cap.join(' · ')}</dd><dt>Révocation</dt><dd>${a.rev}</dd>${a.id==='le'?`<dt>Quota</dt><dd>5 / semaine / domaine enregistré</dd>`:''}</dl><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${a.id==='int'?`<button class="btn sm" data-act="activerCA" ${can('administrer')?'':'disabled '+refus('administrer')}>Pourquoi non retenue</button>`:`<button class="btn sm" data-act="tester" data-id="${a.id}">Tester la voie</button>`}</div></div>`).join('')}</div>`;
+}
+function vueModeles(){
+  return `${fil()}<h1>Modèles</h1><p class="sous">Des profils prêts à l’emploi : durée, algorithme, nombre de noms, renouvellement, approbation.</p>
+  <div class="carte"><div style="overflow-x:auto"><table class="cartes"><thead><tr><th>Modèle</th><th>Validité</th><th>Algorithme</th><th>Noms</th><th>Renouvellement</th><th>Approbation</th><th>Autorité</th><th></th></tr></thead><tbody>${MODELES.map(m=>`<tr><td data-l="Modèle"><b>${m.n}</b></td><td data-l="Validité">${m.v}</td><td class="cm" data-l="Algorithme">${m.a}</td><td class="cm" data-l="Noms">${m.san}</td><td class="cm" data-l="Renouvellement">${m.auto}</td><td class="cm" data-l="Approbation">${m.appr}</td><td data-l="Autorité">${m.aut}</td><td class="act"><div class="actions"><button class="btn sm" data-act="modele" data-id="${esc(m.n)}" ${can('administrer')?'':'disabled '+refus('administrer')}>Modifier</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function vueCles(){
+  if(!can('voir_cles'))return refusEcran('voir_cles','Les métadonnées des clés sont réservées aux administrateurs.');
+  return `${fil()}<h1>Clés</h1><div class="bandeau in"><div class="sp">Cassandra n’affiche, n’exporte et ne stocke jamais une clé privée. Ici : algorithme, empreinte, emplacement et âge.</div></div>
+  <div class="carte"><div style="overflow-x:auto"><table class="cartes"><thead><tr><th>Hôte</th><th>Algorithme</th><th>Empreinte</th><th>Emplacement</th><th>Âge</th></tr></thead><tbody>${CERTS.filter(c=>c.j!=null&&!c.force).map(c=>`<tr><td class="h" data-l="Hôte"><a data-cert="${c.id}">${esc(c.h)}</a></td><td data-l="Algorithme">${c.algo}</td><td class="cm mono" data-l="Empreinte">${c.emp}</td><td class="cm" data-l="Emplacement">${c.src==='fastpanel'?'Serveur (panneau)':c.src==='interne'?'Coffre':'Inconnu'}</td><td class="num" data-l="Âge">${c.dur-c.j} j</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+/* ===== Rapports et audit ===== */
+function vueRapports(){
+  const rap=[['Conformité','Synthèse des critères et des écarts'],['Échéances à 90 jours','Qui expire quand, par source'],['Quotas d’émission','Émissions par domaine enregistré'],['Inventaire complet','Tous les certificats et leurs SAN']];
+  return `${fil()}<h1>Rapports</h1><p class="sous">Des exports pour l’audit et la conformité. Le journal d’audit garde qui a fait quoi, y compris les refus.</p>
+  <div class="tuiles">${rap.map(([t,d])=>`<div class="tuile"><span>${t}</span><small>${d}</small><div style="margin-top:10px;display:flex;gap:6px"><button class="btn sm" data-act="rapport" data-id="${t}">CSV</button><button class="btn sm" data-act="rapportpdf" data-id="${t}">PDF</button></div></div>`).join('')}</div>
+  <div class="carte"><h3>Journal d’audit</h3><div class="barre-q"><select id="audf" aria-label="Résultat"><option value="">Tous les résultats</option><option value="ok">Réussis</option><option value="echec">Échecs</option><option value="refus">Refus de permission</option></select><button class="btn sm" data-act="exporterAudit">${ico('dl')}Exporter</button></div>
+  ${S.etat==='chargement'?'<div class="sk" style="margin:10px 0"></div><div class="sk" style="margin:10px 0;width:70%"></div>':`<div style="overflow-x:auto"><table class="cartes"><thead><tr><th>Quand</th><th>Action</th><th>Objet</th><th>Acteur</th><th>Résultat</th></tr></thead><tbody id="audl">${auditLignes('')}</tbody></table></div>`}</div>`;
+}
+const auditLignes=f=>AUDIT.filter(a=>!f||a.r===f).map(a=>`<tr><td class="mono" data-l="Quand" style="font-size:12px">${a.t}</td><td data-l="Action"><span class="mono" style="font-size:12.5px">${a.a}</span><br><small style="color:var(--encre-3)">${esc(a.n)}</small></td><td class="cm mono" data-l="Objet" style="font-size:12.5px">${esc(a.o)}</td><td class="cm" data-l="Acteur">${esc(a.w)}</td><td data-l="Résultat"><span class="p ${a.r==='ok'?'ok':a.r==='echec'?'da':'al'}">${a.r==='ok'?'réussi':a.r==='echec'?'échec':'refusé'}</span></td></tr>`).join('');
+
+/* ===== Réglages ===== */
+const REGL=['Seuils et sonde','Renouvellement automatique','Notifications','Rôles et droits','Intégration FastPanel'];
+function vueReglages(){
+  if(!can('administrer'))return refusEcran('administrer','Les réglages du module sont réservés aux administrateurs.');
+  const t={
+  'Seuils et sonde':`<div class="carte"><div class="champ"><label for="r-seuil">Jours restants sous lesquels un certificat est signalé</label><input type="number" id="r-seuil" min="3" max="90" value="${S.seuil}" style="width:110px"><span class="aide">Entre 3 et 90 (défaut 21). Réglage unique : Sensorium, FastPanel et Proactivité le lisent ici.</span><span class="err" id="e-seuil"></span></div>
+   <div class="champ"><label for="r-delai">Délai d’attente de la connexion au port 443 (secondes)</label><input type="number" id="r-delai" min="1" max="30" value="${S.delai}" style="width:110px"><span class="aide">Entre 1 et 30 (défaut 5).</span><span class="err" id="e-delai"></span></div>
+   <div class="champ"><label for="r-hotes">Hôtes suivis en plus de ceux du panneau (séparés par des virgules)</label><textarea id="r-hotes" rows="3">coffre.exemple.fr, dolibarr.exemple.fr, sso.exemple.fr</textarea><span class="aide">Services derrière nginx qui ne sont pas des sites du panneau. Un hôte injoignable est « inconnu », jamais « sans certificat ».</span><span class="err" id="e-hotes"></span></div>
+   <button class="btn pri" data-act="enregistrer">Enregistrer</button></div>`,
+  'Renouvellement automatique':`<div class="carte"><div class="bandeau al"><div class="sp">Le renouvellement automatique consomme le quota de l’autorité. Il passe par la règle Proactivité « Hébergement › Renouveler un certificat » (palier, fenêtre, disjoncteur) : on ne la double pas ici.</div></div><dl class="g"><dt>Palier actuel</dt><dd>Proposer (une décision humaine avant chaque geste)</dd><dt>Seuil de déclenchement</dt><dd>30 jours (règle) — à aligner sur le seuil d’alerte (21)</dd><dt>Disjoncteur</dt><dd>3 échecs d’affilée sur un domaine</dd></dl><div style="margin-top:12px"><button class="btn" data-go2="auto|proactivite|">Ouvrir la règle dans Proactivité</button></div></div>`,
+  'Notifications':`<div class="carte"><div style="overflow-x:auto"><table class="matrice"><thead><tr><th>Événement</th><th>Cloche</th><th>Courrier</th><th>Telegram</th></tr></thead><tbody>${[['Proche de l’expiration (21 j)',1,1,0],['Critique (≤ 7 j) ou échu',1,1,1],['Renouvellement réussi',1,0,0],['Renouvellement en échec',1,1,1],['Quota épuisé',1,1,0],['Demande à valider',1,1,0]].map(r=>`<tr><td>${r[0]}</td>${r.slice(1).map(v=>`<td><input type="checkbox" ${v?'checked':''} aria-label="${r[0]}"></td>`).join('')}</tr>`).join('')}</tbody></table></div><button class="btn pri" style="margin-top:12px" data-act="enregistrer">Enregistrer</button></div>`,
+  'Rôles et droits':`<div class="carte"><div class="bandeau in"><div class="sp">Seuls <b>utiliser</b> et <b>administrer</b> existent dans le manifeste. Les autres droits sont proposés (voir spécification §5).</div></div><div style="overflow-x:auto"><table class="matrice"><thead><tr><th>Droit</th>${Object.values(ROLES).map(r=>`<th>${r.nom}</th>`).join('')}</tr></thead><tbody>${Object.entries(DROITS).map(([k,v])=>`<tr><td>${v}<br><small class="mono" style="color:var(--encre-3)">certificats.${k}</small></td>${Object.values(ROLES).map(r=>`<td>${r.d.includes(k)?'<span class="p ok">oui</span>':'<span class="p">non</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`,
+  'Intégration FastPanel':`<div class="carte"><h3>Statut</h3>${S.etat==='erreur'?'<div class="bandeau da"><div class="sp"><b>Panneau injoignable</b> depuis 47 min (délai dépassé, 90 s).</div></div>':'<div class="bandeau ok"><div class="sp">Panneau joignable. Dernière relève il y a 4 min (parc et audits : toutes les 15 min).</div></div>'}
+   <h3>Points d’entrée utilisés</h3><div style="overflow-x:auto"><table class="cartes"><thead><tr><th>Appel</th><th>Usage</th><th>Preuve</th></tr></thead><tbody>
+   <tr><td class="mono" data-l="Appel">GET /api/certificates</td><td data-l="Usage">Lister les certificats du panneau</td><td data-l="Preuve"><span class="p ok">dans le code</span></td></tr>
+   <tr><td class="mono" data-l="Appel">PUT /api/certificates/{id}/renew/external</td><td data-l="Usage">Renouveler (Let’s Encrypt)</td><td data-l="Preuve"><span class="p ok">dans le code</span></td></tr>
+   <tr><td class="mono" data-l="Appel">POST /api/certificates (émission initiale)</td><td data-l="Usage">Demander pour un site sans certificat</td><td data-l="Preuve"><span class="p al">à vérifier</span></td></tr>
+   <tr><td class="mono" data-l="Appel">DELETE /api/certificates/{id}</td><td data-l="Usage">Retirer / révoquer</td><td data-l="Preuve"><span class="p al">à vérifier</span></td></tr>
+   <tr><td class="mono" data-l="Appel">POST /api/certificates (personnalisé)</td><td data-l="Usage">Téléverser un certificat importé</td><td data-l="Preuve"><span class="p al">à vérifier</span></td></tr></tbody></table></div>
+   <h3 style="margin-top:16px">Écarts de synchronisation</h3>
+   <div class="lig"><i class="a"></i><em>legacy.exemple.fr<br><small>La base du panneau annonce une durée (90) là où le certificat servi est échu : le servi fait foi.</small></em><button class="btn sm" data-cert="6">Ouvrir</button></div>
+   <div class="lig"><i class="a"></i><em>Certificat du panneau n° 433 sans hôte suivi<br><small>Hôte absent de la liste : l’ajouter au suivi ?</small></em><button class="btn sm" data-act="suivre">Suivre</button></div>
+   <h3 style="margin-top:16px">Erreurs et cas limites gérés</h3>
+   <ul style="padding-left:18px;font-size:13px;color:var(--encre-2);display:grid;gap:3px"><li>401/403 : accès refusé → événement « fastpanel.acces_refuse », gestes désactivés.</li><li>Délai dépassé / injoignable → valeurs de la dernière relève, bandeau, aucun geste.</li><li>Renouvellement accepté mais date d’émission inchangée après 60 s → échec, pas de succès affiché.</li><li>Quota épuisé → geste refusé avant d’appeler l’autorité.</li><li>Certificat auto-signé du panneau : toléré sur la boucle locale seulement.</li><li>Identifiant du certificat changé après réémission → rattachement par nom, pas par identifiant.</li></ul>
+   <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="resync">${ico('refresh')}Resynchroniser maintenant</button><button class="btn" data-go2="parc|sites|Hébergement">Ouvrir Hébergement</button></div></div>`};
+  return `${fil()}<h1>Réglages</h1><div class="onglets" role="tablist">${REGL.map(r=>`<button role="tab" aria-selected="${r===S.regl}" data-regl="${r}">${r}</button>`).join('')}</div>${t[S.regl]}`;
+}
+
+/* ===== Gestes ===== */
+function relire(id){
+  const c=CERTS.find(x=>x.id===id);
+  if(c.j==null){toast('Relecture de '+c.h+' : toujours injoignable ('+c.err+').','ko');log('relire_expiration',c.h,'echec',c.err);return}
+  log('relire_expiration',c.h,'ok','lecture à la demande');toast('Certificat servi par '+c.h+' relu : '+(c.j<=0?'échu':c.j+' jour(s) restant(s)')+'.');
+}
+function renouveler(ids){
+  const sel=ids.map(i=>CERTS.find(c=>c.id===i)),ok=sel.filter(c=>c.src==='fastpanel'&&!c.force),ign=sel.filter(c=>!ok.includes(c));
+  if(!can('renouveler')){toast('Permission refusée : droit certificats.renouveler.','ko');log('ssl_renouveler',sel[0].h,'refus','droit absent');rendre();return}
+  if(S.etat==='erreur'){modal(`<h2 id="fen-t">Renouvellement impossible</h2><p class="sous">FastPanel est injoignable : la demande ne peut pas être envoyée. Le certificat en place reste valide jusqu’à son échéance.</p><div class="pied"><button class="btn pri" data-fermer>Fermer</button></div>`);return}
+  const need={};ok.forEach(c=>{const d=regDom(c.h);need[d]=(need[d]||0)+1});
+  const qs=Object.entries(need).map(([d,n])=>({...quotaDe(d),n}));const bl=qs.filter(q=>q.bloque||q.n>q.r);
+  modal(`<h2 id="fen-t">Renouveler ${ok.length} certificat(s)</h2><p class="sous">Le panneau demande un nouveau certificat à Let’s Encrypt. Le geste n’est réussi que si la date d’émission change.</p>
+  ${ok.map(c=>`<div class="lig"><i></i><em class="mono" style="font-size:13px">${esc(c.h)}</em><small>${c.j<=0?'échu':c.j+' j'}</small></div>`).join('')}
+  ${ign.length?`<div class="bandeau al" style="margin-top:10px"><div class="sp">${ign.length} ignoré(s) : ${ign.map(c=>esc(c.h)+' ('+(c.force?etatDe(c):SRC[c.src])+')').join(', ')} — non renouvelable(s) d’ici.</div></div>`:''}
+  <h3 style="font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--encre-3);margin:12px 0 6px">Quota</h3>${qs.map(q=>`<div class="lig"><i class="${q.bloque?'d':q.r-q.n<=1?'a':''}"></i><em><span class="mono">${q.d}</span> : ${q.u} / 5 utilisées, ${q.n} demandée(s)${q.bloque?'<br><small style="color:var(--danger)">Quota atteint. Libre le '+q.libre+'. Ce n’est pas contournable.</small>':''}</em></div>`).join('')}
+  ${ok.length?`<label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:13px"><input type="checkbox" id="conf" ${bl.length?'disabled':''}> Je confirme : cela sollicite une autorité externe avec quota.</label>`:''}
+  <div class="pied"><button class="btn" data-fermer>Annuler</button><button class="btn pri" id="go-ren" disabled>Demander le renouvellement</button></div>`);
+  const cf=$('#conf'),go=$('#go-ren');
+  if(cf)cf.onchange=()=>go.disabled=!cf.checked||bl.length>0;
+  go.onclick=()=>lancerRen(ok);
+}
+function lancerRen(ok){
+  const etapes=['Demande envoyée au panneau (PUT …/renew/external)','Attente de la preuve : la date d’émission doit changer (≤ 60 s)','Relecture du certificat servi'];
+  const dessiner=(i,echec,msg)=>modal(`<h2 id="fen-t">${echec?'Renouvellement en échec':i>=3?'Renouvellement terminé':'Renouvellement en cours…'}</h2><p class="sous">${ok.map(c=>esc(c.h)).join(', ')}</p><ul class="etapes" role="status">${etapes.map((e,k)=>`<li class="${k<i?'ok':k===i?(echec?'ko':'en'):''}">${e}</li>`).join('')}</ul>${msg||''}<div class="pied">${echec?'<button class="btn" data-go2="obs|journaux|">Voir le journal letsencrypt</button>':''}<button class="btn pri" data-fermer ${i<3&&!echec?'disabled':''}>Fermer</button></div>`);
+  dessiner(0);setTimeout(()=>dessiner(1),700);
+  setTimeout(()=>{
+    const ko=ok.find(c=>c.h==='legacy.exemple.fr');
+    if(ko){dessiner(1,true,`<div class="bandeau da"><div class="sp">Le panneau a accepté la demande mais la date d’émission n’a pas changé après 60 s. Rien n’est affiché comme réussi. Le quota n’est pas décompté.</div></div>`);log('ssl_renouveler',ko.h,'echec','date d’émission inchangée après 60 s');return}
+    dessiner(2);
+    setTimeout(()=>{ok.forEach(c=>{c.j=90;c.dur=90;c.hist.push({t:'Renouvelé par le panneau (preuve : date d’émission changée)',d:NOW,a:'fastpanel.certificat_renouvele'});QUOTAS[regDom(c.h)]=(QUOTAS[regDom(c.h)]||0)+1;log('ssl_renouveler',c.h,'ok','preuve : date d’émission changée')});dessiner(3);toast(ok.length+' certificat(s) renouvelé(s).');rendre()},700);
+  },1600);
+}
+function revoquer(id){
+  const c=CERTS.find(x=>x.id===id);
+  modal(`<h2 id="fen-t">Révoquer ${esc(c.h)}</h2><p class="sous">Geste sensible et irréversible : le certificat ne doit plus être cru par personne.</p>
+  <div class="bandeau al"><div class="sp">${c.src==='fastpanel'?'Le panneau n’a pas de révocation prouvée (hypothèse H3) : Cassandra retire le certificat du site et le marque « révoqué ». La révocation chez l’autorité reste à faire ou à vérifier.':'La révocation se fait chez l’autorité ; Cassandra la consigne.'}</div></div>
+  <div class="champ"><label for="rv-r">Raison</label><select id="rv-r"><option>Compromission de la clé</option><option>Cessation d’activité</option><option>Remplacé par un autre certificat</option><option>Autre</option></select></div>
+  <div class="champ"><label for="rv-c">Pour confirmer, tapez le nom de l’hôte</label><input type="text" id="rv-c" placeholder="${esc(c.h)}" autocomplete="off"><span class="aide">Cette saisie remplace le simple « OK » : le geste n’est pas défaisable.</span></div>
+  <div class="pied"><button class="btn" data-fermer>Annuler</button><button class="btn dng pri" id="rv-go" disabled>Révoquer</button></div>`);
+  $('#rv-c').oninput=e=>$('#rv-go').disabled=e.target.value.trim()!==c.h;
+  $('#rv-go').onclick=()=>{c.force='revoque';c.hist.push({t:'Révoqué — '+$('#rv-r').value,d:NOW,a:'revocation'});log('revocation',c.h,'ok',$('#rv-r').value);fermer();toast('Certificat de '+c.h+' révoqué.');S.sel=null;rendre()};
+}
+function nouvelle(){
+  if(!can('demander')){toast('Permission refusée : droit certificats.demander.','ko');return}
+  modal(`<h2 id="fen-t">Demander un certificat</h2><p class="sous">La demande suit le modèle choisi : certains exigent une validation.</p>
+  <div class="champ"><label for="n-h">Hôte principal</label><input type="text" id="n-h" placeholder="www.exemple.fr" autocomplete="off"><span class="err" id="n-eh"></span></div>
+  <div class="champ"><label for="n-s">Noms alternatifs (un par ligne, 20 au plus)</label><textarea id="n-s" rows="2" placeholder="exemple.fr"></textarea><span class="err" id="n-es"></span></div>
+  <div class="champ"><label for="n-m">Modèle</label><select id="n-m">${MODELES.map(m=>`<option>${m.n}</option>`).join('')}</select><span class="aide" id="n-am"></span></div>
+  <div class="champ"><label for="n-site">Site du panneau rattaché</label><select id="n-site"><option value="">Aucun</option><option>exemple.fr</option><option>shop.exemple.fr</option><option>api.exemple.fr</option></select><span class="aide">Nécessaire pour qu’un certificat Let’s Encrypt puisse être installé par le panneau.</span></div>
+  <div class="champ"><label for="n-j">Justification</label><textarea id="n-j" rows="2"></textarea><span class="err" id="n-ej"></span></div>
+  <div class="pied"><button class="btn" data-fermer>Annuler</button><button class="btn" id="n-br">Enregistrer en brouillon</button><button class="btn pri" id="n-ok">Soumettre</button></div>`);
+  const maj=()=>{const m=MODELES.find(x=>x.n===$('#n-m').value);$('#n-am').textContent=m.v+' · '+m.a+' · '+m.san+' noms · approbation : '+m.appr};$('#n-m').onchange=maj;maj();
+  const enreg=(brouillon)=>{
+    let ko=false;const h=$('#n-h').value.trim().toLowerCase(),m=$('#n-m').value,s=$('#n-s').value.split('\n').map(x=>x.trim()).filter(Boolean);
+    const reH=/^(\*\.)?([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
+    const set=(id,t,inv)=>{$(id).textContent=t;if(inv)inv.classList.toggle('inv',!!t)};
+    set('#n-eh',!reH.test(h)?'Nom d’hôte invalide (exemple : www.exemple.fr).':'',$('#n-h'));ko=ko||!reH.test(h);
+    const bad=s.find(x=>!reH.test(x));set('#n-es',bad?'« '+bad+' » n’est pas un nom valide.':s.length>20?'20 noms au plus.':'',$('#n-s'));ko=ko||!!bad||s.length>20;
+    const wild=m.startsWith('Wildcard')||h.startsWith('*.');const jf=$('#n-j').value.trim();
+    set('#n-ej',wild&&!jf?'Un wildcard exige une justification.':'',$('#n-j'));ko=ko||(wild&&!jf);
+    if(CERTS.some(c=>c.h===h&&!c.force&&!brouillon&&!['proche','echu','inconnu'].includes(etatDe(c)))){set('#n-eh','Cet hôte a déjà un certificat valide : utilisez « Renouveler ».',$('#n-h'));ko=true}
+    if(ko)return;
+    const mo=MODELES.find(x=>x.n===m),auto=!brouillon&&mo.appr.startsWith('non')||(!brouillon&&can('valider')&&can('renouveler'));
+    DEMANDES.unshift({id:'D-04'+(13+DEMANDES.length-6),h,san:s.join(', '),mod:m,aut:mo.aut,par:ROLES[S.role].nom+' (simulé)',etat:brouillon?'brouillon':auto?'validee':'a_valider',le:'02/11/2026',note:jf,wild});
+    log(brouillon?'demande.brouillon':'demande.soumise',h,'ok',m);fermer();toast(brouillon?'Brouillon enregistré.':auto?'Demande validée d’office (modèle sans approbation).':'Demande soumise : elle attend un validateur.');go('secu','certificats','Demandes')};
+  $('#n-ok').onclick=()=>enreg(false);$('#n-br').onclick=()=>enreg(true);
+}
+function importer(){
+  modal(`<h2 id="fen-t">Importer un certificat</h2><p class="sous">Collez le certificat public (PEM) et sa chaîne. La clé privée n’est jamais demandée : elle reste sur le serveur qui la sert.</p>
+  <div class="champ"><label for="i-h">Hôte</label><input type="text" id="i-h" placeholder="boutique.exemple.com"><span class="err" id="i-eh"></span></div>
+  <div class="champ"><label for="i-p">Certificat (PEM)</label><textarea id="i-p" rows="5" class="mono" placeholder="-----BEGIN CERTIFICATE-----"></textarea><span class="err" id="i-ep"></span></div>
+  <div class="pied"><button class="btn" data-fermer>Annuler</button><button class="btn pri" id="i-ok">Importer</button></div>`);
+  $('#i-ok').onclick=()=>{const h=$('#i-h').value.trim().toLowerCase(),p=$('#i-p').value;let ko=false;
+    $('#i-eh').textContent=/^[a-z0-9.-]+\.[a-z]{2,}$/.test(h)?'':'Nom d’hôte invalide.';$('#i-ep').textContent=/-----BEGIN CERTIFICATE-----[\s\S]+-----END CERTIFICATE-----/.test(p)?(/PRIVATE KEY/.test(p)?'Une clé privée a été collée : retirez-la. Cassandra refuse de la recevoir.':''):'Ce texte n’est pas un certificat PEM.';
+    if($('#i-eh').textContent||$('#i-ep').textContent)return;
+    CERTS.push({id:CERTS.length+1,h,san:[h],src:'importe',aut:'Autorité importée (Gandi)',j:365,dur:365,algo:'RSA 2048',auto:false,site:'',emp:'7C:02:…:E1:90',hist:[{t:'Importé (PEM public)',d:NOW,a:'import'}]});log('import',h,'ok','PEM public');fermer();toast('Certificat de '+h+' importé.');go('secu','certificats','Certificats')};
+}
+function csv(rows,nom){const t=rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(';')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+t],{type:'text/csv'}));a.download=nom;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+const lignesCsv=l=>[['Hôte','SAN','État','Jours','Échéance','Source','Autorité','Algorithme','Renouvellement']].concat(l.map(c=>[c.h,c.san.join(' '),PILL[etatDe(c)][0],c.j==null?'':c.j,c.j==null?'':jourDans(c.j),SRC[c.src],c.aut,c.algo,c.auto?'auto':'manuel']));
+function demande(act,id){
+  const d=DEMANDES.find(x=>x.id===id);
+  if(act==='valider'||act==='refuser'||act==='emettre'){
+    const dr=act==='emettre'?'renouveler':'valider';if(!can(dr)){toast('Permission refusée : droit certificats.'+dr+'.','ko');log('permission.refusee',act,'refus','droit absent');return}
+    if(act==='refuser'){modal(`<h2 id="fen-t">Refuser ${d.id}</h2><div class="champ"><label for="mo">Motif (obligatoire, transmis au demandeur)</label><textarea id="mo" rows="3"></textarea><span class="err" id="e-mo"></span></div><div class="pied"><button class="btn" data-fermer>Annuler</button><button class="btn dng pri" id="ok-ref">Refuser</button></div>`);$('#ok-ref').onclick=()=>{if(!$('#mo').value.trim()){$('#e-mo').textContent='Un motif est obligatoire.';return}d.etat='refusee';d.motif=$('#mo').value.trim();log('demande.refusee',d.h,'ok',d.motif);fermer();toast('Demande refusée.');rendre()};return}
+    if(act==='valider'){d.etat='validee';log('demande.validee',d.h);toast('Demande validée : elle peut être émise.')}
+    if(act==='emettre'){
+      if(d.wild&&S.etat==='quota'){}
+      const q=quotaDe(regDom(d.h));if(q.bloque){d.etat='echec';log('emission',d.h,'echec','quota atteint');toast('Quota atteint pour '+q.d+' : libre le '+q.libre+'.','ko');rendre();return}
+      d.etat='emise';CERTS.push({id:CERTS.length+1,h:d.h,san:[d.h],src:d.aut.includes('interne')?'interne':'fastpanel',aut:d.aut,j:90,dur:90,algo:'ECDSA P-256',auto:true,site:'',emp:'2D:9A:…:4C:E0',hist:[{t:'Émis suite à la demande '+d.id,d:NOW,a:'demande'}]});QUOTAS[regDom(d.h)]=(QUOTAS[regDom(d.h)]||0)+1;log('emission',d.h,'ok',d.id);toast('Certificat de '+d.h+' émis.')}
+  }
+  if(act==='soumettre'){d.etat='a_valider';log('demande.soumise',d.h);toast('Demande soumise.')}
+  if(act==='rouvrir'){d.etat='brouillon';toast('Demande rouverte en brouillon.')}
+  rendre();
+}
+
+/* ===== Événements ===== */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,a,th,input,tr');if(!t&&!e.target.closest('.pop'))fermerPops();if(!t)return;
+  const d=t.dataset;
+  if(d.pop){const p=$('#pop-'+d.pop),o=p.classList.contains('ouvert');fermerPops();if(!o)p.classList.add('ouvert');return}
+  if(t.closest('.pop')&&!d.cert&&!d.go2&&!d.go){return}
+  if(d.fermer!==undefined){fermer();return}
+  if(d.g){go(d.g,grp&&GROUPES.find(x=>x.id===d.g).e[0].id,(GROUPES.find(x=>x.id===d.g).e[0].s||[])[0]||'');return}
+  if(d.e&&t.closest('#side')||d.e&&t.closest('.fil')){const en=grp().e.find(x=>x.id===d.e);go(S.g,d.e,(en.s||[])[0]||'');return}
+  if(d.s){S.sub=d.s;S.sel=null;S.page=1;rendre();return}
+  if(d.go){fermerPops();toast('« '+d.go+' » : hors périmètre de cette maquette.','al');return}
+  if(d.go2){const [g,en,sub]=d.go2.split('|');fermerPops();S.lien=S.e==='certificats'?(S.sel?'Certificats › '+CERTS.find(c=>c.id===S.sel).h:S.sub):'';if(d.regl)S.regl=d.regl;go(g,en,sub);if(en==='certificats')S.lien='';return}
+  if(d.lien){const [g,en,sub]=d.lien.split('|');S.lien='Certificats › '+d.depuis;go(g,en,sub);return}
+  if(d.cert){fermerPops();if(S.e!=='certificats'||S.g!=='secu'){S.g='secu';S.e='certificats'}S.sub=S.sub||'Certificats';S.sel=+d.cert;S.tab='Résumé';rendre();$('#scene').scrollTop=0;return}
+  if(d.filtre){S.f={q:'',etat:d.filtre,source:'',aut:'',auto:''};go('secu','certificats','Certificats');return}
+  if(d.tab){S.tab=d.tab;rendreScene();return}
+  if(d.regl){S.regl=d.regl;rendreScene();return}
+  if(d.tri){S.tri={k:d.tri,d:S.tri.k===d.tri?-S.tri.d:1};rendreScene();return}
+  if(d.p){S.page=+d.p;rendreScene();return}
+  if(d.relire){relire(+d.relire);if(S.sel||true)rendreScene();return}
+  if(d.ren){renouveler([+d.ren]);return}
+  if(d.rev){revoquer(+d.rev);return}
+  if(d.dem){demande(d.dem,d.id);return}
+  if(d.lot){const ids=[...S.sels];
+    if(d.lot==='vider'){S.sels.clear();rendreScene()}
+    if(d.lot==='relire'){ids.forEach(relire);rendreScene()}
+    if(d.lot==='renouveler')renouveler(ids);
+    if(d.lot==='exporter'){csv(lignesCsv(CERTS.filter(c=>S.sels.has(c.id))),'certificats-selection.csv');log('export',ids.length+' certificats','ok','CSV');toast('Export de la sélection prêt.')}
+    if(d.lot==='archiver'){modal(`<h2 id="fen-t">Archiver ${ids.length} certificat(s)</h2><p class="sous">Ils sortent de la liste, de la sonde et des constats. L’historique est conservé et l’archivage se défait.</p><div class="pied"><button class="btn" data-fermer>Annuler</button><button class="btn pri" id="ok-arch">Archiver</button></div>`);$('#ok-arch').onclick=()=>{ids.forEach(i=>{const c=CERTS.find(x=>x.id===i);if(!c.force){c.force='archive';log('archivage',c.h)}});S.sels.clear();fermer();toast(ids.length+' certificat(s) archivé(s).');rendre()}}
+    return}
+  if(d.act){acte(d.act,d)}
+});
+function acte(a,d){
+  if(a==='nouvelle')nouvelle();
+  if(a==='importer')importer();
+  if(a==='retour'){S.sel=null;rendre()}
+  if(a==='raz'){S.f={q:'',etat:'',source:'',aut:'',auto:''};rendreScene()}
+  if(a==='reessayer'){S.etat='chargement';$('#o-etat').value='chargement';rendreScene();setTimeout(()=>{S.etat='erreur';$('#o-etat').value='erreur';rendre();toast('FastPanel ne répond toujours pas.','ko')},900)}
+  if(a==='exporter'){csv(lignesCsv(filtrer()),'certificats.csv');log('export',filtrer().length+' certificats','ok','CSV');toast('Export CSV prêt ('+filtrer().length+' lignes).')}
+  if(a==='exp1'){csv(lignesCsv([CERTS.find(c=>c.id==d.id)]),'certificat.csv');toast('Fiche exportée.')}
+  if(a==='exporterAudit'){csv([['Quand','Action','Objet','Acteur','Résultat','Note']].concat(AUDIT.map(x=>[x.t,x.a,x.o,x.w,x.r,x.n])),'journal-audit.csv');toast('Journal exporté.')}
+  if(a==='rapport'){csv(lignesCsv(CERTS),'rapport-'+d.id.toLowerCase().replace(/\W+/g,'-')+'.csv');log('rapport',d.id,'ok','CSV');toast('Rapport « '+d.id+' » généré.')}
+  if(a==='rapportpdf'){toast('PDF : production par le noyau d’export, à brancher (voir spécification).','al')}
+  if(a==='relireTout'){CERTS.forEach(c=>{});toast('Relecture de '+CERTS.filter(c=>!c.force).length+' hôtes lancée (la sonde est limitée à une lecture par hôte et par heure).');}
+  if(a==='arch'){const c=CERTS.find(x=>x.id==d.id);modal(`<h2 id="fen-t">Archiver ${esc(c.h)}</h2><p class="sous">Il sort de la liste, de la sonde et des constats ; l’historique est conservé et l’archivage se défait.</p><div class="pied"><button class="btn" data-fermer>Annuler</button><button class="btn pri" id="ok-arch">Archiver</button></div>`);$('#ok-arch').onclick=()=>{c.force='archive';log('archivage',c.h);fermer();toast('Certificat archivé.');S.sel=null;rendre()}}
+  if(a==='desarch'){const c=CERTS.find(x=>x.id==d.id);c.force=null;log('desarchivage',c.h);toast('Certificat désarchivé.');rendre()}
+  if(a==='enregistrer'){
+    const s=$('#r-seuil'),dl=$('#r-delai'),h=$('#r-hotes');let ko=false;
+    if(s){const v=+s.value;const m=!(v>=3&&v<=90);$('#e-seuil').textContent=m?'Entre 3 et 90 jours.':'';s.classList.toggle('inv',m);ko=ko||m;
+      const v2=+dl.value;const m2=!(v2>=1&&v2<=30);$('#e-delai').textContent=m2?'Entre 1 et 30 secondes.':'';dl.classList.toggle('inv',m2);ko=ko||m2;
+      const bad=h.value.split(',').map(x=>x.trim()).filter(Boolean).find(x=>!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(x));$('#e-hotes').textContent=bad?'« '+bad+' » n’est pas un nom d’hôte.':'';h.classList.toggle('inv',!!bad);ko=ko||!!bad;
+      if(ko)return;S.seuil=+s.value;S.delai=+dl.value}
+    log('reglages',S.regl,'ok','enregistré');toast('Réglages enregistrés.');rendre()}
+  if(a==='resync'){toast('Relève demandée au panneau…');setTimeout(()=>toast(S.etat==='erreur'?'Panneau injoignable.':'Relève terminée : 9 certificats, 2 écarts.',S.etat==='erreur'?'ko':''),900)}
+  if(a==='suivre'){toast('Hôte ajouté à la liste de suivi.')}
+  if(a==='demanderacces'){log('demande_acces',d.d,'ok','demande envoyée');toast('Demande d’accès envoyée aux administrateurs.')}
+  if(a==='tester'){toast('Voie testée : la liste des certificats du panneau répond.')}
+  if(a==='activerCA'){modal(`<h2 id="fen-t">Autorité interne</h2><p class="sous">L’activer crée une racine et un intermédiaire à protéger. Décision prise : non retenue (Q1). À rouvrir seulement sur demande.</p><div class="pied"><button class="btn pri" data-fermer>Compris</button></div>`)}
+  if(a==='modele'){modal(`<h2 id="fen-t">Modifier le modèle « ${esc(d.id)} »</h2><div class="champ"><label for="mm-v">Validité (jours)</label><input type="number" id="mm-v" min="1" max="398" value="90"><span class="aide">Maximum 398 jours pour un certificat public.</span></div><div class="pied"><button class="btn" data-fermer>Annuler</button><button class="btn pri" data-fermer>Enregistrer</button></div>`)}
+}
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.f){S.f[t.dataset.f]=t.value;S.page=1;rendreScene()}
+  else if(t.id==='arch'){S.archives=t.checked;S.page=1;rendreScene()}
+  else if(t.id==='all'){filtrer().slice((S.page-1)*PAR,S.page*PAR).forEach(c=>t.checked?S.sels.add(c.id):S.sels.delete(c.id));rendreScene()}
+  else if(t.dataset.sel){t.checked?S.sels.add(+t.dataset.sel):S.sels.delete(+t.dataset.sel);rendreScene()}
+  else if(t.id==='audf'){$('#audl').innerHTML=auditLignes(t.value)}
+});
+let minuterie;
+document.addEventListener('input',e=>{if(e.target.id==='q'){S.f.q=e.target.value;S.page=1;clearTimeout(minuterie);minuterie=setTimeout(()=>{rendreScene();const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)},180)}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.cert){e.target.click()}});
+$('#burger').onclick=()=>$('#side').classList.toggle('ferme');
+$('#rafr').onclick=()=>{rendreScene();toast('Scène actualisée.')};
+$('#prec').onclick=()=>{const h=S.hist.pop();if(!h)return;S.fut.push([S.g,S.e,S.sub,S.sel]);[S.g,S.e,S.sub,S.sel]=h;rendre()};
+$('#suiv').onclick=()=>{const h=S.fut.pop();if(!h)return;S.hist.push([S.g,S.e,S.sub,S.sel]);[S.g,S.e,S.sub,S.sel]=h;rendre()};
+$('#theme').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'};
+$('#o-role').onchange=e=>{S.role=e.target.value;S.sels.clear();rendre()};
+$('#o-etat').onchange=e=>{S.etat=e.target.value;S.sel=S.etat==='vide'?null:S.sel;rendre()};
+const etroit=matchMedia('(max-width:900px)');
+const caler=()=>$('#side').classList.toggle('ferme',etroit.matches);
+etroit.addEventListener('change',caler);caler();
+rendre();
+</script>
+</body>
+</html>

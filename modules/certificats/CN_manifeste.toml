@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.2.0  #35457c
+# VERSION CN : 0.3.0  #cded08
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Surveille l'expiration des certificats TLS réellement servis (port 443), garde le registre des émissions Let's Encrypt (cinq par semaine et par domaine) et signale les certificats échus ou proches de l'échéance, avec le quota restant. Le renouvellement lui-même se fait par le panneau (module fastpanel, ssl_renouveler) ; ce module en tient le compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=35457c ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=cded08 ▼▼▼
 [module]
 id = "certificats"
 nom = "Certificats"
-version = "0.2.0"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "Surveille l'expiration des certificats TLS réellement servis (port 443), garde le registre des émissions Let's Encrypt (cinq par semaine et par domaine) et signale les certificats échus ou proches de l'échéance, avec le quota restant. Le renouvellement lui-même se fait par le panneau (module fastpanel, ssl_renouveler) ; ce module en tient le compte."
 confiance = "interne"
@@ -35,6 +35,41 @@ defaut = true
 [[droits]]
 id = "administrer"
 libelle = "Administrer Certificats : réglages et gestes sensibles"
+sensible = true
+
+[[droits]]
+id = "demander"
+libelle = "Demander un certificat pour ses propres sites"
+defaut = false
+
+[[droits]]
+id = "valider"
+libelle = "Valider ou refuser une demande de certificat (jamais la sienne)"
+defaut = false
+sensible = true
+
+[[droits]]
+id = "renouveler"
+libelle = "Renouveler ou émettre un certificat (sollicite l'autorité, qui a un quota)"
+defaut = false
+sensible = true
+
+[[droits]]
+id = "revoquer"
+libelle = "Révoquer un certificat (non défaisable chez l'autorité)"
+defaut = false
+sensible = true
+
+[[droits]]
+id = "importer"
+libelle = "Importer le certificat public d'un hôte géré ailleurs"
+defaut = false
+sensible = true
+
+[[droits]]
+id = "voir_cles"
+libelle = "Voir les métadonnées des clés (jamais la clé elle-même)"
+defaut = false
 sensible = true
 
 [[objets]]
@@ -62,7 +97,7 @@ minimum = 1
 maximum = 30
 
 [evenements]
-emet = ["certificat.proche_expiration", "certificat.renouvele"]
+emet = ["certificat.proche_expiration", "certificat.renouvele", "certificat.demande", "certificat.valide", "certificat.refuse", "certificat.emis", "certificat.revoque", "certificat.archive"]
 
 [[moteurs]]
 id = "sonde"
@@ -102,10 +137,52 @@ risque = "lecture"
 droit = "utiliser"
 
 [[ecrans]]
-id = "vue_certificats"
+id = "c_vue"
+libelle = "Vue d'ensemble"
+domaine = "securite"
+gabarit = "libre"
+
+[[ecrans]]
+id = "c_liste"
 libelle = "Certificats"
 domaine = "securite"
 gabarit = "tableau"
+
+[[ecrans]]
+id = "c_demandes"
+libelle = "Demandes"
+domaine = "securite"
+gabarit = "libre"
+
+[[ecrans]]
+id = "c_autorites"
+libelle = "Autorités"
+domaine = "securite"
+gabarit = "libre"
+
+[[ecrans]]
+id = "c_modeles"
+libelle = "Modèles"
+domaine = "securite"
+gabarit = "tableau"
+
+[[ecrans]]
+id = "c_cles"
+libelle = "Clés"
+domaine = "securite"
+gabarit = "tableau"
+
+[[ecrans]]
+id = "c_rapports"
+libelle = "Rapports"
+domaine = "securite"
+gabarit = "libre"
+
+[[ecrans]]
+id = "c_reglages"
+libelle = "Réglages"
+domaine = "securite"
+gabarit = "libre"
 
 [theme]
 accent = "#5b46c4"
@@ -113,12 +190,272 @@ accent = "#5b46c4"
 [[menus]]
 id = "certificats"
 libelle = "Certificats"
-ecran = "vue_certificats"
 ordre = 20
-role = "admin"
-icone = "lock"
+role = "utilisateur"
+icone = "cert"
 badge = "constats"
 droit = "utiliser"
+
+[[menus]]
+id = "c_vue"
+libelle = "Vue d’ensemble"
+ecran = "c_vue"
+parent = "certificats"
+ordre = 10
+role = "utilisateur"
+icone = "panorama"
+droit = "utiliser"
+
+[[menus]]
+id = "c_liste"
+libelle = "Certificats"
+ecran = "c_liste"
+parent = "certificats"
+ordre = 20
+role = "utilisateur"
+icone = "cert"
+droit = "utiliser"
+
+[[menus]]
+id = "c_demandes"
+libelle = "Demandes"
+ecran = "c_demandes"
+parent = "certificats"
+ordre = 30
+role = "utilisateur"
+icone = "tasks"
+droit = "demander"
+
+[[menus]]
+id = "c_autorites"
+libelle = "Autorités"
+ecran = "c_autorites"
+parent = "certificats"
+ordre = 40
+role = "utilisateur"
+icone = "shield"
+droit = "utiliser"
+
+[[menus]]
+id = "c_modeles"
+libelle = "Modèles"
+ecran = "c_modeles"
+parent = "certificats"
+ordre = 50
+role = "utilisateur"
+icone = "folder"
+droit = "utiliser"
+
+[[menus]]
+id = "c_cles"
+libelle = "Clés"
+ecran = "c_cles"
+parent = "certificats"
+ordre = 60
+role = "utilisateur"
+icone = "key"
+droit = "voir_cles"
+
+[[menus]]
+id = "c_rapports"
+libelle = "Rapports"
+ecran = "c_rapports"
+parent = "certificats"
+ordre = 70
+role = "utilisateur"
+icone = "scroll"
+droit = "utiliser"
+
+[[menus]]
+id = "c_reglages"
+libelle = "Réglages"
+ecran = "c_reglages"
+parent = "certificats"
+ordre = 80
+role = "utilisateur"
+icone = "puzzle"
+droit = "administrer"
+
+[[capacites]]
+id = "lister"
+libelle = "Les certificats suivis, avec leur source, leur état et les quotas (cloisonné : un titulaire ne voit que les siens)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "lire"
+libelle = "Un certificat : sa fiche, son historique, son quota"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "synthese"
+libelle = "La vue d'ensemble : compteurs, échéancier, conformité, à traiter"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "demandes"
+libelle = "Les demandes de certificat (un titulaire ne voit que les siennes)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "autorites"
+libelle = "Les autorités et leur voie d'émission"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "modeles"
+libelle = "Les modèles de certificat"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "audit"
+libelle = "Le journal d'audit du module"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "rapport"
+libelle = "Les lignes d'un rapport (conformité, échéances, quotas, inventaire)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "parametres"
+libelle = "Les réglages du module, tels que l'écran les montre"
+risque = "lecture"
+droit = "administrer"
+
+[[capacites]]
+id = "cles"
+libelle = "Les métadonnées des clés (algorithme, empreinte, emplacement, âge) : jamais la clé"
+risque = "lecture"
+droit = "voir_cles"
+
+[[capacites]]
+id = "demander"
+libelle = "Déposer une demande de certificat (brouillon ou soumise)"
+risque = "faible"
+droit = "demander"
+perimetre = ["une demande, pour un hôte que le compte demande lui-même", "aucun appel à l'autorité"]
+preuve = "la demande est relue en base avec son état"
+retour = "la demande est supprimée"
+paliers = ["raconter"]
+qui = ["humain","itare"]
+
+[[capacites]]
+id = "soumettre"
+libelle = "Soumettre un brouillon"
+risque = "faible"
+droit = "demander"
+perimetre = ["une demande de ce compte"]
+preuve = "l'état de la demande est relu"
+retour = "la demande revient à son état précédent"
+paliers = ["raconter"]
+qui = ["humain","itare"]
+
+[[capacites]]
+id = "valider"
+libelle = "Valider une demande (jamais la sienne)"
+risque = "faible"
+droit = "valider"
+perimetre = ["une demande à valider"]
+preuve = "l'état de la demande est relu"
+retour = "la demande revient à « à valider »"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "refuser"
+libelle = "Refuser une demande, avec un motif obligatoire"
+risque = "faible"
+droit = "valider"
+perimetre = ["une demande à valider"]
+preuve = "l'état de la demande est relu"
+retour = "la demande revient à « à valider »"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "rouvrir"
+libelle = "Rouvrir en brouillon une demande refusée ou en échec"
+risque = "faible"
+droit = "demander"
+perimetre = ["une demande de ce compte"]
+preuve = "l'état de la demande est relu"
+retour = "la demande revient à son état précédent"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "cloturer_demande"
+libelle = "Clore une demande validée après le geste du panneau (émise ou en échec)"
+risque = "faible"
+droit = "renouveler"
+perimetre = ["une demande validée"]
+preuve = "l'état de la demande est relu"
+retour = "la demande revient à « validée »"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "noter_echec"
+libelle = "Inscrire un échec d'émission au registre du quota"
+risque = "faible"
+droit = "renouveler"
+perimetre = ["une ligne du registre des émissions, ok=0"]
+preuve = "la ligne est relue"
+retour = "la ligne est supprimée"
+paliers = ["raconter"]
+qui = ["humain","cassandra","itare"]
+
+[[capacites]]
+id = "revoquer"
+libelle = "Marquer un certificat révoqué et le retirer du suivi (la révocation chez l'autorité reste à faire)"
+risque = "moyen"
+droit = "revoquer"
+perimetre = ["un certificat FastPanel ou importé", "aucun appel à l'autorité"]
+preuve = "l'état forcé est relu"
+retour = "l'état forcé précédent est remis"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "archiver"
+libelle = "Archiver un certificat : il sort de la sonde et des constats, l'historique reste"
+risque = "faible"
+droit = "administrer"
+perimetre = ["un certificat non révoqué"]
+preuve = "l'état forcé est relu"
+retour = "le certificat est désarchivé"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "desarchiver"
+libelle = "Sortir un certificat des archives"
+risque = "faible"
+droit = "administrer"
+perimetre = ["un certificat archivé"]
+preuve = "l'état forcé est relu"
+retour = "le certificat est de nouveau archivé"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "importer"
+libelle = "Importer le certificat PUBLIC d'un hôte géré ailleurs (une clé privée est refusée)"
+risque = "moyen"
+droit = "importer"
+perimetre = ["un certificat PEM public", "jamais une clé privée"]
+preuve = "le certificat est relu au registre"
+retour = "le certificat et sa fiche sont retirés"
+paliers = ["raconter"]
+qui = ["humain"]
 
 [[capacites]]
 id = "seuil"

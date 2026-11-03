@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0cd405
+# VERSION CN : 0.1.0  #592eaa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0cd405 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=592eaa ▼▼▼
 """Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau."""
 import importlib.util
 import shutil
@@ -180,11 +180,150 @@ class Lecture(Monde):
         self.assertIn("erreur", m.lire_certificat("127.0.0.1", 1))
 
 
+def _pem(nom, jours=90, algo="ec"):
+    """Un certificat auto-signé PUBLIC pour les bancs (sa clé reste dans un dossier temporaire et n'est jamais relue)."""
+    import subprocess
+    d = tempfile.mkdtemp()
+    cle, crt = d + "/k.pem", d + "/c.pem"
+    cmd = ["openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:prime256v1"] if algo == "ec" else ["openssl", "req", "-x509", "-newkey", "rsa:2048"]
+    subprocess.run(cmd + ["-nodes", "-keyout", cle, "-out", crt, "-days", str(jours), "-subj", "/CN=" + nom, "-addext", "subjectAltName=DNS:" + nom], check=True, capture_output=True)
+    with open(crt, encoding="utf-8") as f:
+        return f.read()
+
+
+class Cycle(Monde):
+    def lignes(self, table):
+        return self.ctx.stockage.lire("SELECT * FROM " + table)
+
+    def test_une_demande_sur_un_hote_suivi_sans_approbation_est_validee_d_office(self):
+        r = self.ex("demander", hote="a.exemple.fr", modele="public")
+        self.assertEqual((r["statut"], r["resultat"]["etat"]), ("faite", "validee"))
+        self.assertIn("automatique", self.lignes("demande")[0]["valideur"])
+
+    def test_une_demande_sur_un_hote_inconnu_attend_un_validateur(self):
+        r = self.ex("demander", hote="nouveau.exemple.fr", modele="public")
+        self.assertEqual(r["resultat"]["etat"], "a_valider")
+        self.assertEqual(len(self.evts("certificat.demande")), 1)
+
+    def test_les_refus_de_saisie(self):
+        for args in ({"hote": "pas un hote"}, {"hote": "*.exemple.fr", "modele": "wildcard"}, {"hote": "*.exemple.fr", "modele": "public", "justification": "x"},
+                     {"hote": "x.exemple.fr", "sans": "pas valide!"}, {"hote": "x.exemple.fr", "modele": "inconnu"}):
+            self.assertEqual(self.ex("demander", **args)["statut"], "echec", args)
+        self.assertEqual(self.ex("demander", hote="*.exemple.fr", modele="wildcard", justification="sous-domaines clients")["statut"], "faite")
+
+    def test_un_hote_valide_ne_se_redemande_pas_et_pas_deux_demandes_en_cours(self):
+        self.certs = {"a.exemple.fr": self.cert(80)}
+        self.sonde()
+        self.assertEqual(self.ex("demander", hote="a.exemple.fr")["statut"], "echec")
+        self.assertEqual(self.ex("demander", hote="n.exemple.fr")["statut"], "faite")
+        self.assertEqual(self.ex("demander", hote="n.exemple.fr")["statut"], "echec")
+
+    def test_on_ne_valide_jamais_sa_propre_demande(self):
+        i = self.ex("demander", hote="n.exemple.fr", brouillon=True)["resultat"]["id"]
+        self.assertEqual(self.lignes("demande")[0]["etat"], "brouillon")
+        self.assertEqual(self.ex("soumettre", id=i)["resultat"]["etat"], "a_valider")
+        self.ctx.stockage.ecrire("UPDATE demande SET demandeur='alice' WHERE id=?", (i,))
+        fn = self.n.catalogue.get("certificats.valider").faire
+        self.ctx._compte.valeur = "alice"
+        try:
+            with self.assertRaises(PermissionError):
+                fn(self.ctx, id=i)
+        finally:
+            self.ctx._compte.valeur = ""
+        self.assertTrue([a for a in self.lignes("audit") if a["resultat"] == "refus"])
+        self.assertEqual(self.ex("valider", id=i)["resultat"]["etat"], "validee")                 # un autre compte (ici le système) valide
+
+    def test_un_refus_exige_un_motif_et_se_rouvre(self):
+        i = self.ex("demander", hote="n.exemple.fr")["resultat"]["id"]
+        self.assertEqual(self.ex("refuser", id=i)["statut"], "echec")
+        self.assertEqual(self.ex("refuser", id=i, motif="hors périmètre")["resultat"]["etat"], "refusee")
+        self.assertEqual(self.ex("rouvrir", id=i)["resultat"]["etat"], "brouillon")
+        self.assertEqual(self.ex("valider", id=i)["statut"], "echec")                                # un brouillon n'attend pas de validation
+
+    def test_cloturer_une_demande_et_inscrire_l_echec_au_quota_sans_le_compter(self):
+        i = self.ex("demander", hote="a.exemple.fr")["resultat"]["id"]
+        self.assertEqual(self.ex("cloturer_demande", id=i, ok=False, motif="date inchangée")["resultat"]["etat"], "echec")
+        q = self.ex("quota", domaine="a.exemple.fr")["resultat"]
+        self.assertEqual((q["utilisees"], q["echecs_heure"]), (0, 1))
+        self.assertEqual(self.ex("noter_echec", hote="a.exemple.fr", motif="refus du panneau")["statut"], "faite")
+        self.assertEqual(self.ex("quota", domaine="a.exemple.fr")["resultat"]["echecs_heure"], 2)
+
+    def test_revoquer_archiver_et_leur_retour(self):
+        self.certs = {"a.exemple.fr": self.cert(10), "z.exemple.net": self.cert(10)}
+        self.n.reglages.poser("certificats.hotes", "z.exemple.net")
+        self.sonde()
+        self.assertEqual(self.ex("revoquer", hote="z.exemple.net", raison="x")["statut"], "echec")        # seulement sondé
+        self.assertEqual(self.ex("revoquer", hote="a.exemple.fr")["statut"], "echec")                      # raison obligatoire
+        self.assertEqual(self.ex("revoquer", hote="a.exemple.fr", raison="clé compromise")["statut"], "faite")
+        f = {x["hote"]: x for x in self.ex("lister")["resultat"]["certificats"]}["a.exemple.fr"]
+        self.assertEqual((f["etat"], f["force"]), ("revoque", "revoque"))
+        self.assertEqual(self.ex("archiver", hote="a.exemple.fr")["statut"], "echec")                      # un révoqué reste visible
+        self.assertEqual(self.ex("archiver", hote="jamais.exemple.fr")["statut"], "echec")                  # jamais lu : pas suivi
+        self.assertEqual(self.ex("archiver", hote="z.exemple.net")["statut"], "faite")
+        self.assertEqual(self.ex("desarchiver", hote="z.exemple.net")["statut"], "faite")
+        self.assertEqual(self.ex("desarchiver", hote="z.exemple.net")["statut"], "echec")
+
+    def test_un_certificat_archive_n_est_plus_sonde_ni_signale(self):
+        self.certs = {"a.exemple.fr": self.cert(3)}
+        self.sonde()
+        self.ex("archiver", hote="a.exemple.fr")
+        self.assertEqual(self.ex("signal_jour")["resultat"]["items"], [])
+        self.certs["a.exemple.fr"] = self.cert(80)
+        self.sonde()
+        self.assertEqual(self.etat("a.exemple.fr"), "proche")                                           # pas relu : l'archivé sort de la sonde
+
+    def test_importer_un_certificat_public_et_refuser_une_cle(self):
+        if not shutil.which("openssl"):
+            self.skipTest("openssl absent")
+        pem = _pem("mail.exemple.fr", 200)
+        self.assertEqual(self.ex("importer", hote="mail.exemple.fr", pem=pem + "-----BEGIN PRIVATE KEY-----\nx\n-----END PRIVATE KEY-----")["statut"], "echec")
+        self.assertEqual(self.ex("importer", hote="mail.exemple.fr", pem="n'importe quoi")["statut"], "echec")
+        self.assertEqual(self.ex("importer", hote="autre.exemple.fr", pem=pem)["statut"], "echec")           # ne couvre pas ce nom
+        r = self.ex("importer", hote="mail.exemple.fr", pem=pem)
+        self.assertEqual((r["statut"], r["resultat"]["jours"] >= 199), ("faite", True))
+        f = {x["hote"]: x for x in self.ex("lister")["resultat"]["certificats"]}["mail.exemple.fr"]
+        self.assertEqual((f["source"], f["etat"], f["algo"]), ("importe", "valide", "ECDSA P-256"))
+
+    def test_lire_x509_algo_et_empreinte(self):
+        if not shutil.which("openssl"):
+            self.skipTest("openssl absent")
+        spec = importlib.util.spec_from_file_location("c", RACINE / "modules" / "certificats" / "CN_module.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        x = m.lire_x509(_pem("r.exemple.fr", 30, "rsa").encode(), "PEM")
+        self.assertEqual((x["algo"], x["noms"]), ("RSA 2048", ["r.exemple.fr"]))
+        self.assertEqual(len(x["empreinte"].split(":")), 32)
+        with self.assertRaises(ValueError):
+            m.lire_x509(b"rien", "PEM")
+
+    def test_la_synthese_compte_et_les_cles_ne_montrent_jamais_de_cle(self):
+        self.certs = {"a.exemple.fr": self.cert(80), "b.exemple.org": self.cert(5), "c.exemple.fr": self.cert(-3)}
+        self.sonde()
+        s = self.ex("synthese")["resultat"]
+        self.assertEqual((s["suivis"], s["valides"], s["proches"], s["echus"], s["inconnus"]), (3, 1, 1, 1, 0))
+        self.assertEqual(sum(t["n"] for t in s["histogramme"]), 3)
+        self.assertNotIn("PRIVATE", str(self.ex("cles")["resultat"]))
+
+    def test_l_audit_se_filtre_et_les_rapports(self):
+        self.ex("demander", hote="n.exemple.fr")
+        a = self.ex("audit")["resultat"]["audit"]
+        self.assertTrue(any(x["action"] == "demande.soumise" for x in a))
+        self.assertEqual(self.ex("audit", resultat="refus")["resultat"]["audit"], [])
+        self.assertEqual(self.ex("rapport", nom="Inventaire complet")["statut"], "faite")
+        self.assertEqual(self.ex("rapport", nom="inconnu")["statut"], "echec")
+
+    def test_la_defaite_d_une_demande_la_supprime(self):
+        r = self.ex("demander", hote="n.exemple.fr")
+        self.assertEqual(len(self.lignes("demande")), 1)
+        self.n.catalogue.get("certificats.demander").defaire(self.ctx, r["resultat"])
+        self.assertEqual(self.lignes("demande"), [])
+
+
 if __name__ == "__main__":
     unittest.main()
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
-# CN : tout ce fichier est du nexus : Monde, Sonde, Quota, Lecture
+# CN : tout ce fichier est du nexus : Monde, Sonde, Quota, Lecture, Cycle
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
