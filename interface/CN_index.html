@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=617b00 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=5963d2 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -981,7 +981,7 @@
   <div id="tab-memory" class="tab-content mx-app">
     <header class="mx-head">
       <div style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:flex-end;justify-content:space-between">
-        <div><h1>Mémoire</h1></div>
+        <div class="pg-tete"><h1>Mémoire</h1><p class="sous">Les faits que Cassandra retient : datés, prouvés, corrigeables d’une phrase. Tu as toujours le dernier mot.</p></div>
         <div class="mv-tete-droite">
           <span class="mx-pill" id="mv-chaine" style="display:none;cursor:pointer" title="chaque geste du journal est chaîné au précédent par empreinte : une altération se voit au recalcul" onclick="memoireChaine()">chaîne</span>
           <input class="mx-select" id="mv-q" placeholder="Chercher dans les souvenirs (plein texte)…" aria-label="Chercher dans les souvenirs" onkeydown="if(event.key==='Enter'){MV.q=this.value;memoireAller(MV_VUES[MV.sec].statut?MV.sec:'actifs');}">
@@ -1538,10 +1538,9 @@
   <div id="tab-proactive" class="tab-content" style="flex-direction:column;overflow:hidden">
     <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;
                 justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-      <div>
-        <h2 style="font-size:15px;color:var(--txt-strong);margin-bottom:4px;
-                   font-family:'JetBrains Mono',monospace;letter-spacing:.05em">Proactivité</h2>
-        <p style="font-size:11px;color:var(--txt-faint)">Ce que Cassandra a remarqué, ce
+      <div class="pg-tete">
+        <h1>Proactivité</h1>
+        <p class="sous">Ce que Cassandra a remarqué, ce
           qu'elle en a fait, et ce qu'elle a le droit de faire seule.
           <span id="pf-lastscan"></span></p>
       </div>

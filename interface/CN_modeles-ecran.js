@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #427e92
+// VERSION CN : 0.2.0  #75426f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=427e92 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=75426f ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -36,7 +36,7 @@
   const CSS = ".md{display:flex;flex-direction:column;gap:16px;color:var(--txt);font-size:13.5px;line-height:1.5}.md *{box-sizing:border-box}.md h1,.md h2,.md h3,.md p{margin:0}.md .mono{font-family:" + MONO + "}" +
     ".md .carte{background:var(--surface);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}" +
     ".md .carte.al{border-left:4px solid var(--danger);background:color-mix(in srgb,var(--danger) 7%,var(--surface))}" +
-    ".md .tete h1{font:650 22px/1.2 'Inter',system-ui,sans-serif;color:var(--txt-strong,var(--txt))}.md .sous,.md .note{color:var(--txt-soft);font-size:12.5px}.md .sous{font-size:13px;margin-top:3px;max-width:68ch}" +
+    ".md .note{color:var(--txt-soft);font-size:12.5px}" +
     ".md h2{font:650 16px 'Inter',system-ui,sans-serif}.md h3{font:650 12.5px 'Inter',system-ui,sans-serif;margin-top:4px}.md .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.md .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}" +
     ".md .btn{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:7px 13px;font:600 12.5px 'Inter',system-ui,sans-serif;cursor:pointer}" +
     ".md .btn:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}.md .btn.pri{background:var(--accent);color:var(--on-accent,#fff);border-color:transparent}.md .btn.pri:hover:not([disabled]){filter:brightness(1.08);color:var(--on-accent,#fff)}" +
@@ -340,7 +340,7 @@
     }
 
     function dessiner() {
-      let h = '<div class="tete"><div class="bar"><h1>Modèles et clés</h1><div class="acts"><button class="btn mini" data-a="console" title="La console technique du module (réglages, gestes, journal)">Console technique</button></div></div>' +
+      let h = '<div class="pg-tete"><div class="bar"><h1>Modèles &amp; clés</h1><div class="acts"><button class="btn mini" data-a="console" title="La console technique du module (réglages, gestes, journal)">Console technique</button></div></div>' +
         '<p class="sous">Les modèles de langage qui font parler Cassandra, Itare et les autres : ceux des fournisseurs en ligne (avec ta clé d’API) et ceux que la machine fait tourner elle-même. Sans modèle, un agent ne répond pas.</p></div>';
       if (S.erreur) h += '<div class="carte err">' + esc(S.erreur) + "</div>";
       if (!S.l) { racine.innerHTML = h + '<div class="attente">Lecture des modèles…</div>'; return; }

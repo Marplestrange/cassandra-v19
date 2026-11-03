@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a7c886
+// VERSION CN : 0.1.0  #9ae402
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a7c886 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=9ae402 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -575,10 +575,28 @@
         html = '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + (mj && mj.actif ? '<section class="carte" role="status" style="border-color:var(--warn,#b45309)"><div class="barre"><div class="sp"><b>' + G("⏸") + 'Mauvais jour en cours</b><div class="note">Tous les agents racontent au lieu de faire' + (mj.jusqua ? " jusqu\'à " + esc(dateFr(mj.jusqua)) : " jusqu\'à ce que tu lèves") + ".</div></div>" + (S.admin ? '<button class="btn" data-mj-lever="1">Lever</button>' : "") + "</div></section>" : "") + await f() + "</div>";
       } catch (e) { html = '<div class="vide">' + esc((e && e.message) || e) + "</div>"; }
       if (moi !== dessin) return;                                                     // un dessin plus récent est parti : il écrira seul
-      racine.innerHTML = html; brancher();
+      racine.innerHTML = tetePage() + html; brancher();
       if (typeof window.agentsSuivre === "function") window.agentsSuivre(pageMenu(), S.attente == null ? 0 : S.attente);
       const sc = corps.closest(".sh-scene"), ti = sc && sc.querySelector(".sh-titre");           // le titre suit la page choisie dans le menu
       if (ti) ti.textContent = { equipe: "L’équipe", conv: "Conversations", boite: "À valider", journal: "Journal", auditeur: "Auditeur", maison: "Règles communes", modeles: "Modèles & clés" }[S.vue] || ((S.eq && S.eq.equipe.find((x) => x.id === S.agent) || {}).nom || "Agents IA");
+    }
+    // La tête de chaque page de l'onglet : le titre en grand, une phrase dessous. Modèles & clés la dessine elle-même (elle a son bouton).
+    const TETES = {
+      equipe: ["L’équipe", "Cassandra, Itare, Amizo et leurs services : ce qu’ils font, ce qu’ils coûtent, ce qui attend ton accord."],
+      conv: ["Conversations", "Tes échanges avec Cassandra et Itare."],
+      boite: ["À valider", "Ce que tes agents veulent faire et ne font pas seuls : la décision est la tienne."],
+      journal: ["Journal", "Ce que les agents ont fait, avec la preuve de chaque acte et son retour arrière."],
+      auditeur: ["Auditeur", "Il relit le journal et signale les dérives : un coût qui monte, un palier trop généreux, une tentative répétée."],
+      maison: ["Règles communes", "Les garanties qui valent pour tous les agents : elles permettent de les laisser agir."],
+    };
+    function tetePage() {
+      if (S.vue === "modeles") return "";
+      let t = TETES[S.vue];
+      if (S.vue === "fiche") {
+        const a = S.eq && S.eq.equipe && S.eq.equipe.find((x) => x.id === (S.admin ? S.agent : "itare"));
+        t = [a ? (S.admin ? a.nom : "Mon Itare") : "Agent", a && a.role ? a.role : "La fiche de l’agent : son identité, ses outils, son journal, son coût."];
+      }
+      return t ? '<header class="pg-tete"><h1>' + esc(t[0]) + '</h1><p class="sous">' + esc(t[1]) + "</p></header>" : "";
     }
     const recharger = (eq) => { if (eq) { S.eq = null; S.lu = 0; MEM.eq = null; MEM.regles = null; } return dessiner(); };
     const aller = (v, agent, onglet) => { S.vue = v; if (agent) S.agent = agent; if (onglet) S.onglet = onglet; if (v === "conv") S.conv.liste = null; dessiner(); };
