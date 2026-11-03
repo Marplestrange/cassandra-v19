@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #37c6f8
+// VERSION CN : 0.2.0  #fdfc3e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=37c6f8 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=fdfc3e ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -204,7 +204,7 @@
       const loc = S.loc || {}, inst = loc.modeles || [], dm = {}, decl = new Set(locauxDecl().map((m) => { dm[m.nom] = m; return m.nom; })), pulls = (loc.telechargements || []).filter((p) => p.etat === "attente" || p.etat === "en cours");
       const noms = new Set(inst.map((m) => m.name)), total = S.mo && S.mo.machine ? S.mo.machine.total : 0, dispo = S.mo && S.mo.machine ? S.mo.machine.disponible : 0;
       let h = '<div class="carte"><div class="bar"><h2>Modèles sur cette machine (Ollama)</h2>' + (loc.repond ? '<span class="pastille ok">Ollama répond</span>' : '<span class="pastille dg" title="' + esc(loc.raison || "") + '">Ollama ne répond pas</span>') + "</div>";
-      if (total) h += '<div><div class="bar note"><span class="mono">Mémoire de la machine : ' + go((total / 1e9).toFixed(1)) + "</span>" + (dispo ? "<span>" + go((dispo / 1e9).toFixed(1)) + " disponibles</span>" : "") + '</div><div class="barre" style="margin-top:6px"><i class="' + (dispo && dispo / total < 0.15 ? "al" : "") + '" style="width:' + (dispo ? Math.round(100 * (1 - dispo / total)) : 0) + '%"></i></div></div>';
+      if (total) h += '<div><div class="bar note"><span class="mono">Mémoire de la machine : ' + go((total / 1e9).toFixed(1)) + "</span>" + (dispo ? "<span>" + go((dispo / 1e9).toFixed(1)) + " disponibles</span>" : "") + '</div>' + (dispo ? '<div class="barre" style="margin-top:6px"><i class="' + (dispo / total < 0.15 ? "al" : "") + '" style="width:' + Math.round(100 * (1 - dispo / total)) + '%"></i></div>' : "") + "</div>";
       if (!loc.repond) h += '<p class="note err">' + esc(loc.raison || "Ollama est arrêté") + ' — sur la machine : <span class="mono">systemctl start ollama</span> (ou relancer l’installateur avec WITH_OLLAMA=1).</p>';
       h += inst.length ? inst.map((m) => '<div class="rang"><div><span class="nom">' + esc(m.name) + '</span><br><span class="note">' + octets(m.taille) + " sur le disque</span></div><div class=\"m\">" + (decl.has(m.name) ? '<span class="pastille ok">déclaré</span> ' + pastilleEssai(dm[m.name]) + epreuves(dm[m.name]) : '<span class="pastille mu">installé, pas déclaré</span>') + '</div><div class="acts">' +
         (decl.has(m.name) ? '<button class="btn mini" data-a="essayer" data-id="' + esc(dm[m.name].id) + '"' + (S.occupe ? " disabled" : "") + ">Essayer</button>" : '<button class="btn mini pri" data-a="declarer" data-n="' + esc(m.name) + '"' + (S.occupe ? " disabled" : "") + ">Utiliser</button>") +

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7aea2f
+# VERSION CN : 0.1.0  #6d3cb8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7aea2f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6d3cb8 ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -577,8 +577,10 @@ def brancher(ctx):
         t = 0
         for racine, _, fichiers in os.walk(chemin):
             for f in fichiers:
+                chemin_f = os.path.join(racine, f)
                 try:
-                    t += os.path.getsize(os.path.join(racine, f))
+                    if not os.path.islink(chemin_f):                  # le cache Hugging Face relie ses « snapshots » aux blobs : sans cela tout compte deux fois
+                        t += os.path.getsize(chemin_f)
                 except OSError:
                     pass
         return t
