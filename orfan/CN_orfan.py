@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #800d2a
+# VERSION CN : 0.1.0  #e0e473
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : propose des variantes d'une fonction pure : d'abord des optimisations déterministes gratuites, puis un modèle de langage guidé par le profil de l'appel.
 # MÉTHODE    : il ne connaît pas le noyau : il reçoit un contexte (source, entrées, contrat, tombes) et rend du texte ; il profile par comptage des lignes exécutées.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=800d2a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e0e473 ▼▼▼
 """Orfan v1 (docs/CN_EVOLUTION.md, « Orfan est un projet à part entière » : v1 = ce que savait faire le moteur V18, amélioré).
 
 Contrat d'adaptateur, le seul lien avec Cassandra :   moteur.proposer(contexte) -> liste de textes (ou de {"texte", "hypothese"})
@@ -284,9 +284,12 @@ def comparer_local(source: str, texte: str, fonction: str, entrees: list, passes
     except Exception:
         return False, 0.0
 
-    def mesure(f):
+    def mesure(code):
+        """Chaque passe recharge la fonction à neuf, comme le juge du noyau : sinon une variante qui mémorise (lru_cache) arrive chaude à la mesure (la vérification d'équivalence l'a déjà appelée
+        sur toutes les entrées) et son gain est gonflé de plusieurs centaines de fois. Au sein d'une passe, chaque entrée est jouée une fois."""
         meilleur = None
         for _ in range(max(1, passes)):
+            f = charger_local(code, fonction)
             t = 0
             for e in sujet:
                 x = copy.deepcopy(e)
@@ -297,7 +300,7 @@ def comparer_local(source: str, texte: str, fonction: str, entrees: list, passes
         return meilleur
 
     try:
-        tr, tc = mesure(ref), mesure(cand)
+        tr, tc = mesure(source), mesure(texte)
     except Exception:
         return False, 0.0
     return True, (tr / tc) if tc else 0.0

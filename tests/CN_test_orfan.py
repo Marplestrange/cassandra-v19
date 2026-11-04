@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3468e4
+# VERSION CN : 0.1.0  #8bf13a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs d'Orfan v1 : le profil, les optimisations déterministes (équivalentes, une règle à la fois), le moteur à modèle, et la chaîne complète avec le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3468e4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8bf13a ▼▼▼
 """Bancs d'Orfan v1 : le profil, les optimisations déterministes (équivalentes, une règle à la fois), le moteur à modèle, et la chaîne complète avec le noyau."""
 import json
 import shutil
@@ -57,6 +57,43 @@ class Profil(unittest.TestCase):
 
     def test_sans_entree_pas_de_profil(self):
         self.assertEqual(O.profil(BOUCLE, "f", []), [])
+
+
+class MesureLocale(unittest.TestCase):
+    """`comparer_local` mesure à froid : une variante qui s'échauffe (cache, mémoïsation) ne doit pas arriver chaude à la mesure."""
+    REF = "def f(e):\n    s = 0\n    for i in range(20000):\n        s += i\n    return {'y': s * 0 + 2 * e['x']}\n"
+    CHAUDE = ("_chaud = []\n"
+              "def f(e):\n"
+              "    if _chaud:\n"
+              "        return {'y': 2 * e['x']}\n"
+              "    _chaud.append(1)\n"
+              "    s = 0\n"
+              "    for i in range(20000):\n"
+              "        s += i\n"
+              "    return {'y': s * 0 + 2 * e['x']}\n")
+    ENTREES = [{"x": i} for i in range(24)]
+
+    def test_chaque_passe_recharge_la_fonction(self):
+        from unittest import mock
+        reel = O.charger_local
+        appels = []
+
+        def compte(texte, fonction):
+            appels.append(texte)
+            return reel(texte, fonction)
+        with mock.patch.object(O, "charger_local", side_effect=compte):
+            ok, _ = O.comparer_local(self.REF, self.CHAUDE, "f", self.ENTREES, passes=3)
+        self.assertTrue(ok)
+        self.assertEqual(len(appels), 2 + 2 * 3)                  # l'équivalence (2 chargements), puis référence et candidat rechargés à chaque passe
+
+    def test_une_variante_qui_s_echauffe_n_a_pas_un_gain_gonfle(self):
+        ok, rapport = O.comparer_local(self.REF, self.CHAUDE, "f", self.ENTREES)
+        self.assertTrue(ok)
+        # froide, la première entrée de chaque passe paye toute la boucle : le gain tourne autour du nombre d'entrées (24), jamais des milliers
+        self.assertLess(rapport, 100)
+
+    def test_un_candidat_faux_reste_faux(self):
+        self.assertEqual(O.comparer_local(self.REF, "def f(e):\n    return {'y': 1}\n", "f", self.ENTREES), (False, 0.0))
 
 
 class Optimisations(unittest.TestCase):
