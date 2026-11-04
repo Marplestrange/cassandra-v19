@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #cf74e0
+# VERSION CN : 0.5.1  #700d90
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=cf74e0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=700d90 ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -48,6 +48,7 @@ ECRITURES_RISQUEES = ("moyen", "eleve")
 
 
 def brancher(ctx):
+    eq._point = ctx.point
     o._point = ctx.point
     db = ctx.stockage
 
@@ -210,6 +211,16 @@ def brancher(ctx):
                 msgs.append({"role": "user", "content": m["contenu"]})
         return o.coherents(msgs)
 
+    def avec_heure(msgs, heure):
+        """L'heure du tour, à la FIN : sur le dernier message de la personne, dans la copie envoyée au modèle (le fil gardé en base ne la porte pas).
+        Le début du texte envoyé ne contient plus rien qui change à la minute : un modèle local en réutilise la lecture au tour suivant."""
+        sortie = list(msgs)
+        for i in range(len(sortie) - 1, -1, -1):
+            if sortie[i].get("role") == "user":
+                sortie[i] = dict(sortie[i], content=str(sortie[i].get("content") or "") + "\n\n(Il est %s.)" % heure)
+                break
+        return sortie
+
     def modele_pour(agent, cfg, secours=False):
         """Les rôles essayés, dans l'ordre. Cassandra parle par le rôle de la maison ; Itare par le modèle que le compte a choisi, à défaut par le rôle d'Itare ;
         le réglage de l'agent (modèle principal) l'emporte, et son modèle de secours ferme la liste. Au plafond « secours », le secours seul."""
@@ -359,7 +370,9 @@ def brancher(ctx):
                 ton = str((lecture("modeles.lister") or {}).get("ton") or "")
             except Exception:
                 ton = ""
-            systeme = o.prompt_systeme(agent, compte, datetime.now().strftime("%A %d %B %Y, %H:%M"), memo.get("bloc") or "", persona, ton, len(pres))
+            maintenant = datetime.now()
+            heure = maintenant.strftime("%H:%M")                            # relevée UNE fois par tour : elle ne change pas d'une étape à l'autre
+            systeme = o.prompt_systeme(agent, compte, maintenant.strftime("%A %d %B %Y"), memo.get("bloc") or "", persona, ton, len(pres))      # la date au JOUR, pas à la minute : le début du texte reste identique d'un tour à l'autre, et le modèle local n'a pas à le relire
             etat = {"teinte": [], "ecritures": 0, "niveau": cfg["niveau"], "cid": cid, "tour": tour, "message": message, "memoires": sorted({int(i) for i in REF_SOUVENIR.findall(memo.get("bloc") or "")})}
             try:
                 P.observer_outils(agent, cle_cfg(agent, compte), [t["cle"] for t in tous])      # la période d'essai d'un outil neuf commence à sa première apparition
@@ -384,7 +397,7 @@ def brancher(ctx):
                     actions.append({"statut": "plafond", "portee": v["portee"], "action": "arret"})
                     break
                 secours = bool(v and v["action"] in ("secours", "arret"))   # Cassandra n'est jamais arrêtée : au plafond elle passe sur son secours
-                msgs = fil_pour_modele(cid, E.limite(cfg, "taille_fil", int(reglage("taille_fil", 40))))
+                msgs = avec_heure(fil_pour_modele(cid, E.limite(cfg, "taille_fil", int(reglage("taille_fil", 40)))), heure)
                 r = appeler_modele(agent, compte, cfg, msgs, systeme, schemas, E.limite(cfg, "max_jetons", int(reglage("max_jetons", 12000))), secours)
                 if not r.get("ok") and etape > 0 and not vide_rejoue and "VIDE" in str(r.get("erreur", "")):
                     vide_rejoue = True                                      # des outils, puis un contenu vide : on demande de conclure, une fois

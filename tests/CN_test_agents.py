@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #932b88
+# VERSION CN : 0.1.0  #be7ee8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle qui appelle des outils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=932b88 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=be7ee8 ▼▼▼
 """Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle qui appelle des outils."""
 import json
 import shutil
@@ -137,14 +137,28 @@ class Conversation(Monde):
         self.assertIn("Tu parles avec **%s**" % BEA, sysm)
         self.assertIn("nginx écoute sur le port 8080", sysm)                  # le rappel de la mémoire est dans le prompt
         self.assertIn("## RÈGLES (non négociables)", sysm)
-        self.assertEqual(q["corps"]["messages"][-1], {"role": "user", "content": "Sur quel port nginx écoute-t-il ?"})
+        dernier = q["corps"]["messages"][-1]
+        self.assertEqual(dernier["role"], "user")
+        self.assertRegex(dernier["content"], r"^Sur quel port nginx écoute-t-il \?\n\n\(Il est \d\d:\d\d\.\)$")        # l'heure du tour est à la FIN du dernier message
         self.assertTrue(any(t["function"]["name"] == "outil_cherche" for t in q["corps"]["tools"]))
 
     def test_le_fil_est_relu_au_tour_suivant(self):
         r = self.causer("Bonjour", [texte("Bonjour !")])
         self.causer("Et maintenant ?", [texte("Maintenant, rien.")], conversation_id=r["conversation_id"])
         roles = [(m["role"], m["content"]) for m in self.faux.requetes[1]["corps"]["messages"] if m["role"] != "system"]
-        self.assertEqual(roles, [("user", "Bonjour"), ("assistant", "Bonjour !"), ("user", "Et maintenant ?")])
+        self.assertEqual([r[0] for r in roles], ["user", "assistant", "user"])
+        self.assertEqual((roles[0][1], roles[1][1]), ("Bonjour", "Bonjour !"))                 # les anciens messages restent tels quels : seul le dernier porte l'heure
+        self.assertRegex(roles[2][1], r"^Et maintenant \?\n\n\(Il est \d\d:\d\d\.\)$")
+
+    def test_le_debut_du_prompt_ne_change_pas_d_un_tour_a_l_autre_et_le_fil_garde_ne_porte_pas_l_heure(self):
+        """Un modèle local réutilise la lecture du DÉBUT du texte : tant que rien n'y change à la minute, le tour suivant ne le relit pas. Mesuré sur Argos : 60 s relus contre 0,1 s réutilisés."""
+        r = self.causer("Bonjour", [texte("Bonjour !")])
+        self.causer("Et maintenant ?", [texte("Rien.")], conversation_id=r["conversation_id"])
+        s1, s2 = (q["corps"]["messages"][0]["content"] for q in self.faux.requetes[:2])
+        self.assertEqual(s1, s2)
+        self.assertRegex(s1, r"Nous sommes le [^\n]*\d{4}\.")
+        self.assertNotRegex(s1.split("## RÈGLES")[0], r"\d\d:\d\d")                           # plus d'heure à la minute avant les règles
+        self.assertEqual([m["contenu"] for m in self.msgs(r["conversation_id"]) if m["role"] == "user"], ["Bonjour", "Et maintenant ?"])      # la base ne garde pas l'heure
 
     def test_le_ton_de_l_instance_et_celui_du_compte_entrent_dans_le_prompt(self):
         self.n.reglages.poser("agents.persona_cassandra", "Réponds toujours en trois phrases au plus.", "")
@@ -336,7 +350,9 @@ class Pannes(Monde):
         self.assertIn("HTTP 500", m[1]["contenu"])
         self.causer("Tu es là ?", [texte("Oui.")], conversation_id=r["conversation_id"])
         envoye = [x["content"] for x in self.faux.requetes[-1]["corps"]["messages"] if x["role"] != "system"]
-        self.assertEqual(envoye, ["Bonjour", "Tu es là ?"])
+        self.assertEqual(envoye[0], "Bonjour")
+        self.assertTrue(envoye[1].startswith("Tu es là ?"))
+        self.assertEqual(len(envoye), 2)
 
     def test_pas_de_modele_lie_se_dit_au_lieu_de_planter(self):
         self.ex("modeles.role_lier", compte=ROOT, role="principal", modele_id="")
