@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #42c8da
+# VERSION CN : 0.5.0  #785e4d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=42c8da ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=785e4d ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -26,6 +26,7 @@ import json
 import os
 import re
 import sys
+import time
 
 _MOTEUR_PERMIS = re.compile(r"^orfan(\.[A-Za-z_][A-Za-z0-9_]*)+$")      # un moteur se trouve DANS le paquet orfan : un réglage n'importe pas n'importe quel module du serveur
 
@@ -460,6 +461,71 @@ def brancher(ctx):
         visites = evo.visiter(maximum=1)                       # une visite est une évaluation entière : une seule par passage
         return {"avances": avances, "visites": visites}
 
+    # ── ce qu'Évolution dit aux autres modules : des constats (Notifications), un signal (Aujourd'hui), des mesures (Mesures) ──
+    # Rien n'est recalculé ni inventé ici : tout vient de la chaîne scellée, de la cage et du registre des moteurs. Un module ne parle jamais à la place d'un autre : il déclare, les autres lisent.
+    def retraits_seuls(heures=24):
+        """Les pièces retirées SANS que l'admin le demande, ces dernières heures : par le disjoncteur ou par la visite (le gain n'a pas tenu). Un retour demandé n'est pas une alerte."""
+        depuis = time.time() - heures * 3600
+        out = []
+        for e in evo.chaine(None, 200):
+            raison = str((e["details"] or {}).get("raison", ""))
+            if e["verbe"] == "retiree" and float(e["ts"]) >= depuis and (raison.startswith("suspendue par le disjoncteur") or raison.startswith("visite :")):
+                out.append({"gid": e["gid"], "ec": (e["details"] or {}).get("ec", ""), "raison": raison, "ts": float(e["ts"])})
+        return out
+
+    def isolation_faible():
+        """Sur un hôte POSIX, le bac du système devrait envelopper les processus des chercheurs. Ailleurs (Windows) il n'existe pas : ce n'est pas une alerte."""
+        return os.name == "posix" and evo.points.isolation == "processus" and evo.points._nom_bac() in ("aucun", "indisponible")
+
+    def constats(c):
+        """Un constat par cause ; il se referme seul quand la cause disparaît (le détecteur ne le rend plus)."""
+        out = []
+        chaine = evo.verifier_chaine()
+        if not chaine.get("ok"):
+            out.append({"objet": ("evolution_chaine", "chaine"), "titre": "La chaîne scellée d'Évolution est rompue",
+                        "detail": "Une ligne a été modifiée ou retirée après coup (maillon %s%s). Ce qu'Évolution a fait ne peut plus être garanti." % (chaine.get("rupture_a", "?"), ", " + chaine["raison"] if chaine.get("raison") else ""), "niveau": "critique"})
+        for p in retraits_seuls():
+            out.append({"objet": ("evolution_piece", "%s:%s" % (p["gid"], p["ec"])), "titre": "Une amélioration a été retirée toute seule : %s" % p["gid"],
+                        "detail": p["raison"][:200], "niveau": "attention"})
+        if isolation_faible():
+            out.append({"objet": ("evolution_bac", "bac"), "titre": "Les chercheurs d'Évolution ne sont pas enveloppés par le bac du système",
+                        "detail": "Chaque chercheur tourne bien dans un processus à part, sans clé ni réseau, mais le bac du système (bubblewrap) n'est pas disponible sur cet hôte.", "niveau": "attention"})
+        return out
+
+    def item_jour(bande, quoi, titre, detail="", ref="", poids=0, geste=("Ouvrir", "ouvrir")):
+        return {"bande": bande, "quoi": quoi, "titre": str(titre or "")[:160], "detail": str(detail or "")[:200], "nat": "evolution", "ref": str(ref or ""), "poids": int(poids), "ou": "evolution",
+                "geste": list(geste) if geste else None}
+
+    def signal_evolution(c):
+        """Pour le bureau du jour : ce qui brûle ou se dégrade côté Évolution. Rien quand tout va bien."""
+        items = []
+        chaine = evo.verifier_chaine()
+        if not chaine.get("ok"):
+            items.append(item_jour("brule", "evolution", "La chaîne scellée d'Évolution est rompue", "Ce qu'elle a fait ne peut plus être garanti.", "chaine", 100, ("Vérifier", "ouvrir")))
+        for p in retraits_seuls():
+            items.append(item_jour("regarder", "evolution", "Amélioration retirée toute seule : %s" % p["gid"], p["raison"], "%s:%s" % (p["gid"], p["ec"]), 60, ("Voir", "ouvrir")))
+        return {"items": items}
+
+    def serie(c, mesure="", depuis="", jusqu_a=""):
+        """Les séries d'Évolution, un point par jour (jetons et essais des moteurs) ou par événement (retraits) : ce que Mesures trace."""
+        if mesure not in ("evolution_jetons", "evolution_essais", "evolution_retraits"):
+            raise ValueError("mesure inconnue : « %s »" % mesure)
+        a, b = str(depuis)[:10], str(jusqu_a)[:10]
+        if mesure == "evolution_retraits":
+            pts = [[time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(e["ts"]))), 1] for e in reversed(evo.chaine(None, 500)) if e["verbe"] == "retiree"]
+            return {"series": [{"nom": "retraits", "points": [p for p in pts if (not a or p[0][:10] >= a) and (not b or p[0][:10] <= b)]}]}
+        cle = "jetons" if mesure == "evolution_jetons" else "essais"
+        jours = {}
+        depense = registre()._lire().get("depense") or {}
+        for ident in depense:
+            for j, v in (depense.get(ident) or {}).items():
+                jours[j] = jours.get(j, 0) + int(v.get(cle, 0))
+        pts = [[j + " 12:00:00", n] for j, n in sorted(jours.items()) if (not a or j >= a) and (not b or j <= b)]
+        return {"series": [{"nom": "jetons" if cle == "jetons" else "essais", "points": pts}]}
+
+    ctx.detecteur("evolution_alertes", constats)
+    ctx.implementer("signal_evolution", signal_evolution)
+    ctx.implementer("serie", serie)
     ctx.implementer("cibles", cibles)
     ctx.implementer("etat", etat)
     ctx.implementer("moteurs", moteurs)

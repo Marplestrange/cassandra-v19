@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #0bfd04
+# VERSION CN : 0.5.0  #dedeb9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=0bfd04 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=dedeb9 ▼▼▼
 [module]
 id = "evolution"
 nom = "Évolution"
@@ -284,6 +284,56 @@ preuve = "plus aucune entrée du corpus n'est rattachée à ce compte"
 retour = "aucun : les entrées se reforment du trafic à venir ; la mesure d'un point exclu n'est pas touchée"
 paliers = ["raconter"]
 qui = ["humain", "compte"]
+
+[[capacites]]
+id = "signal_evolution"
+libelle = "Ce qui brûle ou se dégrade côté Évolution, pour le bureau du jour : chaîne rompue, amélioration retirée toute seule. Rien quand tout va bien"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "serie"
+libelle = "Les séries d'Évolution pour l'historique : jetons et essais des moteurs par jour, retraits de pièces"
+risque = "lecture"
+droit = "voir"
+
+[[detecteurs]]
+id = "evolution_alertes"
+libelle = "Évolution a quelque chose à faire savoir : chaîne scellée rompue, amélioration retirée toute seule par le disjoncteur ou la visite, chercheurs sans le bac du système (hôte POSIX)"
+frequence_s = 600
+
+[[signaux]]
+id = "evolution"
+libelle = "Évolution"
+capacite = "signal_evolution"
+
+[[mesures]]
+id = "evolution_jetons"
+libelle = "Jetons des chercheurs"
+capacite = "serie"
+genre = "compteur"
+unite = "jetons"
+famille = "Autonomie"
+description = "Jetons de modèle dépensés par les chercheurs d'Évolution, par jour. Leur prix se lit dans Agents IA."
+
+[[mesures]]
+id = "evolution_essais"
+libelle = "Essais des chercheurs"
+capacite = "serie"
+genre = "compteur"
+unite = "essais"
+famille = "Autonomie"
+description = "Variantes essayées par les chercheurs d'Évolution, par jour."
+
+[[mesures]]
+id = "evolution_retraits"
+libelle = "Améliorations retirées"
+capacite = "serie"
+genre = "compteur"
+unite = "retraits"
+famille = "Autonomie"
+vide = "rien_a_signaler"
+description = "Améliorations retirées (par toi, par le disjoncteur ou par la visite)."
 
 [[ecrans]]
 id = "cockpit"
