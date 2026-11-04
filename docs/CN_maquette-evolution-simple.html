@@ -13,7 +13,7 @@
 <!-- RÔLE       : la maquette de l'écran Évolution pensé pour quelqu'un qui n'est pas ingénieur : une phrase d'état, des résultats, trois réglages en mots simples, et tout le reste (chercheurs, comparaison, sécurité, carnet) rangé « sous le capot » -->
 <!-- MÉTHODE    : une page autonome, données de démonstration ; le vocabulaire interne (ombre, paliers, tombes, moteur, cage…) n'apparaît pas à l'écran, il est traduit dans l'onglet Vocabulaire -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=1b191b ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=87e602 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -222,11 +222,8 @@ function log(g, x) { JOURNAL.unshift({ t: "à l'instant", g: g, x: x }); }
 
 /* ── haut de page : toujours la même réponse à « est-ce que ça va ? » ── */
 function entete() {
-  var essai = AMELIO.filter(function (a) { return a.etat === "essai"; }).length;
-  var phrase = S.pauseEvo ? "L'autonomie est gelée : Évolution observe, elle ne met rien en service." : essai ? essai + (essai > 1 ? " améliorations à l'essai" : " amélioration à l'essai") + " : rien n'a changé pour personne." : "Rien n'est en cours.";
   return '<div class="entete"><div><h1>Évolution</h1><div class="note" style="font-size:13px;margin-top:2px">Cassandra rend ses propres fonctions plus rapides, seulement quand elle peut le prouver. Tout est annulable.</div></div>' +
-    '<div class="d">' + puce(S.pauseEvo ? "autonomie gelée" : "active", S.pauseEvo ? "al" : "ok") + "</div></div>" +
-    '<div class="phrase">' + esc(phrase) + "</div>";
+    '<div class="d">' + puce(S.pauseEvo ? "autonomie gelée" : "active", S.pauseEvo ? "al" : "ok") + "</div></div>";
 }
 
 /* ── 1 · Aujourd'hui ── */
