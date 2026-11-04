@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dccfa2
+# VERSION CN : 0.1.0  #d7d3b5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : reçoit des variantes d'un moteur de recherche, ne retient que celles que l'évaluateur prouve, les met en service sans risque et vérifie le gain plus tard.
 # MÉTHODE    : le moteur ne propose que du texte ; ici tout est déterministe : évaluation, pièges, écriture de l'EC, ombre, paliers, retour, chaîne d'empreintes, tombes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dccfa2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d7d3b5 ▼▼▼
 """L'évolution (docs/CN_EVOLUTION.md) : le côté NEXUS. Le moteur de recherche (Orfan, ou un autre par le contrat d'adaptateur) ne fait que PROPOSER du texte ;
 tout ce qui décide est ici, en code déterministe :
 
@@ -257,6 +257,12 @@ class Evolution:
                     self._tomber(c, gid, h, "gain insuffisant, dans le bruit de mesure (%s %%) ou qui ne tient pas hors du vu : %s %%" % (round(bruit, 1), r["gain_pct"]))
                 continue
             retenus.append({"texte": texte, "ast": h, "eval": r, "hypothese": hypothese, "moteur": origine, "objectifs": r.get("objectifs") or {"latence": r["gain_pct"]}})
+        rappel = getattr(moteur, "verdicts", None)                           # facultatif : un moteur qui tient un carnet apprend ce que le juge a décidé
+        if callable(rappel):
+            try:
+                rappel(gid, [dict(e, retenu=bool(e.get("ast")) and any(r["ast"] == e["ast"] for r in retenus)) for e in essais])
+            except Exception:
+                pass                                                          # un carnet qui échoue ne défait jamais un jugement
         choix = self._choisir(retenus)
         meilleur = retenus[choix["meilleur"]] if choix["meilleur"] is not None else None
         return {"erreur": "", "essais": essais, "retenus": retenus, "meilleur": meilleur, "frontiere": [retenus[i]["ast"] for i in choix["frontiere"]], "ecartes": choix["ecartes"]}

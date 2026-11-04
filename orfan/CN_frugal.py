@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7e498c
+# VERSION CN : 0.1.0  #0fa00c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le moins de jetons possible : les règles gratuites d'abord ; sinon un modèle fort propose 2-3 stratégies en texte, un modèle économe les écrit en code, chaque version est vérifiée ici et affinée sur sa raison d'échec.
 # MÉTHODE    : règles, puis stratégies (rôle strategie) → code (rôle executant) → vérification locale → affinage borné ; s'arrête dès qu'une variante prouvée existe ; sans point chaud, aucune dépense.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e498c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0fa00c ▼▼▼
 """Frugal 2 : notre version de l'idée de FrugalEvo (docs/CN_FRUGALEVO.md).
 
   étage 1 · règles déterministes : zéro jeton ; si l'une est prouvée plus rapide, on la rend et on s'arrête ;
@@ -113,13 +113,15 @@ class MoteurFrugal:
             return ""
         lignes = ["", "Idées DÉJÀ essayées sur cette fonction (ne les repropose pas telles quelles) :"]
         for f in memoire[-16:]:
-            if f["issue"] == "prouvee":
+            if f["issue"] == "retenue":
+                lignes.append("- « %s » : le juge l'a RETENUE (gain %s %%) ; ne la refais pas, ajoute un vrai degré de liberté nouveau." % (f["famille"], f.get("rapport")))
+            elif f["issue"] == "prouvee":
                 lignes.append("- « %s » : a donné une version plus rapide (×%.2f) ; ne la refais pas, ajoute un vrai degré de liberté nouveau." % (f["famille"], f.get("rapport") or 0))
             else:
-                lignes.append("- « %s » : %s" % (f["famille"], f.get("detail") or {"fausse": "a rendu un résultat différent", "lente": "n'était pas plus rapide", "vide": "n'a rien donné d'exploitable"}[f["issue"]]))
+                lignes.append("- « %s » : %s" % (f["famille"], f.get("detail") or {"fausse": "a rendu un résultat différent", "lente": "n'était pas plus rapide", "vide": "n'a rien donné d'exploitable"}.get(f["issue"], "a échoué")))
         queue = 0
         for f in reversed(memoire):
-            if f["issue"] == "prouvee":
+            if f["issue"] in ("prouvee", "retenue"):
                 break
             queue += 1
         if queue >= 6:
@@ -149,7 +151,7 @@ class MoteurFrugal:
                 continue
             familles.add(famille)
             sortie.append({"titre": famille, "plan": b[:1500], "texte": "", "raison": "", "etat": 0})
-        ratees = {str(f.get("famille", "")).lower() for f in (self._memoire or []) if f.get("issue") in ("fausse", "lente", "vide")}
+        ratees = {str(f.get("famille", "")).lower() for f in (self._memoire or []) if f.get("issue") in ("fausse", "lente", "vide", "refusee")}
         neuves = [s for s in sortie if s["titre"] not in ratees]                 # une famille déjà ratée ne coûte pas un appel de plus : le modèle fort l'a redite malgré la consigne
         self._toutes_ratees = bool(sortie) and not neuves
         if len(neuves) < len(sortie):
@@ -228,7 +230,7 @@ class MoteurFrugal:
                 s["etat"], s["raison"] = (2 if ok else (1 if rapport > 0 else 0)), raison
                 self._noter(s, ok, rapport, raison)
                 if ok:
-                    trouves.append((rapport, {"texte": texte, "hypothese": "stratégie « %s » (×%.2f sur le vu, tour %d)" % (s["titre"], rapport, tour), "origine": "frugal"}))
+                    trouves.append((rapport, {"texte": texte, "hypothese": "stratégie « %s » (×%.2f sur le vu, tour %d)" % (s["titre"], rapport, tour), "origine": "frugal", "famille": s["titre"]}))
                     if tour > 0:
                         break                                    # un affinage réussi suffit : on ne dépense plus
             if trouves or not self._reste():

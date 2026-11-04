@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7c9131
+# VERSION CN : 0.1.0  #e1a28d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prouve que Frugal 2 ne dépense rien quand il n'y a rien à gagner, plafonne ses appels, affine sur la raison d'un échec et ne rend jamais une version non équivalente.
 # MÉTHODE    : un modèle de banc scripté (aucune clé) derrière le vrai relais de la cage ; le moteur tourne dans son vrai processus.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7c9131 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e1a28d ▼▼▼
 """Bancs de Frugal 2 (orfan/CN_frugal.py)."""
 import sys
 import tempfile
@@ -24,6 +24,8 @@ RACINE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RACINE))
 from noyau import CN_moteurs as MO  # noqa: E402
 from noyau.CN_points import DelaiEC  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import CN_test_evolution_module as TM  # noqa: E402
 
 SOURCE = "def f(x):\n    t = 0\n    for v in x:\n        t = t + v * 2\n    return t\n"             # un point chaud, aucune règle gratuite n'y change rien
 ENTREES = [list(range(3000)), list(range(2500)), list(range(2800))]
@@ -197,6 +199,26 @@ class Memoire(unittest.TestCase):
         self.reg.noter_fiches("p", [{"famille": "IDÉE 39", "issue": "prouvee", "rapport": 2}])        # une même famille n'a qu'une fiche : la dernière
         self.assertEqual(len([x for x in self.reg.fiches("p") if x["famille"].lower() == "idée 39"]), 1)
 
+    def test_le_verdict_du_juge_remplace_le_prouve_sur_le_vu_dans_le_carnet(self):
+        from noyau.CN_evolution import empreinte_ast
+        m = self.moteur(Banc(lambda r, p, n: STRATEGIES if r == "strategie" else BONNE))
+        rendus = m.proposer(contexte())
+        fam = rendus[0]["famille"]                                                               # deux stratégies, même code : une seule variante rendue, sous la famille du meilleur rapport
+        self.assertIn(fam, ("somme native", "formule fermée"))
+        h = empreinte_ast(rendus[0]["texte"])
+        m.verdicts("a.b", [{"ast": h, "verdict": "equivalente", "gain_pct": 4.0, "retenu": False}, {"ast": "inconnu", "verdict": "divergente", "retenu": False}])
+        f = {x["famille"]: x for x in self.reg.fiches("a.b")}
+        self.assertEqual(f[fam]["issue"], "refusee")                                 # prouvée sur le vu, refusée par le juge : le carnet le sait
+        self.assertIn("gain insuffisant", f[fam]["detail"])
+        m.verdicts("a.b", [{"ast": h, "verdict": "equivalente", "gain_pct": 31.0, "retenu": True}])
+        self.assertEqual({x["famille"]: x["issue"] for x in self.reg.fiches("a.b")}[fam], "retenue")
+
+    def test_une_famille_refusee_par_le_juge_n_est_pas_reecrite(self):
+        self.reg.noter_fiches("a.b", [{"famille": "somme native", "issue": "refusee", "detail": "le juge l'a refusée"}, {"famille": "formule fermée", "issue": "refusee"}])
+        banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else self.fail("réécrite"))
+        self.assertEqual(self.moteur(banc).proposer(contexte()), [])
+        self.assertEqual(len(banc.appels), 1)
+
     def test_apres_six_echecs_de_suite_le_fort_doit_changer_de_famille(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("frugal2", str(RACINE / "orfan" / "CN_frugal.py"))
@@ -206,6 +228,36 @@ class Memoire(unittest.TestCase):
         self.assertIn("ABSENTE", mod.MoteurFrugal(None)._memoire_texte(fiches))
         self.assertNotIn("ABSENTE", mod.MoteurFrugal(None)._memoire_texte(fiches[:5]))
         self.assertNotIn("ABSENTE", mod.MoteurFrugal(None)._memoire_texte(fiches + [{"famille": "ok", "issue": "prouvee", "detail": "", "rapport": 2}]))
+
+
+class RappelDuJuge(TM.Banc):
+    """Le noyau dit au moteur ce que le juge a décidé, sans que cela change le jugement."""
+    VRAIE = "def somme_min(entree):\n    v = entree['v']\n    return {'y': min(v) + sum(x % 7 for x in v)}\n"
+
+    def test_le_juge_rapporte_ses_verdicts_au_moteur_et_une_panne_du_carnet_ne_change_rien(self):
+        recus = []
+
+        class Moteur:
+            nom = "banc"
+
+            def __init__(self, casse=False):
+                self.casse = casse
+
+            def proposer(self, contexte):
+                return [{"texte": RappelDuJuge.VRAIE, "hypothese": "min", "famille": "min natif"}]
+
+            def verdicts(self, gid, essais):
+                recus.append((gid, essais))
+                if self.casse:
+                    raise RuntimeError("carnet en panne")
+        ok = self.n.evolution.proposer("labo", "somme_min", Moteur(), 3)
+        sans = self.n.evolution.proposer("labo", "somme_min", Moteur(casse=True), 3)
+        self.assertEqual(recus[0][0], "labo.somme_min")
+        e = recus[0][1][0]
+        self.assertTrue(e["ast"] and "retenu" in e and "verdict" in e)
+        self.assertEqual(len(recus), 2)
+        self.assertEqual(ok["ok"], sans["ok"])
+        self.assertIn("ok", sans)                                                               # la panne du carnet n'a pas fait lever le jugement
 
 
 if __name__ == "__main__":

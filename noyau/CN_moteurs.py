@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5ddc39
+# VERSION CN : 0.1.0  #31b4b6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ddc39 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=31b4b6 ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -69,6 +69,7 @@ class MoteurProcessus:
                  max_appels: int = MAX_APPELS_MODELE, max_jetons: int = MAX_JETONS, bac: str = "auto", nom: str = "orfan-processus", python: str = "", on_relais=None, carnet=None):
         if choix not in CHOIX and not _ADAPTATEUR.match(str(choix)):
             raise ValueError("choix de moteur inconnu : %r (%s, ou adaptateur:<module>)" % (choix, ", ".join(CHOIX)))
+        self._familles = {}                                             # empreinte d'une variante rendue -> sa famille d'idée, pour rapporter le verdict du juge
         self.carnet = carnet                                            # le carnet des idées essayées (Registre.fiches / noter_fiches) : sur le disque, jamais gardé en mémoire vive
         self.on_relais = on_relais                                      # appelé après chaque demande de modèle : {role, modele, jetons_haut, jetons_bas, resultat}
         self.python = str(python or "")                                 # l'interpréteur de l'environnement du moteur (un moteur externe a le sien)
@@ -95,6 +96,37 @@ class MoteurProcessus:
         except OSError:
             pass
         return tuple(visibles)
+
+    def _retenir_familles(self, candidats: list) -> None:
+        self._familles = {}
+        try:
+            from noyau.CN_evolution import empreinte_ast
+        except Exception:
+            return
+        for c in candidats:
+            if isinstance(c, dict) and c.get("famille"):
+                try:
+                    self._familles[empreinte_ast(str(c.get("texte", "")))] = str(c["famille"])
+                except (SyntaxError, ValueError):
+                    pass
+
+    def verdicts(self, gid: str, essais: list) -> None:
+        """Rappel du juge du noyau : ce qu'il a décidé de chaque variante rendue. Le carnet note « retenue » ou « refusée » (avec la raison) à la place de « prouvée sur le vu »."""
+        if self.carnet is None or not self._familles:
+            return
+        fiches = []
+        for e in essais:
+            famille = self._familles.get(e.get("ast"))
+            if not famille:
+                continue
+            if e.get("retenu"):
+                fiches.append({"famille": famille, "issue": "retenue", "detail": "le juge l'a retenue", "rapport": e.get("gain_pct") or 0})
+            else:
+                raison = {"divergente": "le juge l'a refusée : sortie différente sur le corpus", "erreur": "le juge l'a refusée : erreur à l'exécution", "impure": "le juge l'a refusée : effet de bord",
+                          "corpus_trop_etroit": "le juge n'a pas pu trancher (corpus trop étroit)", "deja_vue": "déjà vue et écartée"}.get(e.get("verdict"), "le juge l'a écartée : gain insuffisant, dans le bruit ou pas confirmé hors du vu (%s %%)" % e.get("gain_pct"))
+                fiches.append({"famille": famille, "issue": "refusee", "detail": raison, "rapport": 0})
+        if fiches:
+            self.carnet.noter_fiches(gid, fiches)
 
     def _relais(self, role: str, modele: str, haut: int, bas: int, resultat: str) -> None:
         if self.on_relais is not None:
@@ -131,7 +163,9 @@ class MoteurProcessus:
                             self.carnet.noter_fiches(gid, msg.get("memoire"))
                         except Exception:
                             pass                                                          # le carnet est une aide : sa panne ne défait pas une recherche
-                    return list(msg.get("candidats") or [])
+                    candidats = list(msg.get("candidats") or [])
+                    self._retenir_familles(candidats)
+                    return candidats
                 if op == "erreur":
                     raise ErreurEC("le moteur a échoué : %s" % msg.get("erreur"))
                 if op != "modele":
@@ -226,7 +260,7 @@ class Registre:
             return d["moteurs"][ident]
 
     FICHES_PAR_POINT = 24                                             # les plus récentes seulement : le carnet reste petit, sur le disque
-    _ISSUES = ("prouvee", "fausse", "lente", "vide")
+    _ISSUES = ("prouvee", "fausse", "lente", "vide", "retenue", "refusee")
 
     def fiches(self, gid: str) -> list:
         """Les idées déjà essayées sur ce point (de la plus ancienne à la plus récente) : {famille, issue, detail, rapport}. Lu sur le disque à chaque demande, rien n'est gardé en mémoire vive."""

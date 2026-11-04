@@ -12,7 +12,7 @@
 <!-- RÔLE       : FrugalEvo lu, et Frugal 2 -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0d7585 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c58780 ▼▼▼ -->
 # FrugalEvo lu, et Frugal 2
 
 Statut : 04-11-2026. Ce document dit ce que fait FrugalEvo, ce que Frugal 2 (`orfan/CN_frugal.py`) en reprend, ce qu'il laisse, et pourquoi.
@@ -89,7 +89,7 @@ Une seule fois, avant la recherche, le modèle fort lit le texte du problème, l
 ## 8. Limites honnêtes
 
 - La comparaison de vitesse de Frugal 2 se fait sur des entrées visibles, en un seul processus : le bruit de la machine existe. C'est un pré-filtre ; le noyau remesure.
-- Le carnet ne sait pas ce que le JUGE du noyau a décidé ensuite : une idée « prouvée » sur le vu mais refusée sur tout le corpus reste notée « prouvée ». Le brancher demanderait une petite modification de `noyau/CN_evolution.py` (autre session).
+- Le carnet apprend le verdict du JUGE du noyau (rappel facultatif `verdicts`, 04-11) : « retenue » ou « refusée » avec la raison. Si deux stratégies rendent le même code, une seule fiche reçoit le verdict (celle du meilleur rapport sur le vu).
 - Le carnet est lié au point, pas au modèle : changer de modèle fort garde l'historique, ce qui est voulu mais peut surprendre.
 - La qualité dépend des modèles liés aux rôles « strategie » et « executant » ; un modèle fort qui n'écrit pas les balises attendues donne zéro idée (Frugal 2 se rabat alors sur un texte brut unique).
 - Nous n'avons pas reproduit les chiffres de leur article ; aucune affirmation de gain de coût n'est faite ici.
