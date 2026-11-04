@@ -364,6 +364,11 @@ class Corpus(unittest.TestCase):
         r.enregistrer("a.b", {"x": 1}, None, 1.0)
         self.assertEqual(r.stats("a.b")["distincts"], 1)
 
+    def test_le_plafond_d_entree_se_regle(self):
+        r = R.Rejeu(self.tmp / "r.db", max_entree_octets=R.MAX_ENTREE_OCTETS * 4)
+        r.enregistrer("a.b", {"pj": "x" * (R.MAX_ENTREE_OCTETS + 10)}, None, 1.0)
+        self.assertEqual(r.stats("a.b")["distincts"], 1)
+
     def test_un_point_exclu_n_est_jamais_enregistre(self):
         r = R.Rejeu(self.tmp / "r.db", exclus=("courrier.*",))
         r.enregistrer("courrier.corps", {"x": 1}, None, 1.0)

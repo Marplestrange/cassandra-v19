@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fb5b80
+# VERSION CN : 0.1.0  #995bca
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Une recherche par populations (générations, archive par niche de taille) : les règles déterministes se composent, un modèle mute le meilleur parent, chaque enfant est mesuré avant d'être gardé.
 # MÉTHODE    : graine fixe par point (même entrée, même recherche), forme MAP-Elites réduite (une niche par taille de code), fitness = rapport de temps sur les entrées visibles, équivalence vérifiée d'abord.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fb5b80 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=995bca ▼▼▼
 """Le moteur évolutif (la famille d'OpenEvolve, réduite à ce qui tient dans la cage).
 
 Une population de variantes ÉQUIVALENTES sur les entrées visibles. Chaque génération : les meilleurs parents (plus un parent d'une autre niche de taille, pour ne pas s'enfermer dans
@@ -29,9 +29,10 @@ import random
 class MoteurEvolutif:
     nom = "evolutif"
 
-    def __init__(self, orfan, appeler_modele=None, generations: int = 2, parents: int = 2):
+    def __init__(self, orfan, appeler_modele=None, generations: int = 1, parents: int = 2, essais: int = 2):
+        """Mesuré sur 17 fonctions (docs/CN_EVOLUTIF-SEMANTIQUE.md) : une génération trouve les mêmes gains que deux pour 4× moins de temps ; le modèle varie d'un tirage à l'autre, d'où `essais` tirages indépendants par parent."""
         self.orfan, self.appeler_modele = orfan, appeler_modele
-        self.generations, self.parents = max(1, int(generations)), max(1, int(parents))
+        self.generations, self.parents, self.essais = max(1, int(generations)), max(1, int(parents)), max(1, int(essais))
         self.journal = []
 
     @staticmethod
@@ -91,11 +92,13 @@ class MoteurEvolutif:
                     sous = dict(contexte, source_reference=parent)
                     chauds = O.point_chaud(parent, fonction, entrees, 0.0, 0)
                     prompt = O.construire_prompt(sous, [chauds] if chauds else [])
-                    try:
-                        enfants += O.extraire_blocs(self.appeler_modele(prompt, "executant"))
-                    except Exception as e:                         # un modèle muet ou plafonné arrête la mutation, pas la recherche : on garde ce qu'on a
-                        self.journal.append("génération %d : modèle indisponible (%s)" % (g, str(e)[:80]))
-                        self.appeler_modele = None
+                    for _ in range(self.essais):                   # plusieurs tirages indépendants : un seul peut tomber à côté, les doublons sont écartés par `vus`
+                        try:
+                            enfants += O.extraire_blocs(self.appeler_modele(prompt, "executant"))
+                        except Exception as e:                     # un modèle muet ou plafonné arrête la mutation, pas la recherche : on garde ce qu'on a
+                            self.journal.append("génération %d : modèle indisponible (%s)" % (g, str(e)[:80]))
+                            self.appeler_modele = None
+                            break
             examiner(enfants, g)
         classes = sorted(archive.values(), key=lambda v: -v[0])
         return [{"texte": t, "hypothese": "%s (génération %d, ×%.2f sur le vu)" % (h, gen, r), "origine": "evolutif"} for r, t, h, gen in classes[:budget]]

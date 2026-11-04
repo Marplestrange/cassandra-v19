@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #091b69
+# VERSION CN : 0.1.0  #036f60
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : garde, par point d'évolution, les ENTRÉES réellement reçues (distinctes, comptées), avec une partition réservée que le générateur ne voit jamais.
 # MÉTHODE    : une table SQLite ; l'entrée est identifiée par son empreinte ; la partition réservée se décide par l'empreinte (déterministe) ; borne par point, les cas dorés jamais évincés.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=091b69 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=036f60 ▼▼▼
 """Le corpus de rejeu (docs/CN_EVOLUTION.md §2) : la matière du banc d'essai de toute évolution.
 
 On ne garde que les ENTRÉES : la sortie de référence est recalculée par la référence du dépôt à chaque évaluation, car c'est elle la spécification
@@ -62,9 +62,11 @@ def est_reserve(h: str) -> bool:
 
 
 class Rejeu:
-    def __init__(self, chemin, max_par_point: int = MAX_PAR_POINT, actif: bool = True, exclus=()):
-        """`exclus` : des motifs de points (« courrier.* ») dont les entrées ne sont JAMAIS gardées (des données trop privées pour dormir en clair dans un corpus)."""
+    def __init__(self, chemin, max_par_point: int = MAX_PAR_POINT, actif: bool = True, exclus=(), max_entree_octets: int = MAX_ENTREE_OCTETS):
+        """`exclus` : des motifs de points (« courrier.* ») dont les entrées ne sont JAMAIS gardées (des données trop privées pour dormir en clair dans un corpus).
+        `max_entree_octets` : la taille au-delà de laquelle une entrée n'est pas gardée (64 Ko par défaut) ; en dessous d'une fonction à grosses entrées, le corpus reste « trop étroit » et rien ne s'évalue."""
         self.chemin, self.max_par_point, self.actif = Path(chemin), int(max_par_point), bool(actif)
+        self.max_entree_octets = max(1, int(max_entree_octets))
         self.exclus = tuple(str(x) for x in exclus)
         self._verrou = threading.Lock()
         self._compte = 0
@@ -108,7 +110,7 @@ class Rejeu:
         h = empreinte(entree)
         t = time.time()
         corps = json.dumps(entree, ensure_ascii=False, sort_keys=True)
-        if len(corps.encode("utf-8")) > MAX_ENTREE_OCTETS:
+        if len(corps.encode("utf-8")) > self.max_entree_octets:
             return
         with self._verrou, self._con() as c:
             c.execute("INSERT INTO appels(gid,h,entree,reserve,premier,dernier,ms_somme,ms_n,attribue) VALUES(?,?,?,?,?,?,?,1,?) "
