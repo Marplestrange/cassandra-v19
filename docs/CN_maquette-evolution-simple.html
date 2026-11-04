@@ -13,7 +13,7 @@
 <!-- RÔLE       : la maquette de l'écran Évolution pensé pour quelqu'un qui n'est pas ingénieur : une phrase d'état, des résultats, trois réglages en mots simples, et tout le reste (chercheurs, comparaison, sécurité, carnet) rangé « sous le capot » -->
 <!-- MÉTHODE    : une page autonome, données de démonstration ; le vocabulaire interne (ombre, paliers, tombes, moteur, cage…) n'apparaît pas à l'écran, il est traduit dans l'onglet Vocabulaire -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=1d1697 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=80e04d ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -119,6 +119,8 @@ body{overflow:auto}
 .ev .onglets button{font-size:13px}
 .ev .vide{padding:14px;color:var(--e-encre3)}
 @media(max-width:768px){.ev .rang{flex-direction:column}}
+/* le troisième niveau du menu de gauche : « Sous le capot » déplié */
+.d19-si.sub.sub2{padding-left:46px;font-size:12.5px}
 </style>
 </head>
 <body class="d19">
@@ -374,10 +376,10 @@ async function proposerConsigne() {
 }
 
 /* ── 5 · Sous le capot ── */
+/* « Sous le capot » : une page par entrée du menu de gauche (sous-sous-menu), plus d'onglets. */
+var SOUS = [["chercheurs", "Les chercheurs", "☉"], ["points", "Les fonctions", "ƒ"], ["comparer", "Les comparer", "⇄"], ["securite", "Filet de sécurité", "⛨"], ["carnet", "Carnet", "▤"], ["ecartees", "Versions écartées", "⊘"], ["vocab", "Vocabulaire", "Aa"]];
 function capot() {
-  var sous = [["chercheurs", "Les chercheurs"], ["points", "Les fonctions"], ["comparer", "Les comparer"], ["securite", "Filet de sécurité"], ["carnet", "Carnet"], ["ecartees", "Versions écartées"], ["vocab", "Vocabulaire"]];
-  var nav = '<div class="onglets">' + sous.map(function (s) { return '<button data-capot="' + s[0] + '" class="' + (S.capot === s[0] ? "on" : "") + '">' + s[1] + "</button>"; }).join("") + "</div>";
-  return '<div class="note" style="margin:2px 0 4px">Pour les curieux. Tu n\'as jamais besoin de venir ici pour que l\'évolution fonctionne.</div>' + sante() + nav + '<div class="verre carte grand">' + ({ chercheurs: pChercheurs, points: pPoints, comparer: pComparer, securite: pSecurite, carnet: pCarnet, ecartees: pEcartees, vocab: pVocab }[S.capot])() + "</div>";
+  return (S.capot === "chercheurs" || S.capot === "securite" ? sante() : "") + '<div class="verre carte grand">' + ({ chercheurs: pChercheurs, points: pPoints, comparer: pComparer, securite: pSecurite, carnet: pCarnet, ecartees: pEcartees, vocab: pVocab }[S.capot])() + "</div>";
 }
 /* La santé en une carte : ce que l'évolution sait d'elle-même. Les courbes, la machine, les alertes et les droits restent dans les modules qui les tiennent. */
 function sante() {
@@ -490,7 +492,12 @@ function chev(ouv) { return '<svg class="d-i car' + (ouv ? " ouv" : "") + '" vie
 function menu() {
   var h = '<button class="d19-si ent" data-tip="Agents IA" data-autre="1"><i class="d19-gl" aria-hidden="true">▣</i><span>Agents IA</span>' + chev(false) + "</button>";
   h += '<button class="d19-si ent" data-tip="Évolution" aria-expanded="true" data-sec-parent="1"><i class="d19-gl" aria-hidden="true">⚘</i><span>Évolution</span>' + chev(true) + "</button>";
-  h += SECTIONS.map(function (x) { return '<button class="d19-si sub ic' + (S.vue === x[0] ? " on" : "") + '" data-sec="' + x[0] + '"' + (S.vue === x[0] ? ' aria-current="page"' : "") + '><i class="d19-gl" aria-hidden="true">' + x[2] + "</i><span>" + x[1] + "</span></button>"; }).join("");
+  h += SECTIONS.map(function (x) {
+    var ouvert = x[0] === "capot" && S.vue === "capot";
+    var un = '<button class="d19-si sub ic' + (S.vue === x[0] && !ouvert ? " on" : "") + '" data-sec="' + x[0] + '"' + (S.vue === x[0] && !ouvert ? ' aria-current="page"' : "") + '><i class="d19-gl" aria-hidden="true">' + x[2] + "</i><span>" + x[1] + "</span>" + (x[0] === "capot" ? chev(ouvert) : "") + "</button>";
+    if (!ouvert) return un;
+    return un + SOUS.map(function (s) { return '<button class="d19-si sub sub2 ic' + (S.capot === s[0] ? " on" : "") + '" data-sous="' + s[0] + '"' + (S.capot === s[0] ? ' aria-current="page"' : "") + '><i class="d19-gl" aria-hidden="true">' + s[2] + "</i><span>" + s[1] + "</span></button>"; }).join("");
+  }).join("");
   h += '<button class="d19-si ent" data-tip="Proactivité" data-autre="1"><i class="d19-gl" aria-hidden="true">ϟ</i><span>Proactivité</span></button>';
   h += '<button class="d19-si ent" data-tip="Mémoire" data-autre="1"><i class="d19-gl" aria-hidden="true">◐</i><span>Mémoire</span>' + chev(false) + "</button>";
   return h;
@@ -505,6 +512,7 @@ function rendre() {
   if (cote) {
     cote.innerHTML = menu();
     $$("[data-sec]", cote).forEach(function (b) { b.onclick = function () { S.vue = b.dataset.sec; rendre(); window.scrollTo(0, 0); }; });
+    $$("[data-sous]", cote).forEach(function (b) { b.onclick = function () { S.vue = "capot"; S.capot = b.dataset.sous; rendre(); window.scrollTo(0, 0); }; });
     $$("[data-autre]", cote).forEach(function (b) { b.onclick = function () { toast("Maquette : seule la partie Évolution est interactive"); }; });
   }
   lier();
