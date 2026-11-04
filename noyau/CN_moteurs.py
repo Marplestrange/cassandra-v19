@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6748bd
+# VERSION CN : 0.1.0  #5ddc39
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6748bd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ddc39 ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -66,9 +66,10 @@ class MoteurProcessus:
     """Un moteur de recherche dans son processus. `appeler_modele(prompt, role) -> texte` est fourni par Cassandra (son registre de modèles) ; le moteur n'y a accès que par le relais."""
 
     def __init__(self, choix: str = "deterministe", appeler_modele=None, orfan: str | Path | None = None, delai_s: float = DELAI_MOTEUR_S, memoire_mo: int = MEMOIRE_MOTEUR_MO,
-                 max_appels: int = MAX_APPELS_MODELE, max_jetons: int = MAX_JETONS, bac: str = "auto", nom: str = "orfan-processus", python: str = "", on_relais=None):
+                 max_appels: int = MAX_APPELS_MODELE, max_jetons: int = MAX_JETONS, bac: str = "auto", nom: str = "orfan-processus", python: str = "", on_relais=None, carnet=None):
         if choix not in CHOIX and not _ADAPTATEUR.match(str(choix)):
             raise ValueError("choix de moteur inconnu : %r (%s, ou adaptateur:<module>)" % (choix, ", ".join(CHOIX)))
+        self.carnet = carnet                                            # le carnet des idées essayées (Registre.fiches / noter_fiches) : sur le disque, jamais gardé en mémoire vive
         self.on_relais = on_relais                                      # appelé après chaque demande de modèle : {role, modele, jetons_haut, jetons_bas, resultat}
         self.python = str(python or "")                                 # l'interpréteur de l'environnement du moteur (un moteur externe a le sien)
         racine = Path(__file__).resolve().parent.parent / "orfan"
@@ -107,8 +108,15 @@ class MoteurProcessus:
         lecture = self._lecture() if self.python else ()
         t = _Travailleur(self.memoire_mo, self.bac, script=self.hote, arguments=(self.orfan, self.choix), executable=self.python, lecture=lecture)
         appels = jetons = 0
+        gid = str(contexte.get("point") or "")
+        envoi = {k: v for k, v in contexte.items() if not callable(v)}                      # une fonction ne traverse pas la frontière : le moteur reçoit du texte et des données
+        if self.carnet is not None and gid:
+            try:
+                envoi["memoire"] = self.carnet.fiches(gid)                                  # ce que les recherches précédentes sur CE point ont appris (un moteur ne garde rien d'un appel à l'autre)
+            except Exception:
+                envoi["memoire"] = []                                                       # un carnet illisible ne coupe pas la recherche
         try:
-            t.envoyer({"op": "proposer", "contexte": {k: v for k, v in contexte.items() if not callable(v)}})          # une fonction ne traverse pas la frontière : le moteur reçoit du texte et des données
+            t.envoyer({"op": "proposer", "contexte": envoi})
             while True:
                 reste = self.delai_s - (time.monotonic() - debut)
                 if reste <= 0:
@@ -118,6 +126,11 @@ class MoteurProcessus:
                 op = msg.get("op")
                 if op == "resultat":
                     self.stats["propositions"] += 1
+                    if self.carnet is not None and gid and msg.get("memoire"):
+                        try:
+                            self.carnet.noter_fiches(gid, msg.get("memoire"))
+                        except Exception:
+                            pass                                                          # le carnet est une aide : sa panne ne défait pas une recherche
                     return list(msg.get("candidats") or [])
                 if op == "erreur":
                     raise ErreurEC("le moteur a échoué : %s" % msg.get("erreur"))
@@ -211,6 +224,40 @@ class Registre:
             d["moteurs"][ident]["etat"] = etat
             self._ecrire(d)
             return d["moteurs"][ident]
+
+    FICHES_PAR_POINT = 24                                             # les plus récentes seulement : le carnet reste petit, sur le disque
+    _ISSUES = ("prouvee", "fausse", "lente", "vide")
+
+    def fiches(self, gid: str) -> list:
+        """Les idées déjà essayées sur ce point (de la plus ancienne à la plus récente) : {famille, issue, detail, rapport}. Lu sur le disque à chaque demande, rien n'est gardé en mémoire vive."""
+        with self._verrou:
+            return list(self._lire().get("fiches", {}).get(str(gid), []))
+
+    def noter_fiches(self, gid: str, fiches) -> int:
+        """Inscrit ce qu'un moteur (dans la cage : sa parole est suspecte) dit avoir essayé. Tout est borné et nettoyé ici ; une même famille n'a qu'une fiche, la dernière."""
+        propres = []
+        for f in list(fiches or [])[:12]:
+            if not isinstance(f, dict) or f.get("issue") not in self._ISSUES:
+                continue
+            famille = " ".join(str(f.get("famille", "")).split())[:80]
+            if not famille:
+                continue
+            try:
+                rapport = round(float(f.get("rapport") or 0.0), 2)
+            except (TypeError, ValueError):
+                rapport = 0.0
+            propres.append({"famille": famille, "issue": f["issue"], "detail": " ".join(str(f.get("detail", "")).split())[:200], "rapport": rapport, "ts": self._horloge()})
+        if not propres:
+            return 0
+        with self._verrou:
+            d = self._lire()
+            gardees = {x["famille"].lower(): x for x in d.setdefault("fiches", {}).get(str(gid), [])}
+            for f in propres:
+                gardees.pop(f["famille"].lower(), None)
+                gardees[f["famille"].lower()] = f
+            d["fiches"][str(gid)] = list(gardees.values())[-self.FICHES_PAR_POINT:]
+            self._ecrire(d)
+        return len(propres)
 
     def compter(self, ident: str, stats: dict, essais: int = 0) -> None:
         """Ajoute au moteur ce que sa recherche a coûté (les compteurs de `MoteurProcessus.stats`, par différence)."""

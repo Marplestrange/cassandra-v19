@@ -6,15 +6,16 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #50e42d
+# VERSION CN : 0.1.0  #7c9131
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prouve que Frugal 2 ne dépense rien quand il n'y a rien à gagner, plafonne ses appels, affine sur la raison d'un échec et ne rend jamais une version non équivalente.
 # MÉTHODE    : un modèle de banc scripté (aucune clé) derrière le vrai relais de la cage ; le moteur tourne dans son vrai processus.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=50e42d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7c9131 ▼▼▼
 """Bancs de Frugal 2 (orfan/CN_frugal.py)."""
 import sys
+import tempfile
 import time
 import unittest
 from pathlib import Path
@@ -147,6 +148,64 @@ class Frugal2(unittest.TestCase):
             return STRATEGIES
         with self.assertRaises(DelaiEC):
             self.moteur(Banc(lent), delai_s=8).proposer(contexte())
+
+
+class Memoire(unittest.TestCase):
+    """Le carnet des idées essayées : sur le disque, d'un appel à l'autre."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.reg = MO.Registre(Path(self.tmp.name) / "moteurs.json")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def moteur(self, modele):
+        return MO.MoteurProcessus("frugal", appeler_modele=modele, delai_s=90, carnet=self.reg)
+
+    def test_une_idee_ratee_est_inscrite_sur_le_disque_puis_dite_au_fort_et_jamais_reecrite(self):
+        banc1 = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)
+        self.moteur(banc1).proposer(contexte())
+        fiches = MO.Registre(Path(self.tmp.name) / "moteurs.json").fiches("a.b")                   # relu depuis le fichier : rien ne vit en mémoire vive
+        self.assertEqual({f["famille"] for f in fiches}, {"somme native", "formule fermée"})
+        self.assertTrue(all(f["issue"] == "fausse" and "entrée visible" in f["detail"] for f in fiches))
+        banc2 = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else self.fail("une famille déjà ratée a été réécrite"))
+        r = self.moteur(banc2).proposer(contexte())
+        self.assertEqual(r, [])
+        self.assertEqual([a[0] for a in banc2.appels], ["strategie"])                              # le fort a redit les mêmes familles : zéro appel de plus
+        self.assertIn("DÉJÀ essayées", banc2.appels[0][1])
+        self.assertIn("somme native", banc2.appels[0][1])
+
+    def test_une_idee_prouvee_est_inscrite_avec_son_gain(self):
+        self.moteur(Banc(lambda r, p, n: STRATEGIES if r == "strategie" else BONNE)).proposer(contexte())
+        f = {x["famille"]: x for x in self.reg.fiches("a.b")}
+        self.assertEqual(f["somme native"]["issue"], "prouvee")
+        self.assertGreater(f["somme native"]["rapport"], 1.0)
+
+    def test_la_memoire_est_propre_a_chaque_point(self):
+        self.moteur(Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)).proposer(contexte())
+        self.assertEqual(self.reg.fiches("autre.point"), [])
+
+    def test_le_carnet_nettoie_ce_que_dit_un_moteur_et_reste_petit(self):
+        n = self.reg.noter_fiches("p", [{"famille": "x" * 500, "issue": "fausse", "detail": "d" * 900, "rapport": "n'importe quoi"}, {"famille": "y", "issue": "inventee"}, "texte", {"famille": "", "issue": "fausse"}])
+        self.assertEqual(n, 1)
+        f = self.reg.fiches("p")[0]
+        self.assertEqual((len(f["famille"]), len(f["detail"]), f["rapport"]), (80, 200, 0.0))
+        for i in range(40):
+            self.reg.noter_fiches("p", [{"famille": "idée %d" % i, "issue": "lente"}])
+        self.assertEqual(len(self.reg.fiches("p")), MO.Registre.FICHES_PAR_POINT)
+        self.reg.noter_fiches("p", [{"famille": "IDÉE 39", "issue": "prouvee", "rapport": 2}])        # une même famille n'a qu'une fiche : la dernière
+        self.assertEqual(len([x for x in self.reg.fiches("p") if x["famille"].lower() == "idée 39"]), 1)
+
+    def test_apres_six_echecs_de_suite_le_fort_doit_changer_de_famille(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("frugal2", str(RACINE / "orfan" / "CN_frugal.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        fiches = [{"famille": "f%d" % i, "issue": "fausse", "detail": "", "rapport": 0} for i in range(6)]
+        self.assertIn("ABSENTE", mod.MoteurFrugal(None)._memoire_texte(fiches))
+        self.assertNotIn("ABSENTE", mod.MoteurFrugal(None)._memoire_texte(fiches[:5]))
+        self.assertNotIn("ABSENTE", mod.MoteurFrugal(None)._memoire_texte(fiches + [{"famille": "ok", "issue": "prouvee", "detail": "", "rapport": 2}]))
 
 
 if __name__ == "__main__":

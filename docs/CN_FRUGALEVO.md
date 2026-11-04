@@ -12,7 +12,7 @@
 <!-- RÔLE       : FrugalEvo lu, et Frugal 2 -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=eaa086 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0d7585 ▼▼▼ -->
 # FrugalEvo lu, et Frugal 2
 
 Statut : 04-11-2026. Ce document dit ce que fait FrugalEvo, ce que Frugal 2 (`orfan/CN_frugal.py`) en reprend, ce qu'il laisse, et pourquoi.
@@ -68,7 +68,7 @@ Une seule fois, avant la recherche, le modèle fort lit le texte du problème, l
 |---|---|---|
 | Fort = stratégies en prose, économe = code | **Gardé** (cœur de Frugal 2) | C'est l'idée qui fait baisser le coût : le fort écrit 2-3 plans courts, l'économe fait le travail volumineux. |
 | Plusieurs stratégies, diversité exigée, quatre rubriques | **Gardé, allégé** | On demande 2-3 plans, chacun avec sa famille, sa portée et le gain attendu ; on dédoublonne les familles. |
-| Carnet des stratégies, familles épuisées, raisons d'échec renvoyées | **Gardé en petit** | Dans une demande, les `tombes` du contexte et les échecs de ce tour jouent ce rôle. Pas de mémoire entre deux appels : un moteur ne garde rien d'un appel à l'autre. |
+| Carnet des stratégies, familles épuisées, raisons d'échec renvoyées | **Gardé (ajouté le 04-11, sur ta demande)** | Un moteur ne garde rien d'un appel à l'autre (il tourne en cage, sans fichier). Il rend donc ses « fiches » (famille, issue, raison, gain) au serveur, qui les nettoie et les garde SUR LE DISQUE (`moteurs.json`, 24 fiches par point, une par famille). À l'appel suivant, le modèle fort les reçoit : idées prouvées, idées ratées avec leur raison, et, après 6 échecs de suite, l'ordre de changer de famille. Une famille déjà ratée qu'il redirait quand même n'est pas réécrite (zéro appel). Les V18 sans mémoire tournaient en rond. |
 | Réparation séquentielle avec retour d'erreur | **Gardé** | Si une version est fausse ou plus lente, on dit POURQUOI au modèle économe (sortie différente sur telle entrée, ou rapport de vitesse) pour qu'il l'affine, dans un budget de tours. |
 | Budget borné, prévision du coût | **Gardé, en appels et en jetons** | Nous n'avons pas de dollars ici : le relais plafonne déjà les appels et les jetons, et Agents IA tient le plafond de coût de la maison. Frugal 2 ajoute ses propres bornes (tours, appels). |
 | Pilotes + course ordonnée entre stratégies | **Gardé en miniature** | Chaque stratégie reçoit un premier essai ; on affine d'abord la plus prometteuse (la plus rapide encore équivalente, sinon la moins fausse). |
@@ -89,7 +89,8 @@ Une seule fois, avant la recherche, le modèle fort lit le texte du problème, l
 ## 8. Limites honnêtes
 
 - La comparaison de vitesse de Frugal 2 se fait sur des entrées visibles, en un seul processus : le bruit de la machine existe. C'est un pré-filtre ; le noyau remesure.
-- Il ne sait pas **mémoriser** d'un appel à l'autre ce qu'une famille d'idées a donné : seul le contexte (`tombes`) porte l'historique.
+- Le carnet ne sait pas ce que le JUGE du noyau a décidé ensuite : une idée « prouvée » sur le vu mais refusée sur tout le corpus reste notée « prouvée ». Le brancher demanderait une petite modification de `noyau/CN_evolution.py` (autre session).
+- Le carnet est lié au point, pas au modèle : changer de modèle fort garde l'historique, ce qui est voulu mais peut surprendre.
 - La qualité dépend des modèles liés aux rôles « strategie » et « executant » ; un modèle fort qui n'écrit pas les balises attendues donne zéro idée (Frugal 2 se rabat alors sur un texte brut unique).
 - Nous n'avons pas reproduit les chiffres de leur article ; aucune affirmation de gain de coût n'est faite ici.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->

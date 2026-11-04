@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #7c9c1f
+# VERSION CN : 0.5.0  #d55da4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=7c9c1f ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=d55da4 ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -99,7 +99,7 @@ def brancher(ctx):
         orfan = importlib.import_module(nom)
         if isoles():                   # le moteur dans son processus : sans clé, plafonné, tué au délai ; les modèles passent par le relais
             mot = importlib.import_module("noyau.CN_moteurs")
-            return mot.MoteurProcessus(choix, appeler_modele=lambda prompt, role="executant": appeler_modele(prompt), orfan=importlib.util.find_spec(nom).origin)
+            return mot.MoteurProcessus(choix, appeler_modele=lambda prompt, role="executant": appeler_modele(prompt, role), orfan=importlib.util.find_spec(nom).origin, carnet=registre())
         if choix == "modele":
             return orfan.MoteurModele(appeler_modele)
         if choix == "les_deux":

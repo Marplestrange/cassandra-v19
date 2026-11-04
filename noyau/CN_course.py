@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3a9bde
+# VERSION CN : 0.1.0  #9e5db9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Décide quel moteur cherche pour quel point : la cascade (le gratuit d'abord), l'affectation forcée, la course entre moteurs, les plafonds par moteur ; rien n'est mis en service par une course.
 # MÉTHODE    : un moteur à la fois dans son processus, jugé par le même juge sur le même corpus ; chaque étage compte ses jetons ; un plafond atteint saute l'étage et le dit.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3a9bde ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9e5db9 ▼▼▼
 """Lots 3 de la maquette d'Évolution : course, cascade, affectations, budget par moteur.
 
 La CASCADE : les étages actifs, dans l'ordre (le gratuit d'abord). `arret_premiere` : on s'arrête à la première variante prouvée. `modele_si_chaud` : un étage qui dépense un modèle
@@ -80,6 +80,7 @@ class Orchestrateur:
         if choix.startswith("adaptateur:"):
             m = next((x for x in self.reg.liste() if x["id"] == ident), {})
             kw["python"] = m.get("python", "")
+        kw["carnet"] = self.reg
         return MoteurProcessus(choix, **kw)
 
     def _chaud(self, module: str, point: str) -> bool:

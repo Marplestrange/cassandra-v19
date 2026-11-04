@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #63d0f1
+# VERSION CN : 0.1.0  #cd3d0c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Fait tourner un moteur de recherche d'Évolution (Orfan, ou un moteur externe derrière le même contrat) dans un processus à part, sans clé, sans réseau, avec un relais pour parler à un modèle.
 # MÉTHODE    : une ligne JSON par message sur l'entrée et la sortie standard ; le moteur ne voit jamais un jeton : il demande un modèle au serveur, qui compte et plafonne.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=63d0f1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd3d0c ▼▼▼
 """Le protocole de processus d'un moteur de recherche (docs/CN_EVOLUTION.md, « moteurs »).
 
 Lancé par noyau/CN_moteurs.py : `python -I CN_moteur_hote.py <chemin de CN_orfan.py> <choix> <mémoire en octets>`.
@@ -156,7 +156,8 @@ def main():
             if msg.get("op") != "proposer":
                 dire({"op": "erreur", "erreur": "opération inconnue"})
                 continue
-            dire({"op": "resultat", "candidats": [c if isinstance(c, dict) else {"texte": str(c)} for c in moteur.proposer(msg["contexte"])]})
+            candidats = [c if isinstance(c, dict) else {"texte": str(c)} for c in moteur.proposer(msg["contexte"])]
+            dire({"op": "resultat", "candidats": candidats, "memoire": list(getattr(moteur, "fiches", None) or [])})        # ce que le moteur a appris : le serveur le nettoie et le garde sur le disque
         except BaseException as e:                                # une faute du moteur se dit, elle ne tue pas le processus
             try:
                 dire({"op": "erreur", "erreur": "%s : %s" % (type(e).__name__, str(e)[:300])})

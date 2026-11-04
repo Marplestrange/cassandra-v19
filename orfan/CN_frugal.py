@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ad869f
+# VERSION CN : 0.1.0  #7e498c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le moins de jetons possible : les règles gratuites d'abord ; sinon un modèle fort propose 2-3 stratégies en texte, un modèle économe les écrit en code, chaque version est vérifiée ici et affinée sur sa raison d'échec.
 # MÉTHODE    : règles, puis stratégies (rôle strategie) → code (rôle executant) → vérification locale → affinage borné ; s'arrête dès qu'une variante prouvée existe ; sans point chaud, aucune dépense.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ad869f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e498c ▼▼▼
 """Frugal 2 : notre version de l'idée de FrugalEvo (docs/CN_FRUGALEVO.md).
 
   étage 1 · règles déterministes : zéro jeton ; si l'une est prouvée plus rapide, on la rend et on s'arrête ;
@@ -38,9 +38,12 @@ class MoteurFrugal:
         self.strategies, self.tours = max(1, int(strategies)), max(0, int(tours))
         self.appels_max, self.jetons_max, self.duree_max_s = max(1, int(appels_max)), int(jetons_max), float(duree_max_s)
         self.etages = []                                        # ce que chaque étage a fait, dit au journal
+        self.fiches = []                                        # ce que CET appel a appris, rendu au serveur qui le garde sur le disque (le moteur ne garde rien d'un appel à l'autre)
         self.appels = self.jetons = 0
         self._debut = 0.0
         self._plein = False
+        self._memoire = []
+        self._toutes_ratees = False
 
     # ── le budget : tours (self.tours), appels, jetons, durée ───────────────
     def _reste(self) -> bool:
@@ -104,11 +107,31 @@ class MoteurFrugal:
         return "la version ne rend pas les mêmes valeurs que la référence"
 
     # ── les stratégies : du texte seulement ─────────────────────────────────
+    def _memoire_texte(self, memoire) -> str:
+        """Ce que les recherches précédentes sur ce point ont appris, dit au modèle fort : les idées prouvées, les ratées avec leur raison, et l'ordre de changer de terrain après une série d'échecs."""
+        if not memoire:
+            return ""
+        lignes = ["", "Idées DÉJÀ essayées sur cette fonction (ne les repropose pas telles quelles) :"]
+        for f in memoire[-16:]:
+            if f["issue"] == "prouvee":
+                lignes.append("- « %s » : a donné une version plus rapide (×%.2f) ; ne la refais pas, ajoute un vrai degré de liberté nouveau." % (f["famille"], f.get("rapport") or 0))
+            else:
+                lignes.append("- « %s » : %s" % (f["famille"], f.get("detail") or {"fausse": "a rendu un résultat différent", "lente": "n'était pas plus rapide", "vide": "n'a rien donné d'exploitable"}[f["issue"]]))
+        queue = 0
+        for f in reversed(memoire):
+            if f["issue"] == "prouvee":
+                break
+            queue += 1
+        if queue >= 6:
+            lignes.append("Les %d dernières idées ont toutes échoué : toute nouvelle stratégie doit venir d'une famille ABSENTE de cette liste. Une variante, un réglage ou un mélange d'une famille ratée n'est pas une famille nouvelle." % queue)
+        return "\n".join(lignes)
+
     def _demande_strategies(self, contexte, chaud) -> str:
         lignes = ["Tu conseilles l'optimisation d'une fonction Python PURE : plus rapide, SANS changer son résultat.", "", "Fonction (nom : %s) :" % contexte["fonction"], "```python", contexte["source_reference"].rstrip(), "```", "",
                   "Profil mesuré : la ligne %d porte %s %% du travail : %s" % (chaud["ligne"], chaud["part_pct"], chaud["texte"]), ""]
         if contexte.get("tombes"):
             lignes += ["%d variante(s) ont DÉJÀ échoué sur ce point : ne propose pas une transformation triviale déjà tentée." % len(contexte["tombes"]), ""]
+        lignes += self._memoire_texte(contexte.get("memoire") or []).split("\n") if contexte.get("memoire") else []
         lignes += ["Propose %d stratégies VRAIMENT différentes (une autre structure de données, un autre algorithme, un autre découpage : pas un simple réglage). Ne rends AUCUN code : quelqu'un d'autre l'écrira." % self.strategies,
                    "Pour chaque stratégie, ce bloc exactement :", "<STRATEGIE>", "Famille : un mot ou deux qui nomment le mécanisme", "Portée : la ligne ou le bloc à remplacer",
                    "Gain : pourquoi ce serait plus rapide, à résultat identique", "Plan : les étapes, assez précises pour qu'on n'ait aucune décision à prendre", "</STRATEGIE>"]
@@ -126,7 +149,12 @@ class MoteurFrugal:
                 continue
             familles.add(famille)
             sortie.append({"titre": famille, "plan": b[:1500], "texte": "", "raison": "", "etat": 0})
-        return sortie[:self.strategies]
+        ratees = {str(f.get("famille", "")).lower() for f in (self._memoire or []) if f.get("issue") in ("fausse", "lente", "vide")}
+        neuves = [s for s in sortie if s["titre"] not in ratees]                 # une famille déjà ratée ne coûte pas un appel de plus : le modèle fort l'a redite malgré la consigne
+        self._toutes_ratees = bool(sortie) and not neuves
+        if len(neuves) < len(sortie):
+            self.etages.append("mémoire : %d stratégie(s) écartée(s), déjà ratées" % (len(sortie) - len(neuves)))
+        return neuves[:self.strategies]
 
     # ── l'exécution : le modèle économe écrit, on vérifie ───────────────────
     def _ecrire(self, contexte, chaud, s):
@@ -146,11 +174,19 @@ class MoteurFrugal:
         s["texte"] = blocs[0]["texte"]
         return True
 
+    def _noter(self, s, ok, rapport, raison):
+        """Une fiche par famille : la dernière issue gagne (une idée raté au tour 0 puis réussie après affinage est une idée qui marche)."""
+        if s["titre"] == "sans stratégie":
+            return
+        issue = "prouvee" if ok else ("lente" if rapport > 0 else "fausse")
+        self.fiches = [f for f in self.fiches if f["famille"] != s["titre"]] + [{"famille": s["titre"], "issue": issue, "detail": raison[:200], "rapport": round(rapport, 2)}]
+
     def proposer(self, contexte: dict) -> list:
         O = self.orfan
         self._debut, self.appels, self.jetons, self._plein = time.monotonic(), 0, 0, False
         source, fonction, entrees = contexte["source_reference"], contexte["fonction"], contexte.get("entrees") or []
         budget = max(1, int(contexte.get("budget", 3)))
+        self._memoire, self.fiches = [f for f in (contexte.get("memoire") or []) if isinstance(f, dict)], []
         trouves = []
         for c in O.optimisations(source):
             texte = c["texte"].rstrip("\n") + "\n"
@@ -170,6 +206,9 @@ class MoteurFrugal:
             return []
         reponse = self._appeler(self._demande_strategies(contexte, chaud), "strategie")
         strategies = self._lire_strategies(reponse) if reponse else []
+        if not strategies and self._toutes_ratees:
+            self.etages.append("toutes les idées du modèle fort ont déjà échoué ici : plus aucune dépense")
+            return []
         if not strategies:
             self.etages.append("le modèle fort n'a rien proposé : une seule tentative, sans stratégie")
             strategies = [{"titre": "sans stratégie", "plan": "", "texte": "", "raison": "", "etat": 0}]
@@ -187,6 +226,7 @@ class MoteurFrugal:
                 texte = s["texte"].rstrip("\n") + "\n"
                 ok, rapport, raison = self._verifier(source, texte, fonction, entrees)
                 s["etat"], s["raison"] = (2 if ok else (1 if rapport > 0 else 0)), raison
+                self._noter(s, ok, rapport, raison)
                 if ok:
                     trouves.append((rapport, {"texte": texte, "hypothese": "stratégie « %s » (×%.2f sur le vu, tour %d)" % (s["titre"], rapport, tour), "origine": "frugal"}))
                     if tour > 0:
