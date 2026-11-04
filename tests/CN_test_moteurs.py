@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b6392a
+# VERSION CN : 0.1.0  #57ed37
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 1 de la maquette d'Évolution : le moteur dans son processus, le relais de modèles plafonné, le registre et l'attribution des pièces.
 # MÉTHODE    : un vrai processus de moteur (aucune doublure du protocole) ; le modèle est une fonction de banc ; le module Évolution est branché dans un vrai noyau comme au banc du module.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b6392a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=57ed37 ▼▼▼
 """Bancs des moteurs de recherche : le protocole de processus, le relais, le registre."""
 import json
 import sys
@@ -91,6 +91,20 @@ class Processus(unittest.TestCase):
     def test_un_choix_inconnu_est_refuse_avant_tout(self):
         with self.assertRaises(ValueError):
             MO.MoteurProcessus("magie")
+
+    def test_une_chaine_de_processus_ne_perd_jamais_un_octet_du_suivant(self):
+        """Un tube fermé par `tuer()` pendant que son fil lecteur lisait encore voyait son numéro redonné au processus suivant, qui perdait son premier octet (« Extra data » une fois sur dix). Le lecteur ferme maintenant SON tube."""
+        racine = Path(__file__).resolve().parent.parent / "orfan"
+        ctx = {"point": "a.b", "source_reference": "def f(x):\n    return x\n", "fonction": "f", "entrees": [], "tombes": [], "budget": 1}
+        for i in range(40):
+            t = P._Travailleur(256, "auto", script=str(racine / "CN_moteur_hote.py"), arguments=(str(racine / "CN_orfan.py"), "deterministe"))
+            try:
+                t.envoyer({"op": "proposer", "contexte": ctx})
+                self.assertEqual(t.recevoir(60).get("op"), "resultat", i)
+            finally:
+                t.tuer()
+            t._lecteur.join(5)
+            self.assertTrue(t.proc.stdout.closed, i)                                          # fermé par le lecteur, une seule fois, après sa dernière lecture
 
 
 class Registre(unittest.TestCase):

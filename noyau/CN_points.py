@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #483fb4
+# VERSION CN : 0.1.0  #7faf2b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=483fb4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7faf2b ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -359,7 +359,7 @@ def _bac_marche(prefixe: list) -> bool:
     """Un bac n'est cru qu'après avoir fait tourner le TRAVAILLEUR dedans (il se charge, charge une fonction et répond) : un outil présent mais inutilisable, ou un bac qui cache le code du travailleur, ne compte pas."""
     racine = Path(__file__).resolve().parent
     dossier = tempfile.mkdtemp(prefix="cn_ec_bac_")
-    proc = None
+    proc = lecteur = None
     try:
         proc = subprocess.Popen([*prefixe, sys.executable, "-I", str(racine / "CN_ec_worker.py"), str(racine / "CN_points.py"), str(256 * 1024 * 1024)],
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=dossier, bufsize=0, start_new_session=(os.name == "posix"))
@@ -367,7 +367,8 @@ def _bac_marche(prefixe: list) -> bool:
         proc.stdin.write((json.dumps(msg) + "\n").encode("ascii"))
         proc.stdin.flush()
         reponse = queue.Queue()
-        threading.Thread(target=lambda: reponse.put(proc.stdout.readline()), daemon=True).start()
+        lecteur = threading.Thread(target=lambda: reponse.put(proc.stdout.readline()), daemon=True)
+        lecteur.start()
         ligne = reponse.get(timeout=20)
         return json.loads(ligne.decode("ascii")).get("ok") is True
     except Exception:
@@ -376,6 +377,11 @@ def _bac_marche(prefixe: list) -> bool:
         if proc is not None:
             try:
                 proc.kill()
+                proc.wait(timeout=5)
+                if lecteur is not None:
+                    lecteur.join(timeout=5)       # la lecture unique est finie (fin de fichier) : alors seulement on ferme les tubes
+                proc.stdin.close()
+                proc.stdout.close()
             except Exception:
                 pass
         shutil.rmtree(dossier, ignore_errors=True)
@@ -428,7 +434,8 @@ class _Travailleur:
                                      start_new_session=(os.name == "posix"))       # son propre groupe : on tue aussi ce que l'enveloppe a lancé
         self._q: queue.Queue = queue.Queue()
         self._verrou = threading.Lock()
-        threading.Thread(target=self._lire, daemon=True, name="ec-lecteur").start()
+        self._lecteur = threading.Thread(target=self._lire, daemon=True, name="ec-lecteur")
+        self._lecteur.start()
 
     def _lire(self):
         try:
@@ -436,6 +443,11 @@ class _Travailleur:
                 self._q.put(ligne)
         except Exception:
             pass
+        finally:
+            try:
+                self.proc.stdout.close()          # le lecteur ferme SON tube, après sa dernière lecture : fermé d'ailleurs, le numéro de descripteur libéré pourrait être redonné au processus suivant, et ce fil lui volerait ses premiers octets
+            except Exception:
+                pass
         self._q.put(None)
 
     def vivant(self) -> bool:
@@ -490,8 +502,7 @@ class _Travailleur:
         except Exception:
             pass
         try:
-            self.proc.stdin.close()
-            self.proc.stdout.close()
+            self.proc.stdin.close()               # stdout n'est PAS fermé ici : le fil lecteur le ferme lui-même en voyant la fin du fichier (le processus est mort)
         except Exception:
             pass
         try:
