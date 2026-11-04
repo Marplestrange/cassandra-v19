@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #98298a
+// VERSION CN : 0.2.0  #ee69d4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=98298a ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=ee69d4 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -523,7 +523,7 @@
         comp = c.libre ? '<div class="compile"><div><span class="lib">Compilation</span>Texte libre : ' + NB + '<span class="note">Écrire l\'objectif en français et le compiler en mesure demande un rôle de modèle, non branché ici. Cite un point (par ex. <span class="mono">' + esc(((S.etat.cibles || [])[0] || {}).point || "module.point") + "</span>) ou clique une suggestion.</span></div></div>"
           : '<div class="compile"><div><span class="lib">Point visé</span><b class="mono">' + esc(c.point) + '</b></div><div><span class="lib">Mesure</span>' + esc(c.mesure) + '</div><div><span class="lib">Garde-fous</span>' + esc(c.garde) + '</div><div><span class="lib">Geste</span>' + esc(c.geste) + '<button class="btn prim" data-a="ouvrir-atelier" data-p="' + esc(c.point) + '">Ouvrir dans l\'Atelier</button></div></div>';
       }
-      const intention = '<div class="verre carte large"><span class="idee">1 · L\'intention</span><h2>Dis ce que tu veux. Cassandra regarde ce qui compte.</h2>' +
+      const intention = '<div class="verre carte large"><h2>Dis ce que tu veux. Cassandra regarde ce qui compte.</h2>' +
         '<div class="intention"><input id="ev-intent" type="text" placeholder="ex. : accélérer contacts.signaux sans rien casser" value="' + esc(S.intention) + '"><button class="btn prim" data-a="compiler">Compiler l\'objectif</button></div>' +
         '<div class="sugg-t"><i></i><span><b>Cassandra te propose</b> d\'après ce qu\'elle observe en ce moment</span><span class="mono">' + sg.length + '</span></div><div class="pastilles">' + pastilles + "</div>" + comp + "</div>";
       if (seul === "intention") return intention;
