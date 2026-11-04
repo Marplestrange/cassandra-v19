@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #4c8e71
+// VERSION CN : 0.2.0  #f4cfba
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=4c8e71 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=f4cfba ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -361,9 +361,10 @@
     // 6 · Juges
     function mJuges() {
       const m = M0(), d = m.d || {}, j = m.juge, p = m.pol, ob = d.objectifs || { poids: {}, tolerance_pct: 25 }, der = m.derniere;
-      const ctl = (c) => '<div class="verif ' + (c.ok ? "ok" : "dg") + '"><span class="k">' + (c.ok ? "✓" : "✕") + "</span><div>" + esc(c.id) + "<small>" + esc(c.detail) + "</small></div><span></span></div>";
+      const LIBC = { longueur: "Longueur", interdits: "Interdictions gardées", modele: "Essai avec un modèle", variables: "Données à remplir", schema: "Forme de la réponse", pas_de_refus: "Cas ordinaire traité", cles: "Mêmes réglages", nombres: "Valeurs chiffrées", intervalles: "Dans les limites permises", planchers: "Minimums du noyau", rejeu: "Décisions passées" };
+      const ctl = (c) => '<div class="verif ' + (c.ok ? "ok" : "dg") + '"><span class="k">' + (c.ok ? "✓" : "✕") + "</span><div>" + esc(LIBC[c.id] || c.id) + "<small>" + esc(c.detail) + "</small></div><span></span></div>";
       const pg = (c) => '<div class="verif ' + (c.ok ? "ok" : "dg") + '"><span class="k">' + (c.ok ? "✓" : "✕") + "</span><div>" + esc(c.libelle) + "<small>cas piégé · " + esc(c.id) + " · " + esc(c.detail) + "</small></div><span></span></div>";
-      const rj = j.res ? '<div class="liste">' + j.res.controles.map(ctl).join("") + j.res.pieges.map(pg).join("") + '</div><div class="verdict ' + (j.res.verdict === "accepte" ? "" : j.res.verdict === "refuse" ? "dg" : "al") + '">' + (j.res.verdict === "accepte" ? "Accepté : tous les contrôles et " + j.res.pieges_passes + "/" + j.res.pieges_total + " cas piégés passent." : j.res.verdict === "refuse" ? "Refusé" + (j.res.pieges_total ? " : " + (j.res.pieges_total - j.res.pieges_passes) + " cas piégé(s) sur " + j.res.pieges_total + " échouent ou un contrôle tombe" : "") + ". Le prompt ne passe pas en ombre." : "Indéterminé : un modèle manque ou n'a pas répondu ; on ne promeut pas sur un jugement qu'on n'a pas pu faire.") + "</div>" : "";
+      const rj = j.res ? '<div class="liste">' + j.res.controles.map(ctl).join("") + j.res.pieges.map(pg).join("") + '</div><div class="verdict ' + (j.res.verdict === "accepte" ? "" : j.res.verdict === "refuse" ? "dg" : "al") + '">' + (j.res.verdict === "accepte" ? "Accepté : tous les contrôles et " + j.res.pieges_passes + "/" + j.res.pieges_total + " cas piégés passent." : j.res.verdict === "refuse" ? "Refusé" + (j.res.pieges_total ? " : " + (j.res.pieges_total - j.res.pieges_passes) + " cas piégé(s) sur " + j.res.pieges_total + " échouent ou un contrôle tombe" : "") + ". Cette version ne passe pas à l’essai." : "Indéterminé : un modèle manque ou n'a pas répondu ; on ne promeut pas sur un jugement qu'on n'a pas pu faire.") + "</div>" : "";
       const rp = p.res ? '<div class="liste">' + p.res.controles.map(ctl).join("") + '</div><div class="verdict ' + (p.res.verdict === "accepte" ? "" : "dg") + '">' + (p.res.verdict === "accepte" ? "Accepté." : "Refusé.") + "</div>" : "";
       const pts = der ? der.resultats.filter((r) => r.texte !== undefined || r.gain).map((r) => [r.nom, r.gain || 0, r.memoire == null ? 0 : r.memoire]) : [];
       const front = pts.filter((a) => !pts.some((b) => b !== a && b[1] >= a[1] && b[2] >= a[2] && (b[1] > a[1] || b[2] > a[2]))).sort((a, b) => a[1] - b[1]);
@@ -385,7 +386,7 @@
           (p.prop.changements.length ? '<div class="lg"><button class="btn" data-ma="utiliser-pol">La mettre à juger</button></div>' : "") : "") + "</div></section>" +
         '<div class="verre carte"><div class="tete"><h2>Objectifs multiples</h2><span class="puce ok">construit</span></div><div class="note">Le juge mesure la latence, la mémoire (pic d\'allocation) et la taille du code. Un poids de zéro ignore l\'objectif ; une variante qui régresse au-delà de la tolérance sur un objectif pesé n\'est pas adoptée, même plus rapide. Parmi les variantes admises, la frontière de Pareto, puis le meilleur score pesé.</div>' +
         '<div class="champs">' + poids.map((k) => '<label class="champ"><span class="lib">Poids · ' + k + '</span><input type="number" step="0.1" min="0" data-poids="' + k + '" value="' + (ob.poids[k] != null ? ob.poids[k] : 0) + '"></label>').join("") + '<label class="champ"><span class="lib">Tolérance de régression (%)</span><input type="number" min="0" max="100" id="mj-tol" value="' + ob.tolerance_pct + '"></label></div><div class="lg"><button class="btn prim" data-ma="objectifs">Enregistrer les poids</button></div>' + mMsg() +
-        (svg ? svg + '<div class="note">Dernière course : un point par étage (gain de latence, mémoire) ; points pleins : la frontière.</div>' : '<div class="note">Lance une course pour voir la frontière de Pareto des étages.</div>') + "</div>";
+        (svg ? svg + '<div class="note">Dernière course : un point par étage (gain de latence, mémoire) ; points pleins : les meilleurs compromis.</div>' : '<div class="note">Lance une course (Sous le capot › Les comparer) pour voir ce que chaque chercheur rend, en gain et en mémoire.</div>') + "</div>";
     }
 
     // 7 · Installation
@@ -762,6 +763,7 @@
     function suivre() { try { if (typeof window.evSuivre === "function") window.evSuivre(S.vue); } catch (e) { /* le menu se remettra à jour au prochain geste */ } }
     async function aller(vue) {
       S.vue = norme(vue); S.resultat = null; S.confirmer = null;
+      { const m0 = M0(); if (m0) m0.msg = null; }
       if (MVUE[S.vue] && !M0().d) { dessiner(); await chargerM(); }
       suivre(); dessiner();
       try { window.scrollTo(0, 0); } catch (e) { /* sans effet */ }
