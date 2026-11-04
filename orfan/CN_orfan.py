@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #076b39
+# VERSION CN : 0.1.0  #800d2a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : propose des variantes d'une fonction pure : d'abord des optimisations déterministes gratuites, puis un modèle de langage guidé par le profil de l'appel.
 # MÉTHODE    : il ne connaît pas le noyau : il reçoit un contexte (source, entrées, contrat, tombes) et rend du texte ; il profile par comptage des lignes exécutées.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=076b39 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=800d2a ▼▼▼
 """Orfan v1 (docs/CN_EVOLUTION.md, « Orfan est un projet à part entière » : v1 = ce que savait faire le moteur V18, amélioré).
 
 Contrat d'adaptateur, le seul lien avec Cassandra :   moteur.proposer(contexte) -> liste de textes (ou de {"texte", "hypothese"})
@@ -174,8 +174,12 @@ class MoteurDeterministe:
 
 
 # ── le modèle : guidé par le profil ──────────────────────────────────────────
+SEPARATEUR_CACHE = "<!--orfan:variable-->"     # entre la partie qui ne change pas d'un appel à l'autre (cachable) et celle qui change ; le module Évolution le retire toujours
+
+
 def construire_prompt(contexte: dict, chauds: list, strategie: str = "") -> str:
-    """Ce qu'on dit au modèle : la fonction, où va le temps, ce qu'il ne peut pas changer, ce qui a déjà échoué. Court : tout jeton relu se repaie."""
+    """Ce qu'on dit au modèle : la fonction, où va le temps, ce qu'il ne peut pas changer, ce qui a déjà échoué. Court : tout jeton relu se repaie.
+    L'ordre sert le cache du fournisseur : ce qui est stable d'abord (fonction, profil, contrat, règles), ce qui change (tombes, stratégie) après le séparateur."""
     lignes = ["Tu optimises une fonction Python PURE pour qu'elle s'exécute plus vite, SANS changer son résultat.", "",
               "Fonction à améliorer (nom : %s) :" % contexte["fonction"], "```python", contexte["source_reference"].rstrip(), "```", ""]
     if chauds:
@@ -186,10 +190,13 @@ def construire_prompt(contexte: dict, chauds: list, strategie: str = "") -> str:
     lignes += ["Règles strictes :", "- même nom de fonction, même signature, mêmes valeurs rendues pour toute entrée ;",
                "- bibliothèque standard pure seulement (math, re, json, itertools, functools, collections…) : ni fichier, ni réseau, ni heure, ni hasard, ni état global ;",
                "- rends UNIQUEMENT le code complet de la fonction (et de ses fonctions d'aide) dans un bloc ```python, précédé d'une phrase qui dit ton hypothèse."]
+    debut_variable = len(lignes)
     if contexte.get("tombes"):
         lignes += ["", "%d variante(s) ont DÉJÀ échoué sur ce point : ne propose pas une transformation triviale déjà tentée." % len(contexte["tombes"])]
     if strategie:
         lignes += ["", "Stratégie à implémenter (décidée avant toi) :", strategie.strip()]
+    if len(lignes) > debut_variable:
+        lignes.insert(debut_variable, SEPARATEUR_CACHE)
     return "\n".join(lignes)
 
 

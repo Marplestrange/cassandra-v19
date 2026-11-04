@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6aeca6
+# VERSION CN : 0.1.0  #bf05c2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6aeca6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bf05c2 ▼▼▼
 """Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles »."""
 import json
 import shutil
@@ -208,6 +208,40 @@ class Moteur(Banc):
     def test_le_moteur_a_vide_ne_fait_rien_et_le_dit(self):
         r = self.n.lancer("evolution.tick")
         self.assertEqual(r["statut"], "fait", r)
+
+
+class CachePrompt(unittest.TestCase):
+    """Le séparateur d'Orfan ne part jamais chez le modèle ; le cache du fournisseur n'est demandé que si l'admin l'a voulu."""
+
+    @staticmethod
+    def module():
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("cn_evolution_module_cache", RACINE / "modules" / "evolution" / "CN_module.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+
+    def test_le_separateur_est_celui_d_orfan(self):
+        from orfan import CN_orfan as O
+        self.assertEqual(self.module().SEPARATEUR_CACHE, O.SEPARATEUR_CACHE)
+
+    def test_sans_cache_le_prompt_est_du_texte_sans_separateur(self):
+        m = self.module()
+        p = "STABLE\n" + m.SEPARATEUR_CACHE + "\n\nCHANGE"
+        r = m.contenu_du_prompt(p)
+        self.assertEqual(r, "STABLE\nCHANGE")
+        self.assertNotIn(m.SEPARATEUR_CACHE, r)
+
+    def test_avec_cache_deux_blocs_dont_le_premier_est_marque(self):
+        m = self.module()
+        r = m.contenu_du_prompt("STABLE\n" + m.SEPARATEUR_CACHE + "\n\nCHANGE", True)
+        self.assertEqual([b["text"].strip() for b in r], ["STABLE", "CHANGE"])
+        self.assertEqual(r[0]["cache_control"], {"type": "ephemeral"})
+        self.assertNotIn("cache_control", r[1])
+        self.assertEqual("".join(b["text"] for b in r), "STABLE\n\nCHANGE")
+
+    def test_un_prompt_sans_partie_variable_reste_un_texte_meme_avec_cache(self):
+        self.assertEqual(self.module().contenu_du_prompt("seulement du stable", True), "seulement du stable")
 
 
 if __name__ == "__main__":

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c826c1
+# VERSION CN : 0.1.0  #ab6fab
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module modeles, contre de faux serveurs OpenAI-compatible et Ollama.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c826c1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ab6fab ▼▼▼
 """Bancs du module modeles, contre de faux serveurs OpenAI-compatible et Ollama."""
 import json
 import shutil
@@ -323,6 +323,36 @@ class Appels(Monde):
         self.assertTrue(r["ok"])
         self.assertIn("temperature", self.faux.requetes[0]["corps"])
         self.assertNotIn("temperature", self.faux.requetes[1]["corps"])
+
+    def test_les_jetons_servis_par_le_cache_sont_comptes_a_part_dans_les_deux_dialectes(self):
+        mid = self.mien()
+        self.ok("choisir", modele_id=mid)
+        brut = ouvert("ok", usage=(1200, 5))
+        brut["usage"]["prompt_tokens_details"] = {"cached_tokens": 1024}               # OpenAI
+        self.faux.reponses.append((200, brut))
+        r = self.ok("completer", messages=self.MSG)
+        self.assertEqual((r["usage"]["cache_lu"], r["usage"]["cache_ecrit"]), (1024, 0))
+        brut = ouvert("ok", usage=(1300, 5))
+        brut["usage"].update({"cache_read_input_tokens": 900, "cache_creation_input_tokens": 300})         # Anthropic
+        self.faux.reponses.append((200, brut))
+        r = self.ok("completer", messages=self.MSG)
+        self.assertEqual((r["usage"]["cache_lu"], r["usage"]["cache_ecrit"]), (900, 300))
+        self.faux.reponses.append((200, ouvert("ok", usage=(12, 5))))                  # un fournisseur muet : pas de compteur inventé
+        r = self.ok("completer", messages=self.MSG)
+        self.assertNotIn("cache_lu", r["usage"])
+
+    def test_un_prompt_a_blocs_marques_part_tel_quel_et_se_rejoue_en_texte_simple_si_l_endpoint_refuse(self):
+        mid = self.mien()
+        self.ok("choisir", modele_id=mid)
+        blocs = [{"type": "text", "text": "PARTIE STABLE\n", "cache_control": {"type": "ephemeral"}}, {"type": "text", "text": "\nPARTIE QUI CHANGE"}]
+        self.faux.reponses += [(200, ouvert("ok"))]
+        self.ok("completer", messages=[{"role": "user", "content": blocs}])
+        self.assertEqual(self.faux.requetes[-1]["corps"]["messages"][0]["content"], blocs)               # le marqueur arrive au fournisseur
+        self.faux.reponses += [(400, {"error": "unknown field cache_control"}), (200, ouvert("ok"))]
+        r = self.ok("completer", messages=[{"role": "user", "content": blocs}])
+        self.assertTrue(r["ok"])
+        self.assertIsInstance(self.faux.requetes[-2]["corps"]["messages"][0]["content"], list)
+        self.assertEqual(self.faux.requetes[-1]["corps"]["messages"][0]["content"], "PARTIE STABLE\n\nPARTIE QUI CHANGE")
 
     def test_une_panne_est_un_resultat_qui_dit_la_cause_sans_la_cle(self):
         mid = self.mien()

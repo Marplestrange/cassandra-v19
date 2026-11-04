@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d9b556
+# VERSION CN : 0.1.0  #3468e4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs d'Orfan v1 : le profil, les optimisations déterministes (équivalentes, une règle à la fois), le moteur à modèle, et la chaîne complète avec le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d9b556 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3468e4 ▼▼▼
 """Bancs d'Orfan v1 : le profil, les optimisations déterministes (équivalentes, une règle à la fois), le moteur à modèle, et la chaîne complète avec le noyau."""
 import json
 import shutil
@@ -101,6 +101,22 @@ class Modele(unittest.TestCase):
         self.assertIn('"required": ["y"]', p)
         self.assertIn("2 variante(s) ont DÉJÀ échoué", p)
         self.assertIn("bibliothèque standard pure", p)
+
+    def test_le_prompt_met_le_stable_avant_le_separateur_et_ce_qui_change_apres(self):
+        profil = O.profil(BOUCLE, "f", self.CONTEXTE["entrees"])
+        p = O.construire_prompt(self.CONTEXTE, profil, "Sors le produit de la boucle.")
+        stable, sep, variable = p.partition(O.SEPARATEUR_CACHE)
+        self.assertEqual(sep, O.SEPARATEUR_CACHE)
+        for attendu in ("def f(entree)", "ligne 4", "bibliothèque standard pure"):
+            self.assertIn(attendu, stable)
+        self.assertIn("2 variante(s) ont DÉJÀ échoué", variable)
+        self.assertIn("Sors le produit de la boucle.", variable)
+        self.assertNotIn("DÉJÀ échoué", stable)
+        # deux appels sur la même fonction : la partie stable est la même, au caractère près (c'est ce qui rend le cache possible)
+        autre = O.construire_prompt(dict(self.CONTEXTE, tombes=["a", "b", "c"]), profil, "Autre plan.")
+        self.assertEqual(autre.partition(O.SEPARATEUR_CACHE)[0], stable)
+        # rien qui change : pas de séparateur
+        self.assertNotIn(O.SEPARATEUR_CACHE, O.construire_prompt(dict(self.CONTEXTE, tombes=[]), profil))
 
     def test_les_blocs_de_code_sont_extraits_avec_leur_hypothese(self):
         reponse = "Je sors le produit de la boucle.\n```python\ndef f(entree):\n    return {'y': 1225 * entree['x']}\n```\nvoilà"

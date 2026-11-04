@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #6454ab
+# VERSION CN : 0.5.0  #31413a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=6454ab ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=31413a ▼▼▼
 [module]
 id = "evolution"
 nom = "Évolution"
@@ -330,6 +330,14 @@ libelle = "Le rôle de modèle utilisé pour proposer des variantes"
 type = "texte"
 defaut = "evolution"
 aide = "Un rôle du registre de modèles (module Modèles). Sans modèle lié à ce rôle, le moteur à modèle dit qu'il n'a pas de modèle : il n'invente rien. Garde un nom qui COMMENCE par « evolution » : c'est ce nom qui range la dépense dans le plafond de coût de la maison (Agents IA)."
+
+[[reglages]]
+id = "cache_prompt"
+libelle = "Marquer la partie stable des prompts d'Orfan pour le cache du fournisseur"
+type = "choix"
+choix = ["non", "oui"]
+defaut = "non"
+aide = "À « oui », le prompt est envoyé en deux blocs dont le premier (la fonction, le profil, le contrat, les règles) porte un marqueur de cache de type Anthropic : les appels suivants sur la même fonction coûtent moins cher d'entrée si le fournisseur sait s'en servir (en dessous d'environ 1 000 jetons le cache ne s'applique pas). Un point d'accès qui refuse le marqueur est rejoué en texte simple. Les jetons servis par le cache sont comptés à part (cache_lu), mais le plafond de coût de la maison les compte encore au prix plein tant qu'Agents IA ne les distingue pas. Par défaut : non."
 
 [[reglages]]
 id = "budget_essais"

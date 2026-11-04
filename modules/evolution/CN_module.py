@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #d55da4
+# VERSION CN : 0.5.0  #926bf8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=d55da4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=926bf8 ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -28,6 +28,22 @@ import re
 import sys
 
 _MOTEUR_PERMIS = re.compile(r"^orfan(\.[A-Za-z_][A-Za-z0-9_]*)+$")      # un moteur se trouve DANS le paquet orfan : un réglage n'importe pas n'importe quel module du serveur
+
+
+SEPARATEUR_CACHE = "<!--orfan:variable-->"      # le même que orfan.CN_orfan.SEPARATEUR_CACHE (le module n'importe pas Orfan pour si peu)
+
+
+def contenu_du_prompt(prompt, avec_cache: bool = False):
+    """Le séparateur d'Orfan ne part JAMAIS chez le modèle. Sans cache (par défaut) : le même texte qu'avant, séparateur retiré. Avec cache : la partie stable (la fonction, le profil, le contrat,
+    les règles) devient un bloc marqué `cache_control`, la partie qui change (tombes, stratégie) un second bloc. Un endpoint qui refuse le marqueur est rejoué en texte simple par le module Modèles."""
+    stable, sep, variable = str(prompt).partition(SEPARATEUR_CACHE)
+    if not sep:
+        return str(prompt)
+    retour = chr(10)
+    stable, variable = stable.rstrip(retour), variable.lstrip(retour)
+    if not avec_cache:
+        return stable + retour + variable
+    return [{"type": "text", "text": stable + retour, "cache_control": {"type": "ephemeral"}}, {"type": "text", "text": retour + variable}]
 
 
 def brancher(ctx):
@@ -65,13 +81,16 @@ def brancher(ctx):
         if isinstance(plafond, dict) and plafond.get("retient"):
             raise RuntimeError("le plafond de dépense de la maison est atteint aujourd'hui (%s € sur %s €, action « %s ») : Évolution n'appelle plus de modèle jusqu'à demain, ou jusqu'à ce que tu le relèves dans Agents IA"
                                % (plafond.get("depense_euros"), plafond.get("plafond_euros"), plafond.get("action")))
-        r = ctx.executer_lecture("modeles.completer", messages=[{"role": "user", "content": prompt}], role=nom_role, max_tokens=3000, temperature=0.2)
+        r = ctx.executer_lecture("modeles.completer", messages=[{"role": "user", "content": contenu_du_prompt(prompt, str(reglage("cache_prompt", "non")) == "oui")}], role=nom_role, max_tokens=3000, temperature=0.2)
         if not r or not r.get("ok"):
             raise RuntimeError((r or {}).get("erreur") or "le modèle n'a pas répondu (module Modèles absent, ou rôle « %s » sans modèle)" % nom_role)
         appeler_modele.dernier_modele = str(r.get("modele") or nom_role)
+        u = r.get("usage") or {}
+        appeler_modele.dernier_cache = {"lu": int(u.get("cache_lu") or 0), "ecrit": int(u.get("cache_ecrit") or 0)}          # ce que le fournisseur a servi du cache : zéro tant qu'il n'en dit rien
         return r.get("texte") or ""
 
     appeler_modele.dernier_modele = ""
+    appeler_modele.dernier_cache = {"lu": 0, "ecrit": 0}
 
     def isoles():
         return str(reglage("moteurs_isoles", "oui")) == "oui"

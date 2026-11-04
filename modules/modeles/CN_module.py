@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #10060e
+# VERSION CN : 0.1.0  #db100b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=10060e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=db100b ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -289,6 +289,29 @@ def brancher(ctx):
         message = {"role": "assistant", "content": txt or None, "tool_calls": [{"id": a["id"], "type": "function", "function": {"name": a["nom"], "arguments": json.dumps(a["arguments"], ensure_ascii=False)}} for a in appels]} if appels else None
         return txt, avert, {"prompt_tokens": j.get("prompt_eval_count"), "completion_tokens": j.get("eval_count")}, appels, message
 
+    def jetons_de_cache(u):
+        """(lus, écrits) : les jetons d'entrée servis par le cache du fournisseur, et ceux qu'il a mis en cache. Deux dialectes : OpenAI (`prompt_tokens_details.cached_tokens`)
+        et Anthropic (`cache_read_input_tokens`, `cache_creation_input_tokens`). Tout ce qui n'est pas un entier compte zéro."""
+        def entier(x):
+            return x if isinstance(x, int) and not isinstance(x, bool) else 0
+        u = u if isinstance(u, dict) else {}
+        det = u.get("prompt_tokens_details")
+        lu = entier(det.get("cached_tokens")) if isinstance(det, dict) else 0
+        return (lu or entier(u.get("cache_read_input_tokens"))), entier(u.get("cache_creation_input_tokens"))
+
+    def avec_marqueur_cache(msgs):
+        return any(isinstance(m, dict) and isinstance(m.get("content"), list) and any(isinstance(b, dict) and "cache_control" in b for b in m["content"]) for m in msgs)
+
+    def aplatir_blocs(msgs):
+        """Les messages à blocs de texte redeviennent des messages en texte simple (les blocs mis bout à bout, `cache_control` retiré)."""
+        sortie = []
+        for m in msgs:
+            c = m.get("content") if isinstance(m, dict) else None
+            if isinstance(c, list):
+                m = dict(m, content="".join(str(b.get("text", "")) for b in c if isinstance(b, dict)))
+            sortie.append(m)
+        return sortie
+
     def appel_openai(cle, modele, base, msgs, max_tokens, temperature, allow_reasoning, timeout, outils=None):
         entetes = {} if cle in ("none", "ollama", "") else {"Authorization": "Bearer " + cle}
         url = str(base).rstrip("/") + "/chat/completions"
@@ -305,6 +328,9 @@ def brancher(ctx):
                 if e.code == 400 and "temperature" in kw:          # un endpoint qui n'accepte pas le paramètre : repli sans lui
                     kw = {k: v for k, v in kw.items() if k != "temperature"}
                     continue
+                if e.code == 400 and avec_marqueur_cache(kw["messages"]):          # un endpoint qui ne connaît pas `cache_control` : le même prompt, en texte simple
+                    kw = dict(kw, messages=aplatir_blocs(kw["messages"]))
+                    continue
                 raise
             ch = (j.get("choices") or [{}])[0]
             msg = ch.get("message") or {}
@@ -313,6 +339,9 @@ def brancher(ctx):
             rc = str(msg.get("reasoning_content") or msg.get("reasoning") or "").strip()
             for k, v in (j.get("usage") or {}).items():
                 usage[k] = usage.get(k, 0) + (v if isinstance(v, int) else 0)
+            lu, ecrit = jetons_de_cache(j.get("usage"))
+            if lu or ecrit:                                      # absents tant que le fournisseur n'en rend pas : un compteur à zéro ne s'invente pas
+                usage["cache_lu"], usage["cache_ecrit"] = usage.get("cache_lu", 0) + lu, usage.get("cache_ecrit", 0) + ecrit
             appels = appels_de(msg.get("tool_calls"))
             if not txt and not appels and rc and not rejoue:
                 # MODÈLE RAISONNEUR : la réflexion a mangé le budget — un SEUL rejeu, budget élargi, consigne de réponse directe.
@@ -340,6 +369,8 @@ def brancher(ctx):
             ajouter_usage(role, m["id"], False, 0.0, None)
             return {"ok": False, "texte": "", "erreur": "clé illisible (%s)" % str(e)[:120], "secondes": 0.0, "modele": m["id"]}
         msgs = ([{"role": "system", "content": str(systeme)}] if systeme else []) + [dict(x, role=str(x.get("role") or "user")) for x in messages if isinstance(x, dict)]          # les appels d'outils et leurs réponses (tool_calls, tool_call_id) voyagent tels quels
+        if prov == "ollama":
+            msgs = aplatir_blocs(msgs)                           # un modèle local n'a pas de cache à marquer : texte simple
         usage = {}
         try:
             if prov == "ollama" and all(isinstance(x.get("content") or "", str) for x in msgs):
