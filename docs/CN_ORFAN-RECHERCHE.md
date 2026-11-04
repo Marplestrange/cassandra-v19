@@ -452,3 +452,8 @@ Chaque étape a sa mesure et son critère d'abandon. **Aucune ne touche au juge 
 - **`docs/CN_EVOLUTIF-SEMANTIQUE.md`** : je n'en ai lu que les titres ; mes renvois (P3, P6) s'appuient sur eux.
 - **Une seule expérience** a été faite sur Orfan (§ 3.6) : 6 fonctions, 3 graines, un modèle local de 3 milliards de paramètres, sans le relais ni le juge du noyau. Ni le banc de 10 cibles de l'étape 0, ni aucune des idées proposées n'a été mesurée : tout gain annoncé pour Orfan reste une hypothèse.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : le dossier de recherche sur Orfan, sans code -->
+<!-- EC : néant (un dossier de recherche n'évolue pas) -->
+<!-- LIEN : docs/CN_EVOLUTION.md (Orfan, les moteurs), docs/CN_FRUGALEVO.md, docs/CN_OPENEVOLVE-LECTURE.md, docs/CN_EVOLUTIF-SEMANTIQUE.md -->
