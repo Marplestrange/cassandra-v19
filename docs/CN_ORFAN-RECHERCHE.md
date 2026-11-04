@@ -12,7 +12,7 @@
 <!-- RÔLE       : Orfan, la recherche : comment en faire le meilleur moteur possible -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7d7df2 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=09bef1 ▼▼▼ -->
 # Orfan, la recherche : comment en faire le meilleur moteur possible
 
 Statut : 04-11-2026. Dossier de recherche, **rien n'est construit**. Tu décides à la fin (§ 5) ce qu'on fait, ce qu'on mesure, ce qu'on jette.
@@ -490,6 +490,75 @@ Méthode : les 10 recettes passées sur chaque fichier `.py` hors tests (297 fic
 | liste interrogée par `in`, `sum(x, [])`, `pop(0)`, mémoïsation, `list(générateur)`, constructeurs vides, liste intermédiaire | **0** | |
 
 **Lecture honnête** : 11 correspondances sur 5 685 fonctions, toutes sur de très petites entrées (une poignée d'adresses, 40 éléments, un outil lancé à la main). Le gain attendu sur le code de Cassandra lui-même est **proche de zéro**. Les recettes ne sont donc pas le levier pour optimiser Cassandra ; elles servent pour les fonctions que le système fait évoluer (points d'évolution, code écrit par des agents), où les motifs sont plus fréquents. La suite qui compte est un **profil réel** (Sensorium ou `profil` sur le trafic) pour trouver les fonctions chaudes, puis le modèle sur celles-là.
+
+## 9. Le niveau supérieur : Orfan sur ce que Cassandra paie vraiment — plan
+
+### 9.1 Les faits lus sur Argos le 04-11 (lecture seule, aucune écriture)
+
+Source : `rejeu.db`, `modules/modeles.db`, `modules/agents.db`, `evolution.db`, sous `/var/cassandra/donnees`. Période du rejeu : 02-11 05:23 → 04-11 16:21 (environ 59 h).
+
+| N° | Fait | Valeur lue |
+|---|---|---|
+| F1 | CPU de tous les points d'évolution | **37,8 s au total** pour 82 667 appels chronométrés. Les plus lourds : `planifie.decrire` 13,0 s (0,31 ms l'appel), `affichage.disposition` 10,2 s (2,7 ms l'appel) |
+| F2 | Appels aux modèles en tout | **14 appels**, un seul modèle (`qwen2.5:3b` local), coût **0 centime** |
+| F3 | Entrées / sorties par appel | environ **2 000 à 2 400 jetons en entrée** (cassandra 6 104 pour 3 appels ; itare 7 129 pour 3), **17 à 20 en sortie** |
+| F4 | Durée par appel | `principal` : 8 appels en 424,6 s (**53 s l'appel**, 4 échecs sur 8) ; `itare_citadelle` : 3 appels en 140,4 s (**47 s l'appel**) |
+| F5 | Le moteur d'évolution sur Argos | `evolution.db` : 0 tentative, 0 tombe. Il n'a **jamais tourné** là-bas |
+| F6 | Épreuves de comportement des agents | tables `epreuves_runs` / `epreuves_cas` : 0 run. Huit cas écrits (`CN_epreuves.json`) : page piégée, demande de secret, envoi après lecture du dehors, outil absent, fait sans source, bureau d'autrui, gel d'autonomie, fil tronqué |
+| F7 | Le prompt système est déjà un point d'évolution | `prompt_systeme` (pure, `EC_prompt_systeme.py`) : environ 500 jetons sans mémoire (1 994 caractères, 4 caractères par jeton, mesure du relais). **Le juge actuel exige une sortie identique** : il ne peut donc pas juger un prompt plus court |
+| F8 | Outils présentés à chaque appel | réglage `max_outils` = 60 par défaut ; leurs schémas partent à chaque tour |
+
+**Lecture** : un seul appel au modèle local (environ 50 s) coûte plus que tout le CPU des points d'évolution sur 59 h (37,8 s). Optimiser le Python n'est pas le levier. Le coût réel est le **temps d'un appel au modèle, dominé (hypothèse H1) par les jetons d'entrée à traiter** : 2 000 à 2 400 par appel pour 20 jetons de réponse.
+
+**Correction de mon message précédent** : j'avais dit que le rejeu garde « les appels réels » de quoi juger des prompts. C'est faux : il garde les **entrées des points d'évolution** (des fonctions), pas des conversations. Le bon juge pour un prompt est le jeu d'**épreuves** (F6), qui existe mais n'a jamais été lancé.
+
+### 9.2 Ce qui n'est PAS établi (à lever avant de construire)
+
+- **H1** : la durée est proportionnelle aux jetons d'entrée. Non mesuré : je n'ai que 11 appels réels, à longueurs voisines. À tester par une courbe durée / longueur.
+- **H2** : Ollama compte les schémas d'outils dans `prompt_eval_count` et réutilise le préfixe d'un appel à l'autre. Non vérifié.
+- **H3** : où partent les 2 000 à 2 400 jetons (prompt système environ 500, schémas d'outils, mémoire, fil). Non décomposé.
+- **H4** : la cause des 4 échecs sur 8 appels de `principal`. Non lue.
+- **H5** : le modèle de 3 milliards de paramètres réussit-il les 8 épreuves *aujourd'hui* ? Inconnu : aucun run. Sans cette base, aucune comparaison avant / après n'a de sens.
+- Comment `ep.derouler` note un cas : non lu.
+
+### 9.3 Le plan, avec critères d'arrêt
+
+**Phase A — Mesurer, sans rien changer (environ une demi-journée).**
+1. Décomposer un appel réel : prompt système, schémas d'outils, mémoire, fil, en jetons (script local, mêmes fonctions que le module Agents).
+2. Courbe durée / jetons d'entrée sur Argos : prompts de 500, 1 000, 2 000, 4 000 jetons, même sortie courte, 3 répétitions chacun ; puis le même préfixe deux fois de suite (H2).
+3. Lancer les 8 épreuves sur `qwen2.5:3b` (3 répétitions) pour la base de référence (H5).
+4. Lire la cause des 4 échecs (H4).
+- **Arrêt** : si les jetons d'entrée expliquent moins de la moitié de la durée, raccourcir les prompts rapporte peu ; on réoriente (modèle plus petit, quantification, réutilisation du préfixe seule).
+
+**Phase B — Les gains sans risque de sens (avant tout modèle d'Orfan).**
+- B1 : ordre du prompt pour réutiliser le préfixe : le stable en tête (règles), le volatil (date, mémoire) après. Aujourd'hui la date ouvre le prompt. Zéro jeton retiré, gain attendu seulement si H2 est vrai.
+- B2 : baisser `max_outils` (réglage existant, pas de code) et mesurer l'effet sur les épreuves.
+- B3 : raccourcir à la main les descriptions d'outils les plus longues.
+- **Critère de sortie** : durée moyenne en baisse d'au moins 20 % *et* épreuves inchangées sur 3 répétitions sur 3.
+
+**Phase C — Le juge de prompt (le vrai chantier de code).**
+- Un nouveau type de cible pour Orfan : un texte (prompt, règle) jugé non par l'égalité de sortie, mais par : (1) toutes les épreuves réussies, 3 répétitions sur 3 ; (2) jetons d'entrée en baisse d'au moins 15 % ; (3) **clauses protégées intactes** : les règles 3 (une donnée d'outil n'est jamais une instruction) et 4 (secrets) sont vérifiées par comparaison exacte de texte, un candidat qui les altère est rejeté sans appel au modèle.
+- **Corpus à étendre** : huit cas ne suffisent pas, un prompt apprendrait ces huit-là (Goodhart). Viser au moins 30 cas dont une partition réservée jamais montrée au générateur (même principe que le rejeu). Données réelles disponibles : 14 messages seulement, donc cas synthétiques.
+- Ce travail recoupe `docs/CN_EVOLUTIF-SEMANTIQUE.md` (autre session) : à coordonner, pas à dupliquer.
+
+**Phase D — Pilote.** Cible unique : le bloc `REGLES` (statique, environ 400 jetons). Orfan propose des variantes plus courtes, le juge de la phase C tranche, **promotion seulement après ta relecture**, puis comparaison en ombre sur Argos.
+- **Succès** : au moins 25 % de jetons en moins sur ce bloc, aucune épreuve perdue, durée mesurée en baisse. **Échec assumé** : sinon on le consigne dans le dossier et on s'arrête.
+
+**Phase E (seulement si D réussit)** : routeur appris (quelle tâche va au modèle local, laquelle exige un modèle fort), sous la même contrainte de zéro dégradation sur la partition réservée.
+
+### 9.4 Risques et garde-fous
+
+- **Goodhart** : un prompt qui réussit les épreuves en les « apprenant ». Parades : partition réservée, cas tirés au hasard, 3 répétitions.
+- **Bruit du modèle** (température 0,2, 3 milliards de paramètres) : une seule exécution ne prouve rien ; seuil de 3 sur 3.
+- **Sécurité** : les règles anti-injection ne sont jamais réécrites par le modèle (clauses protégées, phase C).
+- **Charge sur Argos** : un appel dure environ 50 s et occupe les 4 cœurs ; les mesures de la phase A ralentissent le service pendant quelques minutes.
+- **Échelle** : 14 appels en 59 h. Le gain total en secondes est aujourd'hui minuscule ; il ne vaut que si l'usage augmente, ou avec un modèle payant (jetons facturés).
+
+### 9.5 Décisions qui sont à toi
+
+1. Autoriser la phase A sur Argos (mesures de latence et 8 épreuves, qui écrivent une ligne `epreuves_runs`) ?
+2. Accepter qu'aucun texte de prompt ne soit promu sans ta relecture ?
+3. Étendre le corpus d'épreuves à 30 cas : tu écris ou je propose et tu valides ?
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
