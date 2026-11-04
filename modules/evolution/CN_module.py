@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #785e4d
+# VERSION CN : 0.5.0  #28503f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=785e4d ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=28503f ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -82,7 +82,15 @@ def brancher(ctx):
         if isinstance(plafond, dict) and plafond.get("retient"):
             raise RuntimeError("le plafond de dépense de la maison est atteint aujourd'hui (%s € sur %s €, action « %s ») : Évolution n'appelle plus de modèle jusqu'à demain, ou jusqu'à ce que tu le relèves dans Agents IA"
                                % (plafond.get("depense_euros"), plafond.get("plafond_euros"), plafond.get("action")))
-        r = ctx.executer_lecture("modeles.completer", messages=[{"role": "user", "content": contenu_du_prompt(prompt, str(reglage("cache_prompt", "non")) == "oui")}], role=nom_role, max_tokens=3000, temperature=0.2)
+        messages = [{"role": "user", "content": contenu_du_prompt(prompt, str(reglage("cache_prompt", "non")) == "oui")}]
+        essais = [nom_role]
+        if role == "strategie" and not str(reglage("modele_role_strategie", "") or ""):
+            essais = ["evolution_strategie", nom_role]                  # un modèle lié au rôle « evolution_strategie » sert le stratège sans qu'on touche au réglage ; sinon, le rôle des autres appels
+        r = None
+        for nom_role in essais:
+            r = ctx.executer_lecture("modeles.completer", messages=messages, role=nom_role, max_tokens=3000, temperature=0.2)
+            if r and r.get("ok"):
+                break
         if not r or not r.get("ok"):
             raise RuntimeError((r or {}).get("erreur") or "le modèle n'a pas répondu (module Modèles absent, ou rôle « %s » sans modèle)" % nom_role)
         appeler_modele.dernier_modele = str(r.get("modele") or nom_role)
