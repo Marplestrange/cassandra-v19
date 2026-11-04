@@ -12,7 +12,7 @@
 <!-- RÔLE       : Orfan, la recherche : comment en faire le meilleur moteur possible -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0c7a5c ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7d7df2 ▼▼▼ -->
 # Orfan, la recherche : comment en faire le meilleur moteur possible
 
 Statut : 04-11-2026. Dossier de recherche, **rien n'est construit**. Tu décides à la fin (§ 5) ce qu'on fait, ce qu'on mesure, ce qu'on jette.
@@ -477,6 +477,19 @@ Résultat : les recettes gratuites résolvent **les 6 fonctions** du banc (contr
 6. **Mesurer sur la machine qui exécutera.** Les rapports de vitesse bougent entre Windows et Linux, et entre versions de Python. Le juge pourrait refaire la mesure finale en ombre sur la cible (Argos) avant de promouvoir.
 
 Le risque commun de 2 et 3 : une recette apprise est du code qui s'exécutera sans modèle. Elle doit passer par la relecture humaine (décision 3 du § 6).
+
+### 8.3 Inventaire sur le code réel de Cassandra (04-11, lecture seule, étape 0 partielle)
+
+Méthode : les 10 recettes passées sur chaque fichier `.py` hors tests (297 fichiers lus, 0 illisible, 5 685 fonctions), en comptant les endroits où elles s'appliquent. **Ce n'est pas un profil** : rien ne dit quelles fonctions sont chaudes en production.
+
+| Recette | Endroits trouvés | Où |
+|---|---|---|
+| test de vide par la longueur | 6 | 5 fichiers |
+| dédoublonnage par liste | 3 | `valider_adresses` (contacts : quelques adresses), `propres_rattaches` (notes : 40 éléments au plus), `corps_de_reference` (outil de construction) |
+| tri pour un extremum | 2 | contacts, et le choix d'un nom de PDF dans Dolibarr (quelques fichiers) |
+| liste interrogée par `in`, `sum(x, [])`, `pop(0)`, mémoïsation, `list(générateur)`, constructeurs vides, liste intermédiaire | **0** | |
+
+**Lecture honnête** : 11 correspondances sur 5 685 fonctions, toutes sur de très petites entrées (une poignée d'adresses, 40 éléments, un outil lancé à la main). Le gain attendu sur le code de Cassandra lui-même est **proche de zéro**. Les recettes ne sont donc pas le levier pour optimiser Cassandra ; elles servent pour les fonctions que le système fait évoluer (points d'évolution, code écrit par des agents), où les motifs sont plus fréquents. La suite qui compte est un **profil réel** (Sensorium ou `profil` sur le trafic) pour trouver les fonctions chaudes, puis le modèle sur celles-là.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
