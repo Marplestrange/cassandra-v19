@@ -13,7 +13,7 @@
 <!-- RÔLE       : la maquette de l'écran Évolution pensé pour quelqu'un qui n'est pas ingénieur : une phrase d'état, des résultats, trois réglages en mots simples, et tout le reste (chercheurs, comparaison, sécurité, carnet) rangé « sous le capot » -->
 <!-- MÉTHODE    : une page autonome, données de démonstration ; le vocabulaire interne (ombre, paliers, tombes, moteur, cage…) n'apparaît pas à l'écran, il est traduit dans l'onglet Vocabulaire -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=2f7eae ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=67afa6 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -121,6 +121,7 @@ body{overflow:auto}
 @media(max-width:768px){.ev .rang{flex-direction:column}}
 /* le troisième niveau du menu de gauche : « Sous le capot » déplié */
 .d19-si.sub.sub2{padding-left:46px;font-size:12.5px}
+.d19-sep2{padding:8px 12px 2px 46px;font:600 10px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-muted)}
 /* mise en scène, cloche et notifications de la maquette */
 .ev .de.ko{color:var(--e-dg)}.ev .de.ko .k{background:var(--e-dgd);color:var(--e-dg)}
 #d19-bell{position:relative}.bellb{position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;border-radius:99px;background:#dc2626;color:#fff;font:700 10px/16px ui-monospace,Menlo,Consolas,monospace;text-align:center;padding:0 4px}
@@ -415,9 +416,7 @@ function amelio() {
   const f = S.filtre, ty = S.type;
   const duType = a => ty === "tous" || (a.type || "code") === ty;
   const liste = AMELIO.filter(a => duType(a) && (f === "toutes" || a.etat === f));
-  const chips = [["toutes", "Toutes"], ["essai", "À l'essai"], ["service", "En service"], ["retiree", "Retirées"]].map(c => `<button class="chip${f === c[0] ? " on" : ""}" data-filtre="${c[0]}">${c[1]} <b>${AMELIO.filter(a => duType(a) && (c[0] === "toutes" || a.etat === c[0])).length}</b></button>`).join("");
-  const types = [["tous", "Tout"], ["code", "Du code"], ["consigne", "Des consignes d'agent"], ["politique", "Des règles et seuils"]].map(c => `<button class="chip${ty === c[0] ? " on" : ""}" data-type="${c[0]}">${c[1]}</button>`).join("");
-  return `<div class="chips">${types}</div><div class="chips">${chips}</div><div class="liste">${liste.map(ligneAmelio).join("") || '<div class="vide">Rien dans cette liste.</div>'}</div>`;
+  return `<div class="liste">${liste.map(ligneAmelio).join("") || '<div class="vide">Rien dans cette liste.</div>'}</div>`;
 }
 function barreEtapes(a) {
   if (a.etat === "retiree") return `<div class="etapes3 off">${ETAPES.map(() => "<i></i>").join("")}</div>`;
@@ -641,8 +640,14 @@ function menu() {
   let h = `<button class="d19-si ent" data-tip="Agents IA" data-autre="1"><i class="d19-gl" aria-hidden="true">▣</i><span>Agents IA</span>${chev(false)}</button>`;
   h += `<button class="d19-si ent" data-tip="Évolution" aria-expanded="true" data-sec-parent="1"><i class="d19-gl" aria-hidden="true">⚘</i><span>Évolution</span>${chev(true)}</button>`;
   h += SECTIONS.map(x => {
-    const ouvert = x[0] === "capot" && S.vue === "capot", cur = S.vue === x[0] && !ouvert;
-    const un = `<button class="d19-si sub ic${cur ? " on" : ""}" data-sec="${x[0]}"${cur ? ' aria-current="page"' : ""}><i class="d19-gl" aria-hidden="true">${x[2]}</i><span>${x[1]}</span>${x[0] === "capot" ? chev(ouvert) : ""}</button>`;
+    const ouvert = (x[0] === "capot" || x[0] === "amelio") && S.vue === x[0], cur = S.vue === x[0] && !ouvert;
+    const un = `<button class="d19-si sub ic${cur ? " on" : ""}" data-sec="${x[0]}"${cur ? ' aria-current="page"' : ""}><i class="d19-gl" aria-hidden="true">${x[2]}</i><span>${x[1]}</span>${x[0] === "capot" || x[0] === "amelio" ? chev(ouvert) : ""}</button>`;
+    if (ouvert && x[0] === "amelio") {
+      const duType = a => S.type === "tous" || (a.type || "code") === S.type;
+      const et = [["toutes", "Toutes", "≡"], ["essai", "À l'essai", "◔"], ["service", "En service", "●"], ["retiree", "Retirées", "⊘"]].map(c => `<button class="d19-si sub sub2 ic${S.filtre === c[0] ? " on" : ""}" data-sf="${c[0]}"${S.filtre === c[0] ? ' aria-current="page"' : ""}><i class="d19-gl" aria-hidden="true">${c[2]}</i><span>${c[1]} · ${AMELIO.filter(a => duType(a) && (c[0] === "toutes" || a.etat === c[0])).length}</span></button>`).join("");
+      const ty = [["tous", "Toute nature", "∗"], ["code", "Du code", "‹›"], ["consigne", "Consignes d'agent", "✎"], ["politique", "Règles et seuils", "⚖"]].map(c => `<button class="d19-si sub sub2 ic${S.type === c[0] ? " on" : ""}" data-st="${c[0]}"><i class="d19-gl" aria-hidden="true">${c[2]}</i><span>${c[1]}</span></button>`).join("");
+      return un + et + '<div class="d19-sep2">Nature</div>' + ty;
+    }
     return ouvert ? un + SOUS.map(s => `<button class="d19-si sub sub2 ic${S.capot === s[0] ? " on" : ""}" data-sous="${s[0]}"${S.capot === s[0] ? ' aria-current="page"' : ""}><i class="d19-gl" aria-hidden="true">${s[2]}</i><span>${s[1]}</span></button>`).join("") : un;
   }).join("");
   h += `<button class="d19-si ent" data-tip="Proactivité" data-autre="1"><i class="d19-gl" aria-hidden="true">ϟ</i><span>Proactivité</span></button>`;
@@ -693,6 +698,8 @@ function rendre() {
     cote.innerHTML = menu();
     $$("[data-sec]", cote).forEach(b => { b.onclick = () => { S.vue = b.dataset.sec; S.cloche = false; rendre(); window.scrollTo(0, 0); }; });
     $$("[data-sous]", cote).forEach(b => { b.onclick = () => { S.vue = "capot"; S.capot = b.dataset.sous; S.cloche = false; rendre(); window.scrollTo(0, 0); }; });
+    $$("[data-sf]", cote).forEach(b => { b.onclick = () => { S.filtre = b.dataset.sf; rendre(); }; });
+    $$("[data-st]", cote).forEach(b => { b.onclick = () => { S.type = b.dataset.st; rendre(); }; });
     $$("[data-autre]", cote).forEach(b => { b.onclick = () => toast("Maquette : seule la partie Évolution est interactive"); });
   }
   cloche(); scen();
