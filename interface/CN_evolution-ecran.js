@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #faa514
+// VERSION CN : 0.2.0  #523da1
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=faa514 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=523da1 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -700,8 +700,8 @@
     }
     function gestesProposer() {
       const s = S.etat.seuils || {};
-      return '<div style="border-top:1px solid var(--e-filet);padding-top:10px;display:flex;flex-direction:column;gap:8px"><span class="lib">Proposer une variante</span><div class="lg"><select id="ev-moteur"><option value="deterministe">Orfan déterministe (zéro jeton)</option><option value="modele">Modèle de langage</option><option value="les_deux">Les deux, gratuit d\'abord</option></select>' +
-        '<input type="number" id="ev-budget" min="1" max="10" value="3" style="width:64px" title="variantes évaluées"></div><div class="lg"><button class="btn prim" data-geste="proposer"' + (S.occupe ? " disabled" : "") + ">Proposer une variante</button>" + (S.occupe ? '<span class="note">' + esc(S.attente || "évaluation en cours…") + "</span>" : "") + '<button class="btn" data-geste="visiter">Lancer les visites à 30 jours</button></div>' +
+      return '<div style="border-top:1px solid var(--e-filet);padding-top:10px;display:flex;flex-direction:column;gap:8px"><span class="lib">Proposer une variante</span><div class="lg"><select id="ev-moteur">' + [["deterministe", "Orfan déterministe (zéro jeton)"], ["modele", "Modèle de langage"], ["les_deux", "Les deux, gratuit d’abord"]].map((o) => '<option value="' + o[0] + '"' + ((S.choixMoteur || "deterministe") === o[0] ? " selected" : "") + ">" + o[1] + "</option>").join("") + '</select>' +
+        '<input type="number" id="ev-budget" min="1" max="10" value="' + (S.choixBudget || 3) + '" style="width:64px" title="variantes évaluées"></div><div class="lg"><button class="btn prim" data-geste="proposer"' + (S.occupe ? " disabled" : "") + ">Proposer une variante</button>" + (S.occupe ? '<span class="note">' + esc(S.attente || "évaluation en cours…") + "</span>" : "") + '<button class="btn" data-geste="visiter">Lancer les visites à 30 jours</button></div>' +
         '<div class="note"><b>Avant d\'écrire quoi que ce soit, le noyau exige</b> : équivalence sur tout le corpus ; gain d\'au moins ' + (s.gain_min_pct || "?") + " % <i>et</i> deux fois le bruit de mesure, tenu sur le jeu réservé ; un corpus assez fort (" + Math.round(100 * (s.pieges_min || 0)) + " % des variantes fausses attrapées). Sinon : rien n'est écrit.</div></div>";
     }
     function resultat() {
@@ -921,8 +921,8 @@
 
     async function geste(nom) {
       if (nom === "annuler") { S.confirmer = null; return dessiner(); }
-      if (nom === "proposer" || nom === "retour" || nom === "visiter") { S.confirmer = nom; S.vue = "capot.points"; suivre(); return dessiner(); }
-      const moteur = (racine.querySelector("#ev-moteur") || {}).value || "deterministe", budget = parseInt((racine.querySelector("#ev-budget") || {}).value, 10) || 3;
+      if (nom === "proposer" || nom === "retour" || nom === "visiter") { const em = racine.querySelector("#ev-moteur"), eb = racine.querySelector("#ev-budget"); if (em) S.choixMoteur = em.value; if (eb) S.choixBudget = parseInt(eb.value, 10) || 3; S.confirmer = nom; S.vue = "capot.points"; suivre(); return dessiner(); }
+      const moteur = (racine.querySelector("#ev-moteur") || {}).value || S.choixMoteur || "deterministe", budget = parseInt((racine.querySelector("#ev-budget") || {}).value, 10) || S.choixBudget || 3;
       S.confirmer = null; S.occupe = true; S.resultat = null; S.attente = null; dessiner();
       try {
         if (nom === "proposer-ok") {
