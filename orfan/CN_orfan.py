@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e0e473
+# VERSION CN : 0.1.0  #84cb14
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : propose des variantes d'une fonction pure : d'abord des optimisations déterministes gratuites, puis un modèle de langage guidé par le profil de l'appel.
 # MÉTHODE    : il ne connaît pas le noyau : il reçoit un contexte (source, entrées, contrat, tombes) et rend du texte ; il profile par comptage des lignes exécutées.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e0e473 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=84cb14 ▼▼▼
 """Orfan v1 (docs/CN_EVOLUTION.md, « Orfan est un projet à part entière » : v1 = ce que savait faire le moteur V18, amélioré).
 
 Contrat d'adaptateur, le seul lien avec Cassandra :   moteur.proposer(contexte) -> liste de textes (ou de {"texte", "hypothese"})
@@ -149,7 +149,122 @@ class _ConstructeursVides(_Regle):
         return n
 
 
-REGLES = (_CompDansAgregat, _TriPourExtremum, _LongueurZero, _ListeDeGenerateur, _ConstructeursVides)
+def _avec_import(arbre, nom: str):
+    """Ajoute `import nom` en tête du module (après la docstring) s'il n'y est pas déjà."""
+    for n in arbre.body:
+        if isinstance(n, ast.Import) and any(a.name == nom and a.asname is None for a in n.names):
+            return
+    place = 1 if arbre.body and isinstance(arbre.body[0], ast.Expr) and isinstance(getattr(arbre.body[0], "value", None), ast.Constant) and isinstance(arbre.body[0].value.value, str) else 0
+    arbre.body.insert(place, ast.Import(names=[ast.alias(name=nom)]))
+
+
+_BUILTINS_PURS = frozenset(("abs", "min", "max", "len", "sum", "int", "float", "str", "range", "sorted", "tuple", "bool", "divmod", "pow", "round"))
+
+
+class _SommeDeListes(_Regle):
+    """sum(x, []) recopie la liste cumulée à chaque terme : quadratique. chain.from_iterable parcourt une fois."""
+    nom = "sum(listes, [])"
+    hypothese = "sum(x, []) devient list(itertools.chain.from_iterable(x)) : une seule passe au lieu d'une recopie par terme (même liste ; seule différence, sur une entrée qui n'est pas une liste de listes)."
+
+    def visit_Call(self, n):
+        self.generic_visit(n)
+        if (isinstance(n.func, ast.Name) and n.func.id == "sum" and len(n.args) == 2 and not n.keywords
+                and isinstance(n.args[1], ast.List) and not n.args[1].elts):
+            self.changements += 1
+            chaine = ast.Call(func=ast.Attribute(value=ast.Attribute(value=ast.Name(id="itertools", ctx=ast.Load()), attr="chain", ctx=ast.Load()), attr="from_iterable", ctx=ast.Load()), args=[n.args[0]], keywords=[])
+            return ast.copy_location(ast.Call(func=ast.Name(id="list", ctx=ast.Load()), args=[chaine], keywords=[]), n)
+        return n
+
+    def visit_Module(self, m):
+        self.generic_visit(m)
+        if self.changements:
+            _avec_import(m, "itertools")
+        return m
+
+
+class _AppartenanceListeLocale(_Regle):
+    """Une liste locale bâtie une fois (list(range(..)) ou littéral de constantes) et seulement interrogée par `in` : un ensemble répond en temps constant."""
+    nom = "appartenance dans une liste locale"
+    hypothese = "une liste locale créée une fois et seulement testée par `in` / `not in` devient un ensemble : la recherche passe de linéaire à constante (réserve : l'élément testé doit être hachable)."
+
+    @staticmethod
+    def _rhs_sur(v) -> bool:
+        if isinstance(v, ast.Call) and isinstance(v.func, ast.Name) and v.func.id == "list" and len(v.args) == 1 and not v.keywords:
+            a = v.args[0]
+            return isinstance(a, ast.Call) and isinstance(a.func, ast.Name) and a.func.id == "range"
+        return isinstance(v, ast.List) and len(v.elts) > 0 and all(isinstance(e, ast.Constant) for e in v.elts)
+
+    def visit_FunctionDef(self, f):
+        self.generic_visit(f)
+        candidats = {}
+        for s in f.body:
+            if isinstance(s, ast.Assign) and len(s.targets) == 1 and isinstance(s.targets[0], ast.Name) and self._rhs_sur(s.value):
+                candidats.setdefault(s.targets[0].id, []).append(s)
+        for nom, defs in candidats.items():
+            if len(defs) != 1:
+                continue
+            occurrences = [n for n in ast.walk(f) if isinstance(n, ast.Name) and n.id == nom]
+            tests = [c for c in ast.walk(f) if isinstance(c, ast.Compare) and len(c.ops) == 1 and isinstance(c.ops[0], (ast.In, ast.NotIn))
+                     and isinstance(c.comparators[0], ast.Name) and c.comparators[0].id == nom]
+            if len(occurrences) == 1 + len(tests) and tests:
+                defs[0].value = ast.copy_location(ast.Call(func=ast.Name(id="set", ctx=ast.Load()), args=[defs[0].value], keywords=[]), defs[0].value)
+                self.changements += 1
+        return f
+
+
+class _MemoRecursif(_Regle):
+    """Une fonction pure à un seul argument entier qui s'appelle elle-même : fib(n-1)+fib(n-2) recalcule les mêmes valeurs. functools.cache les garde."""
+    nom = "mémoïsation d'une récursion pure"
+    hypothese = "une fonction récursive pure à un argument entier reçoit @functools.cache : chaque valeur n'est calculée qu'une fois (réserve : l'argument doit être hachable)."
+
+    @staticmethod
+    def _pure(f) -> bool:
+        if f.decorator_list or f.args.vararg or f.args.kwarg or f.args.kwonlyargs or f.args.defaults or len(f.args.args) != 1:
+            return False
+        p = f.args.args[0].arg
+        locaux = {p, f.name}
+        for n in ast.walk(f):
+            if isinstance(n, (ast.Global, ast.Nonlocal, ast.Yield, ast.YieldFrom, ast.Await, ast.Lambda, ast.AsyncFunctionDef, ast.ClassDef, ast.Try, ast.With, ast.Delete)):
+                return False
+            if isinstance(n, ast.FunctionDef) and n is not f:
+                return False
+            if isinstance(n, (ast.Attribute, ast.Subscript)) and isinstance(getattr(n, "ctx", None), (ast.Store, ast.Del)):
+                return False
+            if isinstance(n, ast.Attribute):
+                return False
+            if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store):
+                locaux.add(n.id)
+        appelle_soi = False
+        for n in ast.walk(f):
+            if isinstance(n, ast.Call):
+                if not isinstance(n.func, ast.Name):
+                    return False
+                if n.func.id == f.name:
+                    appelle_soi = True
+                elif n.func.id not in _BUILTINS_PURS or n.func.id in locaux:
+                    return False
+            if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load) and n.id not in locaux and n.id not in _BUILTINS_PURS:
+                return False
+        if not appelle_soi:
+            return False
+        return any(isinstance(c, ast.Compare) and isinstance(c.left, ast.Name) and c.left.id == p
+                   and any(isinstance(k, ast.Constant) and type(k.value) is int for k in c.comparators) for c in ast.walk(f))
+
+    def visit_FunctionDef(self, f):
+        self.generic_visit(f)
+        if self._pure(f):
+            f.decorator_list = [ast.Attribute(value=ast.Name(id="functools", ctx=ast.Load()), attr="cache", ctx=ast.Load())]
+            self.changements += 1
+        return f
+
+    def visit_Module(self, m):
+        self.generic_visit(m)
+        if self.changements:
+            _avec_import(m, "functools")
+        return m
+
+
+REGLES = (_CompDansAgregat, _TriPourExtremum, _LongueurZero, _ListeDeGenerateur, _ConstructeursVides, _SommeDeListes, _AppartenanceListeLocale, _MemoRecursif)
 
 
 def optimisations(source: str) -> list:
@@ -193,6 +308,10 @@ def construire_prompt(contexte: dict, chauds: list, strategie: str = "") -> str:
     debut_variable = len(lignes)
     if contexte.get("tombes"):
         lignes += ["", "%d variante(s) ont DÉJÀ échoué sur ce point : ne propose pas une transformation triviale déjà tentée." % len(contexte["tombes"])]
+        # une tombe peut porter sa raison ({"raison": ..., "hypothese": ...}) : on montre les trois dernières, c'est ce qui évite de refaire la même erreur
+        raisons = [t for t in contexte["tombes"] if isinstance(t, dict) and t.get("raison")]
+        for t in raisons[-3:]:
+            lignes.append("- échec (%s)%s" % (str(t["raison"])[:120], (" : " + str(t["hypothese"])[:120]) if t.get("hypothese") else ""))
     if strategie:
         lignes += ["", "Stratégie à implémenter (décidée avant toi) :", strategie.strip()]
     if len(lignes) > debut_variable:

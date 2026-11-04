@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8bf13a
+# VERSION CN : 0.1.0  #aee108
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs d'Orfan v1 : le profil, les optimisations déterministes (équivalentes, une règle à la fois), le moteur à modèle, et la chaîne complète avec le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8bf13a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=aee108 ▼▼▼
 """Bancs d'Orfan v1 : le profil, les optimisations déterministes (équivalentes, une règle à la fois), le moteur à modèle, et la chaîne complète avec le noyau."""
 import json
 import shutil
@@ -125,6 +125,72 @@ class Optimisations(unittest.TestCase):
         source = self.CAS["liste intermédiaire inutile"][0] + "\n\ndef g(e):\n    return sorted(e['v'])[0]\n"
         noms = [v["hypothese"].split(" : ")[0] for v in O.optimisations(source)]
         self.assertEqual(sorted(noms), ["liste intermédiaire inutile", "tri pour un extremum"])
+
+
+class RecettesSurDemande(unittest.TestCase):
+    """Les trois recettes nées du banc d'Argos : chacune doit se déclencher quand c'est sûr, se taire sinon, et rendre le même résultat."""
+
+    def _trouve(self, source, mot):
+        return [v for v in O.optimisations(source) if mot in v["hypothese"]]
+
+    def _meme(self, source, v, entrees):
+        ok, rapport = O.comparer_local(source, v["texte"], "f", entrees)
+        self.assertTrue(ok)
+        return rapport
+
+    def test_somme_de_listes_devient_une_seule_passe(self):
+        src = "def f(e):\n    return {'y': sum(e['l'], [])}\n"
+        v = self._trouve(src, "sum(listes")
+        self.assertEqual(len(v), 1)
+        self.assertIn("import itertools", v[0]["texte"])
+        self.assertGreater(self._meme(src, v[0], [{"l": [[i, i] for i in range(300)]}] * 4), 1.5)
+
+    def test_somme_ordinaire_n_est_pas_touchee(self):
+        self.assertEqual(self._trouve("def f(e):\n    return {'y': sum(e['v'], 5)}\n", "sum(listes"), [])
+        self.assertEqual(self._trouve("def f(e):\n    return {'y': sum(e['v'])}\n", "sum(listes"), [])
+
+    def test_liste_locale_interrogee_devient_ensemble(self):
+        src = "def f(e):\n    c = list(range(0, 3000, 3))\n    return {'n': sum(1 for x in e['v'] if x in c)}\n"
+        v = self._trouve(src, "appartenance")
+        self.assertEqual(len(v), 1)
+        self.assertIn("set(list(range", v[0]["texte"])
+        self.assertGreater(self._meme(src, v[0], [{"v": list(range(400))}] * 4), 1.5)
+
+    def test_liste_locale_aussi_lue_autrement_n_est_pas_touchee(self):
+        for corps in ("c = list(range(10))\n    c.append(1)\n    return {'n': 1 in c}",
+                      "c = list(range(10))\n    return {'n': 1 in c, 'm': c[0]}",
+                      "c = list(range(10))\n    c = [1]\n    return {'n': 1 in c}"):
+            self.assertEqual(self._trouve("def f(e):\n    " + corps + "\n", "appartenance"), [], corps)
+
+    def test_recursion_pure_est_memoisee(self):
+        src = "def f(e):\n    def fib(n):\n        if n < 2:\n            return n\n        return fib(n - 1) + fib(n - 2)\n    return {'y': fib(e['n'])}\n"
+        v = self._trouve(src, "mémoïsation")
+        self.assertEqual(len(v), 1)
+        self.assertIn("@functools.cache", v[0]["texte"])
+        self.assertGreater(self._meme(src, v[0], [{"n": 18}] * 3), 5)
+
+    def test_recursion_impure_n_est_pas_memoisee(self):
+        impures = ("def f(e):\n    def g(n):\n        if n < 2:\n            return n\n        return g(n - 1) + e['k']\n    return {'y': g(3)}\n",     # nom libre
+                   "def f(e):\n    def g(n):\n        print(n)\n        return n if n < 2 else g(n - 1)\n    return {'y': g(3)}\n",                      # appel d'effet
+                   "def f(e):\n    def g(n):\n        e['t'] = n\n        return n if n < 2 else g(n - 1)\n    return {'y': g(3)}\n",                  # écriture
+                   "def f(e):\n    def g(n, m):\n        return n if n < 2 else g(n - 1, m)\n    return {'y': g(3, 1)}\n")                              # deux arguments
+        for s in impures:
+            self.assertEqual(self._trouve(s, "mémoïsation"), [], s)
+
+
+class TombesAvecRaison(unittest.TestCase):
+    def test_les_raisons_des_echecs_passes_sont_montrees(self):
+        ctx = {"fonction": "f", "source_reference": "def f(e):\n    return 1\n", "tombes": [{"raison": "sortie différente sur n=0", "hypothese": "cache global"}, "abc123"]}
+        p = O.construire_prompt(ctx, [])
+        self.assertIn("2 variante(s)", p)
+        self.assertIn("échec (sortie différente sur n=0) : cache global", p)
+        self.assertIn(O.SEPARATEUR_CACHE, p)
+        self.assertLess(p.index("Règles strictes"), p.index(O.SEPARATEUR_CACHE))
+
+    def test_des_tombes_nues_marchent_comme_avant(self):
+        p = O.construire_prompt({"fonction": "f", "source_reference": "def f(e):\n    return 1\n", "tombes": ["a", "b"]}, [])
+        self.assertIn("2 variante(s)", p)
+        self.assertNotIn("échec (", p)
 
 
 class Modele(unittest.TestCase):

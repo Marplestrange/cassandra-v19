@@ -12,7 +12,7 @@
 <!-- RÔLE       : Orfan, la recherche : comment en faire le meilleur moteur possible -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d26ac6 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ae6c03 ▼▼▼ -->
 # Orfan, la recherche : comment en faire le meilleur moteur possible
 
 Statut : 04-11-2026. Dossier de recherche, **rien n'est construit**. Tu décides à la fin (§ 5) ce qu'on fait, ce qu'on mesure, ce qu'on jette.
@@ -451,6 +451,30 @@ Chaque étape a sa mesure et son critère d'abandon. **Aucune ne touche au juge 
 - **Comportement du cache chez les fournisseurs derrière notre relais** (OmniRoute, cache automatique de préfixe sur un point d'accès compatible OpenAI, acceptation de `cache_control` dans les blocs) : non vérifié, car aucun vrai modèle n'a été appelé. L'extension est testée contre un faux serveur seulement.
 - **`docs/CN_EVOLUTIF-SEMANTIQUE.md`** : je n'en ai lu que les titres ; mes renvois (P3, P6) s'appuient sur eux.
 - **Une seule expérience** a été faite sur Orfan (§ 3.6) : 6 fonctions, 3 graines, un modèle local de 3 milliards de paramètres, sans le relais ni le juge du noyau. Ni le banc de 10 cibles de l'étape 0, ni aucune des idées proposées n'a été mesurée : tout gain annoncé pour Orfan reste une hypothèse.
+
+## 8. Mise en œuvre du 04-11 et idées nouvelles
+
+### 8.1 Construit (code dans `orfan/CN_orfan.py`, 8 tests dans `tests/CN_test_orfan.py`)
+
+| Ajout | Ce qu'il fait | Mesure sur les fonctions du banc d'Argos (essai local, mêmes sorties vérifiées) |
+|---|---|---|
+| `sum(x, [])` | devient `list(itertools.chain.from_iterable(x))` | ×13 |
+| liste locale interrogée par `in` | devient un ensemble (uniquement si le nom n'est lu que par `in` / `not in`, assigné une fois) | ×67 |
+| récursion pure à un argument entier | reçoit `@functools.cache` (refus si nom libre, appel d'effet, écriture, deux arguments) | ×98 (n = 16 à 21) |
+| tombes avec raison | `construire_prompt` montre les trois derniers échecs avec leur raison, si le noyau les fournit (aujourd'hui il ne passe que des empreintes : à brancher) | non mesuré |
+
+Résultat : les recettes gratuites résolvent **4 fonctions sur 6** du banc (contre 1 avant). Restent hors de portée gratuite : `list.pop(0)` en boucle et le dédoublonnage par liste. **Réserve restante** : l'ensemble et la mémoïsation supposent un élément hachable ; sur un élément non hachable, l'original rend un résultat et la version rapide lève `TypeError`. Seul un juge à entrées cruelles le verrait (décision 1 du § 6). Ces gains sont des **mesures locales** sur 6 fonctions faites pour montrer le défaut, pas un gain moyen attendu en production.
+
+### 8.2 Idées nouvelles (hypothèses, rien de tout cela n'est mesuré)
+
+1. **Essai rapide puis repli sur l'original.** Une fonction pure peut être rejouée sans danger : la variante est livrée dans une enveloppe `try: rapide(e) / except Exception: original(e)`. Cela supprime la réserve de hachabilité et plus généralement toute régression qui se manifeste par une exception. Cela ne couvre pas un résultat faux silencieux. Coût : une indirection.
+2. **Des recettes apprises de ses propres victoires.** Quand le modèle rend une variante équivalente et plus rapide, on calcule la différence d'arbres, on la généralise en motif (avant / après) et on la range « à relire ». Relue par un humain, elle devient gratuite pour tous les points. Le coût du modèle s'amortit au lieu de se répéter. Piste voisine : LILO (abstractions apprises), non reproduite ici.
+3. **Demander une règle, pas une fonction.** Au lieu de « réécris cette fonction », demander au modèle un motif de réécriture qu'on valide sur un corpus synthétique. Un appel produit une recette réutilisable ; la sortie est plus courte qu'une fonction entière (moins de jetons de sortie, qui ont été 3 786 sur 18 appels).
+4. **Ne déranger le modèle que sur les fonctions qui grossissent mal.** Mesurer le temps à trois tailles d'entrée, estimer l'exposant de croissance, et n'appeler le modèle que si l'exposant dépasse environ 1,3. Les deux fonctions linéaires du banc n'auraient rien coûté. À mesurer : la fiabilité de l'estimation sur des entrées bruitées.
+5. **Un cimetière de contre-exemples.** Garder l'entrée qui a tué chaque variante et la rejouer en premier sur toutes les suivantes : rejet quasi gratuit avant la mesure de vitesse, et corpus de régression qui grossit seul. Je n'ai pas vérifié si le noyau le fait déjà (il stocke l'empreinte et la raison, pas l'entrée).
+6. **Mesurer sur la machine qui exécutera.** Les rapports de vitesse bougent entre Windows et Linux, et entre versions de Python. Le juge pourrait refaire la mesure finale en ombre sur la cible (Argos) avant de promouvoir.
+
+Le risque commun de 2 et 3 : une recette apprise est du code qui s'exécutera sans modèle. Elle doit passer par la relecture humaine (décision 3 du § 6).
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
