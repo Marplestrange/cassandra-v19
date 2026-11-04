@@ -12,7 +12,7 @@
 <!-- RÔLE       : Orfan, la recherche : comment en faire le meilleur moteur possible -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=42631a ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7892fb ▼▼▼ -->
 # Orfan, la recherche : comment en faire le meilleur moteur possible
 
 Statut : 04-11-2026. Dossier de recherche, **rien n'est construit**. Tu décides à la fin (§ 5) ce qu'on fait, ce qu'on mesure, ce qu'on jette.
@@ -264,6 +264,28 @@ Seul changement de code de cette mission, borné à des fichiers que personne d'
 
 **Limites, dites franchement** : (1) rien n'a été essayé avec un vrai modèle : on ne sait pas encore si OmniRoute transmet `cache_control` à un modèle Anthropic ; (2) sous environ 1 000 jetons le cache d'Anthropic ne s'applique pas, et un prompt d'Orfan pour une petite fonction est plus court que cela ; (3) le plafond de dépense de la maison compte les jetons d'entrée au plein tarif (`depense_roles` ne regarde que `entrees` et `sorties`, lu) : il SURESTIME donc la dépense, il ne la sous-estime jamais ; une facturation au tarif de cache demanderait de changer Agents IA, ce que je n'ai pas fait ; (4) le journal du relais (`noyau/CN_moteurs.py`, modifié en ce moment par une autre session) ne montre pas encore les jetons de cache : le module garde le dernier compte dans `appeler_modele.dernier_cache`, rien de plus ; (5) le test `test_une_version_non_equivalente_n_est_jamais_rendue` de Frugal 2 a échoué une fois sur cinq (la version « lente » mesurée plus rapide quand la machine est chargée) : sans lien avec ce changement, mais à surveiller.
 
+### 3.6 Premier banc réel sur Argos, avec le modèle local (04-11-2026)
+
+**Déploiement** : le commit `36c2f4a` est déployé sur Argos (`ssh amizo`, version `20261104-034419`, précédente `20261104-032129` gardée, service `cassandra-noyau` actif, sauvegarde de la base faite avant la bascule). Le déploiement s'est fait avec `--sauter-tests` (les bancs échouent sur Argos : FastPanel et pare-feu réels, mémoire du projet). Le script signale trois avertissements « le contenu a changé mais la version reste » (agents, evolution, modèles) : je n'ai pas relevé les numéros de version. `cache_prompt` reste à « non ». Les tests ont tourné sur ma machine, pas sur Argos.
+
+**Banc** (script jetable `bench_orfan.py`, hors dépôt) : 6 fonctions pures réelles-ressemblantes (appartenance à une liste, Fibonacci récursif, `sum(listes, [])`, file avec `pop(0)`, dédoublonnage par liste, `sorted(x)[0]`), 12 entrées chacune, `qwen2.5:3b` sur les 4 cœurs d'Argos, 3 graines, 1 appel par essai, température 0,2, chaque variante vérifiée par `comparer_local` (mêmes sorties sur les entrées visibles, rapport de vitesse). Ce n'est PAS le chemin complet : ni relais, ni cage, ni juge du noyau.
+
+| Fonction | Recettes gratuites actuelles | Modèle : équivalentes / gain prouvé sur 3 essais | Meilleurs rapports de vitesse |
+|---|---|---|---|
+| appartenance à une liste | 0 | 3 / 2 | 68,7 · 0,95 · 47,2 |
+| Fibonacci récursif | 0 | 3 / 3 | 1000 · 596 · 940 (voir la réserve ci-dessous) |
+| `sum(listes, [])` | 0 | 0 / 0 | aucune variante équivalente |
+| file avec `pop(0)` | 0 | 3 / 1 | 0,99 · 4,05 · 0,96 |
+| dédoublonnage par liste | 0 | 0 / 0 | aucune variante équivalente |
+| `sorted(x)[0]` + compte | 1 (×2,45) | 2 / 0 | 1,0 · 0 · 0,75 |
+
+- **Les recettes d'aujourd'hui n'ont résolu que 1 fonction sur 6.** Les cinq autres sont exactement les cas que le catalogue de l'axe 1 couvrirait (R01 mémoïsation, R02 ensemble, R03 `chain`, R04 deque, R43 `dict.fromkeys`). C'est l'argument chiffré le plus net pour l'étape 2 de la feuille de route.
+- **Le modèle local de 3 milliards de paramètres fait mieux qu'attendu** : 11 variantes équivalentes sur 18 essais, 6 avec un gain annoncé ; mais sur 2 fonctions sur 6 il n'a rien rendu d'équivalent en 3 essais (je n'ai pas gardé le texte des échecs : cause inconnue).
+- **Coût mesuré** : 764 s pour 18 appels (≈ 42 s par appel), 5 772 jetons d'entrée et 3 786 jetons de sortie au total, gratuit (modèle local).
+- **Réserve importante, trouvée par ce banc** : les rapports de 596 à 1000 pour Fibonacci sont gonflés. `comparer_local` rejoue la MÊME fonction chargée sur deux passes et garde la meilleure : une variante qui mémorise ses résultats (`lru_cache`) est « chaude » à la deuxième passe. Le juge du noyau, lui, chronomètre en passes à froid avec rechargement (lu dans `noyau/CN_evaluateur.py`) : le gain réel de Fibonacci y sera plus faible. **Le pré-filtre d'Orfan n'a donc pas la protection du juge contre le cache.** À corriger (recharger la fonction entre les passes) avant de s'en servir pour classer des variantes ; je ne l'ai pas fait.
+- Le gain de 0,95 à 4 selon la graine pour la même fonction (`appartenance_liste`, `file_pop0`) montre que **1 essai ne suffit pas** : c'est l'argument pour plusieurs variantes et une sélection, pas pour un seul appel.
+- Ce banc ne mesure ni le retour des échecs dans le prompt, ni le diff, ni le bandit : ces idées ne sont pas encore construites.
+
 ## 4. Axe 3 — Orfan sur autre chose que du code
 
 ### 4.1 Ce qui existe chez nous (lu : `noyau/CN_juge_prompt.py`, `noyau/CN_genomes.py`)
@@ -427,5 +449,5 @@ Chaque étape a sa mesure et son critère d'abandon. **Aucune ne touche au juge 
 - **Le fonctionnement interne du plafond de dépense de la maison** (`agents.service_plafond`) : je sais qu'il est lu avant chaque appel, pas comment il calcule la dépense.
 - **Comportement du cache chez les fournisseurs derrière notre relais** (OmniRoute, cache automatique de préfixe sur un point d'accès compatible OpenAI, acceptation de `cache_control` dans les blocs) : non vérifié, car aucun vrai modèle n'a été appelé. L'extension est testée contre un faux serveur seulement.
 - **`docs/CN_EVOLUTIF-SEMANTIQUE.md`** : je n'en ai lu que les titres ; mes renvois (P3, P6) s'appuient sur eux.
-- **Aucune expérience** n'a été faite sur Orfan lui-même (pas de modèle branché, pas de banc de 10 cibles) : tout gain annoncé pour Orfan est une hypothèse à mesurer à l'étape 0.
+- **Une seule expérience** a été faite sur Orfan (§ 3.6) : 6 fonctions, 3 graines, un modèle local de 3 milliards de paramètres, sans le relais ni le juge du noyau. Ni le banc de 10 cibles de l'étape 0, ni aucune des idées proposées n'a été mesurée : tout gain annoncé pour Orfan reste une hypothèse.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
