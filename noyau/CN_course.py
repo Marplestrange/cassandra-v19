@@ -64,7 +64,7 @@ class Orchestrateur:
         ident, choix, _nom, _cout = etages[etage]
         reste = None
         p = self.reg.plafond(ident)
-        if p.get("jetons_jour") is not None:
+        if p.get("jetons_jour"):                                   # 0 = aucun plafond
             reste = max(0, p["jetons_jour"] - self.reg.depense(ident)["jetons"])
         if choix in ("deterministe", "modele") and not self._isoles() and self._en_ligne is not None:
             return self._en_ligne(choix)                                # l'Orfan du serveur : jamais un candidat exécuté ici, il ne fait qu'écrire du texte
