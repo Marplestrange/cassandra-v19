@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #352c06
+# VERSION CN : 0.1.0  #1426f3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prouve que Frugal 2 ne dépense rien quand il n'y a rien à gagner, plafonne ses appels, affine sur la raison d'un échec et ne rend jamais une version non équivalente.
 # MÉTHODE    : un modèle de banc scripté (aucune clé) derrière le vrai relais de la cage ; le moteur tourne dans son vrai processus.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=352c06 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1426f3 ▼▼▼
 """Bancs de Frugal 2 (orfan/CN_frugal.py)."""
 import sys
 import tempfile
@@ -150,6 +150,55 @@ class Frugal2(unittest.TestCase):
             return STRATEGIES
         with self.assertRaises(DelaiEC):
             self.moteur(Banc(lent), delai_s=8).proposer(contexte())
+
+    def test_une_boucle_repartie_sur_plusieurs_lignes_est_un_point_chaud(self):
+        src = "def f(x):" + chr(10) + "    r = {}" + chr(10) + "    for v in x:" + chr(10) + "        if v in r:" + chr(10) + "            r[v] = r[v] + 1" + chr(10) + "        else:" + chr(10) + "            r[v] = 1" + chr(10) + "    return r" + chr(10)
+        bon = "```python" + chr(10) + "from collections import Counter" + chr(10) + "def f(x):" + chr(10) + "    return dict(Counter(x))" + chr(10) + "```"
+        banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else bon)
+        r = self.moteur(banc).proposer(contexte(source_reference=src, entrees=[[i % 37 for i in range(5000)], [i % 11 for i in range(4000)]]))
+        self.assertTrue(r and "Counter" in r[0]["texte"])                                       # aucune ligne n'a 40 %, la boucle entière en a 99
+
+    def test_un_module_hors_bibliotheque_standard_ou_hors_fonction_pure_est_refuse(self):
+        for imp in ("import numpy as np", "import multiprocessing", "from os import path", "import ctypes"):
+            rep = "```python" + chr(10) + imp + chr(10) + "def f(x):" + chr(10) + "    return sum(x) * 2" + chr(10) + "```"
+            banc = Banc(lambda r, p, n, rep=rep: STRATEGIES if r == "strategie" else rep)
+            self.assertEqual(self.moteur(banc, options={"tours": 0}).proposer(contexte()), [], imp)
+        ok = "```python" + chr(10) + "import functools" + chr(10) + "def f(x):" + chr(10) + "    return sum(x) * 2" + chr(10) + "```"
+        self.assertTrue(self.moteur(Banc(lambda r, p, n: STRATEGIES if r == "strategie" else ok)).proposer(contexte()))
+
+    def test_une_reponse_vide_de_la_passerelle_n_est_pas_une_strategie(self):
+        for vide in ("(empty response)[skill result: memory_search]", "ok", ""):
+            banc = Banc(lambda r, p, n, vide=vide: vide if r == "strategie" else BONNE)
+            self.moteur(banc).proposer(contexte())
+            self.assertNotIn("empty response", "".join(p for _, p in banc.appels[1:]))      # le bruit n'est pas recopié comme plan chez l'exécutant
+
+    def test_la_garde_de_duree_juge_chaque_role_a_son_propre_pas(self):
+        from orfan import CN_frugal as F, CN_orfan as O
+        def modele(prompt, role):
+            time.sleep(2 if role == "strategie" else 0.1)
+            return STRATEGIES if role == "strategie" else BONNE
+        m = F.MoteurFrugal(O, appeler_modele=modele, duree_max_s=3.5)
+        self.assertTrue(m.proposer(contexte()))                      # le fort a pris 2 s : l'exécutant (0,1 s) reste permis, il ne doit pas hériter du pas du fort
+        appels = []
+        def lent(prompt, role):
+            appels.append(role)
+            time.sleep(2)
+            return STRATEGIES if role == "strategie" else FAUSSE
+        F.MoteurFrugal(O, appeler_modele=lent, duree_max_s=5).proposer(contexte())
+        self.assertLessEqual(len(appels), 3)                         # 2 s par appel, 5 s en tout : un appel de plus ne tiendrait pas
+
+    def test_le_delai_qui_tombe_apres_une_preuve_ne_la_jette_pas(self):
+        def reponses(role, prompt, n):
+            if role == "strategie":
+                return STRATEGIES
+            if n == 2:
+                return BONNE
+            time.sleep(9)                                            # le deuxième exécutant est trop lent : le délai (6 s) tombe pendant son appel
+            return BONNE
+        m = self.moteur(Banc(reponses), delai_s=6)
+        r = m.proposer(contexte())
+        self.assertTrue(r and "sum(x)" in r[0]["texte"])             # la première preuve est rendue au lieu de DelaiEC
+        self.assertEqual(m.stats.get("delai_partiel"), 1)
 
     def test_les_reglages_de_l_admin_changent_le_budget_et_restent_bornes(self):
         banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #688787
+# VERSION CN : 0.1.0  #de1685
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=688787 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=de1685 ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -150,15 +150,30 @@ class MoteurProcessus:
                 envoi["memoire"] = self.carnet.fiches(gid)                                  # ce que les recherches précédentes sur CE point ont appris (un moteur ne garde rien d'un appel à l'autre)
             except Exception:
                 envoi["memoire"] = []                                                       # un carnet illisible ne coupe pas la recherche
+        partiel = []
         try:
             t.envoyer({"op": "proposer", "contexte": envoi})
             while True:
                 reste = self.delai_s - (time.monotonic() - debut)
                 if reste <= 0:
                     t.tuer()
+                    if partiel:                                                       # le moteur avait déjà prouvé des variantes : le délai ne les jette pas, le juge les verra
+                        self.stats["delai_partiel"] = self.stats.get("delai_partiel", 0) + 1
+                        self._retenir_familles(partiel)
+                        return partiel
                     raise DelaiEC("délai de %.0f s dépassé : le moteur est tué" % self.delai_s)
-                msg = t.recevoir(reste)
+                try:
+                    msg = t.recevoir(reste)
+                except DelaiEC:
+                    if partiel:
+                        self.stats["delai_partiel"] = self.stats.get("delai_partiel", 0) + 1
+                        self._retenir_familles(partiel)
+                        return partiel
+                    raise
                 op = msg.get("op")
+                if op == "partiel":                                                   # « voici ce qui est déjà prouvé » : le dernier message remplace le précédent
+                    partiel = [c for c in (msg.get("candidats") or []) if isinstance(c, dict)]
+                    continue
                 if op == "resultat":
                     self.stats["propositions"] += 1
                     if self.carnet is not None and gid and msg.get("memoire"):

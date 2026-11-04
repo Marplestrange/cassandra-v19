@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #140d6f
+# VERSION CN : 0.1.0  #89ba54
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le moins de jetons possible : les règles gratuites d'abord ; sinon un modèle fort propose 2-3 stratégies en texte, un modèle économe les écrit en code, chaque version est vérifiée ici et affinée sur sa raison d'échec.
 # MÉTHODE    : règles, puis stratégies (rôle strategie) → code (rôle executant) → vérification locale → affinage borné ; s'arrête dès qu'une variante prouvée existe ; sans point chaud, aucune dépense.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=140d6f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=89ba54 ▼▼▼
 """Frugal 2 : notre version de l'idée de FrugalEvo (docs/CN_FRUGALEVO.md).
 
   étage 1 · règles déterministes : zéro jeton ; si l'une est prouvée plus rapide, on la rend et on s'arrête ;
@@ -24,10 +24,13 @@ Il ne rend que des versions vérifiées et ne juge jamais : le contrôleur du no
 """
 import ast
 import re
+import sys
 import time
 
 _STRATEGIE = re.compile(r"<STRATEGIE>\s*(.*?)\s*</STRATEGIE>", re.S | re.I)
 _CODE = re.compile(r"```.*?```", re.S)
+_INTERDITS = frozenset(("os", "sys", "subprocess", "socket", "multiprocessing", "threading", "ctypes", "shutil", "pathlib", "urllib", "http", "asyncio", "concurrent", "importlib", "builtins", "numpy", "pandas", "scipy"))
+_VIDE = re.compile(r"^\s*[(\[]\s*(empty|vide)", re.I)                  # « (empty response)… » : la passerelle rend ça quand le modèle n'a rien écrit
 
 
 class MoteurFrugal:
@@ -44,24 +47,65 @@ class MoteurFrugal:
         self._plein = False
         self._memoire = []
         self._toutes_ratees = False
+        self._plus_long = {}                                    # par rôle, l'appel le plus lent de cet appel du moteur, en secondes (le fort et l'économe n'ont pas le même pas)
 
     # ── le budget : tours (self.tours), appels, jetons, durée ───────────────
-    def _reste(self) -> bool:
-        return (not self._plein and self.appels < self.appels_max and self.jetons < self.jetons_max and time.monotonic() - self._debut < self.duree_max_s)
+    def _reste(self, role: str = "executant") -> bool:
+        # le prochain appel doit tenir dans le temps qui reste, au pas du plus long déjà vu : un appel qui finirait après le délai du relais ferait tuer le moteur et perdre ce qui est déjà prouvé
+        return (not self._plein and self.appels < self.appels_max and self.jetons < self.jetons_max and time.monotonic() - self._debut + self._plus_long.get(role, 0.0) < self.duree_max_s)
 
     def _appeler(self, prompt: str, role: str):
-        if not self._reste():
+        if not self._reste(role):
             return None
         self.appels += 1
         self.jetons += (len(prompt) + 3) // 4
+        t0 = time.monotonic()
         try:
             texte = str(self.appeler_modele(prompt, role) or "")
+            self._plus_long[role] = max(self._plus_long.get(role, 0.0), time.monotonic() - t0)
         except Exception as e:
             self._plein = self._plein or "plafond" in str(e)
             self.etages.append("modèle %s indisponible : %s" % (role, str(e)[:80]))
             return None
         self.jetons += (len(texte) + 3) // 4
         return texte
+
+    @staticmethod
+    def _import_interdit(texte):
+        """Le premier module importé qui n'est pas de la bibliothèque standard, ou qui sort de la fonction pure (processus, fil, fichier, réseau) ; None si tout va bien. Le modèle fort aime numpy et multiprocessing."""
+        try:
+            arbre = ast.parse(texte)
+        except SyntaxError:
+            return None
+        standard = getattr(sys, "stdlib_module_names", None)
+        for n in ast.walk(arbre):
+            noms = [a.name for a in n.names] if isinstance(n, ast.Import) else ([n.module or ""] if isinstance(n, ast.ImportFrom) and not n.level else [])
+            for nom in noms:
+                racine = nom.split(".")[0]
+                if racine in _INTERDITS or (standard is not None and racine and racine not in standard):
+                    return racine
+        return None
+
+    def _region_chaude(self, source, fonction, entrees):
+        """Une boucle dont le corps tient sur plusieurs lignes n'a aucune ligne à 40 % (trois lignes à 33 %) : le profil ligne à ligne la rate. On additionne donc par boucle et on garde la plus
+        petite qui porte assez du travail ; rend {ligne, part_pct, fois, texte} comme `point_chaud`, ou None."""
+        try:
+            lignes = source.splitlines()
+            par = {p["ligne"]: p["fois"] for p in self.orfan.profil(source, fonction, entrees, top=400)}
+            total = sum(par.values())
+            if not total:
+                return None
+            meilleur = None
+            for n in ast.walk(ast.parse(source)):
+                if isinstance(n, (ast.For, ast.While, ast.AsyncFor)):
+                    part = sum(c for l, c in par.items() if n.lineno <= l <= n.end_lineno)
+                    pct, fois = round(100 * part / total, 1), par.get(n.lineno, 0)
+                    taille = n.end_lineno - n.lineno
+                    if pct >= self.seuil and fois >= 50 and (meilleur is None or taille < meilleur[0]):
+                        meilleur = (taille, {"ligne": n.lineno, "part_pct": pct, "fois": fois, "texte": chr(10).join(lignes[n.lineno - 1:n.end_lineno])[:600]})
+            return meilleur[1] if meilleur else None
+        except Exception:
+            return None
 
     # ── la vérification : seul juge du moteur, jamais rendu comme verdict ────
     def _verifier(self, source, texte, fonction, entrees):
@@ -70,6 +114,9 @@ class MoteurFrugal:
             compile(texte, "<candidat>", "exec")
         except SyntaxError as e:
             return False, 0.0, "erreur de syntaxe ligne %s : %s" % (e.lineno, str(e.msg)[:80])
+        interdit = self._import_interdit(texte)
+        if interdit:
+            return False, 0.0, "le module « %s » est interdit : bibliothèque standard pure seulement, sans processus, fil, fichier ni réseau" % interdit
         try:
             if ast.dump(ast.parse(texte)) == ast.dump(ast.parse(source)):
                 return False, 0.0, "la version est identique à la référence : propose un vrai changement"
@@ -150,12 +197,14 @@ class MoteurFrugal:
         lignes += self._memoire_texte(contexte.get("memoire") or []).split("\n") if contexte.get("memoire") else []
         lignes += ["Propose %d stratégies VRAIMENT différentes (une autre structure de données, un autre algorithme, un autre découpage : pas un simple réglage). Ne rends AUCUN code : quelqu'un d'autre l'écrira." % self.strategies,
                    "Pour chaque stratégie, ce bloc exactement :", "<STRATEGIE>", "Famille : un mot ou deux qui nomment le mécanisme", "Portée : la ligne ou le bloc à remplacer",
-                   "Gain : pourquoi ce serait plus rapide, à résultat identique", "Plan : les étapes, assez précises pour qu'on n'ait aucune décision à prendre", "</STRATEGIE>"]
+                   "Gain : pourquoi ce serait plus rapide, à résultat identique", "Plan : les étapes, assez précises pour qu'on n'ait aucune décision à prendre", "</STRATEGIE>",
+                   "Sois bref : 60 mots par stratégie au plus, aucune réflexion avant ni après les blocs.",
+                   "Contraintes : bibliothèque standard pure seulement ; ni numpy, ni processus, ni fil, ni fichier, ni réseau."]
         return "\n".join(lignes)
 
     def _lire_strategies(self, reponse: str) -> list:
         blocs = [_CODE.sub("", b).strip() for b in _STRATEGIE.findall(reponse or "")]
-        if not blocs and reponse and reponse.strip() and "```" not in reponse:
+        if not blocs and reponse and len(reponse.strip()) >= 40 and not _VIDE.match(reponse) and "```" not in reponse:
             blocs = [reponse.strip()[:1500]]                    # un modèle sans balises : son texte entier vaut une stratégie
         sortie, familles = [], set()
         for b in blocs:
@@ -180,7 +229,8 @@ class MoteurFrugal:
             prompt += "\n\nTa version précédente :\n```python\n%s\n```\nProblème constaté : %s.\nCorrige-la sans abandonner l'idée de la stratégie ; rends le code complet de la fonction." % (s["texte"][:6000].rstrip(), s["raison"])
         elif s["raison"]:
             prompt += "\n\nTa réponse précédente a été refusée : %s." % s["raison"]
-        reponse = self._appeler(prompt, "executant")
+        prompt += "\n\nSois bref : une phrase d'hypothèse, puis le code ; aucune explication ensuite."
+        reponse =self._appeler(prompt, "executant")
         if reponse is None:
             return None
         blocs = O.extraire_blocs(reponse)
@@ -195,11 +245,29 @@ class MoteurFrugal:
         if s["titre"] == "sans stratégie":
             return
         issue = "prouvee" if ok else ("lente" if rapport > 0 else "fausse")
-        self.fiches = [f for f in self.fiches if f["famille"] != s["titre"]] + [{"famille": s["titre"], "issue": issue, "detail": raison[:200], "rapport": round(rapport, 2)}]
+        self.fiches = [f for f in self.fiches if f["famille"] != s["titre"]] + [{"famille": s["titre"], "issue": issue, "detail": ("gain ×%.2f sur le vu" % rapport) if ok else raison[:200], "rapport": round(rapport, 2)}]
+
+    @staticmethod
+    def _classer(trouves, budget):
+        vus, sortie = set(), []
+        for _, c in sorted(trouves, key=lambda x: -x[0]):
+            if c["texte"] not in vus:
+                vus.add(c["texte"])
+                sortie.append(c)
+        return sortie[:budget]
+
+    def _dire_partiel(self, trouves, budget):
+        """Dit au serveur ce qui est déjà prouvé : si le délai tombe pendant un appel de modèle plus lent que prévu, il ne perd pas ce travail."""
+        emettre = getattr(self, "emettre", None)
+        if callable(emettre):
+            try:
+                emettre(self._classer(trouves, budget))
+            except Exception:
+                pass
 
     def proposer(self, contexte: dict) -> list:
         O = self.orfan
-        self._debut, self.appels, self.jetons, self._plein = time.monotonic(), 0, 0, False
+        self._debut, self.appels, self.jetons, self._plein, self._plus_long = time.monotonic(), 0, 0, False, {}
         source, fonction, entrees = contexte["source_reference"], contexte["fonction"], contexte.get("entrees") or []
         budget = max(1, int(contexte.get("budget", 3)))
         o = contexte.get("options") or {}                      # les réglages de l'admin, bornés ici quoi qu'on envoie
@@ -219,7 +287,7 @@ class MoteurFrugal:
         if trouves:
             trouves.sort(key=lambda x: -x[0])
             return [c for _, c in trouves][:budget]
-        chaud = O.point_chaud(source, fonction, entrees, self.seuil)
+        chaud = self._region_chaude(source, fonction, entrees) or O.point_chaud(source, fonction, entrees, self.seuil)
         if chaud is None:
             self.etages.append("aucun point chaud : aucune dépense")
             return []
@@ -251,17 +319,13 @@ class MoteurFrugal:
                 self._noter(s, ok, rapport, raison)
                 if ok:
                     trouves.append((rapport, {"texte": texte, "hypothese": "stratégie « %s » (×%.2f sur le vu, tour %d)" % (s["titre"], rapport, tour), "origine": "frugal", "famille": s["titre"]}))
+                    self._dire_partiel(trouves, budget)
                     if tour > 0:
                         break                                    # un affinage réussi suffit : on ne dépense plus
             if trouves or not self._reste():
                 break
         self.etages.append("exécutant : %d variante(s) prouvée(s), %d appel(s), ~%d jeton(s)" % (len(trouves), self.appels, self.jetons))
-        vus, sortie = set(), []
-        for _, c in sorted(trouves, key=lambda x: -x[0]):
-            if c["texte"] not in vus:
-                vus.add(c["texte"])
-                sortie.append(c)
-        return sortie[:budget]
+        return self._classer(trouves, budget)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════
 # EC : néant (un moteur ne s'évolue pas).

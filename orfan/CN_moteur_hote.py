@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cd3d0c
+# VERSION CN : 0.1.0  #8c5801
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Fait tourner un moteur de recherche d'Évolution (Orfan, ou un moteur externe derrière le même contrat) dans un processus à part, sans clé, sans réseau, avec un relais pour parler à un modèle.
 # MÉTHODE    : une ligne JSON par message sur l'entrée et la sortie standard ; le moteur ne voit jamais un jeton : il demande un modèle au serveur, qui compte et plafonne.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd3d0c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8c5801 ▼▼▼
 """Le protocole de processus d'un moteur de recherche (docs/CN_EVOLUTION.md, « moteurs »).
 
 Lancé par noyau/CN_moteurs.py : `python -I CN_moteur_hote.py <chemin de CN_orfan.py> <choix> <mémoire en octets>`.
@@ -22,6 +22,7 @@ Lancé par noyau/CN_moteurs.py : `python -I CN_moteur_hote.py <chemin de CN_orfa
   serveur -> moteur  {"op":"proposer","contexte":{…}}
   moteur  -> serveur {"op":"modele","prompt":"…","role":"executant"|"strategie"}     (le relais : le serveur choisit le modèle, compte, plafonne)
   serveur -> moteur  {"ok":true,"texte":"…"} | {"ok":false,"erreur":"…"}
+  moteur  -> serveur {"op":"partiel","candidats":[…]}      (facultatif : ce qui est déjà prouvé ; si le délai tombe avant le résultat, le serveur rend le dernier partiel au lieu de tout perdre)
   moteur  -> serveur {"op":"resultat","candidats":[{"texte":…,"hypothese":…}, …]} | {"op":"erreur","erreur":"…"}
 
 Le moteur ne propose JAMAIS de mise en service : il rend du texte, le juge du noyau décide.
@@ -149,6 +150,8 @@ def main():
     else:
         moteur = orfan.MoteurDeterministe()
     _limiter(memoire, externe)                                    # les plafonds viennent APRÈS les imports : charger un moteur peut vouloir plus de mémoire que travailler
+
+    moteur.emettre = lambda candidats: dire({"op": "partiel", "candidats": [c for c in candidats if isinstance(c, dict)]})        # un moteur qui le veut dit au fur et à mesure ce qu'il a déjà prouvé
 
     for ligne in iter(entree.readline, b""):
         try:
