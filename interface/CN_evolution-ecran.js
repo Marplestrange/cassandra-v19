@@ -264,7 +264,7 @@
       const j = (d.journal || []).filter((e) => e.texte.indexOf(m.sel) >= 0 || e.texte.toLowerCase().indexOf((x.nom || "").toLowerCase()) >= 0);
       return j.length ? '<div class="chrono">' + j.map((e) => "<div><time>" + ago(e.ts) + "</time><b>" + esc(e.genre) + "</b> · " + esc(e.texte) + "</div>").join("") + "</div>" : '<div class="vide">Rien dans le journal pour ce moteur.</div>';
     }
-    const plafondTexte = (x) => { const p = x.plafond || {}; return (p.jetons_jour != null ? kj(p.jetons_jour) + " jetons/jour" : "aucun") + (p.essais_jour != null ? " · " + p.essais_jour + " essais/jour" : ""); };
+    const plafondTexte = (x) => { const p = x.plafond || {}; return (p.jetons_jour ? kj(p.jetons_jour) + " jetons/jour" : "aucun") + (p.essais_jour ? " · " + p.essais_jour + " essais/jour" : ""); };
     function mInstallFiche(x) {
       const d = M0().d || {};
       if (x.genre === "natif") return '<div class="note">' + esc(x.nom) + ' est livré avec Cassandra : il se met à jour avec elle, sans environnement, sans fichier verrouillé, sans installateur.</div><dl class="cle"><dt>Retrait</dt><dd>impossible : il fait partie de Cassandra ; on l\'éteint seulement</dd></dl>';

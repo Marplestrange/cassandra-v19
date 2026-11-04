@@ -442,9 +442,9 @@ class Registre:
     def depasse(self, ident: str) -> str:
         """Pourquoi un moteur ne doit pas chercher maintenant (« » s'il le peut) : son plafond du jour, ou le budget du mois."""
         p, jour, b = self.plafond(ident), self.depense(ident), self.budget()
-        if p.get("jetons_jour") is not None and jour["jetons"] >= p["jetons_jour"]:
+        if p.get("jetons_jour") and jour["jetons"] >= p["jetons_jour"]:  # 0 = aucun plafond
             return "plafond de %d jetons par jour atteint pour ce moteur" % p["jetons_jour"]
-        if p.get("essais_jour") is not None and jour["essais"] >= p["essais_jour"]:
+        if p.get("essais_jour") and jour["essais"] >= p["essais_jour"]:  # 0 = aucun plafond
             return "plafond de %d essais par jour atteint pour ce moteur" % p["essais_jour"]
         if b["couper_au_plafond"] and self.depense_mois() >= b["jetons_mois"]:
             return "budget du mois atteint (%d jetons)" % b["jetons_mois"]
