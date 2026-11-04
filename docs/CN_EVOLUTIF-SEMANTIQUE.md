@@ -9,224 +9,267 @@
 <!-- VERSION CN : 0.1.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
-<!-- RÔLE       : Propositions concrètes pour mettre le sens (multilingual-e5-large) au service du moteur Évolutif, classées, avec la façon de les mesurer et un plan en étapes. -->
-<!-- MÉTHODE    : on part de ce que fait déjà OpenEvolve (docs/CN_OPENEVOLVE-LECTURE.md) et de ce que fait déjà notre code ; chaque idée dit ce qui est prouvé et ce qui est une hypothèse. -->
+<!-- RÔLE       : Propositions concrètes pour mettre le sens (multilingual-e5-large) au service du moteur Évolutif, éprouvées par des mesures réelles, classées, avec un plan en étapes. -->
+<!-- MÉTHODE    : on part de ce que fait déjà OpenEvolve (docs/CN_OPENEVOLVE-LECTURE.md) et de ce que fait déjà notre code ; chaque idée dit ce qui est mesuré et ce qui reste une hypothèse. -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7b67e5 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=bec4e4 ▼▼▼ -->
 # Évolutif et le sens : propositions à débattre
 
-Statut : 04-11-2026. **Rien n'est construit.** Ce document propose, Drisse tranche. Il s'appuie sur `docs/CN_OPENEVOLVE-LECTURE.md` (ce qu'OpenEvolve fait) et sur la lecture de notre code : `orfan/CN_evolutif.py`, `orfan/CN_orfan.py`, `orfan/CN_moteur_hote.py`, `noyau/CN_moteurs.py`, `noyau/CN_evolution.py`, `noyau/CN_encodage.py`, `modules/bibliotheque/CN_module.py`, `docs/CN_FRUGALEVO.md`.
+Statut : 04-11-2026, après mesures. **Rien n'est construit dans le dépôt.** Ce document propose, Drisse tranche. Il s'appuie sur `docs/CN_OPENEVOLVE-LECTURE.md` et sur la lecture de notre code : `orfan/CN_evolutif.py`, `orfan/CN_orfan.py`, `orfan/CN_moteur_hote.py`, `noyau/CN_moteurs.py`, `noyau/CN_evolution.py`, `noyau/CN_evaluateur.py`, `noyau/CN_encodage.py`, `modules/bibliotheque/CN_module.py`, `docs/CN_FRUGALEVO.md`.
 
-## 0. Ce qui est prouvé, ce qui ne l'est pas
+## Ce qu'il faut retenir en dix lignes
 
-**Aucun chiffre mesuré avec e5-large n'est donné ici.** `sentence_transformers` n'est installé ni sur cette machine ni dans le Python système d'Orion. Il est installé dans le venv d'Orion (`/opt/cassandra/venv`, sentence-transformers 6.1.0, torch 2.14), mais les poids de `intfloat/multilingual-e5-large` (~2,2 Go) n'y sont pas, à ma portée, dans un cache lisible. Les télécharger est une décision de Drisse (2,2 Go, depuis huggingface.co, sur la machine de production) : je ne l'ai pas prise. Le script d'essai est en § 6, prêt à lancer. Toute phrase ci-dessous du genre « devrait » est une **hypothèse**.
+1. **Sur du code, e5-large est inutilisable pour décider.** Une variante **fausse** (une mutation d'un seul signe) est jugée plus proche de l'original (cosinus médian 0,995) qu'un simple **renommage de variables** qui, lui, est correct (0,979) : dans 96 cas sur 100. Le sens ne voit pas le comportement. Il ne peut ni dédupliquer ni filtrer du code.
+2. **Sur des phrases décrivant une idée, e5-large sait reconnaître la même idée reformulée sur la même fonction** (cosinus 0,89–0,98 contre 0,83–0,91 pour des idées différentes), mais seulement sur un petit échantillon (12 textes réels) et avec un seuil étroit.
+3. **Il ne sait pas classer des idées en familles** (exactitude 60 % sur 8 familles ; aire ROC 0,66).
+4. **Il retrouve mal une astuce à partir d'un bout de code** : 34 % au premier rang (hasard : 7 %), alors qu'un détecteur d'arbre syntaxique est exact pour ces cas.
+5. **Le vrai gisement est ailleurs : nos modèles se répètent, et le dire au modèle suffit à l'arrêter.** Sur 4 fonctions réelles, 3 échantillons chacun (même prompt) : 3 fonctions sur 4 ont rendu **la même idée trois fois** ; la 4ᵉ, deux fois sur trois (sur les 8 échantillons n° 2 et 3, 7 répétaient l'idée du premier). Quand on ajoute au prompt « idée déjà essayée : … », **les 8 échantillons suivants ont tous changé d'idée** (une seule avec un recouvrement partiel). Cela ne coûte aucun encodage.
+6. **Le moteur Évolutif ignore les tombes** (il ne les sème pas dans son ensemble `vus`) : une variante déjà morte peut occuper l'un des 3 créneaux envoyés au juge. Et le prompt ne donne au modèle que le **nombre** de tombes, jamais leur contenu.
+7. **Les 5 recettes gratuites ne s'appliquent à aucune des 98 références réelles** de la maison : la première étape de la cascade n'apporte rien sur le code actuel ; la dépense est tout entière dans le modèle.
+8. **Coût mesuré** : une idée (une phrase) = 0,27 s ; un code de 15 lignes = 1,0 s ; 36 des 98 fichiers de référence dépassent les 512 jetons que le modèle lit (le reste est coupé). Le modèle, une fois chargé, occupe 2,7 à 2,9 Go.
+9. **Ce que je recommande** : d'abord ce qui ne demande pas e5 (donner le contenu des tombes et des idées déjà tentées au modèle, semer les tombes dans `vus`, empreinte d'arbre normalisée), puis un **guichet d'idées** (phrases seulement, jamais le code), limité au même point. On abandonne l'encodage du code et les familles par prototypes.
+10. Le sens n'est jamais une preuve : le contrôleur reste le seul juge.
 
-Ce qui est **établi par la lecture du code** :
+## 0. Ce qui est mesuré, ce qui ne l'est pas
 
-1. **Ce que le modèle reçoit des tombes aujourd'hui, c'est un nombre.** `noyau/CN_evolution.py` passe `contexte["tombes"]` = la liste des empreintes (des hachages) ; `orfan/CN_orfan.py:construire_prompt` n'en tire que « N variante(s) ont DÉJÀ échoué ». La table `tombes(gid, ast, raison, ts)` ne garde NI le texte de la variante NI l'idée (l'hypothèse). On ne peut donc, aujourd'hui, ni dire au modèle QUOI ne pas refaire, ni comparer une idée nouvelle à une idée morte. C'est le préalable de presque tout.
-2. **Les tombes ne reconnaissent que l'identique** (`empreinte_ast` : l'arbre syntaxique brut). Renommer une variable change l'empreinte : la même idée repasse.
-3. **Évolutif a 2 générations, 2 parents, un `budget` de 3 sorties** (`MoteurEvolutif.__init__`, `proposer`), une archive d'au plus quelques niches (`lignes // 4`). Le juge n'évalue au plus que `budget` candidats (`CN_evolution._juger`: `candidats[:budget]`). Les gains de calcul du juge sont donc bornés ; **la vraie dépense à réduire, ce sont les jetons du modèle** (relais, `CN_moteurs.MoteurProcessus`) et le temps de `comparer_local`.
-4. **Le moteur tourne dans une cage sans réseau** et ne parle au serveur que par des lignes JSON (`CN_moteur_hote.py`, `{"op":"modele"}`). Rien n'y encode.
-5. **Il n'y a que 52 points d'évolution** (`docs/CN_EVOLUTION.md` § 7 ter). Toute idée qui « apprend des résultats passés » démarre avec très peu de données : c'est le premier risque de chaque proposition d'apprentissage.
-6. **e5 est un modèle de langue naturelle** (`CN_encodage._prefixe` : préfixes « query: » / « passage: »). Ses seuils mesurés dans la bibliothèque (bruit à 0,81, vrai rapport > 0,82) sont des seuils de PROSE FRANÇAISE. Pour du code, ils ne valent rien tant qu'on n'a pas mesuré : les cosinus de e5 sont tassés vers le haut, deux codes Python se ressemblent beaucoup quel que soit leur contenu (hypothèse forte, à vérifier par l'essai E1).
+### 0.1 Conditions des mesures (04-11-2026)
 
-**Règle de tout le document : le sens n'est JAMAIS une preuve.** Le contrôleur du noyau reste le seul juge. Le sens sert à **ne pas dépenser** (jetons, évaluation) et à **mieux choisir où chercher**, jamais à déclarer qu'une variante est bonne ou fausse. Une proximité sémantique ne peut donc écarter qu'une variante dont l'écart est « sans gain », jamais « fausse » : une variante fausse mais très proche d'une bonne peut n'avoir qu'un caractère de trop.
+- **Machine** : Orion (Debian 12, 4 cœurs, 15 Go, charge moyenne 2 à 3 pendant les essais : la production tournait). **2 fils de calcul** comme le service d'encodage (`CASSANDRA_EMBED_THREADS`=2), `nice 10`, processus séparé du serveur Cassandra, dans `/tmp/e5essai` (poids téléchargés là : `intfloat/multilingual-e5-large`, 2,2 Go, accord de Drisse). Venv `/opt/cassandra/venv` : sentence-transformers 6.1.0, torch 2.14 (CPU). **Rien n'a été chargé dans le serveur Cassandra, `CASSANDRA_EMBED_MODEL` n'a pas été touché.**
+- **Corpus de code** : les **98 fichiers de référence réels** `modules/*/points/EC_*.py` (24 modules ; j'ai écarté les fichiers de moins de 300 ou de plus de 6 000 signes), entre 300 et 6 000 signes (médiane 1 040 signes, 382 jetons). Préfixe `passage: ` comme le service.
+- **Variantes fabriquées à partir d'eux** (honnêtement : ce ne sont pas des variantes écrites par un modèle) : *renommage* des variables locales ; *reformatage* (`ast.unparse`) ; *sans docstring* ; *idée inverse* (99 variantes où l'on défait une recette d'Orfan : générateur → liste, `min(x)` → `sorted(x)[0]`, `not x` → `len(x)==0`, `[]` → `list()` : même fonction, une autre idée) ; *mutants* (389 variantes à un signe changé avec le mutateur de `noyau/CN_evaluateur.py`, donc **fausses** par construction ou presque).
+- **Phrases** : 48 phrases d'hypothèse que **j'ai écrites** en 8 familles (6 par famille) ; 8 phrases-prototypes. Limite : ce sont mes phrases et mes étiquettes, pas des sorties réelles ; les familles se recouvrent un peu.
+- **Hypothèses réelles de modèle** : 12 réponses d'un modèle économe (Claude Haiku, en sous-agent) au **vrai prompt** produit par `orfan.construire_prompt` (sans profil), 3 réponses indépendantes pour chacune des 4 fonctions `agents.coherents`, `courrier.roles_uniques`, `planifie.segments`, `bibliotheque.decouper`. **Je n'ai pas jugé ces réponses** (pas de corpus d'entrées pour les exécuter) : on ne sait pas si elles sont justes ni plus rapides.
+- Scripts et résultats bruts : dossier temporaire de ma session, **non commités** (hors dépôt).
 
-## 1. Où se trouve le sens utile : trois étages
+### 0.2 Résultats
 
-Un constat tiré de la lecture d'OpenEvolve (son filtre agit après l'évaluation, donc n'économise rien) et de notre cage :
+**Coût (E3)** :
 
-- **Étage A, côté serveur, avant la cage.** Le noyau a le modèle. Il peut préparer le contexte : retrouver des idées mortes, des astuces réussies, et les mettre en texte dans `contexte` avant de lancer le moteur. **Aucun guichet d'encodage n'est nécessaire.** C'est le moins cher et le moins risqué.
-- **Étage B, dans la cage, avec un « guichet de sens ».** Le moteur demande, en cours de recherche, « cette idée ressemble-t-elle à une idée morte ? ». Il lui faut un guichet.
-- **Étage C, après la cage, côté serveur.** Choisir quelles sorties du moteur envoyer au juge (diversité des 3 sorties). Aucun guichet non plus.
+| Quoi | Mesure |
+|---|---|
+| Chargement du modèle (cache de fichiers chaud) | 3,2 s ; **non mesuré à froid** (disque non vidé) |
+| Mémoire du processus | 0,77 Go avant, 1,15 Go juste après le chargement, **2,75 Go à la fin, pic 2,88 Go** |
+| Une phrase d'idée (21 jetons) | 267 ms (p95 290 ms) |
+| Huit phrases en lot | 903 ms |
+| Code de 15 lignes (185 jetons) | 1,0 s |
+| Code de 60 lignes (1 380 jetons, **coupé à 512**) | 2,5 s |
+| Huit codes de 15 lignes en lot | 7,0 s |
+| Les 98 fichiers de référence | 200 s (2 s chacun) |
+| Fichiers de référence de plus de 512 jetons | 36 sur 98 (jetons : médiane 382, p95 1 330, max 2 149) |
 
-### Le guichet de sens (étage B) : sa forme
+**Code (E1)**, cosinus entre l'original et sa variante, et entre fonctions différentes :
+
+| Paire | n | min | médiane | max |
+|---|---|---|---|---|
+| original / reformaté | 98 | 0,961 | 0,995 | 0,999 |
+| original / renommé | 98 | 0,945 | **0,978** | 0,996 |
+| original / sans docstring | 98 | 0,912 | 0,971 | 0,998 |
+| original / « autre idée » (recette défaite) | 99 | 0,960 | 0,992 | 0,999 |
+| original / **mutant (faux)** | 196 | 0,961 | **0,995** | 0,999 |
+| deux fonctions différentes, même module | 570 | 0,813 | 0,871 | 1,000 |
+| deux fonctions différentes, modules différents | 8 936 | 0,779 | 0,859 | 0,960 |
+
+- Pour distinguer « une variante de la même fonction » de « une autre fonction », e5 est excellent (aire ROC 0,998 ; il retrouve l'original au premier rang 95 fois sur 98 pour un renommage ou un reformatage, 91 sur 98 sans docstring). **Mais ce n'est pas la question utile.**
+- Question utile : **peut-il séparer le correct du faux, ou une idée d'une simple mise en forme ?** Non. Paires par fonction (50 premières) : le **mutant (faux) est plus proche de l'original que le renommage (correct) dans 96 cas sur 100**, et la variante « autre idée » dans 51 cas sur 52. **Plus un changement est petit dans le texte, plus le cosinus monte, quel que soit son effet.**
+- Le maximum de 1,000 entre deux fonctions « différentes » vient de fichiers de référence identiques (du code copié d'un point à l'autre).
+- Seuils : à 0,95, 0,4 % de fonctions différentes seraient fusionnées ; à 0,97 : 0,21 % ; mais à 0,97 un simple **renommage n'est reconnu que dans 76 % des cas** et une version sans docstring dans 50 %. Il n'existe pas de seuil qui reconnaisse le renommage sans fusionner aussi les mutants (qui sont à 97 % au-dessus de 0,97).
+
+**Phrases d'idées (E2)**, 48 phrases, 8 familles :
+
+- cosinus de deux phrases de la **même** famille : médiane 0,884 (0,836–0,944) ; de familles **différentes** : médiane 0,872 (0,814–0,943). Aire ROC **0,66** (0,67 avec le préfixe `query:`).
+- rattachement de chaque phrase à son prototype le plus proche : **29 sur 48 (60 %)** (hasard 12,5 %).
+- Tous les cosinus entre phrases techniques du même domaine sont dans la plage 0,81–0,94 : c'est le « bruit à 0,81 » de la bibliothèque, ici sans signal clair au-dessus.
+
+**Vraies hypothèses de modèle (E5)**, 12 phrases, 4 fonctions × 3 échantillons :
+
+- À la lecture, **les trois échantillons de `bibliotheque.decouper` disent la même chose** (« la recopie répétée du reste du paragraphe ; je passe à un index, je précompile la regex »), idem `agents.coherents` (« un ensemble pour les identifiants attendus »), idem `courrier.roles_uniques` (« remplacer le tri complet par un min »). Pour `planifie.segments`, deux échantillons sur trois proposent la même idée (« découper par regex les commandes simples, laisser shlex pour le reste »), le troisième une autre (« fusionner la lecture en une passe »).
+- Cosinus des **10 paires « même idée, même fonction »** (jugées à la main) : 0,980 ; 0,964 ; 0,937 ; 0,933 ; 0,932 ; 0,919 ; 0,916 ; 0,913 ; 0,905 ; 0,888.
+- Cosinus des **2 paires « idées différentes, même fonction »** : 0,889 et 0,884. Des **54 paires entre fonctions différentes** : 0,833 à 0,911 (médiane autour de 0,87).
+- Donc, **sur cet échantillon**, un seuil à **0,915** donne 7 « même idée » reconnues sur 10 et **aucune fausse fusion** ; à **0,90**, 9 sur 10 mais 2 fausses fusions sur 56 paires de contrôle (les 2 paires d'idées différentes sur la même fonction et les 54 paires entre fonctions) (0,911 et 0,904). **Douze textes, quatre fonctions : ce sont des ordres de grandeur, pas une calibration.**
+
+**Dire au modèle l'idée déjà essayée (E7)** : mêmes 4 fonctions, prompt identique **plus** une ligne « Idées DÉJÀ proposées dans cette recherche (ne les refais pas ; propose une idée d'une AUTRE nature) : <l'hypothèse de l'échantillon 1> », 2 nouveaux échantillons chacun (8 réponses).
+- **Sans** cette ligne, parmi les 8 échantillons n° 2 et 3 des quatre fonctions, **7 répétaient l'idée de l'échantillon 1** (seul `planifie.segments` n° 2 avait changé).
+- **Avec** cette ligne, **les 8 ont changé d'idée principale** : `agents.coherents` → contrôle rapide du cas déjà cohérent / parcours unique à état ; `bibliotheque.decouper` → précompiler la regex ou la sauter / court-circuiter les paragraphes courts (celle-ci garde aussi « ne joindre qu'une fois », un recouvrement partiel avec l'idée interdite) ; `courrier.roles_uniques` → compteurs sans liste par rôle / `Counter` ; `planifie.segments` → `lru_cache` / `itertools.groupby`.
+- Limites : 8 réponses, un seul modèle, une seule idée interdite à la fois, des réponses **non jugées** (rien ne dit qu'elles sont justes ni plus rapides ; certaines sont risquées, par exemple un `lru_cache` qui rend un objet partagé), et le modèle a pu varier « pour obéir » sans trouver mieux.
+
+**Retrouver une astuce (E4)**, 4 cartes d'astuces et 10 cartes-leurres, 99 variantes « idée inverse » à rapprocher de la bonne carte :
+
+- avec **le code entier** comme requête : 7 bonnes sur 99 au premier rang, 16 au deuxième (**hasard : 7 et 14**) : c'est le hasard ;
+- avec **seulement les lignes qui diffèrent** (la ligne chaude) : **34 au premier rang (34 %), 39 au deuxième** (hasard : 7 % et 14 %). Mieux que le hasard, mais pour ces quatre astuces **un détecteur sur l'arbre syntaxique est exact à 100 %** (c'est comme cela que les variantes ont été fabriquées).
+
+**Sur le code de la maison (E6)** : les 5 recettes gratuites (`REGLES` d'`orfan/CN_orfan.py`) s'appliquent à **0 des 98** fichiers de référence. Le code actuel est déjà « propre » pour elles.
+
+### 0.3 Ce qui n'a PAS été mesuré
+
+- Le temps à froid (premier appel, disque), la latence quand la machine est plus chargée, ou avec 4 fils.
+- Aucune variante **écrite par un modèle** n'a été jugée (ni exécutée) : pas de gain réel mesuré, pas de taux de variantes fausses.
+- Le taux de répétition d'idées **entre tombes et nouvelles propositions** : les tombes n'ont jamais gardé leur texte (§ 1), donc l'historique n'existe pas. J'ai mesuré la répétition **entre échantillons d'un même prompt**, ce qui est un autre phénomène.
+- Aucune idée de ce que donnerait e5 sur du code **écrit par un modèle** différent de mes variantes fabriquées ; mon résultat sur le code est cependant net sur les mutants (signe changé) et les renommages.
+- Pas de test avec le modèle déjà résident du service partagé (autre charge, autre fil).
+- Les variantes d'idées proviennent d'un seul modèle (Haiku) et de 4 fonctions ; E7 : 8 réponses seulement.
+- La **justesse** et la **vitesse** de toutes ces réponses de modèle : non vérifiées.
+
+## 1. Ce que la lecture du code établit
+
+1. **Le modèle ne reçoit des tombes qu'un nombre.** `noyau/CN_evolution.py` (`_juger`) passe `contexte["tombes"]`, une liste d'empreintes ; `orfan/CN_orfan.py:construire_prompt` et `orfan/CN_frugal.py` n'en tirent que « N variante(s) ont DÉJÀ échoué ». La table `tombes(gid, ast, raison, ts)` ne garde ni le texte de la variante ni son idée.
+2. **Évolutif ne sème pas les tombes** (`vus = {self._cle(source)}` seulement, `orfan/CN_evolutif.py`). Le juge les écarte ensuite (`deja_vue`), mais après que `candidats[:budget]` les a comptées parmi les 3 créneaux.
+3. **Les tombes ne reconnaissent que l'identique** (`empreinte_ast`, l'arbre syntaxique brut).
+4. Évolutif : 2 générations, 2 parents, 3 sorties, niches de `lignes // 4`. Le juge n'évalue que `budget` candidats : **la dépense à réduire, ce sont les jetons du modèle** (relais `CN_moteurs.MoteurProcessus`), pas le calcul du juge.
+5. Le moteur tourne dans une cage sans réseau et parle au serveur par lignes JSON (`CN_moteur_hote.py`, `{"op":"modele"}`) ; rien n'y encode.
+6. 52 points d'évolution seulement (`docs/CN_EVOLUTION.md` § 7 ter) : toute idée qui « apprend du passé » démarre avec très peu de données.
+7. Décision de Drisse (04-11) : **e5-large est résident, chargé à l'installation de Cassandra, et sert aussi à la mémoire.** Le coût mémoire (2,7–2,9 Go) est donc déjà payé : seul le temps de calcul compte pour le guichet, sur une machine partagée avec la mémoire.
+
+**Règle de tout le document : le sens n'est JAMAIS une preuve.** Le contrôleur du noyau reste le seul juge. Le sens sert à **ne pas dépenser** (jetons) et à **mieux choisir où chercher**. Il ne peut écarter qu'une idée « sans gain » ; une idée « fausse » peut n'avoir qu'un signe de trop (c'est exactement ce que les mutants ont montré).
+
+## 2. Où se trouve le sens utile : deux étages
+
+- **Étage A, côté serveur, avant la cage.** Le noyau prépare le contexte : idées mortes, idées déjà tentées, en texte. Aucun guichet.
+- **Étage B, dans la cage, avec un « guichet d'idées ».** Le moteur demande en cours de recherche « cette idée ressemble-t-elle à une idée déjà tentée ? ». Il lui faut un guichet.
+- (Un étage C, choisir les sorties avant le juge, se fait aussi côté serveur.)
+
+### Le guichet d'idées : sa forme
 
 Même esprit que le relais de modèles : le moteur n'a jamais le modèle ni les vecteurs ; il pose une question, le serveur répond, compte et plafonne.
 
 ```
-moteur  -> serveur {"op":"sens","action":"proches","textes":["…idée ou code…"],"contre":"tombes","k":3}
-serveur -> moteur  {"ok":true,"voisins":[[{"id":"t41","cos":0.93,"raison":"gain insuffisant…"}], …]}
+moteur  -> serveur {"op":"sens","action":"proches","textes":["…phrase d'idée…"],"contre":"idees_du_point","k":3}
+serveur -> moteur  {"ok":true,"voisins":[[{"id":"t41","cos":0.93,"etat":"morte|tentee","raison":"gain insuffisant…"}], …]}
               ou  {"ok":false,"erreur":"sens indisponible"}      (service pas prêt, plafond atteint)
 ```
 
-- **Il rend des voisins (identifiant, cosinus, raison), jamais des vecteurs.** Les ensembles de comparaison (« tombes de CE point », « astuces ») restent côté serveur, cloisonnés ; le moteur ne peut ni les lire en entier ni exfiltrer un vecteur. Les vecteurs des tombes sont calculés une fois et gardés en base (1 024 réels = 4 Ko par ligne en float32).
-- **Côté serveur** : dans `noyau/CN_moteurs.py`, la boucle de `MoteurProcessus.proposer` traite aujourd'hui `op == "modele"` ; on y ajoute `op == "sens"`, qui appelle `noyau.CN_encodage.service().encoder(textes, "query")` puis compare. **Côté cage** : `orfan/CN_moteur_hote.py` ajoute à `modele()` une fonction jumelle `sens()`, passée au moteur comme paramètre optionnel (`MoteurEvolutif(orfan, modele, sens=None)`).
-- **Comptage et plafond**, comme le relais (`Registre.noter_relais`): par moteur et par jour, nombre d'appels, de textes, de signes encodés ; un plafond (`plafond_sens_jour`) ; au plafond ou si `service().pret()` est faux, réponse « indisponible ». **Le moteur doit toujours savoir se passer du guichet** (retour à l'empreinte d'arbre) : la bibliothèque n'est pas installée partout, le modèle pèse 2,4 Go.
-- Taille bornée : 16 textes par appel, 2 000 signes par texte (e5 coupe de toute façon à 512 jetons).
+- **Il ne prend que des phrases, pas du code** (mesure § 0.2 : le code ne sert à rien ici, et coûte 1 à 2,5 s). Une phrase = 0,27 s.
+- **Il rend des voisins (identifiant, cosinus, état, raison), jamais des vecteurs.** L'ensemble de comparaison (les idées de CE point) reste côté serveur, cloisonné ; les vecteurs sont gardés en base (1 024 réels = 4 Ko par idée).
+- **Côté serveur** : `noyau/CN_moteurs.py`, la boucle de `MoteurProcessus.proposer` traite `op == "modele"` ; on y ajoute `op == "sens"` (appel à `noyau.CN_encodage.service().encoder(textes, "query")`). **Côté cage** : `orfan/CN_moteur_hote.py` ajoute à `modele()` une fonction jumelle `sens()`, passée au moteur en paramètre optionnel (`MoteurEvolutif(orfan, modele, sens=None)`).
+- **Comptage et plafond**, comme le relais (`Registre.noter_relais`) : par moteur et par jour, appels, textes, signes ; un plafond (`plafond_sens_jour`) ; au plafond ou si `service().pret()` est faux, réponse « indisponible ». **Le moteur doit toujours savoir se passer du guichet.**
+- Bornes : 16 phrases par appel, 600 signes par phrase.
+- **Le modèle est partagé avec la mémoire** : un plafond de temps de calcul pour que la recherche d'Évolution ne ralentisse pas la mémoire (à 2 fils, une phrase prend 0,27 s ; un lot de 8, 0,9 s).
 
-## 2. Les propositions
+## 3. Les propositions, après mesures
 
-Pour chacune : (a) quoi · (b) où dans le code · (c) comment e5 sert, ce qui est encodé · (d) gain et mesure · (e) coût · (f) risques · (g) expérience minimale.
+Pour chacune : (a) quoi · (b) où dans le code · (c) comment e5 sert · (d) gain et mesure · (e) coût · (f) risques · (g) expérience minimale · **verdict**.
 
-### P0 — Préalable sans e5 : que les tombes gardent l'idée, et que le modèle la voie
+### P0 — Que les tombes gardent l'idée, et que le modèle la voie  ·  *sans e5*  ·  **à faire**
 
-(a) On grave dans chaque tombe le **texte** de la variante et son **hypothèse** (la phrase du modèle), et le prompt montre au modèle les 3 à 5 dernières idées mortes **en mots**, pas un nombre.
-(b) `noyau/CN_evolution.py` : table `tombes` (colonnes `texte`, `hypothese`, créées par `ALTER TABLE ... ADD COLUMN`), `_tomber`, `tombes()` rend aussi le détail ; `_juger` donne dans `contexte` une liste `idees_mortes: [{hypothese, raison}]` en plus des empreintes. `orfan/CN_orfan.py:construire_prompt` (ligne `tombes`) et `orfan/CN_frugal.py` (même phrase) listent ces idées.
-(c) Pas d'e5. C'est de la donnée.
-(d) Gain attendu : le modèle cesse de reproposer ce que le prompt lui nomme. **Hypothèse** (c'est le comportement général des modèles quand on leur liste des échecs, pas une mesure chez nous). Mesure : sur N recherches, la part de sorties dont l'idée est dans une tombe (jugée à la main sur 50 cas) avant / après. Et dès aujourd'hui : **commencer à écrire le texte des tombes**, parce que sans cet historique aucune des idées de sens ne peut se tester sur le passé.
-(e) Coût : quelques centaines de signes de prompt en plus ; base un peu plus grosse. Zéro mémoire.
-(f) Risque : un prompt plus long qui pousse le modèle vers des idées trop différentes et inutiles ; une tombe « divergente » qui n'attendait qu'un petit correctif peut décourager une bonne idée (on étiquette donc la raison dans la liste : « fausse sur telle entrée » ≠ « sans gain »).
-(g) Expérience : ajouter les deux colonnes et les écrire, sans changer le prompt, pendant quelques semaines ; puis comparer.
+(a) On grave dans chaque tombe le **texte** de la variante, son **hypothèse** et le type de raison ; le prompt montre au modèle les 3 à 5 dernières idées mortes **en mots**, pas un nombre. **Et** (P0b), à l'intérieur d'une même recherche, on dit au modèle de la génération suivante les idées déjà proposées dans cette recherche.
+(b) `noyau/CN_evolution.py` : table `tombes` (colonnes `texte`, `hypothese` par `ALTER TABLE … ADD COLUMN`), `_tomber`, `tombes()` ; `_juger` ajoute `contexte["idees_mortes"]: [{hypothese, raison}]`. `orfan/CN_orfan.py:construire_prompt` et `orfan/CN_frugal.py` listent ces idées. `orfan/CN_evolutif.py:proposer` ajoute à `vus` les empreintes des tombes (corrige § 1.2) et passe les hypothèses des enfants déjà obtenus au prompt de la génération suivante.
+(c) Pas d'e5.
+(d) **Mesuré** (E5, E7) : sans la liste, 7 échantillons sur 8 répètent l'idée du premier ; avec la liste d'une idée déjà essayée, 8 sur 8 en changent. **Reste à mesurer** : que les nouvelles idées soient justes et plus rapides (il faut passer par le juge), et l'effet d'une liste plus longue (5 idées) sur la qualité.
+(e) Quelques centaines de signes de prompt en plus. Zéro mémoire.
+(f) Risque : un prompt qui pousse le modèle vers des idées absurdes « juste pour être différent » ; une tombe « divergente » peut décourager une idée presque bonne (on étiquette donc la raison : « fausse sur telle entrée » ≠ « sans gain »).
+(g) Expérience : ci-dessus.
 
-### P1 — Entonnoir de l'idée avant le code (la plus prometteuse pour les jetons)
+### P1 — Entonnoir de l'idée avant le code, **limité au même point**  ·  *e5 sur des phrases*  ·  **à tenter après P0**
 
-(a) Avant que le modèle économe n'écrive du code, on compare l'**idée en prose** aux idées mortes et aux idées déjà retenues dans la recherche en cours ; une idée trop proche d'une idée « sans gain » ne passe pas à l'écriture.
-(b) Pour Frugal 2 : entre « le modèle fort propose 2-3 plans » et « le modèle économe les implémente » (`orfan/CN_frugal.py`, là où `_appeler(prompt, "executant")` est lancé par plan). Pour Évolutif : la phrase d'hypothèse qui précède chaque bloc (`extraire_blocs`) existe déjà APRÈS le code, donc le filtre sert à ne pas **évaluer** (économie de `comparer_local`, pas de jetons) ; pour économiser des jetons il faudrait un appel de stratégie préalable, c'est-à-dire adopter la forme de Frugal 2.
-(c) e5 est ici dans son élément : on encode une **phrase de langue naturelle** (« remplacer la recherche dans une liste par un ensemble »), jamais du code. Les idées mortes viennent de P0. Via le guichet (étage B), `contre: "tombes"`.
-(d) Gain : jetons de l'exécutant non dépensés sur des idées déjà mortes. **Hypothèse** : dépend du taux de répétition d'idées chez nos modèles ; on ne l'a pas mesuré. Mesure : (1) rejouer sur l'historique P0 : pour chaque idée morte, dire si une idée plus ancienne du même point était à plus de `s` de cosinus ; compter les paires et vérifier à la main 30 paires (précision du filtre) ; (2) en ligne : jetons de l'exécutant par gain prouvé, avec et sans filtre, sur les mêmes points (les points se répartissent au hasard en deux bras).
-(e) Coût : 1 à 5 phrases encodées par recherche (courtes) ; le modèle 2,4 Go doit être résident, déjà payé si la bibliothèque s'en sert. Latence : **non mesurée** (E3).
-(f) Risques : deux idées proches en prose mais différentes en effet (« utiliser un ensemble » pour deux structures différentes) ; faux rejets d'une bonne idée. Garde-fous : (i) on ne rejette que sur des tombes de raison « gain insuffisant » ; une tombe « divergente » ne bloque pas, elle s'affiche comme contre-exemple ; (ii) seuil prudent ; (iii) 1 idée sur 5 laissée passer même si « proche » (tirage à graine fixe) pour mesurer le taux de faux rejets ; (iv) l'idée rejetée est journalisée avec sa voisine, lisible par Drisse.
-(g) Expérience minimale : E2 (§ 6) : 40 phrases d'hypothèse réelles ou écrites à la main, regroupées à la main en familles ; vérifier que le cosinus sépare « même idée » de « autre idée » (aire sous la courbe ROC ≥ 0,9, sinon on abandonne).
+(a) Avant que le modèle économe n'écrive du code, on compare l'**idée en prose** aux idées déjà tentées ou mortes **sur ce point** ; une idée qui reformule une idée déjà tentée (cosinus au-dessus d'un seuil étroit) ne passe pas à l'écriture.
+(b) Pour Frugal 2 : entre « le modèle fort propose 2-3 plans » et « le modèle économe les implémente » (`orfan/CN_frugal.py`). Pour Évolutif : il faudrait ajouter une étape de stratégie (aujourd'hui l'hypothèse arrive avec le code), sinon le filtre n'économise que le temps de `comparer_local`.
+(c) e5 reconnaît la reformulation d'une même idée sur la même fonction (mesuré : 0,89–0,98 contre ≤ 0,91 pour des idées différentes ; seuil 0,915 : 7 sur 10 reconnues, 0 fausse fusion sur 56 paires de contrôle). Il ne reconnaît **pas** des idées du même genre entre fonctions différentes (E2) : on compare donc **dans le point**, jamais d'un point à l'autre.
+(d) Gain : jetons de l'exécutant non dépensés sur des répétitions. **Hypothèse chiffrée par la mesure E5** : dans 3 cas sur 4, 2 échantillons sur 3 étaient des répétitions de l'idée du premier ; un filtre parfait aurait épargné 2 appels sur 3. Mesure à faire : calibrer le seuil sur ≥ 100 paires d'idées **étiquetées à la main**, avec les journaux de P0 ; exiger ≥ 95 % de précision avant de rejeter quoi que ce soit.
+(e) Coût : 1 à 5 phrases par recherche, 0,27 s chacune ; le modèle est déjà résident (décision de Drisse).
+(f) Risques : seuil calibré sur 12 phrases seulement ; deux idées proches en prose mais différentes en effet ; faux rejet d'une bonne idée. Garde-fous : (i) on ne rejette que si la voisine est « sans gain » ; une voisine « fausse » ne bloque pas ; (ii) 1 idée sur 5 laissée passer même si « proche » (graine fixe) pour mesurer le taux de faux rejets ; (iii) chaque rejet est journalisé avec sa voisine, lisible par Drisse.
+(g) Expérience minimale : 100 paires d'idées (réelles, via P0), étiquetage à la main, aire ROC et précision à 0,90/0,915/0,93.
 
-### P2 — Bibliothèque d'astuces retrouvées par ressemblance (transfert d'une fonction à l'autre)
+### P2 — Astuces retrouvées pour une nouvelle fonction  ·  **repensée : détecteurs d'abord, e5 en second**
 
-(a) Chaque gain **prouvé par le juge** devient une fiche : famille, phrase simple (« remplacer une liste par un ensemble pour tester l'appartenance »), l'avant/après en quelques lignes, le gain mesuré, le point d'origine. Face à une nouvelle fonction, on retrouve les 2 fiches les plus proches par le sens et le prompt les montre : « ailleurs dans la maison, cette astuce a donné ×1,8 ».
-(b) Table nouvelle côté noyau (près des tombes, `noyau/CN_evolution.py`, écrite à l'écriture d'une pièce `_ecrire`). Récupération **côté serveur, à l'étage A** : `_juger` ajoute `contexte["astuces"]` avant de lancer le moteur. **Pas de guichet.** Le prompt (`construire_prompt`) gagne une section.
-(c) On encode (1) la phrase simple de la fiche, (2) un petit descripteur du point : sa « ligne chaude » (`point_chaud`) et le début de la fonction, en texte. Requête : le même descripteur de la nouvelle fonction (`genre="query"`). Les deux côtés sont **du texte court**, et la phrase est de la langue naturelle (point fort d'e5).
-(d) Gain : un modèle à qui l'on montre un exemple d'avant/après de la même famille réussit plus souvent (résultat général des invites par exemples, **hypothèse ici**). Mesure : taux de points qui reçoivent au moins un gain prouvé, avec et sans fiches, sur un tirage au hasard des 52 points ; et jetons par gain. **Démarrage à froid** : au début il y a 0 fiche. Remède honnête : écrire à la main un **manuel de 30 à 50 astuces Python** (compréhension plutôt que boucle, `str.join`, ensemble pour l'appartenance, `dict.get`, éviter de recalculer dans la boucle, `bisect`, etc.), chacune avec avant/après ; c'est du contenu, pas de l'IA, et il vaut déjà quelque chose sans e5 (on peut les montrer toutes, ou celles qui correspondent à des mots-clés).
-(e) Coût : une fiche encodée = une fois ; recherche en mémoire (quelques centaines de fiches au plus, produit scalaire direct). Jetons : 300 à 600 signes par fiche montrée, donc le prompt grossit. Il faut que le gain en réussite le justifie.
-(f) Risques : fiches trop locales à une fonction (l'astuce ne se transpose pas) ; biais (on ne propose que ce qu'on a déjà trouvé et on ferme l'exploration : à compenser en laissant toujours un essai sans fiche) ; fuite entre comptes (les fiches contiennent du code de la maison, pas des données ; le cloisonnement par compte doit être vérifié).
-(g) Expérience minimale : écrire 30 fiches à la main ; prendre 10 points ; pour chacun, vérifier à la main si les 2 fiches les plus proches par e5 (E4) sont celles qu'on aurait choisies (rappel@2).
+(a) Chaque gain prouvé par le juge devient une fiche (phrase simple, avant/après, gain, point). Face à une nouvelle fonction, on montre au modèle les fiches pertinentes.
+(b) Table nouvelle côté noyau ; récupération côté serveur (étage A), `contexte["astuces"]`. **Pas de guichet.**
+(c) **Mesuré** : retrouver une carte à partir du **code entier** est du hasard (7 %) ; à partir de la **seule ligne chaude** : 34 %. Un **détecteur sur l'arbre syntaxique** (« cette fonction contient `sorted(x)[0]` ») est exact pour les astuces syntaxiques. Donc : étape 1 = des détecteurs (une dizaine, comme les règles d'Orfan) qui rattachent une fonction à des fiches ; étape 2 (seulement pour les astuces floues, sans motif syntaxique) = e5 sur la **phrase** de la fiche contre la **description de la ligne chaude** par le modèle.
+(d) Gain : **hypothèse** (un exemple avant/après de la même famille aide un modèle). Démarrage à froid : 0 fiche et 52 points. Remède : un manuel de 30 à 50 astuces Python écrit à la main. Mesure : taux de points qui reçoivent un gain prouvé, avec et sans fiches, tirage au hasard de bras.
+(e) Faible. (f) Fiches trop locales ; fermeture de l'exploration (toujours laisser un essai sans fiche) ; code de la maison dans les fiches (cloisonnement à vérifier).
+(g) Expérience : écrire 10 détecteurs + 30 fiches, vérifier à la main leur couverture sur les 98 références.
+**Verdict : utile mais surtout par des détecteurs ; e5 y est secondaire.**
 
-### P3 — Recettes promues : l'astuce répétée devient une règle gratuite  *(vraiment inédit)*
+### P3 — Recettes promues : l'astuce répétée devient une règle gratuite  ·  **le plus inédit**
 
-(a) Quand une même famille d'astuce a réussi sur au moins 3 points différents, le système propose d'en faire une **règle déterministe** de plus pour `REGLES` (`orfan/CN_orfan.py`: `_CompDansAgregat`, `_TriPourExtremum`…) : zéro jeton à l'avenir.
-(b) Détection de répétition par la bibliothèque de P2 (regroupement des fiches de cosinus élevé et de même famille). L'écriture de la règle reste un travail d'ingénieur (ou d'un modèle fort, puis relu et éprouvé par le banc), **jamais automatique**; la règle suit le chemin normal de revue du dépôt.
-(c) e5 sert uniquement à regrouper les phrases de fiches (langue naturelle).
-(d) Gain : le moteur apprend, au fil des gains payés en jetons, des recettes gratuites. À long terme, c'est la seule idée qui **baisse le coût de façon cumulative**. Hypothèse : il faut assez de gains pour que 3 se ressemblent ; avec 52 points, il y en aura peu ; à voir sur le journal de P0/P2. Mesure : nombre de règles promues, et part des gains obtenus à zéro jeton avant / après.
-(e) Coût : surtout humain (écrire/relire une règle).
-(f) Risque : une règle fausse dans la bibliothèque des règles gratuites est pire qu'une mauvaise idée de modèle (elle s'applique partout) ; le juge du noyau la contrôle sur chaque point comme toute variante, mais il faut un banc de la règle seule.
-(g) Expérience minimale : relire les gains réels déjà obtenus (`docs/CN_EVOLUTION.md` § 7 bis) et regarder à la main si deux d'entre eux relèvent de la même famille.
+(a) Quand une même famille d'astuce a réussi sur au moins 3 points différents, on propose d'en faire une règle déterministe de plus dans `REGLES` (`orfan/CN_orfan.py`) : zéro jeton ensuite.
+(b) Détection par les mêmes détecteurs que P2 (pas par e5). L'écriture de la règle reste revue par un humain.
+(c) e5 n'est pas nécessaire (les familles viennent des détecteurs, pas des prototypes : E2 les a rejetés).
+(d) Intérêt renforcé par la mesure E6 : les 5 recettes actuelles ne s'appliquent à **aucun** des 98 fichiers ; toute nouvelle recette qui s'applique réellement est un gain net. Hypothèse : assez de gains pour que 3 se ressemblent. Mesure : nombre de règles promues, part des gains à zéro jeton.
+(f) Une règle fausse s'applique partout : banc propre à la règle, revue humaine.
+**Verdict : à garder pour plus tard, sans e5.**
 
-### P4 — Niches par famille d'idée, plutôt que par taille de code
+### P4 — Niches par famille d'idée avec prototypes  ·  **REJETÉE**
 
-(a) Aujourd'hui `MoteurEvolutif._niche` = nombre de lignes // 4. On proposerait : niche = **famille de l'hypothèse** (« éviter une liste intermédiaire », « sortie anticipée », « structure de données », « précalcul hors de la boucle », « fonction de la bibliothèque standard »…).
-(b) `orfan/CN_evolutif.py:_niche` et la façon de choisir un parent d'une autre niche (`pool.append(rng.choice(sorted(autres)))`) : au lieu du hasard, prendre le parent **le plus éloigné** de ceux déjà retenus.
-(c) Classification **sans entraînement** : une liste fixe de 8 à 12 phrases-types (les « prototypes »), écrites à la main, encodées une fois ; l'hypothèse de chaque enfant est rattachée au prototype le plus proche (guichet `action:"famille"`, ou, mieux, la classification se fait côté serveur et la cage ne reçoit que le nom). Les familles sont lisibles par un humain et servent aussi à P2 et à l'écran.
-(d) Gain : à notre échelle (2 générations, 2 parents, 3 sorties) **le gain est faible**: il y aura rarement plus de 5 candidats ; la diversité de nos niches de taille est déjà suffisante pour 5 candidats. C'est une idée qui prend son sens si on augmente nettement les générations. **Hypothèse non prouvée.** Mesure : nombre de familles distinctes dans les 3 sorties finales, et part des gains qui viennent d'une famille différente du premier parent.
-(e) Coût : 10 phrases encodées une fois ; une phrase par enfant.
-(f) Risques : un jeu de prototypes arbitraire qui range tout dans « autre » ; l'hypothèse du modèle est parfois vide ou générique (« Voici le code »), car `extraire_blocs` prend la dernière ligne avant le bloc. Il faut donc exiger une ligne `Hypothèse :` dans le prompt (voir P7).
-(g) Expérience minimale : E2 avec les prototypes : exactitude de rattachement sur 40 phrases étiquetées à la main.
+Exactitude 60 % sur 8 familles, aire ROC 0,66 (§ 0.2), à notre échelle (≤ 5 candidats) : pas de gain attendu. À reprendre seulement si le nombre de générations monte nettement **et** qu'un autre classeur (le modèle lui-même, qui nomme la famille dans sa réponse) est préféré.
 
-### P5 — Niche par comportement d'exécution (sans modèle de sens)  *(une critique d'OpenEvolve, à comparer)*
+### P5 — Niche par comportement d'exécution (sans e5)  ·  **à comparer**
 
-(a) Au lieu de ranger les variantes d'après leur texte (taille ou sens du texte), on les range d'après **ce qu'elles font réellement** : un petit descripteur calculé en exécutant sur les entrées visibles : nombre de lignes exécutées par rapport à la référence (le `profil` existe déjà, `orfan/CN_orfan.py:profil`), pic de mémoire, rapport de temps arrondi. Deux variantes de même comportement sont dans la même niche, même si leur texte diffère ; deux variantes de texte voisin mais de comportement différent sont séparées.
-(b) `MoteurEvolutif._niche` ; `profil` est déjà là ; `comparer_local` mesure déjà le temps.
-(c) **e5 n'est pas utilisé.** Je le propose parce que, pour un problème de vitesse, la mesure réelle est plus fiable que le sens du texte : deux codes très ressemblants par le sens peuvent avoir des vitesses très différentes, et l'inverse.
-(d) Gain : meilleures niches sans coût de modèle. À comparer à P4 sur les mêmes recherches. Hypothèse.
-(e) Coût : un `profil` par candidat (déjà exécuté pour les points chauds).
-(f) Risque : un descripteur bruité (le temps) mal arrondi crée de fausses niches ; préférer le **compte de lignes exécutées** (déterministe, sans horloge).
-(g) Expérience : sur 10 points, comparer les niches P5 aux niches `lignes // 4` : combien de variantes sont mises dans la même case à tort, à la main.
+(a) Ranger les variantes d'après ce qu'elles font : compte de lignes exécutées par rapport à la référence (`profil`, déjà là), mémoire. Deux variantes de même comportement sont dans la même niche, quel que soit leur texte.
+(b) `MoteurEvolutif._niche` ; `profil` existe.
+(c) Pas d'e5, et c'est la leçon de E1 : le texte (et son sens) ne voit pas le comportement ; un mutant faux a un cosinus de 0,995.
+(d) Hypothèse. Mesure : sur 10 points, comparer les niches aux niches `lignes // 4` à la main.
+(e)(f) : un descripteur bruité (le temps) crée de fausses niches ; préférer le compte de lignes.
+**Verdict : meilleur candidat que P4 pour remplacer la niche de taille, à éprouver.**
 
-### P6 — Déduplication sémantique : à faire d'abord SANS e5
+### P6 — Déduplication de variantes : **empreinte normalisée seulement**  ·  *sans e5*  ·  **à faire**
 
-(a) Avant d'évaluer, écarter les enfants qui sont « la même chose autrement écrite ».
+(a) Écarter les enfants qui sont la même chose autrement écrite.
 (b) `MoteurEvolutif._cle` et `noyau/CN_evolution.empreinte_ast`.
-(c) **Étage zéro, certain et gratuit** : une empreinte d'arbre **normalisée** (renommer les variables locales dans l'ordre d'apparition, ordonner les opérandes des opérations commutatives, replier les constantes, retirer les docstrings) attrape renommages et réécritures triviales avec certitude. Étage un, seulement si l'étage zéro ne suffit pas : cosinus e5 sur le code, avec un seuil mesuré (E1) ; il ne sert qu'à **ordonner** (ne pas évaluer en premier ce qui ressemble à un déjà-évalué), jamais à jeter sans autre raison.
-(d) Gain : moins d'évaluations redondantes. Hypothèse : la part de doublons réels dans nos sorties n'a pas été mesurée. Mesure : compter, sur les journaux de P0, combien d'enfants différaient par l'arbre brut mais pas par l'arbre normalisé.
-(e) Coût de l'étage zéro : négligeable.
-(f) Risque : une normalisation qui fusionne deux choses différentes (opérandes non commutatifs : `a - b` ne se réordonne pas ; flottants : `a + b + c` n'est pas associatif). À limiter aux cas sûrs.
-(g) Expérience : écrire la normalisation, la lancer sur les 52 points × leurs variantes connues et regarder les fusions à la main.
+(c) **Les cosinus de code sont rejetés** (E1 : aucun seuil ne sépare renommage et mutant). Reste l'arbre normalisé : renommer les variables locales dans l'ordre d'apparition, retirer les docstrings, replier les constantes, ordonner les opérandes des opérations commutatives **sûres** (pas `a - b`, pas les flottants).
+(d) Mesure : sur les 98 références, combien de variantes fabriquées (renommage, sans docstring) sont ramenées à la même empreinte (attendu : toutes) et combien de mutants sont à tort fusionnés (attendu : aucun).
+(e) Négligeable. (f) Une normalisation qui fusionne deux choses différentes : se limiter aux cas sûrs.
+**Verdict : à faire, c'est exact et gratuit.**
 
-### P7 — Résumé en mots simples de ce qu'une amélioration a changé
+### P7 — Résumé en mots simples de ce qu'une amélioration a changé  ·  *sans e5*  ·  **à faire**
 
-(a) Pour chaque pièce gardée, une phrase que Drisse peut lire : « a remplacé une liste par un ensemble ; la fonction va 1,8 fois plus vite ».
-(b) Pour les règles déterministes : déjà fait (`hypothese` de chaque règle). Pour les modèles : exiger dans `construire_prompt` une ligne `Hypothèse : …` fixe avant le bloc ; `extraire_blocs` la lit (aujourd'hui : la dernière ligne avant le bloc, souvent vide ou bavarde, tronquée à 300 signes).
-(c) e5 : facultatif, pour rattacher la phrase à une **famille** (P4) et l'afficher. Sans e5, la phrase suffit.
-(d) Gain : lisibilité et matière première de P0, P1, P2. C'est un gain de transparence, pas de coût. Mesure : part des pièces dont l'hypothèse est lisible (revue à la main sur 30).
-(e) Coût : une ligne de prompt.
-(f) Risque : le modèle écrit une explication qui ne correspond pas au code (il l'écrit avant le code). Elle reste une **hypothèse affichée comme telle**, jamais une preuve ; l'affichage dit « idée du modèle ».
-(g) Expérience : modifier le prompt dans un banc et compter les réponses avec une ligne exploitable.
+(a) Pour chaque pièce gardée, une phrase lisible.
+(b) Règles déterministes : déjà faites. Modèles : **mesuré, le modèle économe a spontanément rendu une phrase d'hypothèse bien formée dans 12 réponses sur 12**, avec la cause supposée et le remède (« le temps part de … ; je remplace … »). La ligne `Hypothèse :` fixe dans le prompt reste utile pour que `extraire_blocs` la lise sans deviner (aujourd'hui : la dernière ligne avant le bloc, tronquée à 300 signes).
+(d)(e)(f) : transparence, pas un gain de coût ; l'hypothèse reste « l'idée du modèle », jamais une preuve.
 
-### P8 — Choisir les sorties à envoyer au juge (diversité des trois)
+### P8 — Diversité des 3 sorties envoyées au juge  ·  *petit*
 
-(a) Le moteur rend les `budget` meilleurs par rapport de temps ; ces trois peuvent être la même idée. On préfère « le meilleur, puis le meilleur parmi ceux qui diffèrent assez du premier » (MMR : pertinence moins redondance).
-(b) `MoteurEvolutif.proposer`, dernière ligne (`classes[:budget]`).
-(c) Distance = P5 (comportement) ou famille P4 ou cosinus e5 sur les hypothèses ; au choix, mesurer.
-(d) Gain : plus de chances qu'une des 3 passe le juge si la première est une fausse bonne idée sur le corpus entier. Hypothèse. Mesure : taux de recherches où au moins une des sorties est retenue par le juge, avec et sans diversité.
-(e) Coût : négligeable. (f) Risque : écarter la 2ᵉ meilleure vraie. (g) Rejouer sur l'historique des sorties.
+Choisir « le meilleur, puis le meilleur parmi ceux dont l'**idée** (cosinus des phrases d'hypothèse, seuil 0,915) diffère ». Gain faible à notre échelle, hypothèse ; coût négligeable. À reprendre avec P1 si le guichet existe.
 
-### P9 — Classement des fonctions à chercher d'abord
+### P9 — Classement des fonctions à chercher d'abord  ·  **reporté**
 
-(a) Dire quels points méritent qu'on y dépense, d'après ceux qui ont déjà bien réussi.
-(b) `noyau/CN_course.py` / la liste des cibles (`Evolution.cibles`), non lus en détail.
-(c) **D'abord sans sens** : part du temps réel que le point représente (appels × durée, venant du rejeu), proportion de point chaud (`point_chaud`) ; ces deux nombres sont des mesures. Le sens (voisins par e5 des points qui ont déjà réussi) n'a de sens que **quand il y aura ≥ 50 résultats** ; avec 52 points, un classement par voisinage serait du bruit.
-(d)(e)(f) : gain honnête attendu faible à court terme. À reporter.
+Avec 52 points et aucun historique, un classement « par ressemblance aux points réussis » serait du bruit (et E1/E4 montrent que le code se ressemble trop). D'abord sans sens : la part du temps réel (appels × durée du rejeu) et la présence d'un point chaud (`point_chaud`) ; **E6 ajoute** : tant que les recettes gratuites ne s'appliquent pas, les points à gros point chaud sont ceux où le modèle a une chance.
 
-### P10 — Cartes de proximité entre fonctions de la maison
+### P10 — Fonctions quasi dupliquées entre modules
 
-Même moteur que P2 : trouver des fonctions quasi dupliquées entre modules (un même assistant écrit trois fois). Une optimisation prouvée sur l'une est un **candidat à essayer** sur les autres (`comparer_local` en premier, zéro jeton, puis le juge). C'est le « transfert direct » de P2 poussé jusqu'à l'essai. Hypothèse : la maison contient de tels doublons ; non vérifié. Expérience : encoder les 52 points (code) et regarder les paires ≥ s (E1) à la main.
+**Mesuré** : il existe des fichiers de référence strictement identiques (cosinus 1,000) entre fonctions « différentes » ; une optimisation prouvée sur l'un vaut pour l'autre. Une détection **exacte** (empreinte d'arbre normalisée, P6) suffit à les repérer ; e5 n'est pas nécessaire. Piste à faible coût, pas encore explorée (je n'ai pas compté combien de paires).
 
-## 3. Ce qu'OpenEvolve fait et comment on fait mieux, à moindre coût
+## 4. Ce qu'OpenEvolve fait et comment on fait mieux, à moindre coût
 
 | OpenEvolve | Limite (cf. lecture § 4) | Notre réponse |
 |---|---|---|
-| Filtre de nouveauté par cosinus + juge LLM, à l'entrée de la base | Après l'évaluation : ne sauve ni jetons ni temps ; code brut ; un voisin ; seuil 0,99 | P1 : filtrer l'**idée** avant le code ; P6 : normalisation exacte d'abord |
-| Pas de mémoire des échecs (traces écrites, non relues) | Les mêmes impasses reviennent | P0 : nos tombes gardent déjà les empreintes ; leur donner texte et idée |
-| Diversité = taille + caractères | Pas de sens, pas de comportement | P5 (comportement), P4 (famille) |
-| Inspirations = cases voisines de la grille de taille | Voisin = de même taille | P2 (par le sens de l'idée) |
-| Pas de cache d'évaluation | Réévalue le même code | Nos tombes + P6 évitent déjà la réévaluation d'un arbre identique |
-| Juge de nouveauté = un modèle de langage | Un appel de modèle par comparaison | Chez nous le juge est le **corpus + le jeu réservé** : un « nouveau » n'a pas à être jugé par un modèle, il est mesuré |
+| Filtre de nouveauté par cosinus du **code** + juge LLM, à l'entrée de la base | Après l'évaluation : ne sauve ni jetons ni temps ; **notre mesure montre en plus que le cosinus du code ne voit pas le comportement** (mutant faux : 0,995) ; seuil par défaut 0,99 | P1 : filtrer l'**idée en prose** avant le code, dans le point ; P6 : empreinte normalisée exacte |
+| Pas de mémoire des échecs (traces écrites, non relues) | Les mêmes impasses reviennent | P0 : nos tombes ont déjà les empreintes ; leur donner texte et idée, et les montrer au modèle |
+| Diversité = taille + caractères | Pas de sens, pas de comportement | P5 (comportement) |
+| Inspirations = cases voisines de la grille de taille | Voisin = de même taille | P2 (par détecteur, puis par phrase) |
+| Pas de cache d'évaluation | Réévalue le même code | Nos tombes + P6 |
+| Juge de nouveauté = un modèle de langage | Un appel de modèle par comparaison | Chez nous le juge est le **corpus + le jeu réservé** : un « nouveau » est mesuré, pas jugé par un modèle |
 
-## 4. Classement
+## 5. Classement
 
-**Ce qui rapporte le plus pour le moins d'effort**
-1. **P0** (tombes avec texte + idées dans le prompt) : une colonne et une phrase ; sans e5 ; condition de tout le reste.
-2. **P7** (ligne `Hypothèse :` fixe) : une ligne de prompt.
-3. **P6, étage zéro** (empreinte normalisée) : peu de code, certain.
-4. **P1** (entonnoir de l'idée) : le meilleur rapport gain/risque *une fois P0 et E2 faits*.
-5. **P2** (astuces par ressemblance, côté serveur, sans guichet).
+**Ce qui rapporte le plus pour le moins d'effort** (tout est sans e5, sauf P1)
+1. **P0 et P0b** : contenu des tombes et des idées déjà tentées dans le prompt, tombes semées dans `vus`. Une colonne, une liste, un bogue de moins.
+2. **P6** : empreinte normalisée.
+3. **P7** : ligne `Hypothèse :` fixe.
+4. **P1** : l'entonnoir d'idées dans le point, avec le guichet, **après** avoir le journal d'idées de P0 pour calibrer.
+5. **P2** par détecteurs.
 
-**Ce qui serait vraiment inédit** : **P3** (le moteur gagne des recettes gratuites en apprenant des gains payés) et **P1** (un entonnoir par le sens, appliqué à l'idée en prose avant le code, que ni OpenEvolve ni FrugalEvo n'ont d'après leur code lu). P5 est une critique plus qu'une invention.
+**Ce qui serait vraiment inédit** : **P1** (un entonnoir par le sens, sur l'idée en prose avant le code, que ni OpenEvolve ni FrugalEvo n'ont d'après leur code lu) et **P3** (le moteur gagne des recettes gratuites en apprenant des gains payés). Et, côté conclusion : **montrer, mesures à l'appui, que le sens du code est la mauvaise piste** est déjà un résultat, qui coupe court à une direction coûteuse.
 
-**À reporter** : P4 (à notre échelle), P9 (trop peu de points), P10 (à tester sur 52 points d'abord), P8 (petit gain).
+**Rejeté ou reporté** : encodage du code pour dédupliquer ou filtrer (E1), P4 (E2), P9, P10 (autre moyen), P8.
 
-## 5. Recommandation et plan en étapes
+## 6. Recommandation et plan en étapes
 
-Je recommande **de commencer sans le modèle**, puis de n'ouvrir le guichet que si les mesures le justifient. Le modèle de sens est un outil pour *retrouver ce qui se ressemble* ; il n'a de valeur que si on a des choses à retrouver (idées mortes, astuces) et cela, on ne l'a pas encore gravé.
+Le modèle de sens ne vaut que sur des **phrases décrivant une idée**, dans **un même point**. Je recommande de **ne pas lui faire encoder du code**.
 
-- **Étape 0 — accepter ou refuser** (rien d'e5) : P0 (écrire texte et idée dans les tombes ; les montrer au modèle), P7 (ligne `Hypothèse :`), P6 étage zéro. Effort : petit. Arrêt si la part de répétitions d'idées est basse.
-- **Étape 1 — mesurer le sens** (accord de Drisse pour télécharger les poids, 2,2 Go, sur Orion, hors serveur de production) : E1, E2, E3, E4 du § 6. **Porte de sortie** : si le code ne se sépare pas du bruit (aire ROC < 0,9) → on n'encode que de la prose (P1, P2 sur phrases) ; si la prose ne se sépare pas non plus → on arrête les idées de sens.
-- **Étape 2 — étage A seul** (sans guichet) : manuel de 30 à 50 astuces écrit à la main + P2 par le sens côté serveur. Mesure : gains prouvés et jetons par gain, par bras tiré au hasard.
-- **Étape 3 — le guichet de sens** (§ 1) et P1 dans Frugal 2 / Évolutif, avec plafond et repli.
-- **Étape 4 — P3** (recettes promues) quand le journal montre 3 astuces de la même famille.
-- Ensuite seulement P4, P8, P9, P10.
+- **Étape 0 — sans e5** (petit) : P0 + P0b, semer les tombes dans `vus`, P6, P7. Résultat déjà obtenu (E7) : quand on lui nomme l'idée déjà prise, le modèle change d'idée (8 sur 8, petit échantillon). Porte de sortie restante : que ces idées nouvelles passent le juge au moins aussi souvent que les répétitions (à mesurer sur les vrais points avec leur corpus).
+- **Étape 1 — journal** : pendant quelques semaines, écrire texte et hypothèse de chaque variante (jugée ou non). Sans cela, aucune calibration sérieuse.
+- **Étape 2 — calibrer P1** sur ≥ 100 paires d'idées réelles étiquetées à la main (aire ROC et précision à 0,90 / 0,915 / 0,93). **Porte de sortie** : précision < 95 % → on n'ouvre pas le guichet.
+- **Étape 3 — le guichet d'idées** (§ 2) et P1 dans Frugal 2 / Évolutif, avec plafond et repli.
+- **Étape 4 — P2 par détecteurs** et le manuel d'astuces ; **P5** à comparer aux niches de taille.
+- **Étape 5 — P3**, quand le journal montre trois gains de la même famille.
 
 Chaque étape se juge sur un chiffre simple : jetons du relais par gain prouvé (déjà compté par le registre) et taux de recherches avec au moins un gain retenu par le juge.
 
-## 6. Expériences jetables (non faites ; script prêt)
-
-À lancer sur Orion, hors du serveur Cassandra (processus à part, `nice`, 2 fils, dossier temporaire, rien commité), **après accord pour télécharger les poids** :
-
-```bash
-ssh marple@100.93.49.21
-mkdir -p /tmp/e5essai && cd /tmp/e5essai
-HF_HOME=/tmp/e5essai/hf nice -n 10 /opt/cassandra/venv/bin/python -I - <<'PY'
-import time, itertools, statistics, torch
-torch.set_num_threads(2)
-from sentence_transformers import SentenceTransformer
-t0=time.time(); m=SentenceTransformer("intfloat/multilingual-e5-large"); print("chargement s", round(time.time()-t0,1))
-# E3 : latence d'un texte court (idée), d'un code de 15 lignes, d'un code de 60 lignes, lot de 8
-# E1 : variantes d'une même fonction (renommage, mise en forme, règle d'optimisation) / fonctions différentes
-# E2 : phrases d'hypothèse, même famille / autre famille
-# Rendre : latence (médiane, p95), mémoire (resource.getrusage), distributions de cosinus, aire ROC
-PY
-```
-
-- **E1** (code) : prendre ~20 fonctions des 52 points ; pour chacune : (i) la même, renommée ; (ii) reformatée ; (iii) une variante donnée par une règle d'`optimisations()` ; (iv) une variante réelle de modèle ; (v) 19 autres fonctions. Rendre les distributions de cosinus des quatre premiers groupes contre (v) et l'aire ROC « même fonction / autre fonction ». Dit si un seuil de tombe sur du code existe.
-- **E2** (prose) : 40 phrases d'hypothèse en français, étiquetées à la main en 6 à 8 familles ; aire ROC même-famille / autre-famille, et exactitude du rattachement au prototype le plus proche.
-- **E3** (coût) : temps d'un encodage (idée, 15 lignes, 60 lignes, lot de 8), mémoire résidente, temps de chargement à froid. Orion a 4 cœurs, 15 Go dont ~6 libres au moment où j'ai regardé ; le service partagé fixe `CASSANDRA_EMBED_THREADS` à 2.
-- **E4** (récupération) : 30 fiches écrites à la main (P2) ; pour 10 points, rappel@2.
-
-Aucun de ces chiffres n'existe encore.
-
 ## 7. Questions à trancher
 
-1. D'accord pour **l'étape 0** (graver le texte et l'idée dans les tombes, la ligne `Hypothèse :`, l'empreinte normalisée) ?
-2. D'accord pour **télécharger les poids d'e5-large (~2,2 Go) sur Orion** pour les essais E1-E4 (hors serveur) ? Sinon, sur quelle machine ?
-3. Le modèle de sens peut-il rester **résident** (2,4 Go) en permanence pour Évolution, ou seulement chargé à la demande (premier appel lent) ?
-4. Veut-on une **règle de prudence** : le sens ne rejette que des idées « sans gain », jamais des idées « fausses » (ma proposition) ?
-5. Le **manuel d'astuces** (P2) : est-ce que tu veux le relire / le valider toi-même, ou je le prépare et tu l'approuves ?
-6. Les promotions de **recettes gratuites** (P3) : toujours revues par un humain avant d'entrer dans `REGLES` (ma proposition) ?
+1. D'accord pour **l'étape 0** (P0, P0b, semer les tombes dans `vus`, P6, P7) ? Elle ne demande pas e5 et corrige un défaut réel.
+2. D'accord pour **abandonner l'encodage du code** et les familles par prototypes (P4), au vu des mesures ?
+3. Pour calibrer P1 il faut ≥ 100 paires d'idées étiquetées : veux-tu les étiqueter toi-même (une dizaine de minutes), ou je les prépare et tu valides un échantillon ?
+4. Règle de prudence : le sens ne rejette que des idées « sans gain », jamais des idées « fausses » (ma proposition) ?
+5. Les promotions de recettes gratuites (P3) : toujours revues par un humain avant d'entrer dans `REGLES` ?
+6. Un plafond de temps de calcul pour le guichet, partagé avec la mémoire (le modèle est résident et sert aux deux) : d'accord ?
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->

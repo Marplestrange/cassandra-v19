@@ -12,7 +12,7 @@
 <!-- RÔLE       : Notes de lecture du code d'OpenEvolve, en mots simples, avec renvois fichier:fonction, pour préparer le débat sur la sémantique d'Évolutif. -->
 <!-- MÉTHODE    : lecture du dépôt (clone en lecture seule, hors du dépôt Cassandra) ; ce qui est lu en détail et ce qui est seulement survolé sont séparés. -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d56799 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7f3f03 ▼▼▼ -->
 # OpenEvolve lu : notes de lecture
 
 Statut : 04-11-2026. Lecture seule : rien de ce dépôt n'a été installé ni exécuté dans le serveur Cassandra. Le texte de ce document est de moi ; aucune ligne d'OpenEvolve n'est copiée.
@@ -36,7 +36,9 @@ Source : le dépôt `algorithmicsuperintelligence/openevolve` (Apache-2.0), bran
 | `evolution_trace.py` | `log_failure` |
 | `prompts/defaults/diff_user.txt`, `docs/how-it-works.md` | en entier / début |
 
-**Seulement survolé (liste des fonctions, ou quelques lignes ; je ne les affirme pas)**: `controller.py`, `api.py`, `cli.py`, `coevolution.py` (la coévolution de deux populations), `llm/` (l'ensemble de modèles pondérés, les clients), `utils/code_utils.py` (lecture des diffs SEARCH/REPLACE, blocs EVOLVE), `utils/trace_export_utils.py`, `compat/alphaevolve*`, la fin de `_format_evolution_history`, le milieu et la fin de `run_evolution` (arrêt anticipé, points de reprise), les exemples (`examples/`, non ouverts), `tests/`. Ils ne touchent pas à la sémantique, d'après leurs noms et leurs signatures, mais c'est une inférence.
+**Lu en détail dans un second temps (04-11, même jour)** : `process_parallel.py` : `_choose_evolution_mode`, `_create_database_snapshot`, `_select_island`, `_checkpoint_if_due` et la boucle de traitement d'un résultat dans `run_evolution` (erreur → journal d'échec ; enfant → `database.add`, génération d'îlot, migration, meilleur, arrêt sur score) ; `llm/ensemble.py` (tirage pondéré d'un modèle, graine par itération) ; `prompt/sampler.py` : `_format_evolution_history` presque en entier (3 derniers essais, meilleurs programmes, programmes « divers » tirés au hasard parmi le reste) ; `coevolution.py` : en-tête et docstring de `run_coevolution` ; `utils/code_utils.py` : liste des fonctions seulement (lecture des diffs SEARCH/REPLACE, blocs EVOLVE, `calculate_edit_distance`, importée par `database.py` mais dont je n'ai pas lu le corps).
+
+**Seulement survolé (noms de fonctions, signatures ou quelques lignes ; je ne les affirme pas)** : `controller.py` (liste des fonctions seulement : `run`, `_save_checkpoint`, `_load_checkpoint`…), `api.py`, `cli.py`, la suite de `coevolution.py`, `llm/openai.py` et les autres clients, `utils/trace_export_utils.py`, `compat/alphaevolve*`, `config.py` hors les champs cités, `_update_archive`, `_enforce_population_limit`, `_update_best_program`, `_reconstruct_islands`, la sauvegarde et le chargement des points de reprise, les exemples (`examples/`, non ouverts), `tests/`. Ils ne touchent pas à la sémantique d'après leurs noms, mais c'est une inférence.
 
 **Non lu du tout** : les 590 fichiers d'exemples et de résultats, `scripts/`, `Dockerfile`, le visualiseur.
 
@@ -79,7 +81,7 @@ C'est peu, et c'est **éteint par défaut**.
 
 Ce que ce filtre **fait** : il évite que la base se remplisse de quasi-copies. Ce qu'il **ne fait pas** :
 
-1. Il ne s'applique qu'à l'**entrée dans la base**, donc **après** l'appel au modèle générateur ET **après l'évaluation** (dans `_run_iteration`, l'évaluation se fait avant `database.add`). Il n'économise ni jetons de génération ni temps d'évaluation, seulement de la place dans la base et, de façon indirecte, de la diversité des futurs parents.
+1. Il ne s'applique qu'à l'**entrée dans la base**, donc **après** l'appel au modèle générateur ET **après l'évaluation** (l'évaluation se fait dans le travailleur, `_run_iteration` ; puis `run_evolution` appelle `database.add`, et un refus lève `_CandidateRejected` après coup : relu à ces deux endroits). Il n'économise ni jetons de génération ni temps d'évaluation, seulement de la place dans la base et, de façon indirecte, de la diversité des futurs parents.
 2. Il ne regarde qu'**un seul voisin** (le plus proche) et ne juge que s'il dépasse le seuil.
 3. Il ne sert **ni** à choisir les parents, **ni** les inspirations, **ni** à définir les cases de la grille, **ni** à guider le prompt.
 4. Il encode du **code brut**, jamais la description de l'idée (l'hypothèse du modèle n'est pas encodée).
