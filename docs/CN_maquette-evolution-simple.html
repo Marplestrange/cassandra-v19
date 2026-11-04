@@ -13,7 +13,7 @@
 <!-- RÔLE       : la maquette de l'écran Évolution pensé pour quelqu'un qui n'est pas ingénieur : une phrase d'état, des résultats, trois réglages en mots simples, et tout le reste (chercheurs, comparaison, sécurité, carnet) rangé « sous le capot » -->
 <!-- MÉTHODE    : une page autonome, données de démonstration ; le vocabulaire interne (ombre, paliers, tombes, moteur, cage…) n'apparaît pas à l'écran, il est traduit dans l'onglet Vocabulaire -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d44d70 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=1d1697 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -384,7 +384,10 @@ function sante() {
   var mal = CHERCHEURS.filter(function (c) { return c.etat === "actif"; });
   var lignes = [["ok", "Le filet de sécurité a été testé il y a 2 h : tout tient."], ["ok", mal.length + " chercheurs allumés, tous répondent (" + mal.map(function (c) { return c.nom; }).join(", ") + ")."], ["ok", "Aucun chercheur n'a planté ces 7 derniers jours."], ["al", "Le bac du système n'enveloppe pas les chercheurs (hôte sans bubblewrap) : ils restent isolés, mais sans cette seconde barrière."], ["mu", "GEPA est installé mais éteint : il ne cherche rien."]];
   var ailleurs = [["Notifications", "Un chercheur qui plante t'y prévient."], ["Mesures", "Les courbes du temps gagné et des jetons."], ["Sensorium", "L'état de la machine elle-même."], ["Agents IA", "Le plafond de dépense."]];
-  return '<div class="verre carte"><h2>Santé</h2><div class="liste">' + lignes.map(function (l) { return '<div class="verif ' + l[0] + '"><span class="k">' + (l[0] === "ok" ? "✓" : l[0] === "al" ? "!" : "·") + "</span><div>" + esc(l[1]) + "</div><span></span></div>"; }).join("") + '</div><div class="note">Quand quelque chose de ce genre apparaît, il arrive aussi dans Notifications et dans Aujourd\'hui. Le reste se lit dans les modules qui le tiennent :</div><div class="lg">' + ailleurs.map(function (x) { return '<button class="btn" data-a="ailleurs" data-id="' + x[0] + '" title="' + esc(x[1]) + '">' + x[0] + "</button>"; }).join("") + "</div></div>";
+  var alertes = lignes.filter(function (l) { return l[0] === "al"; }).length;
+  var ligne = '<div class="verre ligne2"><div class="lg">' + puce(alertes ? "1 point à regarder" : "tout va bien", alertes ? "al" : "ok") + '<span class="note" style="font-size:13px">' + (alertes ? "Le bac du système n'enveloppe pas les chercheurs." : "Les chercheurs répondent, rien n'a planté.") + '</span></div><button class="btn" data-a="sante">' + (S.santeOuverte ? "Masquer" : "Détail") + "</button></div>";
+  if (!S.santeOuverte) return ligne;
+  return ligne + '<div class="verre carte"><div class="liste">' + lignes.map(function (l) { return '<div class="verif ' + l[0] + '"><span class="k">' + (l[0] === "ok" ? "✓" : l[0] === "al" ? "!" : "·") + "</span><div>" + esc(l[1]) + "</div><span></span></div>"; }).join("") + '</div><div class="note">Quand quelque chose de ce genre apparaît, il arrive aussi dans Notifications et dans Aujourd\'hui. Le reste se lit dans les modules qui le tiennent :</div><div class="lg">' + ailleurs.map(function (x) { return '<button class="btn" data-a="ailleurs" data-id="' + x[0] + '" title="' + esc(x[1]) + '">' + x[0] + "</button>"; }).join("") + "</div></div>";
 }
 /* Mode avancé : ce que l'écran réel règle dans Moteurs › Affectations et Budget et relais. Le prix se lit dans Agents IA, les rôles dans Modèles : ici, seulement ce qui est propre aux chercheurs. */
 var CASCADE = [["Orfan · règles", "gratuit"], ["Frugal · règles, petit modèle, modèle fort", "peu de jetons"], ["Orfan · modèle guidé par le profil", "jetons"], ["Évolutif · générations", "plus de jetons"]];
@@ -551,6 +554,7 @@ function acte(a, b) {
   if (a === "bascule") { ch = CHERCHEURS.filter(function (z) { return z.id === id; })[0]; ch.etat = ch.etat === "actif" ? "installe" : "actif"; log("Chercheur", ch.nom + (ch.etat === "actif" ? " allumé." : " éteint.")); return rendre(); }
   if (a === "comparer") return comparer();
   if (a === "adopter-course") { mettreEssai({ nom: ["Analyse des enregistrements DNS", "Découpage des tâches planifiées", "Lecture d'un courriel"][S.comparer.fn] }); toast("Mise à l'essai : voir Améliorations"); S.vue = "amelio"; return rendre(); }
+  if (a === "sante") { S.santeOuverte = !S.santeOuverte; return rendre(); }
   if (a === "tester-filet") return testerFilet();
   if (a === "monter" || a === "descendre") { var k = +id, j = a === "monter" ? k - 1 : k + 1; if (j >= 0 && j < CASCADE.length) { var tmp = CASCADE[k]; CASCADE[k] = CASCADE[j]; CASCADE[j] = tmp; log("Réglage", "Ordre des chercheurs changé."); } return rendre(); }
   if (a === "verifier-carnet") return verifierCarnet();
