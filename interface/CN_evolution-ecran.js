@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #04aa73
+// VERSION CN : 0.2.0  #8ec4d4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=04aa73 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=8ec4d4 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -314,7 +314,7 @@
     }
 
     // 3 · Affectations
-    function mAff() {
+    function mAffTout() {
       const m = M0(), d = m.d || {}, casc = d.cascade || [], opt = d.options || {}, aff = d.affectations || {}, points = d.points || [];
       const lignes = casc.map((e, i) => '<div class="ordre"><span class="rg">' + (i + 1) + '</span><label style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><input type="checkbox" data-cas="' + esc(e.id) + '" ' + (e.on ? "checked" : "") + ' style="accent-color:var(--accent)"><span style="display:flex;flex-direction:column"><b class="mono" style="font-size:12.5px">' + esc(e.nom) + '</b><span class="note">' + esc(e.cout) + (e.actif ? "" : " · moteur non actif : l'étage est sauté") + '</span></span></label><button class="btn" data-mon="' + i + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Monter">↑</button><button class="btn" data-desc="' + i + '"' + (i === casc.length - 1 ? " disabled" : "") + ' aria-label="Descendre">↓</button></div>').join("");
       const cnt = {}; points.forEach((p) => { const k = aff[p] || "auto"; cnt[k] = (cnt[k] || 0) + 1; });
@@ -324,6 +324,14 @@
         '<section class="cgrid"><div class="verre carte"><h2>La cascade</h2><div class="liste">' + lignes + '</div><div class="liste">' + O.map((o) => '<label class="inter"><input type="checkbox" data-opt="' + o[0] + '" ' + (opt[o[0]] ? "checked" : "") + '><span class="t"><b class="mono" style="font-size:12.5px">' + esc(o[1]) + '</b><span class="note">' + esc(o[2]) + "</span></span></label>").join("") + "</div>" + mMsg() + "</div>" +
         '<div class="verre carte"><h2>Répartition</h2><div class="liste">' + (Object.keys(cnt).map((k) => '<div><div style="display:flex;justify-content:space-between"><span class="mono">' + esc(k === "auto" ? "cascade" : ((d.etages || {})[k] || {}).nom || k) + '</span><span class="mono">' + cnt[k] + ' point(s)</span></div><div class="barre"><i style="width:' + Math.round(100 * cnt[k] / Math.max(1, points.length)) + '%"></i></div></div>').join("") || '<div class="vide">Aucun point déclaré.</div>') + '</div><div class="note">Un étage forcé sur un point ignore la cascade. Un moteur éteint renvoie ses points à la cascade sans perdre les pièces en vol.</div></div></section>' +
         '<div class="verre carte"><h2>Par point d\'évolution</h2><div class="tw"><table><thead><tr><th>Point</th><th>Étage</th><th>Mode</th></tr></thead><tbody>' + points.map((p) => '<tr><td class="mono">' + esc(p) + '</td><td><select data-aff="' + esc(p) + '">' + opts(aff[p] || "auto") + "</select></td><td>" + (aff[p] ? puce("forcé", "ok") : puce("cascade")) + "</td></tr>").join("") + "</tbody></table></div></div>";
+    }
+
+    const MARQUE_PTS = '<div class="verre carte"><h2>Par point d\'évolution</h2>';
+    function mAff(mode) {
+      const t = mAffTout(), i = t.indexOf(MARQUE_PTS);
+      if (mode === "points") return i >= 0 ? t.slice(i) : "";
+      const tete = t.indexOf("<section");
+      return (i >= 0 ? t.slice(tete, i) : t.slice(tete)).replace("<h2>La cascade</h2>", "<h2>Dans quel ordre ils cherchent</h2><div class=\"note\">Le gratuit passe toujours d’abord : c’est l’ordre de cette liste.</div>");
     }
 
     // 4 · Budget et relais
@@ -497,9 +505,8 @@
     function entete() {
       const ch = S.etat.chaine || {};
       return '<header class="pg-tete"><h1>' + esc(TITRES[S.vue] || "Évolution") + '</h1><p class="sous">' + esc(SOUS_TITRES[S.vue] || "") + '</p></header>' +
-        '<div class="entete"><div><div class="note mono">' + (S.etat.cibles || []).length + " points déclarés · " + tousVivants().length + " pièces vivantes · " + (S.versions.evolution ? "module " + esc(S.versions.evolution) : "") + '</div></div>' +
-        '<div class="d">' + puce(ch.ok ? "chaîne scellée · " + (ch.mailles || 0) + " maillons ✓" : "chaîne ROMPUE à la maille " + ch.rupture_a, ch.ok ? "ok" : "dg") +
-        '<button class="btn" data-a="tiroir">Moteur : ' + esc(S.moteur) + ' ▾</button><button class="btn" data-a="actualiser">Actualiser</button></div></div>';
+        '<div class="entete"><div></div><div class="d">' + (ch.ok ? "" : puce("chaîne ROMPUE à la maille " + ch.rupture_a, "dg")) +
+        '<button class="btn" data-a="actualiser">Actualiser</button></div></div>';
     }
 
     // ═══ COCKPIT ═══════════════════════════════════════════════════════════
@@ -745,12 +752,12 @@
     // ═══ LA NAVIGATION : le menu de gauche porte les pages (Aujourd'hui, Améliorations et ses états, Réglages, Consignes, Sous le capot et ses pages) ═══
     const TITRES = { aujourdhui: "Aujourd’hui", amelio: "Les améliorations", reglages: "Réglages", consignes: "Consignes et seuils", capot: "Sous le capot" };
     const SOUS_TITRES = { aujourdhui: "Ce que Cassandra améliore, ce qui mérite ton regard, et de quoi lui demander mieux.", amelio: "Ce qui a été essayé, ce qui sert, ce qui a été retiré.", reglages: "Qui cherche, dans quel ordre, et pour combien.", consignes: "Les consignes d’agent et les seuils qu’elle peut améliorer, et comment on les juge.",
-      "capot.chercheurs": "Les moteurs qui cherchent des améliorations.", "capot.points": "Les fonctions que Cassandra peut améliorer, leurs pièces et leurs preuves.", "capot.comparer": "Faire courir les chercheurs les uns contre les autres.", "capot.install": "Ajouter ou retirer un chercheur du catalogue scellé.", "capot.securite": "La cage, les preuves et ce qui protège.", "capot.carnet": "Tout ce qui s’est passé, chaîné et scellé.", "capot.ecartees": "Les versions retirées, et ce qu’il en reste.", "capot.vision": "Ce qui existe, et ce qui n’est pas encore construit." };
-    const TCAPOT = { "capot.chercheurs": "Les chercheurs", "capot.points": "Les fonctions", "capot.comparer": "Les comparer", "capot.install": "Installer un chercheur", "capot.securite": "Filet de sécurité", "capot.carnet": "Carnet", "capot.ecartees": "Versions écartées", "capot.vision": "Ce qui est prévu" };
+      "capot.chercheurs": "Les moteurs qui cherchent des améliorations.", "capot.points": "Les fonctions que Cassandra peut améliorer, leurs pièces et leurs preuves.", "capot.comparer": "Faire courir les chercheurs les uns contre les autres.", "capot.install": "Ajouter ou retirer un chercheur du catalogue scellé.", "capot.securite": "La cage, les preuves et ce qui protège.", "capot.carnet": "Tout ce qui s’est passé, chaîné et scellé.", "capot.ecartees": "Les versions retirées, et ce qu’il en reste.", "capot.vision": "Ce qui existe, et ce qui n’est pas encore construit.", "capot.vocab": "Les mots employés dans cet écran." };
+    const TCAPOT = { "capot.chercheurs": "Les chercheurs", "capot.points": "Les fonctions", "capot.comparer": "Les comparer", "capot.install": "Installer un chercheur", "capot.securite": "Filet de sécurité", "capot.carnet": "Carnet", "capot.ecartees": "Versions écartées", "capot.vision": "Ce qui est prévu", "capot.vocab": "Vocabulaire" };
     Object.keys(TCAPOT).forEach((k) => { TITRES[k] = TCAPOT[k]; });
     ["amelio.toutes", "amelio.essai", "amelio.service", "amelio.retiree"].forEach((k) => { TITRES[k] = TITRES.amelio; SOUS_TITRES[k] = SOUS_TITRES.amelio; });
     const norme = (v) => (v === "capot" ? "capot.chercheurs" : v === "amelio" ? "amelio.toutes" : (TITRES[v] ? v : "aujourdhui"));
-    const MVUE = { aujourdhui: [], reglages: ["aff", "budget"], consignes: ["juges"], "capot.chercheurs": ["aff", "moteurs"], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
+    const MVUE = { aujourdhui: [], reglages: ["aff", "budget"], consignes: ["juges"], "capot.chercheurs": ["aff", "moteurs"], "capot.points": [], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
     const avecMoteurs = () => !!MVUE[S.vue];
     function suivre() { try { if (typeof window.evSuivre === "function") window.evSuivre(S.vue); } catch (e) { /* le menu se remettra à jour au prochain geste */ } }
     async function aller(vue) {
@@ -823,12 +830,35 @@
         '<div class="verre carte"><h2>Le frein d’urgence</h2><div class="note">Le frein « gel » est commun à toute la maison : tant qu’il est posé, les agents observent et n’écrivent plus, Évolution comprise. Il se pose et se lève dans Sécurité, pas ici.</div></div>';
     }
 
+    function consignes() {
+      return mJuges()
+        .replace(/<div class="tete"><div><h3[^>]*>Juges<\/h3>.*?<\/div><\/div>/, "")
+        .replace(/<section class="cgrid"><div class="verre carte"><div class="tete"><h2>Code<\/h2>.*?<\/section>/, "")
+        .replace(/<span class="puce ok">construit<\/span>/g, "")
+        .replace("<h2>Essai d\'un prompt</h2>", "<h2>Améliorer une consigne d’agent</h2>")
+        .replace("<h2>Essai d\'une politique</h2>", "<h2>Améliorer le seuil d’une alerte</h2>")
+        .replace("Prompt de référence", "Consigne actuelle").replace("Prompt à juger", "Version à juger")
+        .replace("Juger ce prompt", "Juger cette version").replace("Jugement en cours…", "Jugement en cours…")
+        .replace("Proposer des réécritures", "Proposer une meilleure version").replace("Réflexion en cours…", "Réflexion en cours…")
+        .replace("Réécriture acceptée", "Meilleure version acceptée").replace("Réécriture refusée", "Version refusée")
+        .replace("Consigne de réécriture", "Ce que tu veux améliorer")
+        .replace("Proposer un réglage", "Que suggère Cassandra ?").replace("Juger cette politique", "Juger ce réglage")
+        .replace("Politique proposée (JSON)", "Réglage proposé (JSON)").replace("<h2>Objectifs multiples</h2>", "<h2>Ce qui compte le plus</h2>")
+        .replace("Historique des alertes (JSON : cle, mesure, agi)", "Alertes passées (JSON : cle, mesure, agi : suivie d’une action)");
+    }
+    const VOCAB = [["Amélioration", "Une version d’une fonction de Cassandra, plus rapide et rendant exactement le même résultat."], ["Pièce", "Le nom technique d’une amélioration proposée : elle a un numéro et une empreinte."], ["À l’ombre", "Elle tourne en parallèle de l’originale, sans que personne ne reçoive son résultat : on compare seulement."], ["Palier", "La part du trafic qu’elle sert : à l’ombre, puis 10 %, 50 %, tout."], ["Chercheur", "Un moteur qui invente des versions (Orfan, Frugal, Évolutif ou un moteur externe)."], ["Cascade", "L’ordre dans lequel les chercheurs essaient : le gratuit d’abord."], ["Juge", "Le contrôleur qui décide si une version est identique à l’originale. Il ne s’améliore jamais."], ["Tombe", "L’empreinte d’une version échouée : elle n’est jamais reproposée."], ["Chaîne scellée", "Le carnet de tout ce qui s’est passé, chaîné : une rupture se voit."], ["Cage et bac", "Les chercheurs tournent dans un processus à part, sans réseau ni accès au serveur."], ["Retour", "Retirer une amélioration : le trafic revient à l’originale, en un geste."]];
+    function vocab() {
+      const q = (S.vq || "").toLowerCase(), l = VOCAB.filter((x) => !q || (x[0] + " " + x[1]).toLowerCase().indexOf(q) >= 0);
+      return '<div class="champ"><input type="text" id="ev-vq" placeholder="Chercher un mot" value="' + esc(S.vq || "") + '"></div><div class="liste">' + (l.map((x) => '<div class="verre carte"><b>' + esc(x[0]) + '</b><span class="note">' + esc(x[1]) + "</span></div>").join("") || '<div class="vide">Aucun mot ne correspond.</div>') + "</div>";
+    }
+
     function page() {
       const v = S.vue;
       if (v === "aujourdhui") return aujourdhui();
       if (v === "reglages") { const m0 = M0(); if (!m0.d) { if (!m0.charge) { m0.charge = true; chargerM().then(() => { m0.charge = false; dessiner(); }); } return '<div class="verdict mu">Chargement…</div>'; } return reglages(); }
       if (v.indexOf("amelio") === 0) return amelio();
-      if (v === "capot.points") return atelier();
+      if (v === "capot.points") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return atelier() + (mp.d ? mAff("points") : ""); }
+      if (v === "capot.vocab") return vocab();
       if (v === "capot.ecartees") return ecartees();
       if (v === "capot.vision") return cockpit();
       const m = M0();
@@ -837,6 +867,7 @@
         return m.msg ? mMsg() : '<div class="verdict mu">Chargement…</div>';
       }
       const vs = MVUE[v] || ["moteurs"];
+      if (v === "consignes") return consignes() + mMsg();
       return vs.map((k) => { m.vue = k; return (k === "moteurs" ? mBandeau() : "") + { moteurs: mMoteurs, course: mCourse, aff: mAff, budget: mBudget, juges: mJuges, install: mInstall, cage: mCage, journal: mJournal }[k](); }).join("") + mMsg();
     }
 
@@ -853,6 +884,7 @@
     function lier() {
       racine.querySelectorAll("[data-vue]").forEach((b) => b.addEventListener("click", () => aller(b.dataset.vue)));
       if (avecMoteurs()) lierMoteurs();
+      const vq = racine.querySelector("#ev-vq"); if (vq) vq.addEventListener("input", () => { S.vq = vq.value; dessiner(); const n = racine.querySelector("#ev-vq"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
       racine.querySelectorAll("[data-profil]").forEach((b) => b.addEventListener("click", () => {
         const p = PROFILS.find((x) => x[0] === b.dataset.profil), m = M0(); if (!p || !m.d) return;
         agirM("cascade_regler", { ordre: m.d.cascade.map((e) => ({ id: e.id, on: p[3].indexOf(e.id) >= 0 })) }, "Style « " + p[1] + " » appliqué.");

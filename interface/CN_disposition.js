@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #e81b84
+// VERSION CN : 0.1.0  #64469e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=e81b84 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=64469e ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -238,7 +238,7 @@
   const GL_VUE = { equipe: "◎", conv: "✎", boite: "✓", journal: "☰", modeles: "◇", maison: "⚖" };
   const GL_AGENT = { cassandra: "#0b7c74", itare: "#6d3fd1", amizo: "#1d6fb8", relecteur: "#b45309", vision: "#be123c", auditeur: "#5b6b8c" };     // la puce « ● » prend la couleur de l'agent
   const glEnt = (eid) => (GL_ENT[eid] ? '<i class="d19-gl" aria-hidden="true">' + GL_ENT[eid] + "</i>" : "");
-  const GL_EVO = { aujourdhui: "☼", amelio: "↗", "amelio.toutes": "≡", "amelio.essai": "◔", "amelio.service": "●", "amelio.retiree": "⊘", reglages: "◈", consignes: "✎", capot: "⚙", "capot.chercheurs": "☉", "capot.points": "ƒ", "capot.comparer": "⇄", "capot.install": "⤓", "capot.securite": "⛨", "capot.carnet": "▤", "capot.ecartees": "⊘", "capot.vision": "✦" };
+  const GL_EVO = { aujourdhui: "☼", amelio: "↗", "amelio.toutes": "≡", "amelio.essai": "◔", "amelio.service": "●", "amelio.retiree": "⊘", reglages: "◈", consignes: "✎", capot: "⚙", "capot.chercheurs": "☉", "capot.points": "ƒ", "capot.comparer": "⇄", "capot.install": "⤓", "capot.securite": "⛨", "capot.carnet": "▤", "capot.ecartees": "⊘", "capot.vision": "✦", "capot.vocab": "Aa" };
   const glVue = (eid, vid) => (eid === "evolution" ? (GL_EVO[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_EVO[vid] + "</i>" : "") : eid !== "agents-ia" ? "" : GL_VUE[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_VUE[vid] + "</i>" : GL_AGENT[vid] ? '<i class="d19-gl" aria-hidden="true" style="color:' + GL_AGENT[vid] + '">●</i>' : "");
   const EMO_PANORAMA = { verdict: "pv_verdict", gestes: "pv_gestes", cass: "pv_cass", sites: "pv_sites", flotte: "pv_flotte", fil: "pv_fil", machine: "pv_machine", systeme: "pv_systeme" };
   const INFO_PANORAMA = { verdict: "Le verdict global de l'instance", gestes: "Les gestes que Cassandra attend de vous", cass: "L'état de Cassandra et son palier d'autonomie", sites: "Les sites hébergés : combien, et s'ils répondent",
