@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #56bb4b
+// VERSION CN : 0.2.0  #97d020
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=56bb4b ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=97d020 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -804,7 +804,10 @@
       if (v === "capot.ecartees") return ecartees();
       if (v === "capot.vision") return cockpit();
       const m = M0();
-      if (!m.d) return '<div class="verdict mu">Chargement…</div>';
+      if (!m.d) {
+        if (!m.charge) { m.charge = true; chargerM().then(() => { m.charge = false; dessiner(); }); }
+        return m.msg ? mMsg() : '<div class="verdict mu">Chargement…</div>';
+      }
       const vs = MVUE[v] || ["moteurs"];
       return vs.map((k) => { m.vue = k; return (k === "moteurs" ? mBandeau() : "") + { moteurs: mMoteurs, course: mCourse, aff: mAff, budget: mBudget, juges: mJuges, install: mInstall, cage: mCage, journal: mJournal }[k](); }).join("") + mMsg();
     }
@@ -858,6 +861,7 @@
     }
 
     await charger();
+    S.vue = norme(S.vue);
     dessiner();
     const minuteur = setInterval(async () => { if (!document.body.contains(racine)) return clearInterval(minuteur); if (S.occupe || S.confirmer || S.tiroir || (avecMoteurs() && M0().occupe)) return; const f = document.activeElement; if (f && racine.contains(f) && /INPUT|SELECT|TEXTAREA/.test(f.tagName)) return; await charger(); if (S.vue === "moteurs") await chargerM(); dessiner(); }, 20000);
   };
