@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #aee108
+# VERSION CN : 0.1.0  #e78cd1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs d'Orfan v1 : le profil, les optimisations déterministes (équivalentes, une règle à la fois), le moteur à modèle, et la chaîne complète avec le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=aee108 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e78cd1 ▼▼▼
 """Bancs d'Orfan v1 : le profil, les optimisations déterministes (équivalentes, une règle à la fois), le moteur à modèle, et la chaîne complète avec le noyau."""
 import json
 import shutil
@@ -176,6 +176,44 @@ class RecettesSurDemande(unittest.TestCase):
                    "def f(e):\n    def g(n, m):\n        return n if n < 2 else g(n - 1, m)\n    return {'y': g(3, 1)}\n")                              # deux arguments
         for s in impures:
             self.assertEqual(self._trouve(s, "mémoïsation"), [], s)
+
+    def test_file_par_pop0_devient_une_deque(self):
+        src = "def f(e):\n    q = list(e['v'])\n    out = []\n    while q:\n        out.append(q.pop(0) * 2)\n    return {'y': out}\n"
+        v = self._trouve(src, "file par pop(0)")
+        self.assertEqual(len(v), 1)
+        self.assertIn("popleft()", v[0]["texte"])
+        self.assertIn("import collections", v[0]["texte"])
+        self._meme(src, v[0], [{"v": list(range(50 + k))} for k in range(4)])
+
+    def test_file_lue_autrement_n_est_pas_touchee(self):
+        for corps in ("q = list(e['v'])\n    x = q[0]\n    q.pop(0)\n    return {'y': x}",       # indexation
+                      "q = list(e['v'])\n    q.pop(0)\n    return {'y': q}",                       # la file sort de la fonction
+                      "q = list(e['v'])\n    q.pop()\n    return {'y': 1}",                         # pop de la fin : pas de pop(0)
+                      "q = list(e['v'])\n    q.pop(1)\n    return {'y': 1}"):                       # pop d'un autre rang
+            self.assertEqual(self._trouve("def f(e):\n    " + corps + "\n", "file par pop(0)"), [], corps)
+
+    def test_pop0_sur_liste_vide_leve_la_meme_exception(self):
+        src = "def f(e):\n    q = list(e['v'])\n    q.pop(0)\n    return {'y': len(q)}\n"
+        v = self._trouve(src, "file par pop(0)")[0]
+        for texte in (src, v["texte"]):
+            ns = {}
+            exec(texte, ns)
+            with self.assertRaises(IndexError):
+                ns["f"]({"v": []})
+
+    def test_dedoublonnage_garde_l_ordre_avec_un_ensemble(self):
+        src = "def f(e):\n    vus = []\n    for x in e['v']:\n        if x not in vus:\n            vus.append(x)\n    return {'y': vus}\n"
+        v = self._trouve(src, "dédoublonnage")
+        self.assertEqual(len(v), 1)
+        self.assertIn("vus_ensemble_orfan", v[0]["texte"])
+        self.assertGreater(self._meme(src, v[0], [{"v": [(i * 13 + k) % 300 for i in range(1500)]} for k in range(4)]), 3)
+
+    def test_dedoublonnage_avec_autre_usage_de_la_liste_n_est_pas_touche(self):
+        for corps in ("vus = []\n    for x in e['v']:\n        if x not in vus:\n            vus.append(x)\n    vus.sort()\n    return {'y': vus}",
+                      "vus = []\n    for x in e['v']:\n        if x not in vus:\n            vus.append(x)\n    return {'y': helper(vus)}",     # passée à une fonction : elle pourrait la modifier
+                      "vus = [0]\n    for x in e['v']:\n        if x not in vus:\n            vus.append(x)\n    return {'y': vus}",
+                      "vus = []\n    for x in e['v']:\n        if x not in vus:\n            vus.append(x)\n        else:\n            vus.pop()\n    return {'y': vus}"):
+            self.assertEqual(self._trouve("def f(e):\n    " + corps + "\n", "dédoublonnage"), [], corps)
 
 
 class TombesAvecRaison(unittest.TestCase):

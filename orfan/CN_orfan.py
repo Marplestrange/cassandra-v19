@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #84cb14
+# VERSION CN : 0.1.0  #b12705
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : propose des variantes d'une fonction pure : d'abord des optimisations déterministes gratuites, puis un modèle de langage guidé par le profil de l'appel.
 # MÉTHODE    : il ne connaît pas le noyau : il reçoit un contexte (source, entrées, contrat, tombes) et rend du texte ; il profile par comptage des lignes exécutées.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=84cb14 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b12705 ▼▼▼
 """Orfan v1 (docs/CN_EVOLUTION.md, « Orfan est un projet à part entière » : v1 = ce que savait faire le moteur V18, amélioré).
 
 Contrat d'adaptateur, le seul lien avec Cassandra :   moteur.proposer(contexte) -> liste de textes (ou de {"texte", "hypothese"})
@@ -264,7 +264,127 @@ class _MemoRecursif(_Regle):
         return m
 
 
-REGLES = (_CompDansAgregat, _TriPourExtremum, _LongueurZero, _ListeDeGenerateur, _ConstructeursVides, _SommeDeListes, _AppartenanceListeLocale, _MemoRecursif)
+class _FileParPop0(_Regle):
+    """pop(0) sur une liste décale tous les éléments : une boucle qui vide ainsi une liste est quadratique. deque.popleft est constant."""
+    nom = "file par pop(0)"
+    hypothese = "une liste locale vidée par pop(0) devient une collections.deque vidée par popleft() : plus de décalage à chaque retrait (uniquement si la liste n'est lue que par pop(0), append, extend, len et test de vide)."
+
+    @staticmethod
+    def _usage_sur(f, nom) -> bool:
+        parents = {}
+        for p in ast.walk(f):
+            for e in ast.iter_child_nodes(p):
+                parents[e] = p
+        vu_pop = False
+        for n in ast.walk(f):
+            if not (isinstance(n, ast.Name) and n.id == nom):
+                continue
+            p = parents.get(n)
+            if isinstance(p, ast.Assign) and n in p.targets:
+                continue
+            if isinstance(p, ast.Attribute) and p.value is n and isinstance(parents.get(p), ast.Call) and parents[p].func is p:
+                appel = parents[p]
+                if p.attr == "pop" and len(appel.args) == 1 and not appel.keywords and isinstance(appel.args[0], ast.Constant) and appel.args[0].value == 0 and type(appel.args[0].value) is int:
+                    vu_pop = True
+                    continue
+                if p.attr in ("append", "extend") and len(appel.args) == 1 and not appel.keywords:
+                    continue
+                return False
+            if isinstance(p, ast.While) and p.test is n:
+                continue
+            if isinstance(p, ast.If) and p.test is n:
+                continue
+            if isinstance(p, ast.UnaryOp) and isinstance(p.op, ast.Not):
+                continue
+            if isinstance(p, ast.Call) and isinstance(p.func, ast.Name) and p.func.id == "len" and p.args == [n]:
+                continue
+            return False
+        return vu_pop
+
+    def visit_FunctionDef(self, f):
+        self.generic_visit(f)
+        defs = {}
+        for s in f.body:
+            if isinstance(s, ast.Assign) and len(s.targets) == 1 and isinstance(s.targets[0], ast.Name):
+                defs.setdefault(s.targets[0].id, []).append(s)
+        for nom, d in defs.items():
+            if len(d) != 1 or not self._usage_sur(f, nom):
+                continue
+            if sum(1 for n in ast.walk(f) if isinstance(n, ast.Name) and n.id == nom and isinstance(n.ctx, ast.Store)) != 1:
+                continue
+            v = d[0].value
+            if not (isinstance(v, ast.List) or (isinstance(v, ast.Call) and isinstance(v.func, ast.Name) and v.func.id in ("list", "sorted"))):
+                continue
+            d[0].value = ast.copy_location(ast.Call(func=ast.Attribute(value=ast.Name(id="collections", ctx=ast.Load()), attr="deque", ctx=ast.Load()), args=[v], keywords=[]), v)
+            for n in ast.walk(f):
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "pop" and isinstance(n.func.value, ast.Name) and n.func.value.id == nom:
+                    n.func.attr, n.args = "popleft", []
+            self.changements += 1
+        return f
+
+    def visit_Module(self, m):
+        self.generic_visit(m)
+        if self.changements:
+            _avec_import(m, "collections")
+        return m
+
+
+class _DedoublonnageParListe(_Regle):
+    """`if x not in vus: vus.append(x)` relit toute la liste à chaque élément. Un ensemble parallèle répond en temps constant ; la liste garde l'ordre."""
+    nom = "dédoublonnage par liste"
+    hypothese = "`if x not in vus: vus.append(x)` sur une liste vide locale reçoit un ensemble parallèle pour le test : l'ordre est gardé par la liste, la recherche devient constante (réserve : l'élément doit être hachable)."
+
+    def visit_FunctionDef(self, f):
+        self.generic_visit(f)
+        defs = {}
+        for s in f.body:
+            if isinstance(s, ast.Assign) and len(s.targets) == 1 and isinstance(s.targets[0], ast.Name) and isinstance(s.value, ast.List) and not s.value.elts:
+                defs.setdefault(s.targets[0].id, []).append(s)
+        for nom, d in defs.items():
+            if len(d) != 1:
+                continue
+            ens = nom + "_ensemble_orfan"
+            gardes = []
+            for n in ast.walk(f):
+                if (isinstance(n, ast.If) and not n.orelse and len(n.body) == 1 and isinstance(n.test, ast.Compare) and len(n.test.ops) == 1
+                        and isinstance(n.test.ops[0], ast.NotIn) and isinstance(n.test.left, ast.Name) and isinstance(n.test.comparators[0], ast.Name)
+                        and n.test.comparators[0].id == nom and isinstance(n.body[0], ast.Expr) and isinstance(n.body[0].value, ast.Call)):
+                    c = n.body[0].value
+                    if (isinstance(c.func, ast.Attribute) and c.func.attr == "append" and isinstance(c.func.value, ast.Name) and c.func.value.id == nom
+                            and len(c.args) == 1 and isinstance(c.args[0], ast.Name) and c.args[0].id == n.test.left.id and not c.keywords):
+                        gardes.append(n)
+            if not gardes:
+                continue
+            occ = sum(1 for n in ast.walk(f) if isinstance(n, ast.Name) and n.id == nom)
+            if occ != 1 + 2 * len(gardes) + self._lectures_dans_retours(f, nom):      # la définition, le test et l'ajout de chaque garde, les retours : rien d'autre
+                continue
+            for g in gardes:
+                g.test.comparators[0] = ast.copy_location(ast.Name(id=ens, ctx=ast.Load()), g.test.comparators[0])
+                g.body.append(ast.copy_location(ast.Expr(value=ast.Call(func=ast.Attribute(value=ast.Name(id=ens, ctx=ast.Load()), attr="add", ctx=ast.Load()), args=[ast.Name(id=g.test.left.id, ctx=ast.Load())], keywords=[])), g.body[0]))
+            i = f.body.index(d[0])
+            f.body.insert(i + 1, ast.copy_location(ast.Assign(targets=[ast.Name(id=ens, ctx=ast.Store())], value=ast.Call(func=ast.Name(id="set", ctx=ast.Load()), args=[], keywords=[])), d[0]))
+            self.changements += 1
+        return f
+
+    @staticmethod
+    def _lectures_dans_retours(f, nom) -> int:
+        """Les lectures du nom dans un `return` (par exemple {'y': vus}) : elles ne peuvent pas modifier la liste."""
+        total = 0
+        for r in ast.walk(f):
+            if not (isinstance(r, ast.Return) and r.value is not None):
+                continue
+            parents = {e: p for p in ast.walk(r) for e in ast.iter_child_nodes(p)}
+            for n in ast.walk(r.value):
+                if isinstance(n, ast.Name) and n.id == nom and isinstance(n.ctx, ast.Load):
+                    p = parents.get(n)
+                    if isinstance(p, (ast.Return, ast.Dict, ast.Tuple, ast.List, ast.Set)) or (isinstance(p, ast.Subscript) and p.value is n):
+                        total += 1          # rendue telle quelle, dans une structure, ou tranchée : une lecture
+                    else:
+                        total += 10 ** 6    # argument d'appel, méthode, opérateur : elle pourrait être modifiée, on refuse
+        return total
+
+
+REGLES = (_CompDansAgregat, _TriPourExtremum, _LongueurZero, _ListeDeGenerateur, _ConstructeursVides, _SommeDeListes, _AppartenanceListeLocale, _MemoRecursif, _FileParPop0, _DedoublonnageParListe)
 
 
 def optimisations(source: str) -> list:

@@ -12,7 +12,7 @@
 <!-- RÔLE       : Orfan, la recherche : comment en faire le meilleur moteur possible -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ae6c03 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0c7a5c ▼▼▼ -->
 # Orfan, la recherche : comment en faire le meilleur moteur possible
 
 Statut : 04-11-2026. Dossier de recherche, **rien n'est construit**. Tu décides à la fin (§ 5) ce qu'on fait, ce qu'on mesure, ce qu'on jette.
@@ -454,16 +454,18 @@ Chaque étape a sa mesure et son critère d'abandon. **Aucune ne touche au juge 
 
 ## 8. Mise en œuvre du 04-11 et idées nouvelles
 
-### 8.1 Construit (code dans `orfan/CN_orfan.py`, 8 tests dans `tests/CN_test_orfan.py`)
+### 8.1 Construit (code dans `orfan/CN_orfan.py`, 13 tests dans `tests/CN_test_orfan.py`)
 
 | Ajout | Ce qu'il fait | Mesure sur les fonctions du banc d'Argos (essai local, mêmes sorties vérifiées) |
 |---|---|---|
 | `sum(x, [])` | devient `list(itertools.chain.from_iterable(x))` | ×13 |
 | liste locale interrogée par `in` | devient un ensemble (uniquement si le nom n'est lu que par `in` / `not in`, assigné une fois) | ×67 |
 | récursion pure à un argument entier | reçoit `@functools.cache` (refus si nom libre, appel d'effet, écriture, deux arguments) | ×98 (n = 16 à 21) |
+| `list.pop(0)` en boucle | la liste devient une `collections.deque` vidée par `popleft()` (refus si elle est indexée, rendue, ou vidée par un autre `pop`) | ×2,9 (3 000 éléments ; le gain croît avec la taille) |
+| dédoublonnage `if x not in vus: vus.append(x)` | un ensemble parallèle sert au test, la liste garde l'ordre (refus si la liste est triée, passée à une fonction ou modifiée ailleurs) | ×53 à ×62 |
 | tombes avec raison | `construire_prompt` montre les trois derniers échecs avec leur raison, si le noyau les fournit (aujourd'hui il ne passe que des empreintes : à brancher) | non mesuré |
 
-Résultat : les recettes gratuites résolvent **4 fonctions sur 6** du banc (contre 1 avant). Restent hors de portée gratuite : `list.pop(0)` en boucle et le dédoublonnage par liste. **Réserve restante** : l'ensemble et la mémoïsation supposent un élément hachable ; sur un élément non hachable, l'original rend un résultat et la version rapide lève `TypeError`. Seul un juge à entrées cruelles le verrait (décision 1 du § 6). Ces gains sont des **mesures locales** sur 6 fonctions faites pour montrer le défaut, pas un gain moyen attendu en production.
+Résultat : les recettes gratuites résolvent **les 6 fonctions** du banc (contre 1 avant). Attention : ces recettes ont été écrites **après** avoir vu ces 6 fonctions, donc le banc ne prouve pas qu'elles généralisent ; il faut un banc de fonctions inconnues (étape 0). **Réserve restante** : l'ensemble et la mémoïsation supposent un élément hachable ; sur un élément non hachable, l'original rend un résultat et la version rapide lève `TypeError`. Seul un juge à entrées cruelles le verrait (décision 1 du § 6). Ces gains sont des **mesures locales** sur 6 fonctions faites pour montrer le défaut, pas un gain moyen attendu en production.
 
 ### 8.2 Idées nouvelles (hypothèses, rien de tout cela n'est mesuré)
 
