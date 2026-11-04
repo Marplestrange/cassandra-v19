@@ -12,7 +12,7 @@
 <!-- RÔLE       : Propositions concrètes pour mettre le sens (multilingual-e5-large) au service du moteur Évolutif, éprouvées par des mesures réelles, classées, avec un plan en étapes. -->
 <!-- MÉTHODE    : on part de ce que fait déjà OpenEvolve (docs/CN_OPENEVOLVE-LECTURE.md) et de ce que fait déjà notre code ; chaque idée dit ce qui est mesuré et ce qui reste une hypothèse. -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=56229c ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=58633e ▼▼▼ -->
 # Évolutif et le sens : propositions à débattre
 
 Statut : 04-11-2026, après mesures. **Rien n'est construit dans le dépôt.** Ce document propose, Drisse tranche. Il s'appuie sur `docs/CN_OPENEVOLVE-LECTURE.md` et sur la lecture de notre code : `orfan/CN_evolutif.py`, `orfan/CN_orfan.py`, `orfan/CN_moteur_hote.py`, `noyau/CN_moteurs.py`, `noyau/CN_evolution.py`, `noyau/CN_evaluateur.py`, `noyau/CN_encodage.py`, `modules/bibliotheque/CN_module.py`, `docs/CN_FRUGALEVO.md`.
@@ -274,4 +274,20 @@ Chaque étape se juge sur un chiffre simple : jetons du relais par gain prouvé 
 4. Règle de prudence : le sens ne rejette que des idées « sans gain », jamais des idées « fausses » (ma proposition) ?
 5. Les promotions de recettes gratuites (P3) : toujours revues par un humain avant d'entrer dans `REGLES` ?
 6. Un plafond de temps de calcul pour le guichet, partagé avec la mémoire (le modèle est résident et sert aux deux) : d'accord ?
+
+## Mesures bout en bout du moteur (novembre 2026)
+
+Banc jetable sur Orion : le vrai moteur dans la cage, le vrai juge du noyau, 17 fonctions synthétiques (dont 2 témoins déjà optimaux), un modèle gratuit fixé (Nemotron 3 Ultra), 2 passes par configuration. Une première série avait des entrées constantes par un défaut du banc : elle est écartée, les chiffres ci-dessous sont ceux de la série corrigée.
+
+| Configuration | Fonctions avec gain | Appels | Jetons | Durée | Candidats faux |
+|---|---|---|---|---|---|
+| Règles seules | 3 / 17 | 0 | 0 | 10 s | 0 |
+| Moteur à 2 générations | 11 | 70 | 86 700 | 61 min | 17 |
+| + liste « déjà essayé » | 11 | 72 | 174 700 | 95 min | 24 |
+| + 3 variantes par appel | 12 | 92 | 165 300 | 73 min | 72 |
+| **1 génération** | **11** | **34** | **23 000** | **13 min** | 12 |
+
+Ce qui en découle (et qui est codé) : une génération trouve les mêmes gains que deux ; la liste « déjà essayé » double les jetons sans gain ; les trois variantes ne gagnent qu'une fonction (`normaliser`) pour quatre fois plus de candidats faux. Le modèle varie d'un tirage à l'autre (`membre`, `inter` échouent une passe sur deux), d'où deux tirages par parent. Les deux témoins n'ont aucun faux gain, et aucun candidat faux n'a franchi le juge.
+
+Limites : un seul modèle, des fonctions écrites pour le banc, deux passes, aucune donnée de production. Le rejeu refuse les entrées de plus de 64 Ko : les fonctions à grosses entrées restent « corpus trop étroit » (le plafond est maintenant un paramètre, son défaut reste à 64 Ko). `sommes_plage` n'aboutit dans aucune configuration.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
