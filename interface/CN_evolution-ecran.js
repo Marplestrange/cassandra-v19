@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #b93287
+// VERSION CN : 0.2.0  #56bb4b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=b93287 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=56bb4b ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -152,7 +152,7 @@
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
   CASS.sceneSurMesure.evolution = async function (corps, ctx) {
     style();
-    const S = { etat: null, versions: {}, sel: null, onglet: "carte", vue: "cockpit", resultat: null, confirmer: null, occupe: false, erreur: "", tiroir: false, moteur: "Orfan", intention: "", compile: null, t: null };
+    const S = { etat: null, versions: {}, sel: null, onglet: "carte", vue: window.__evVue || "aujourdhui", resultat: null, confirmer: null, occupe: false, erreur: "", tiroir: false, moteur: "Orfan", intention: "", compile: null, t: null };
     const racine = document.createElement("div");
     racine.className = "ev";
     corps.appendChild(racine);
@@ -496,15 +496,14 @@
 
     function entete() {
       const ch = S.etat.chaine || {};
-      return '<header class="pg-tete"><h1>Évolution</h1><p class="sous">Ce qui coûte vraiment le plus est amélioré par paliers : une variante est jugée à l’ombre sur ce qui s’est passé, montée pas à pas, et retirée en un geste.</p></header>' +
+      return '<header class="pg-tete"><h1>' + esc(TITRES[S.vue] || "Évolution") + '</h1><p class="sous">' + esc(SOUS_TITRES[S.vue] || "") + '</p></header>' +
         '<div class="entete"><div><div class="note mono">' + (S.etat.cibles || []).length + " points déclarés · " + tousVivants().length + " pièces vivantes · " + (S.versions.evolution ? "module " + esc(S.versions.evolution) : "") + '</div></div>' +
         '<div class="d">' + puce(ch.ok ? "chaîne scellée · " + (ch.mailles || 0) + " maillons ✓" : "chaîne ROMPUE à la maille " + ch.rupture_a, ch.ok ? "ok" : "dg") +
-        '<button class="btn" data-a="tiroir">Moteur : ' + esc(S.moteur) + ' ▾</button><button class="btn" data-a="actualiser">Actualiser</button></div></div>' +
-        '<nav class="verre vues"><button data-vue="cockpit" class="' + (S.vue === "cockpit" ? "on" : "") + '">Cockpit</button><button data-vue="atelier" class="' + (S.vue === "atelier" ? "on" : "") + '">Atelier</button><button data-vue="moteurs" class="' + (S.vue === "moteurs" ? "on" : "") + '">Moteurs</button></nav>';
+        '<button class="btn" data-a="tiroir">Moteur : ' + esc(S.moteur) + ' ▾</button><button class="btn" data-a="actualiser">Actualiser</button></div></div>';
     }
 
     // ═══ COCKPIT ═══════════════════════════════════════════════════════════
-    function cockpit() {
+    function cockpit(seul) {
       const tous = S.etat.pieces || [], serv = tous.filter((p) => p.etat === "en_service");
       const retraits = (S.etat.journal || []).filter((e) => e.verbe === "retiree" || e.verbe === "retour").length;
       const meilleur = tousVivants().reduce((m, p) => (p.gain_annonce != null && p.gain_annonce > m ? p.gain_annonce : m), 0);
@@ -527,6 +526,7 @@
       const intention = '<div class="verre carte large"><span class="idee">1 · L\'intention</span><h2>Dis ce que tu veux. Cassandra regarde ce qui compte.</h2>' +
         '<div class="intention"><input id="ev-intent" type="text" placeholder="ex. : accélérer contacts.signaux sans rien casser" value="' + esc(S.intention) + '"><button class="btn prim" data-a="compiler">Compiler l\'objectif</button></div>' +
         '<div class="sugg-t"><i></i><span><b>Cassandra te propose</b> d\'après ce qu\'elle observe en ce moment</span><span class="mono">' + sg.length + '</span></div><div class="pastilles">' + pastilles + "</div>" + comp + "</div>";
+      if (seul === "intention") return intention;
       // la nuit : le rejeu existe, la course nocturne non
       const maxC = Math.max(1, ...(S.etat.points || []).map((p) => (p.corpus || {}).distincts || 0));
       const lanes = (S.etat.points || []).map((p) => { const c = p.corpus || {}; return '<div class="piste"><span>' + esc(p.point) + '</span><span class="t"><i style="width:' + Math.round(100 * (c.distincts || 0) / maxC) + '%"></i><i class="r" style="width:' + Math.round(100 * (c.reserve || 0) / maxC) + '%"></i></span><span>' + (c.distincts || 0) + " entrées</span></div>"; }).join("");
@@ -742,6 +742,73 @@
         '<div class="note">Le moteur ne rend que des candidats : l\'évaluation, la mise en ombre et la promotion restent à l\'étage du noyau. Le choix « déterministe / modèle / les deux » se fait au moment de proposer, dans l\'Atelier.</div></div></div>';
     }
 
+    // ═══ LA NAVIGATION : le menu de gauche porte les pages (Aujourd'hui, Améliorations et ses états, Réglages, Consignes, Sous le capot et ses pages) ═══
+    const TITRES = { aujourdhui: "Aujourd’hui", amelio: "Les améliorations", reglages: "Réglages", consignes: "Consignes et seuils", capot: "Sous le capot" };
+    const SOUS_TITRES = { aujourdhui: "Ce que Cassandra améliore, ce qui mérite ton regard, et de quoi lui demander mieux.", amelio: "Ce qui a été essayé, ce qui sert, ce qui a été retiré.", reglages: "Qui cherche, dans quel ordre, et pour combien.", consignes: "Les consignes d’agent et les seuils qu’elle peut améliorer, et comment on les juge.",
+      "capot.chercheurs": "Les moteurs qui cherchent des améliorations.", "capot.points": "Les fonctions que Cassandra peut améliorer, leurs pièces et leurs preuves.", "capot.comparer": "Faire courir les chercheurs les uns contre les autres.", "capot.install": "Ajouter ou retirer un chercheur du catalogue scellé.", "capot.securite": "La cage, les preuves et ce qui protège.", "capot.carnet": "Tout ce qui s’est passé, chaîné et scellé.", "capot.ecartees": "Les versions retirées, et ce qu’il en reste.", "capot.vision": "Ce qui existe, et ce qui n’est pas encore construit." };
+    const TCAPOT = { "capot.chercheurs": "Les chercheurs", "capot.points": "Les fonctions", "capot.comparer": "Les comparer", "capot.install": "Installer un chercheur", "capot.securite": "Filet de sécurité", "capot.carnet": "Carnet", "capot.ecartees": "Versions écartées", "capot.vision": "Ce qui est prévu" };
+    Object.keys(TCAPOT).forEach((k) => { TITRES[k] = TCAPOT[k]; });
+    ["amelio.toutes", "amelio.essai", "amelio.service", "amelio.retiree"].forEach((k) => { TITRES[k] = TITRES.amelio; SOUS_TITRES[k] = SOUS_TITRES.amelio; });
+    const norme = (v) => (v === "capot" ? "capot.chercheurs" : v === "amelio" ? "amelio.toutes" : (TITRES[v] ? v : "aujourdhui"));
+    const MVUE = { reglages: ["aff", "budget"], consignes: ["juges"], "capot.chercheurs": ["moteurs"], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
+    const avecMoteurs = () => !!MVUE[S.vue];
+    function suivre() { try { if (typeof window.evSuivre === "function") window.evSuivre(S.vue); } catch (e) { /* le menu se remettra à jour au prochain geste */ } }
+    async function aller(vue) {
+      S.vue = norme(vue); S.resultat = null; S.confirmer = null;
+      if (MVUE[S.vue] && !M0().d) { dessiner(); await chargerM(); }
+      suivre(); dessiner();
+      try { window.scrollTo(0, 0); } catch (e) { /* sans effet */ }
+    }
+    window.evAller = (vue) => { if (document.body.contains(racine)) aller(vue || "aujourdhui"); };
+
+    // Aujourd'hui : l'intention, les propositions, et ce qui demande ton regard
+    function aujourdhui() {
+      const ch = S.etat.chaine || {}, jr = S.etat.journal || [];
+      const retr = jr.filter((e) => e.verbe === "retiree" && /^(suspendue par le disjoncteur|visite :)/.test(String((e.donnees || e.data || {}).raison || e.raison || ""))).length;
+      const viv = tousVivants();
+      const regarder = [];
+      if (!ch.ok) regarder.push(["<b>La chaîne scellée est rompue</b>", "à la maille " + esc(ch.rupture_a) + " : plus rien ne doit être mis en service avant d'en connaître la cause.", "capot.carnet", "Voir le carnet", "dg"]);
+      if (retr) regarder.push(["<b>" + retr + " amélioration(s) retirée(s) toute(s) seule(s)</b>", "le disjoncteur ou une visite les a écartées ; vois pourquoi.", "amelio.retiree", "Voir les retirées", "al"]);
+      const essai = viv.filter((p) => p.etat !== "en_service").length, serv = viv.filter((p) => p.etat === "en_service").length;
+      const sante = '<div class="verre carte"><div class="tete"><h2>Où on en est</h2><div class="lg">' + puce(serv + " en service", serv ? "ok" : "mu") + puce(essai + " à l’essai", essai ? "al" : "mu") + puce(ch.ok ? "chaîne intacte" : "chaîne rompue", ch.ok ? "ok" : "dg") + '</div></div><div class="note">' + (viv.length ? "Les pièces vivantes sont dans Améliorations." : "Aucune amélioration en vol pour l’instant.") + "</div></div>";
+      const aVoir = regarder.length ? '<div class="verre carte"><h2>À regarder</h2><div class="liste">' + regarder.map((v) => '<div class="ligne"><div><span>' + puce(v[4] === "dg" ? "brûle" : "à regarder", v[4]) + " " + v[0] + '</span><div class="g">' + v[1] + '</div></div><button class="btn" data-vue="' + v[2] + '">' + v[3] + "</button></div>").join("") + "</div></div>" : "";
+      return sante + aVoir + cockpit("intention");
+    }
+
+    // Améliorations : une ligne par pièce, filtrée par l'état choisi dans le menu
+    function amelio() {
+      const f = S.vue.split(".")[1] || "toutes";
+      const ok = (p) => f === "toutes" || (f === "essai" && ["ombre", "palier_10", "palier_50"].indexOf(p.etat) >= 0) || (f === "service" && p.etat === "en_service") || (f === "retiree" && p.etat === "retiree");
+      const liste = (S.etat.pieces || []).filter(ok).sort((a, b) => (b.num || 0) - (a.num || 0));
+      const ligne = (p) => {
+        const e = ETATS[p.etat] || [p.etat, "mu"], vive = VIVANTES.indexOf(p.etat) >= 0;
+        return '<div class="verre carte"><div class="tete"><div><b class="mono">' + esc(p.gid) + '</b> <span class="note">EC' + esc(p.num) + "." + esc(p.empreinte) + '</span></div><div class="lg">' + puce(e[0], e[1]) + (p.gain_annonce != null ? puce(pct(p.gain_annonce) + " de durée", "ok") : "") + "</div></div>" +
+          '<div class="note">' + (p.hypothese ? esc(p.hypothese) : "") + (p.moteur ? " · moteur " + esc(p.moteur) : "") + '</div><div class="lg"><button class="btn" data-a="ouvrir-atelier" data-p="' + esc(p.gid) + '">Voir ses preuves</button>' + (vive ? '<button class="btn dng" data-a="retirer-piece" data-p="' + esc(p.gid) + '">Retirer</button>' : "") + "</div></div>";
+      };
+      return '<div class="liste">' + (liste.map(ligne).join("") || '<div class="vide">Rien dans cette liste.</div>') + "</div>";
+    }
+
+    // Versions écartées : les pièces retirées, et ce que le noyau en garde
+    function ecartees() {
+      const re = (S.etat.pieces || []).filter((p) => p.etat === "retiree"), tb = S.etat.tombes || {};
+      return '<div class="note">Le noyau garde l’empreinte de chaque variante écartée pour ne jamais la reproposer. ' + NB + " La raison détaillée et « rouvrir » demandent qu’il garde davantage.</div>" +
+        '<div class="verre carte"><h2>Pièces retirées</h2><div class="liste">' + (re.map((p) => '<div class="ligne"><div><b class="mono">' + esc(p.gid) + '</b> <span class="note">EC' + esc(p.num) + "." + esc(p.empreinte) + "</span></div>" + puce("retirée", "dg") + "</div>").join("") || '<div class="vide">Aucune pièce retirée.</div>') + "</div></div>" +
+        '<div class="verre carte"><h2>Tombes</h2><div class="liste">' + (Object.keys(tb).map((k) => '<div class="ligne"><span class="mono">' + esc(k) + "</span><b>" + esc(tb[k]) + "</b></div>").join("") || '<div class="vide">Aucune tombe.</div>') + "</div></div>";
+    }
+
+    function page() {
+      const v = S.vue;
+      if (v === "aujourdhui") return aujourdhui();
+      if (v.indexOf("amelio") === 0) return amelio();
+      if (v === "capot.points") return atelier();
+      if (v === "capot.ecartees") return ecartees();
+      if (v === "capot.vision") return cockpit();
+      const m = M0();
+      if (!m.d) return '<div class="verdict mu">Chargement…</div>';
+      const vs = MVUE[v] || ["moteurs"];
+      return vs.map((k) => { m.vue = k; return (k === "moteurs" ? mBandeau() : "") + { moteurs: mMoteurs, course: mCourse, aff: mAff, budget: mBudget, juges: mJuges, install: mInstall, cage: mCage, journal: mJournal }[k](); }).join("") + mMsg();
+    }
+
     function dessiner() {
       if (S.erreur && !S.etat) {
         racine.innerHTML = '<div class="verdict dg">' + esc(S.erreur) + '</div><div class="note">' + (/fetch|network|réseau/i.test(S.erreur) ? "Le serveur ne répond pas pour l'instant : réessaie dans un instant." : "Le module Évolution est-il actif ? (Réglages › Modules)") + '</div><div class="lg"><button class="btn" data-a="actualiser">Réessayer</button></div>';
@@ -749,12 +816,12 @@
       }
       const fig = racine.querySelector("#ev-intent");
       if (fig) S.intention = fig.value;
-      racine.innerHTML = entete() + (S.vue === "cockpit" ? cockpit() : S.vue === "moteurs" ? moteurs() : atelier()) + tiroir();
+      racine.innerHTML = entete() + page() + tiroir();
       lier();
     }
     function lier() {
-      racine.querySelectorAll("[data-vue]").forEach((b) => b.addEventListener("click", async () => { S.vue = b.dataset.vue; if (S.vue === "moteurs" && !M0().d) { dessiner(); await chargerM(); } dessiner(); }));
-      if (S.vue === "moteurs") lierMoteurs();
+      racine.querySelectorAll("[data-vue]").forEach((b) => b.addEventListener("click", () => aller(b.dataset.vue)));
+      if (avecMoteurs()) lierMoteurs();
       racine.querySelectorAll("[data-cible]").forEach((b) => b.addEventListener("click", () => { S.sel = b.dataset.cible; S.resultat = null; S.confirmer = null; dessiner(); }));
       racine.querySelectorAll("[data-onglet]").forEach((b) => b.addEventListener("click", () => { S.onglet = b.dataset.onglet; dessiner(); }));
       racine.querySelectorAll("[data-geste]").forEach((b) => b.addEventListener("click", () => geste(b.dataset.geste)));
@@ -766,9 +833,10 @@
         const a = b.dataset.a;
         if (a === "fermer-fond" && ev.target !== b) return;
         if (a === "tiroir" || a === "fermer-fond") { S.tiroir = !S.tiroir; dessiner(); }
-        else if (a === "actualiser") { await charger(); if (S.vue === "moteurs") await chargerM(); dessiner(); }
+        else if (a === "actualiser") { await charger(); if (avecMoteurs()) await chargerM(); dessiner(); }
         else if (a === "compiler") { const t = (racine.querySelector("#ev-intent") || {}).value || ""; S.intention = t; S.compile = compiler(t); dessiner(); }
-        else if (a === "ouvrir-atelier") { S.sel = b.dataset.p; S.vue = "atelier"; dessiner(); }
+        else if (a === "ouvrir-atelier") { S.sel = b.dataset.p; aller("capot.points"); }
+        else if (a === "retirer-piece") { S.sel = b.dataset.p; geste("retour"); }
       }));
       const tmp = racine.querySelector("#ev-temps");
       if (tmp) tmp.addEventListener("input", () => { S.t = parseInt(tmp.value, 10); const y = tmp.parentNode.scrollTop; dessiner(); const n = racine.querySelector("#ev-temps"); if (n) n.focus(); });
@@ -776,7 +844,7 @@
 
     async function geste(nom) {
       if (nom === "annuler") { S.confirmer = null; return dessiner(); }
-      if (nom === "proposer" || nom === "retour" || nom === "visiter") { S.confirmer = nom; S.vue = "atelier"; return dessiner(); }
+      if (nom === "proposer" || nom === "retour" || nom === "visiter") { S.confirmer = nom; S.vue = "capot.points"; suivre(); return dessiner(); }
       const moteur = (racine.querySelector("#ev-moteur") || {}).value || "deterministe", budget = parseInt((racine.querySelector("#ev-budget") || {}).value, 10) || 3;
       S.confirmer = null; S.occupe = true; S.resultat = null; dessiner();
       try {
@@ -791,7 +859,7 @@
 
     await charger();
     dessiner();
-    const minuteur = setInterval(async () => { if (!document.body.contains(racine)) return clearInterval(minuteur); if (S.occupe || S.confirmer || S.tiroir || (S.vue === "moteurs" && M0().occupe)) return; const f = document.activeElement; if (f && racine.contains(f) && /INPUT|SELECT|TEXTAREA/.test(f.tagName)) return; await charger(); if (S.vue === "moteurs") await chargerM(); dessiner(); }, 20000);
+    const minuteur = setInterval(async () => { if (!document.body.contains(racine)) return clearInterval(minuteur); if (S.occupe || S.confirmer || S.tiroir || (avecMoteurs() && M0().occupe)) return; const f = document.activeElement; if (f && racine.contains(f) && /INPUT|SELECT|TEXTAREA/.test(f.tagName)) return; await charger(); if (S.vue === "moteurs") await chargerM(); dessiner(); }, 20000);
   };
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲

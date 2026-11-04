@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=b6794e ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=4c1325 ▼▼▼ */
 /* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
    Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
 body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
@@ -102,6 +102,7 @@ body.d19 .app-body{position:relative}
 .d19-si .car{margin-left:auto;width:14px;height:14px;transition:transform .15s}
 .d19-si .car.ouv{transform:rotate(90deg)}
 .d19-si.sub{padding-left:38px;font-size:13px}
+.d19-si.sub.sub2{padding-left:58px;font-size:12.5px}.d19-si.sub.sub2.ic{padding-left:46px}
 .d19-si .pt{flex:none;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.45}
 .d19-si.pinned svg.d-i:first-child{color:#d97706;fill:currentColor;width:15px;height:15px}
 .d19-nb{margin-left:auto;min-width:18px;height:18px;border-radius:9px;font:600 10.5px/18px 'JetBrains Mono',monospace;text-align:center;padding:0 5px;background:var(--acc-10);color:var(--accent)}

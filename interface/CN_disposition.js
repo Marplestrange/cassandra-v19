@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #fbb9c4
+// VERSION CN : 0.1.0  #526228
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=fbb9c4 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=526228 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -191,6 +191,7 @@
       }
     }
     if (entreeId === "securite") suivreSecurite();
+    if (entreeId === "evolution") { window.__evVue = vue || "aujourdhui"; if (typeof window.evAller === "function") setTimeout(function () { window.evAller(window.__evVue); }, 80); }
     if (entreeId === "sensorium" && typeof window.sxAller === "function") setTimeout(function () { window.sxAller(vue || "maintenant"); }, 80);         // l'écran du Sensorium lit la vue demandée par le menu
     if (entreeId === "securite" && typeof window.scAller === "function" && vue) {
       setTimeout(function() { window.scAller(vue); }, 80);
@@ -280,6 +281,11 @@
       if (agents) setTimeout(function () { if (typeof window.agentsAller === "function") window.agentsAller(); }, 80);
     }
   }
+  // Évolution : un geste fait dans l'écran lui-même met le menu à jour
+  window.evSuivre = function (vue) {
+    if (!E.d || !vue || !E.actif || E.e !== "evolution" || E.vue === vue) return;
+    E.vue = vue; E.actif.vue = vue; rendre();
+  };
   // Agents IA : ses pages sont des sous-menus ; un geste fait dans l'écran lui-même (carte d'un agent, lien) met l'entrée à jour, et l'écran donne le nombre à valider
   window.agentsSuivre = function (vue, attente) {
     if (!E.d) return;
@@ -473,9 +479,9 @@
         if (e.id === "flotte") {
           h += rendreFlotteRail();
         } else {
-          h += e.enfants.map((f) => {
+          h += e.enfants.filter((f) => { const v = f.vue || f.id, i = v.indexOf("."); return i < 0 || (actif && (E.vue === v.slice(0, i) || E.vue.indexOf(v.slice(0, i) + ".") === 0)); }).map((f) => {
             const vid = f.vue || f.id, etat = e.id === "panorama" && SECTIONS_ETAT.indexOf(vid) >= 0, emo = e.id === "panorama" ? EMO_PANORAMA[vid] : "", ik = icoSub(e, f), gl = glVue(e.id, vid);
-            return (e.id === "agents-ia" && vid === "relecteur" ? '<div class="d19-lbl">Services agentiques</div>' : "") + (e.id === "agents-ia" && vid === "conv" && e.enfants.some((x) => x.vue === "relecteur" || x.vue === "vision") ? '<hr class="d19-sep d19-sepsrv">' : "") + '<button class="d19-si sub' + (ik || gl ? " ic" : "") + (emo ? " emo" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '"' + (actif && E.vue === vid ? ' aria-current="page"' : "") + (emo && INFO_PANORAMA[vid] ? ' title="' + esc(INFO_PANORAMA[vid]) + '"' : "") + '>' + (gl || (ik ? ico(ik) : '<span class="pt"></span>')) + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '" hidden></span>' : "") + nbDe(f) + "</button>";
+            return (e.id === "agents-ia" && vid === "relecteur" ? '<div class="d19-lbl">Services agentiques</div>' : "") + (e.id === "agents-ia" && vid === "conv" && e.enfants.some((x) => x.vue === "relecteur" || x.vue === "vision") ? '<hr class="d19-sep d19-sepsrv">' : "") + '<button class="d19-si sub' + (vid.indexOf(".") > 0 ? " sub2" : "") + (ik || gl ? " ic" : "") + (emo ? " emo" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '"' + (actif && E.vue === vid ? ' aria-current="page"' : "") + (emo && INFO_PANORAMA[vid] ? ' title="' + esc(INFO_PANORAMA[vid]) + '"' : "") + '>' + (gl || (ik ? ico(ik) : '<span class="pt"></span>')) + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '" hidden></span>' : "") + nbDe(f) + "</button>";
           }).join("");
         }
       }

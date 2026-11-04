@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #4c84b2
+# VERSION EC : EC0 (référence 0.7.0)  #b3bdf6
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=4c84b2 ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=b3bdf6 ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -105,7 +105,13 @@ PONT = (
         ("relecteur", "Relecteur", "admin"), ("vision", "Vision", "admin"), ("auditeur", "Auditeur", "admin"),
         ("conv", "Conversations"), ("boite", "À valider"), ("journal", "Journal"), ("modeles", "Modèles & clés", "admin"), ("maison", "Règles communes", "admin")
     )},
-    {"id": "evolution", "libelle": "Évolution", "groupe": "auto", "icone": "evo", "onglet": "evolution", "modules": ("evolution",), "ordre": 10, "role": "admin", "vues": ()},
+    {"id": "evolution", "libelle": "Évolution", "groupe": "auto", "icone": "evo", "onglet": "evolution", "modules": ("evolution",), "ordre": 10, "role": "admin", "vues": (
+        ("aujourdhui", "Aujourd’hui"), ("amelio", "Améliorations"), ("amelio.toutes", "Toutes"), ("amelio.essai", "À l’essai"),
+        ("amelio.service", "En service"), ("amelio.retiree", "Retirées"), ("reglages", "Réglages"), ("consignes", "Consignes et seuils"),
+        ("capot", "Sous le capot"), ("capot.chercheurs", "Les chercheurs"), ("capot.points", "Les fonctions"), ("capot.comparer", "Les comparer"),
+        ("capot.install", "Installer un chercheur"), ("capot.securite", "Filet de sécurité"), ("capot.carnet", "Carnet"),
+        ("capot.ecartees", "Versions écartées"), ("capot.vision", "Ce qui est prévu")
+    )},
     {"id": "proactivite", "libelle": "Proactivité", "groupe": "auto", "icone": "bolt", "onglet": "proactive", "modules": ("proactif",), "ordre": 20, "role": "admin", "vues": ()},
     {"id": "memoire", "libelle": "Mémoire", "groupe": "auto", "icone": "brain", "onglet": "memory", "modules": ("memoire",), "ordre": 30, "role": "utilisateur", "vues": (
         ("vue", "Vue d’ensemble"),
