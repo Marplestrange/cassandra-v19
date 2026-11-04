@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #036f60
+# VERSION CN : 0.1.0  #a35a00
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : garde, par point d'évolution, les ENTRÉES réellement reçues (distinctes, comptées), avec une partition réservée que le générateur ne voit jamais.
 # MÉTHODE    : une table SQLite ; l'entrée est identifiée par son empreinte ; la partition réservée se décide par l'empreinte (déterministe) ; borne par point, les cas dorés jamais évincés.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=036f60 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a35a00 ▼▼▼
 """Le corpus de rejeu (docs/CN_EVOLUTION.md §2) : la matière du banc d'essai de toute évolution.
 
 On ne garde que les ENTRÉES : la sortie de référence est recalculée par la référence du dépôt à chaque évaluation, car c'est elle la spécification
@@ -40,7 +40,7 @@ PART_RESERVEE = 5                  # un cas sur N est réservé
 MAX_PAR_POINT = 2000               # entrées distinctes gardées par point (les cas dorés ne sont jamais évincés)
 EXCLUS_PRIVES = ("courrier.*", "coffre.*", "memoire.*", "notes.*", "salon.*", "ged.*", "agenda.*", "canvas.*")      # les points dont l'entrée EST le contenu privé d'un compte : par défaut, seule leur mesure est gardée
 PURGE_TOUS_LES = 100               # on vérifie la borne tous les N enregistrements
-MAX_ENTREE_OCTETS = 65536          # une entrée plus grosse n'est pas gardée : ce n'est pas un cas de test, c'est un fichier ou une pièce jointe (et c'est une donnée privée en clair)
+MAX_ENTREE_OCTETS = 262144         # (256 Ko, relevé de 64 Ko : à 64 Ko les fonctions à listes de milliers d'éléments restaient « corpus trop étroit ») une entrée plus grosse n'est pas gardée : ce n'est pas un cas de test, c'est un fichier ou une pièce jointe (et c'est une donnée privée en clair)
 
 SCHEMA = """CREATE TABLE IF NOT EXISTS appels(
   gid TEXT NOT NULL, h TEXT NOT NULL, entree TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 1, origine TEXT NOT NULL DEFAULT 'reel', reserve INTEGER NOT NULL,
