@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cf6c53
+# VERSION CN : 0.1.0  #a5ea9d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des lots 3 et 4 de la maquette d'Évolution : cascade, affectations, plafonds, course, juge des prompts et des politiques, objectifs multiples, moteurs évolutif et frugal.
 # MÉTHODE    : de vrais processus de moteur et un vrai noyau ; le modèle est une fonction de banc ; le temps du registre est une horloge de banc.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cf6c53 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a5ea9d ▼▼▼
 """Bancs du lot 3 (course, cascade, affectations, budget par moteur) et du lot 4 (juges, objectifs multiples)."""
 import json
 import sys
@@ -268,7 +268,7 @@ class MoteursNatifs(unittest.TestCase):
         self.assertEqual(m.proposer(contexte), [])
         self.assertEqual(m.stats["appels_modele"], 0)
 
-    def test_le_frugal_passe_au_petit_modele_sur_un_point_chaud_et_ne_garde_que_le_prouve(self):
+    def test_le_frugal_fait_proposer_le_fort_puis_ecrire_l_econome_et_ne_garde_que_le_prouve(self):
         source = "def f(x):\n    t = 0\n    for v in x:\n        t = t + v * 2\n    return t\n"
         bonne = "```python\ndef f(x):\n    return sum(x) * 2\n```"
         fausse = "```python\ndef f(x):\n    return 0\n```"
@@ -276,10 +276,12 @@ class MoteursNatifs(unittest.TestCase):
 
         def modele(p, role):
             roles.append(role)
-            return fausse if len(roles) == 1 else bonne
+            if role == "strategie":
+                return "<STRATEGIE>\nFamille : somme native\nPlan : somme puis double\n</STRATEGIE>"
+            return fausse if roles.count("executant") == 1 else bonne
         m = MO.MoteurProcessus("frugal", appeler_modele=modele, delai_s=90)
         r = m.proposer(dict(self.contexte(), source_reference=source, entrees=[list(range(3000)), list(range(2500)), list(range(2800))]))
-        self.assertEqual(roles, ["executant", "strategie"])                                       # la fausse variante du petit n'est pas rendue : le fort est appelé
+        self.assertEqual(roles, ["strategie", "executant", "executant"])                          # le fort propose, l'économe écrit faux puis corrige sur la raison : la fausse n'est jamais rendue
         self.assertEqual(len(r), 1)
         self.assertIn("sum(x)", r[0]["texte"])
 

@@ -13,7 +13,7 @@
 <!-- RÔLE       : la maquette de l'écran Évolution pensé pour quelqu'un qui n'est pas ingénieur : une phrase d'état, des résultats, trois réglages en mots simples, et tout le reste (chercheurs, comparaison, sécurité, carnet) rangé « sous le capot » -->
 <!-- MÉTHODE    : une page autonome, données de démonstration ; le vocabulaire interne (ombre, paliers, tombes, moteur, cage…) n'apparaît pas à l'écran, il est traduit dans l'onglet Vocabulaire -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ea3235 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9c9ddf ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -174,7 +174,7 @@ var A_ACCELERER = [
 ];
 var CHERCHEURS = [
   { id: "orfan", nom: "Orfan", maison: true, etat: "actif", dit: "Le chercheur maison. Il applique d'abord des recettes connues, gratuites ; si ça ne suffit pas, il demande de l'aide à un modèle.", cout: "gratuit, puis peu" },
-  { id: "frugal", nom: "Frugal", maison: true, etat: "actif", dit: "Le chercheur économe. Il essaie d'abord des recettes gratuites. Si elles ne suffisent pas, il repère LA partie de la fonction qui travaille le plus et ne demande de l'aide à un petit modèle que pour celle-là, puis à un modèle plus fort seulement si le petit a échoué. S'il n'y a aucune partie qui travaille vraiment beaucoup, il ne dépense rien.", cout: "très peu" },
+  { id: "frugal", nom: "Frugal", maison: true, etat: "actif", dit: "Le chercheur économe. Il essaie d'abord des recettes gratuites. Si elles ne suffisent pas, il repère LA partie de la fonction qui travaille le plus. Là, un modèle fort imagine deux ou trois idées, juste en mots ; un modèle plus petit écrit chacune ; et Frugal vérifie lui-même chaque version (même résultat, et plus rapide). Si une version rate, il dit au petit modèle pourquoi pour qu'il la corrige, mais seulement quelques fois. S'il n'y a aucune partie qui travaille vraiment beaucoup, il ne dépense rien.", cout: "très peu" },
   { id: "evolutif", nom: "Évolutif", maison: true, etat: "actif", dit: "Le chercheur par générations. Il part des versions déjà trouvées et en fabrique de nouvelles, tour après tour : il réapplique les recettes aux meilleures et demande à un modèle d'en modifier une. Il garde les meilleures versions de chaque taille de code, pour ne pas tourner en rond. Plus long et plus fouillé que les autres, donc plus cher ; il est éteint par défaut.", cout: "moyen" },
   { id: "gepa", nom: "GEPA", maison: false, etat: "installe", dit: "Un chercheur externe qui relit ce qui a échoué pour mieux réécrire. Installé, mais éteint.", cout: "moyen" },
   { id: "openevolve", nom: "OpenEvolve", maison: false, etat: "prevu", dit: "Un chercheur externe qui fait évoluer plusieurs familles de solutions en parallèle.", cout: "plus élevé" },

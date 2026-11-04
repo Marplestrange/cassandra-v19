@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #aaef52
+# VERSION CN : 0.1.0  #6748bd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=aaef52 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6748bd ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -47,7 +47,7 @@ MAX_JETONS = 40000
 ETATS = ("actif", "installe", "prevu")
 # Les étages d'une cascade : (moteur du registre, choix de recherche, libellé, coût). Un moteur externe installé ajoute son étage (son id, choix « adaptateur:<module> »).
 ETAGES = {"orfan/deterministe": ("orfan", "deterministe", "Orfan · règles déterministes", "gratuit : zéro jeton"),
-          "frugal": ("frugal", "frugal", "Frugal · règles, petit modèle, modèle fort", "peu de jetons : un modèle seulement sur un point chaud"),
+          "frugal": ("frugal", "frugal", "Frugal 2 · règles, puis idées du modèle fort, code du modèle économe", "peu de jetons : un modèle seulement sur un point chaud"),
           "orfan/modele": ("orfan", "modele", "Orfan · modèle guidé par le profil", "jetons : un modèle écrit les variantes"),
           "evolutif": ("evolutif", "evolutif", "Évolutif · populations et mutations", "jetons : plusieurs générations")}
 CASCADE_DEFAUT = [("orfan/deterministe", True), ("frugal", True), ("orfan/modele", True), ("evolutif", False)]

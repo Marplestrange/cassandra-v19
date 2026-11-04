@@ -1,0 +1,158 @@
+# ══════════════════════════════════════════════
+# TITRE      : Bancs de Frugal 2
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #50e42d
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Prouve que Frugal 2 ne dépense rien quand il n'y a rien à gagner, plafonne ses appels, affine sur la raison d'un échec et ne rend jamais une version non équivalente.
+# MÉTHODE    : un modèle de banc scripté (aucune clé) derrière le vrai relais de la cage ; le moteur tourne dans son vrai processus.
+# ══════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=50e42d ▼▼▼
+"""Bancs de Frugal 2 (orfan/CN_frugal.py)."""
+import sys
+import time
+import unittest
+from pathlib import Path
+
+RACINE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(RACINE))
+from noyau import CN_moteurs as MO  # noqa: E402
+from noyau.CN_points import DelaiEC  # noqa: E402
+
+SOURCE = "def f(x):\n    t = 0\n    for v in x:\n        t = t + v * 2\n    return t\n"             # un point chaud, aucune règle gratuite n'y change rien
+ENTREES = [list(range(3000)), list(range(2500)), list(range(2800))]
+STRATEGIES = ("<STRATEGIE>\nFamille : somme native\nPortée : la boucle\nGain : le travail passe en C\nPlan : somme puis double\n</STRATEGIE>\n"
+              "<STRATEGIE>\nFamille : formule fermée\nPortée : toute la fonction\nGain : plus de boucle\nPlan : calculer sans parcourir\n</STRATEGIE>")
+BONNE = "```python\ndef f(x):\n    return sum(x) * 2\n```"
+FAUSSE = "```python\ndef f(x):\n    return 0\n```"
+LENTE = "```python\ndef f(x):\n    t = 0\n    for v in x:\n        t = t + v + v\n        t = t + 0\n    return t\n```"      # équivalente mais pas plus rapide
+COPIE = "```python\n" + SOURCE + "```"      # la référence recopiée
+
+
+def contexte(**kw):
+    return dict({"point": "a.b", "source_reference": SOURCE, "fonction": "f", "contrat": {}, "entrees": ENTREES, "tombes": [], "budget": 3, "seuils": {}}, **kw)
+
+
+class Banc:
+    """Un modèle scripté : `reponses(role, prompt, n)` rend le texte ; tout appel est noté."""
+
+    def __init__(self, reponses):
+        self.reponses, self.appels = reponses, []
+
+    def __call__(self, prompt, role):
+        self.appels.append((role, prompt))
+        return self.reponses(role, prompt, len(self.appels))
+
+
+class Frugal2(unittest.TestCase):
+    def moteur(self, modele, **kw):
+        return MO.MoteurProcessus("frugal", appeler_modele=modele, delai_s=kw.pop("delai_s", 90), **kw)
+
+    def test_des_regles_suffisantes_ne_coutent_aucun_appel(self):
+        banc = Banc(lambda r, p, n: self.fail("un modèle a été appelé"))
+        m = self.moteur(banc)
+        r = m.proposer(contexte(source_reference="def f(x):\n    return sorted(x)[0]\n", entrees=[list(range(2000, 0, -1)), list(range(3000, 100, -3)), [5, 3, 9] * 400]))
+        self.assertTrue(r)
+        self.assertEqual(r[0]["origine"], "frugal")
+        self.assertEqual((m.stats["appels_modele"], banc.appels), (0, []))
+
+    def test_sans_point_chaud_et_sans_regle_il_ne_depense_rien(self):
+        banc = Banc(lambda r, p, n: self.fail("un modèle a été appelé"))
+        m = self.moteur(banc)
+        self.assertEqual(m.proposer(contexte(source_reference="def f(x):\n    return x\n", entrees=[[1], [2]])), [])
+        self.assertEqual(m.stats["appels_modele"], 0)
+
+    def test_le_fort_propose_en_texte_l_econome_ecrit_et_le_prouve_est_rendu(self):
+        def reponses(role, prompt, n):
+            if role == "strategie":
+                self.assertNotIn("```python\ndef f", prompt.split("Propose")[1])                  # la demande de stratégie ne réclame pas de code
+                return STRATEGIES
+            return BONNE
+        banc = Banc(reponses)
+        r = self.moteur(banc).proposer(contexte())
+        self.assertEqual([a[0] for a in banc.appels][:2], ["strategie", "executant"])
+        self.assertEqual(len(r), 1)                                                              # les deux stratégies ont été écrites, toutes deux prouvées : même texte, rendu une fois
+        self.assertIn("sum(x)", r[0]["texte"])
+        self.assertIn("stratégie", r[0]["hypothese"])
+
+    def test_une_strategie_fausse_est_affinee_avec_sa_raison(self):
+        def reponses(role, prompt, n):
+            if role == "strategie":
+                return STRATEGIES
+            return BONNE if "Problème constaté" in prompt else FAUSSE
+        banc = Banc(reponses)
+        r = self.moteur(banc).proposer(contexte())
+        roles = [a[0] for a in banc.appels]
+        self.assertEqual(roles, ["strategie", "executant", "executant", "executant"])           # fort, 2 stratégies écrites fausses, 1 affinage réussi : on s'arrête là
+        affinage = banc.appels[3][1]
+        self.assertIn("entrée visible n°1", affinage)                                            # la raison de l'échec est renvoyée au modèle économe
+        self.assertIn("return 0", affinage)                                                      # avec sa version précédente
+        self.assertEqual(len(r), 1)
+        self.assertIn("sum(x)", r[0]["texte"])
+
+    def test_une_version_equivalente_mais_lente_est_renvoyee_pour_affinage(self):
+        def reponses(role, prompt, n):
+            if role == "strategie":
+                return STRATEGIES.split("</STRATEGIE>")[0] + "</STRATEGIE>"
+            return BONNE if "pas plus rapide" in prompt else LENTE
+        banc = Banc(reponses)
+        r = self.moteur(banc).proposer(contexte())
+        self.assertEqual(len(banc.appels), 3)
+        self.assertEqual(len(r), 1)
+
+    def test_le_plafond_d_appels_du_relais_est_respecte(self):
+        banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)
+        m = self.moteur(banc, max_appels=3)
+        self.assertEqual(m.proposer(contexte()), [])
+        self.assertEqual(m.stats["appels_modele"], 3)
+        self.assertEqual(len(banc.appels), 3)
+
+    def test_le_budget_propre_du_moteur_borne_aussi_les_appels(self):
+        banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)
+        self.assertEqual(self.moteur(banc).proposer(contexte()), [])
+        self.assertLessEqual(len(banc.appels), 6)                                                # 1 fort + 2 stratégies + 2 tours d'affinage : jamais au-delà du plafond de 6
+
+    def test_une_version_non_equivalente_n_est_jamais_rendue(self):
+        for reponse in (FAUSSE, LENTE, COPIE, "```python\ndef f(x:\n```", "pas de code du tout", "```python\ndef g(x):\n    return 1\n```"):
+            banc = Banc(lambda r, p, n, rep=reponse: STRATEGIES if r == "strategie" else rep)
+            self.assertEqual(self.moteur(banc).proposer(contexte()), [], reponse)
+
+    def test_un_modele_fort_muet_laisse_une_tentative_sans_strategie(self):
+        def reponses(role, prompt, n):
+            if role == "strategie":
+                raise RuntimeError("quota")
+            return BONNE
+        banc = Banc(reponses)
+        r = self.moteur(banc).proposer(contexte())
+        self.assertEqual(len(r), 1)
+        self.assertEqual([a[0] for a in banc.appels], ["strategie", "executant"])
+
+    def test_un_fort_sans_balises_vaut_une_strategie(self):
+        banc = Banc(lambda r, p, n: "Remplace la boucle par une somme native puis double le tout." if r == "strategie" else BONNE)
+        r = self.moteur(banc).proposer(contexte())
+        self.assertEqual(len(banc.appels), 2)
+        self.assertEqual(len(r), 1)
+
+    def test_aucun_modele_branche_ne_depense_rien(self):
+        self.assertEqual(MO.MoteurProcessus("frugal", delai_s=90).proposer(contexte()), [])
+
+    def test_le_delai_tue_le_moteur(self):
+        def lent(role, prompt, n):
+            time.sleep(10)
+            return STRATEGIES
+        with self.assertRaises(DelaiEC):
+            self.moteur(Banc(lent), delai_s=8).proposer(contexte())
+
+
+if __name__ == "__main__":
+    unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════
+# EC : néant.
+# CN : un banc par promesse de Frugal 2 : zéro dépense sans gain possible, plafonds tenus, affinage sur raison, rien de faux rendu.
+# LIEN : orfan/CN_frugal.py, noyau/CN_moteurs.py, docs/CN_FRUGALEVO.md.

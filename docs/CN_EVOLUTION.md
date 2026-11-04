@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=179b10 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=4fe339 ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -181,7 +181,7 @@ Lots 1 et 2 de la maquette `docs/CN_maquette-evolution-moteurs.html`, construits
 
 Tout ce que la maquette `docs/CN_maquette-evolution-moteurs.html` montrait existe maintenant, et l'écran Évolution a une vue « Moteurs » branchée dessus (`interface/CN_evolution-ecran.js`).
 
-- **Trois moteurs livrés** : Orfan (règles + modèle), **Frugal** (`orfan/CN_frugal.py` : règles gratuites, puis un petit modèle sur la seule ligne chaude, puis un modèle fort s'il le faut ; sans point chaud, aucune dépense), **Évolutif** (`orfan/CN_evolutif.py` : générations, une archive par niche de taille, mutation par modèle). Frugal et Évolutif exécutent des candidats pour les vérifier : ils ne tournent que dans la cage (jamais dans le serveur). Un « point chaud » : une ligne qui porte au moins 40 % du travail ET a tourné au moins 50 fois.
+- **Trois moteurs livrés** : Orfan (règles + modèle), **Frugal 2** (`orfan/CN_frugal.py` : règles gratuites ; sinon le modèle fort propose des stratégies en texte, le modèle économe les écrit, chaque version est vérifiée sur place et affinée sur sa raison d'échec ; sans point chaud, aucune dépense — voir 2 duodecies), **Évolutif** (`orfan/CN_evolutif.py` : générations, une archive par niche de taille, mutation par modèle). Frugal et Évolutif exécutent des candidats pour les vérifier : ils ne tournent que dans la cage (jamais dans le serveur). Un « point chaud » : une ligne qui porte au moins 40 % du travail ET a tourné au moins 50 fois.
 - **Un moteur externe réel de bout en bout** : OpenEvolve 0.4.1 (`orfan/adaptateurs/CN_adaptateur_openevolve.py`), installé depuis un catalogue scellé (27 paquets épinglés par empreinte par `outils/CN_moteurs_epingler.py`), exécuté dans son venv sous bubblewrap ; il ne parle à un modèle que par un serveur « OpenAI » local dans la cage, qui aboutit au relais. Éprouvé sur Orion (Debian 12), avec un modèle de banc ; le banc `tests/CN_test_moteur_externe_reel.py` le rejoue (`CN_TEST_RESEAU=1`). Un moteur externe écrit dans son dossier (64 Mo) et a des fils ; il n'a ni réseau ni accès aux fichiers du serveur.
 - **La cascade** (`noyau/CN_course.py`) : étages dans l'ordre, le gratuit d'abord ; `arret_premiere`, `modele_si_chaud`, `course_si_deux` ; un étage forcé sur un point par `affecter`. Un moteur au plafond du jour, ou le budget du mois atteint, saute l'étage et le dit.
 - **La course** : plusieurs étages sur le même point, jugés par le même juge sur le même corpus ; tableau (variantes, équivalentes, gain, tient hors du vu, jetons, rendement, mémoire, durée) et classement par rendement (points de gain par millier de jetons, au moins mille comptés), gain brut ou durée. Une course n'écrit aucune pièce ; `course_adopter` rejuge la variante gardée, puis la met en ombre.
@@ -201,6 +201,16 @@ Tout ce que la maquette `docs/CN_maquette-evolution-moteurs.html` montrait exist
 - **CodeEvolve** (le vrai, `inter-co/science-codeevolve`, Python ≥ 3.13.5 ; le paquet « codeevolve » de PyPI est un autre projet) : éprouvé le 03-11 avec l'accord de Drisse. Installé depuis l'archive du commit `9897ef16` épinglée par empreinte (21 paquets, dans un Python 3.13 posé par `uv python install 3.13`), exécuté sous bubblewrap, 4 appels de modèle par le relais, une variante rendue. Il parle en blocs SEARCH/REPLACE : le modèle de banc répond dans ce format. Le bac rend visibles l'environnement du moteur ET le dossier de son interpréteur (lu dans `pyvenv.cfg`).
 - Aucun moteur externe n'a tourné avec un vrai modèle du registre (un modèle de banc seulement).
 - Le plafond mémoire d'un moteur externe est quatre fois celui d'un moteur de la maison.
+
+## 2 duodecies. Frugal 2 : notre version de FrugalEvo (04-11)
+
+Lecture complète du dépôt FrugalEvo (Apache-2.0) et décisions : `docs/CN_FRUGALEVO.md`. Aucun code repris : les idées sont réécrites.
+
+- **Ordre** : règles gratuites (si l'une est prouvée plus rapide, on la rend, zéro appel) → s'il n'y a pas de point chaud, rien → sinon le rôle `strategie` rend 2-3 stratégies en texte (blocs `<STRATEGIE>` : famille, portée, gain, plan ; pas de code) → le rôle `executant` écrit chaque stratégie → vérification locale (`comparer_local` : mêmes sorties sur les entrées visibles ET plus rapide, mesure tenue deux fois, copie de la référence refusée) → une version ratée repart au modèle économe avec sa raison (entrée où la sortie diffère, erreur levée, rapport de vitesse) pour un affinage.
+- **Budget borné** : 3 stratégies, 2 tours d'affinage, 6 appels (le plafond du relais), ~30 000 jetons, 90 s ; il s'arrête dès qu'une version est prouvée. Un fort muet laisse une seule tentative sans stratégie.
+- **Contrat inchangé** : `proposer(contexte)` ; il ne juge jamais ; il tourne dans la cage ; ses appels comptent dans le plafond de coût de la maison (rôles `evolution…`). Aucun réglage nouveau au manifeste (`modele_role` et `modele_role_strategie` suffisent).
+- **Preuves** : `tests/CN_test_frugal2.py` (12 bancs, modèle scripté : règles suffisantes, pas de point chaud, stratégie fausse puis affinée, version lente renvoyée, plafond d'appels, version non équivalente jamais rendue, fort muet, délai) et `tests/CN_test_course.py` (la course Frugal contre Orfan) ; verts sous Windows et sous Linux réel (Orion, bubblewrap).
+- **Limites** : pas de mémoire d'un appel à l'autre ; mesure de vitesse sur les entrées visibles dans un seul processus (le noyau remesure) ; aucun essai avec un vrai modèle ; aucun chiffre de l'article reproduit.
 
 ## 3. Rôles (pas de nouvel agent)
 
