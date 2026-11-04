@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #523da1
+// VERSION CN : 0.2.0  #bf4201
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=523da1 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=bf4201 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -191,6 +191,7 @@
       const m = M0();
       try { m.d = await CASS.agir("evolution.moteurs", {}); } catch (e) { m.msg = { ok: false, t: "Les moteurs ne répondent pas : " + (e.message || e) }; }
       try { m.cage = await CASS.agir("evolution.cage", {}); } catch (e) { m.cage = null; }
+      try { m.mod = await CASS.agir("modeles.lister", {}); } catch (e) { m.mod = null; }
       const d = m.d;
       if (d) {
         if (!d.moteurs.some((x) => x.id === m.sel)) m.sel = (d.moteurs[0] || {}).id;
@@ -819,6 +820,14 @@
       ["equilibre", "Équilibré", "Le gratuit d’abord, puis un modèle économe sur ce qui prend vraiment du temps.", ["orfan/deterministe", "frugal"]],
       ["approfondi", "Approfondi", "Tous les chercheurs, y compris par populations. Plus lent et plus cher, il trouve plus.", ["orfan/deterministe", "frugal", "orfan/modele", "evolutif"]]];
     const profilActuel = () => { const on = ((M0().d || {}).cascade || []).filter((e) => e.on).map((e) => e.id).sort().join("|"); const p = PROFILS.find((x) => x[3].slice().sort().join("|") === on); return p ? p[0] : "mesure"; };
+    const ROLES_EV = [["evolution", "Qui exécute", "Écrit les variantes et les essaie. Un modèle économe suffit."], ["evolution_strategie", "Qui conçoit la stratégie", "Propose les pistes à explorer. Un modèle plus fort rend plus ; s’il n’y en a pas, l’exécutant s’en charge."]];
+    function modelesCarte() {
+      const mo = (M0().mod || {}), l = mo.modeles || [];
+      if (!l.length) return '<div class="verre carte"><h2>Quels modèles</h2><div class="note">' + (M0().mod === null ? "La liste des modèles ne répond pas." : "Aucun modèle déclaré : ajoute-en un dans Agents IA › Modèles & clés.") + "</div></div>";
+      const cur = (role) => { const x = l.find((q) => (q.roles || []).indexOf(role) >= 0); return x ? x.id : ""; };
+      return '<div class="verre carte"><h2>Quels modèles</h2><div class="note">Les chercheurs qui écrivent avec un modèle s’en servent par ces deux rôles. Le choix s’applique tout de suite.</div>' +
+        ROLES_EV.map((q) => '<label class="champ"><span class="lib">' + esc(q[1]) + "</span><select data-role=\"" + q[0] + '">' + (cur(q[0]) ? "" : '<option value="" selected disabled>' + (q[0] === "evolution" ? "— aucun : choisis un modèle —" : "— aucun : l’exécutant s’en charge —") + "</option>") + l.map((x) => '<option value="' + esc(x.id) + '"' + (cur(q[0]) === x.id ? " selected" : "") + ">" + esc(x.nom || x.id) + (x.fournisseur ? " · " + esc(x.fournisseur) : "") + "</option>").join("") + '</select><span class="note">' + esc(q[2]) + "</span></label>").join("") + "</div>";
+    }
     function reglages() {
       const m = M0(), d = m.d || {}, b = d.budget || {}, pj = d.propositions_jour || {}, cur = profilActuel();
       const part = b.jetons_mois ? Math.min(100, Math.round(100 * (d.depense_mois || 0) / b.jetons_mois)) : 0;
@@ -829,6 +838,7 @@
         '<details><summary class="btn" style="display:inline-block">Régler les plafonds</summary><div style="margin-top:10px">' + (m.d ? mBudget() : "") + "</div></details></div></section>" +
         '<div class="verre carte"><h2>Qui cherche</h2><div class="note">Choisis un style : il allume ou éteint des chercheurs. Le détail et l’ordre sont dans Sous le capot › Les chercheurs.</div><div class="choix">' +
         PROFILS.map((p) => '<button class="opt' + (cur === p[0] ? " on" : "") + '" data-profil="' + p[0] + '"><b>' + esc(p[1]) + "</b><span class=\"note\">" + esc(p[2]) + "</span></button>").join("") + (cur === "mesure" ? '<div class="opt on"><b>Sur mesure</b><span class="note">Tu as réglé le détail toi-même : choisis un style pour revenir à un réglage prêt à l’emploi.</span></div>' : "") + "</div></div>" +
+        modelesCarte() +
         '<div class="verre carte"><h2>Le frein d’urgence</h2><div class="note">Le frein « gel » est commun à toute la maison : tant qu’il est posé, les agents observent et n’écrivent plus, Évolution comprise. Il se pose et se lève dans Sécurité, pas ici.</div></div>';
     }
 
@@ -895,6 +905,12 @@
       racine.querySelectorAll("[data-vue]").forEach((b) => b.addEventListener("click", () => aller(b.dataset.vue)));
       if (avecMoteurs()) lierMoteurs();
       const vq = racine.querySelector("#ev-vq"); if (vq) vq.addEventListener("input", () => { S.vq = vq.value; dessiner(); const n = racine.querySelector("#ev-vq"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
+      racine.querySelectorAll("[data-role]").forEach((sl) => sl.addEventListener("change", async () => {
+        const m = M0(); if (m.occupe || !sl.value) return; m.occupe = "role"; m.msg = null; dessiner();
+        try { await CASS.agir("modeles.role_lier", { role: sl.dataset.role, modele_id: sl.value }); m.msg = { ok: true, t: "Modèle lié au rôle « " + sl.dataset.role + " »." }; }
+        catch (e) { m.msg = { ok: false, t: e.message || String(e) }; }
+        m.occupe = ""; await chargerM(); dessiner();
+      }));
       racine.querySelectorAll("[data-profil]").forEach((b) => b.addEventListener("click", () => {
         const p = PROFILS.find((x) => x[0] === b.dataset.profil), m = M0(); if (!p || !m.d) return;
         agirM("cascade_regler", { ordre: m.d.cascade.map((e) => ({ id: e.id, on: p[3].indexOf(e.id) >= 0 })) }, "Style « " + p[1] + " » appliqué.");
