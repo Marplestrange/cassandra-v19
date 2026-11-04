@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #09ced7
+// VERSION CN : 0.2.0  #87d283
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=09ced7 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=87d283 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -821,7 +821,7 @@
       const m = M0(), d = m.d || {}, b = d.budget || {}, pj = d.propositions_jour || {}, cur = profilActuel();
       const part = b.jetons_mois ? Math.min(100, Math.round(100 * (d.depense_mois || 0) / b.jetons_mois)) : 0;
       const niv = [["Elle met à l’essai seule ce qui est prouvé identique", "Chaque variante est rejouée contre l’originale ; sans le même résultat, elle n’avance pas."], ["Elle prend une part de plus en plus grande", "À l’ombre d’abord, puis 10 %, puis 50 %, puis tout le trafic."], ["Elle est revérifiée tous les 30 jours", "Si le gain n’a pas tenu, elle est retirée."], ["Tu gardes « Retirer »", "À tout moment : le trafic revient à l’originale."]];
-      return '<section class="cgrid"><div class="verre carte"><div class="tete"><h2>Comment elle gagne sa liberté</h2>' + NB + '</div><div class="note">Aujourd’hui, tu valides la mise en service. Évolution n’a pas de bouton d’autonomie : sa liberté se gagne par les preuves (pas encore branché).</div><div class="liste">' +
+      return mMsg() + '<section class="cgrid"><div class="verre carte"><div class="tete"><h2>Comment elle gagne sa liberté</h2>' + NB + '</div><div class="note">Aujourd’hui, tu valides la mise en service. Évolution n’a pas de bouton d’autonomie : sa liberté se gagne par les preuves (pas encore branché).</div><div class="liste">' +
         niv.map((n) => '<div class="verif ok"><span class="k">✓</span><div><b>' + esc(n[0]) + "</b><small>" + esc(n[1]) + "</small></div><span></span></div>").join("") + "</div></div>" +
         '<div class="verre carte"><h2>Combien ça peut coûter</h2><div class="note">' + (m.d ? "Ce mois-ci : " + kj(d.depense_mois || 0) + " jetons sur " + kj(b.jetons_mois || 0) + " (" + part + " %). Propositions du jour : " + (pj.fait || 0) + " sur " + (pj.plafond || "?") + "." : "Chargement…") + "</div>" + (m.d ? '<div class="barre"><i style="width:' + part + '%"></i></div>' : "") +
         '<details><summary class="btn" style="display:inline-block">Régler les plafonds</summary><div style="margin-top:10px">' + (m.d ? mBudget() : "") + "</div></details></div></section>" +
