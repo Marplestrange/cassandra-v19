@@ -12,7 +12,7 @@
 <!-- RÔLE       : Orfan, la recherche : comment en faire le meilleur moteur possible -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=4766c7 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d26ac6 ▼▼▼ -->
 # Orfan, la recherche : comment en faire le meilleur moteur possible
 
 Statut : 04-11-2026. Dossier de recherche, **rien n'est construit**. Tu décides à la fin (§ 5) ce qu'on fait, ce qu'on mesure, ce qu'on jette.
@@ -273,7 +273,7 @@ Seul changement de code de cette mission, borné à des fichiers que personne d'
 | Fonction | Recettes gratuites actuelles | Modèle : équivalentes / gain prouvé sur 3 essais | Meilleurs rapports de vitesse |
 |---|---|---|---|
 | appartenance à une liste | 0 | 3 / 2 | 68,7 · 0,95 · 47,2 |
-| Fibonacci récursif | 0 | 3 / 3 | 1000 · 596 · 940 (voir la réserve ci-dessous) |
+| Fibonacci récursif | 0 | 3 / 3 | 1000 · 596 · 940 avant la correction du pré-filtre ; 761 · 741 · 931 après |
 | `sum(listes, [])` | 0 | 0 / 0 | aucune variante équivalente |
 | file avec `pop(0)` | 0 | 3 / 1 | 0,99 · 4,05 · 0,96 |
 | dédoublonnage par liste | 0 | 0 / 0 | aucune variante équivalente |
@@ -282,7 +282,8 @@ Seul changement de code de cette mission, borné à des fichiers que personne d'
 - **Les recettes d'aujourd'hui n'ont résolu que 1 fonction sur 6.** Les cinq autres sont exactement les cas que le catalogue de l'axe 1 couvrirait (R01 mémoïsation, R02 ensemble, R03 `chain`, R04 deque, R43 `dict.fromkeys`). C'est l'argument chiffré le plus net pour l'étape 2 de la feuille de route.
 - **Le modèle local de 3 milliards de paramètres fait mieux qu'attendu** : 11 variantes équivalentes sur 18 essais, 6 avec un gain annoncé ; mais sur 2 fonctions sur 6 il n'a rien rendu d'équivalent en 3 essais (je n'ai pas gardé le texte des échecs : cause inconnue).
 - **Coût mesuré** : 764 s pour 18 appels (≈ 42 s par appel), 5 772 jetons d'entrée et 3 786 jetons de sortie au total, gratuit (modèle local).
-- **Réserve importante, trouvée par ce banc** : les rapports de 596 à 1000 pour Fibonacci sont gonflés. `comparer_local` rejoue la MÊME fonction chargée sur deux passes et garde la meilleure : une variante qui mémorise ses résultats (`lru_cache`) est « chaude » à la deuxième passe. Le juge du noyau, lui, chronomètre en passes à froid avec rechargement (lu dans `noyau/CN_evaluateur.py`) : le gain réel de Fibonacci y sera plus faible. **Le pré-filtre d'Orfan n'a donc pas la protection du juge contre le cache.** **Corrigé le 04-11-2026** : `comparer_local` recharge maintenant référence ET candidat à chaque passe (comme le juge). Preuve sur un cas témoin (variante qui s'échauffe après son premier appel, 24 entrées) : l'ancienne mesure rendait un gain de **2 464**, la nouvelle **31,9**. Trois tests ajoutés dans `tests/CN_test_orfan.py` (nombre de chargements, gain non gonflé, candidat faux). Reste vrai, comme dans le juge : au sein d'UNE passe, une variante qui mémorise profite de ses propres entrées répétées. Les rapports de Fibonacci du tableau ci-dessus sont ceux d'AVANT la correction ; je n'ai pas relancé le banc sur Argos.
+- **Défaut du pré-filtre, trouvé par ce banc puis corrigé** : `comparer_local` rejouait la MÊME fonction chargée sur deux passes et gardait la meilleure, après l'avoir déjà appelée pour vérifier l'équivalence : une variante qui mémorise ses résultats arrivait chaude à la mesure. Le juge du noyau, lui, recharge à froid à chaque passe (lu dans `noyau/CN_evaluateur.py`). **Corrigé le 04-11-2026** : `comparer_local` recharge maintenant référence ET candidat à chaque passe. Preuve sur un cas témoin (variante qui s'échauffe après son premier appel, 24 entrées) : l'ancienne mesure rendait un gain de **2 464**, la nouvelle **31,9** ; trois tests ajoutés dans `tests/CN_test_orfan.py`. Reste vrai, comme dans le juge : au sein d'UNE passe, une variante qui mémorise profite de ses propres entrées répétées.
+- **Ce que j'avais écrit à tort, corrigé** : je croyais que les rapports de 596 à 1000 pour Fibonacci étaient surtout un artefact de ce défaut. **Le second banc, relancé sur Argos après la correction, dit le contraire** : 761 · 741 · 931 (contre 1000 · 596 · 940 avant). Ces gains sont réels : Fibonacci récursif sans mémoire refait des dizaines de milliers d'appels (environ 28 000 pour n = 21) là où la version mémorisée en fait une vingtaine ; c'est un gain algorithmique, pas un échauffement. Le défaut était réel (cas témoin) mais n'expliquait pas ce banc-là. Second banc, mêmes 6 fonctions, 3 graines : mêmes équivalences (11 sur 18 essais), mêmes fonctions sans variante équivalente, 592 s au lieu de 764 s pour 18 appels (variation de charge de la machine), mêmes 5 772 jetons d'entrée et 3 786 de sortie (les appels sont reproductibles à graine égale).
 - Le gain de 0,95 à 4 selon la graine pour la même fonction (`appartenance_liste`, `file_pop0`) montre que **1 essai ne suffit pas** : c'est l'argument pour plusieurs variantes et une sélection, pas pour un seul appel.
 - Ce banc ne mesure ni le retour des échecs dans le prompt, ni le diff, ni le bandit : ces idées ne sont pas encore construites.
 
