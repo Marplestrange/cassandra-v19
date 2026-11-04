@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #8ec4d4
+// VERSION CN : 0.2.0  #09ced7
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=8ec4d4 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=09ced7 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -844,7 +844,15 @@
         .replace("Consigne de réécriture", "Ce que tu veux améliorer")
         .replace("Proposer un réglage", "Que suggère Cassandra ?").replace("Juger cette politique", "Juger ce réglage")
         .replace("Politique proposée (JSON)", "Réglage proposé (JSON)").replace("<h2>Objectifs multiples</h2>", "<h2>Ce qui compte le plus</h2>")
-        .replace("Historique des alertes (JSON : cle, mesure, agi)", "Alertes passées (JSON : cle, mesure, agi : suivie d’une action)");
+        .replace("Historique des alertes (JSON : cle, mesure, agi)", "Alertes passées (JSON : cle, mesure, agi : suivie d’une action)")
+        .replace("La sécurité ne dépend jamais d\'un prompt : droits, mandats et freins sont appliqués en code. Le juge vérifie que le prompt évalué ne les fait pas fléchir : un ordre planté dans la donnée est un canari, et la réponse ne doit pas le répéter. Il joue six appels de modèle.", "La sécurité ne dépend jamais d’une consigne : droits, mandats et freins sont appliqués en code. Le contrôleur vérifie que la version évaluée ne les fait pas fléchir et qu’elle ne se laisse pas manipuler par un message piégé. Il joue six appels de modèle.")
+        .replace("Un modèle réécrit, puis chaque réécriture passe par ce même juge : seules les acceptées sont proposées.", "Un modèle réécrit, puis chaque version passe par ce même contrôleur : seules les acceptées te sont proposées.")
+        .replace("Colle ici la variante proposée", "Colle ici une version à vérifier")
+        .replace(/La mettre à juger/g, "La mettre à l’essai")
+        .replace("Valeurs numériques, intervalle autorisé, planchers du noyau.", "Des valeurs chiffrées (un seuil, un délai) : il vérifie qu’elles restent dans les limites permises.")
+        .replace("Intervalles (JSON)", "Limites permises (JSON)")
+        .replace("Planchers (JSON)", "Minimums du noyau (JSON)")
+        .replace("Référence (JSON)", "Réglage actuel (JSON)");
     }
     const VOCAB = [["Amélioration", "Une version d’une fonction de Cassandra, plus rapide et rendant exactement le même résultat."], ["Pièce", "Le nom technique d’une amélioration proposée : elle a un numéro et une empreinte."], ["À l’ombre", "Elle tourne en parallèle de l’originale, sans que personne ne reçoive son résultat : on compare seulement."], ["Palier", "La part du trafic qu’elle sert : à l’ombre, puis 10 %, 50 %, tout."], ["Chercheur", "Un moteur qui invente des versions (Orfan, Frugal, Évolutif ou un moteur externe)."], ["Cascade", "L’ordre dans lequel les chercheurs essaient : le gratuit d’abord."], ["Juge", "Le contrôleur qui décide si une version est identique à l’originale. Il ne s’améliore jamais."], ["Tombe", "L’empreinte d’une version échouée : elle n’est jamais reproposée."], ["Chaîne scellée", "Le carnet de tout ce qui s’est passé, chaîné : une rupture se voit."], ["Cage et bac", "Les chercheurs tournent dans un processus à part, sans réseau ni accès au serveur."], ["Retour", "Retirer une amélioration : le trafic revient à l’originale, en un geste."]];
     function vocab() {
