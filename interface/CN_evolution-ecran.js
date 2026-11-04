@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #97d020
+// VERSION CN : 0.2.0  #98298a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=97d020 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=98298a ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -793,7 +793,7 @@
       const re = (S.etat.pieces || []).filter((p) => p.etat === "retiree"), tb = S.etat.tombes || {};
       return '<div class="note">Le noyau garde l’empreinte de chaque variante écartée pour ne jamais la reproposer. ' + NB + " La raison détaillée et « rouvrir » demandent qu’il garde davantage.</div>" +
         '<div class="verre carte"><h2>Pièces retirées</h2><div class="liste">' + (re.map((p) => '<div class="ligne"><div><b class="mono">' + esc(p.gid) + '</b> <span class="note">EC' + esc(p.num) + "." + esc(p.empreinte) + "</span></div>" + puce("retirée", "dg") + "</div>").join("") || '<div class="vide">Aucune pièce retirée.</div>') + "</div></div>" +
-        '<div class="verre carte"><h2>Tombes</h2><div class="liste">' + (Object.keys(tb).map((k) => '<div class="ligne"><span class="mono">' + esc(k) + "</span><b>" + esc(tb[k]) + "</b></div>").join("") || '<div class="vide">Aucune tombe.</div>') + "</div></div>";
+        '<div class="verre carte"><h2>Tombes</h2><div class="liste">' + (Object.keys(tb).filter((k) => tb[k] > 0).map((k) => '<div class="ligne"><span class="mono">' + esc(k) + "</span><b>" + esc(tb[k]) + "</b></div>").join("") || '<div class="vide">Aucune tombe.</div>') + "</div></div>";
     }
 
     function page() {
