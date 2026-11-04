@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #ee69d4
+// VERSION CN : 0.2.0  #04aa73
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=ee69d4 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=04aa73 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -750,7 +750,7 @@
     Object.keys(TCAPOT).forEach((k) => { TITRES[k] = TCAPOT[k]; });
     ["amelio.toutes", "amelio.essai", "amelio.service", "amelio.retiree"].forEach((k) => { TITRES[k] = TITRES.amelio; SOUS_TITRES[k] = SOUS_TITRES.amelio; });
     const norme = (v) => (v === "capot" ? "capot.chercheurs" : v === "amelio" ? "amelio.toutes" : (TITRES[v] ? v : "aujourdhui"));
-    const MVUE = { reglages: ["aff", "budget"], consignes: ["juges"], "capot.chercheurs": ["moteurs"], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
+    const MVUE = { aujourdhui: [], reglages: ["aff", "budget"], consignes: ["juges"], "capot.chercheurs": ["aff", "moteurs"], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
     const avecMoteurs = () => !!MVUE[S.vue];
     function suivre() { try { if (typeof window.evSuivre === "function") window.evSuivre(S.vue); } catch (e) { /* le menu se remettra à jour au prochain geste */ } }
     async function aller(vue) {
@@ -772,7 +772,17 @@
       const essai = viv.filter((p) => p.etat !== "en_service").length, serv = viv.filter((p) => p.etat === "en_service").length;
       const sante = '<div class="verre carte"><div class="tete"><h2>Où on en est</h2><div class="lg">' + puce(serv + " en service", serv ? "ok" : "mu") + puce(essai + " à l’essai", essai ? "al" : "mu") + puce(ch.ok ? "chaîne intacte" : "chaîne rompue", ch.ok ? "ok" : "dg") + '</div></div><div class="note">' + (viv.length ? "Les pièces vivantes sont dans Améliorations." : "Aucune amélioration en vol pour l’instant.") + "</div></div>";
       const aVoir = regarder.length ? '<div class="verre carte"><h2>À regarder</h2><div class="liste">' + regarder.map((v) => '<div class="ligne"><div><span>' + puce(v[4] === "dg" ? "brûle" : "à regarder", v[4]) + " " + v[0] + '</span><div class="g">' + v[1] + '</div></div><button class="btn" data-vue="' + v[2] + '">' + v[3] + "</button></div>").join("") + "</div></div>" : "";
-      return sante + aVoir + cockpit("intention");
+      const m = M0();
+      if (!m.d && !m.charge) { m.charge = true; chargerM().then(() => { m.charge = false; dessiner(); }); }
+      const d = m.d || {}, b = d.budget || {}, gains = serv > 0 ? viv.filter((p) => p.etat === "en_service" && p.gain_annonce != null).map((p) => p.gain_annonce) : [];
+      const gm = gains.length ? Math.round(gains.reduce((a, c) => a + c, 0) / gains.length) : null;
+      const part = b.jetons_mois ? Math.min(100, Math.round(100 * (d.depense_mois || 0) / b.jetons_mois)) : 0;
+      const g = ((m.cage || {}).garanties) || [], gok = g.filter((x) => x.ok).length;
+      const stats = '<section class="cgrid">' +
+        '<div class="verre carte"><span class="lib">Gain moyen</span><span class="mono" style="font-size:28px;font-weight:600;color:var(--accent)">' + (gm != null ? gm + " %" : "—") + '</span><span class="note">' + (gm != null ? "des " + gains.length + " améliorations en service, annoncé à l’évaluation" : "aucune amélioration en service") + "</span></div>" +
+        '<div class="verre carte"><span class="lib">Utilisé ce mois</span><span class="mono" style="font-size:28px;font-weight:600;color:var(--accent)">' + (m.d ? kj(d.depense_mois || 0) + " jetons" : "—") + '</span><div class="barre"><i style="width:' + part + '%"></i></div><span class="note">' + (m.d ? part + " % du budget du mois (" + kj(b.jetons_mois || 0) + ")" : "chargement…") + "</span></div>" +
+        '<div class="verre carte"><span class="lib">Sécurité</span><span class="mono" style="font-size:28px;font-weight:600;color:' + (g.length && gok < g.length ? "var(--e-al)" : "var(--e-ok)") + '">' + (g.length ? gok + " / " + g.length : "—") + '</span><span class="note">' + (g.length ? (gok < g.length ? "protections actives ; " + esc((g.find((x) => !x.ok) || {}).texte || "") : "protections actives autour des chercheurs") : "chargement…") + "</span></div></section>";
+      return stats + aVoir + sante + cockpit("intention");
     }
 
     // Améliorations : une ligne par pièce, filtrée par l'état choisi dans le menu
@@ -796,9 +806,27 @@
         '<div class="verre carte"><h2>Tombes</h2><div class="liste">' + (Object.keys(tb).filter((k) => tb[k] > 0).map((k) => '<div class="ligne"><span class="mono">' + esc(k) + "</span><b>" + esc(tb[k]) + "</b></div>").join("") || '<div class="vide">Aucune tombe.</div>') + "</div></div>";
     }
 
+    const PROFILS = [["gratuit", "Gratuit seul", "Les recettes sans modèle, rien d’autre. Ça ne coûte rien.", ["orfan/deterministe"]],
+      ["equilibre", "Équilibré", "Le gratuit d’abord, puis un modèle économe sur ce qui prend vraiment du temps.", ["orfan/deterministe", "frugal"]],
+      ["approfondi", "Approfondi", "Tous les chercheurs, y compris par populations. Plus lent et plus cher, il trouve plus.", ["orfan/deterministe", "frugal", "orfan/modele", "evolutif"]]];
+    const profilActuel = () => { const on = ((M0().d || {}).cascade || []).filter((e) => e.on).map((e) => e.id).sort().join("|"); const p = PROFILS.find((x) => x[3].slice().sort().join("|") === on); return p ? p[0] : "mesure"; };
+    function reglages() {
+      const m = M0(), d = m.d || {}, b = d.budget || {}, pj = d.propositions_jour || {}, cur = profilActuel();
+      const part = b.jetons_mois ? Math.min(100, Math.round(100 * (d.depense_mois || 0) / b.jetons_mois)) : 0;
+      const niv = [["Elle met à l’essai seule ce qui est prouvé identique", "Chaque variante est rejouée contre l’originale ; sans le même résultat, elle n’avance pas."], ["Elle prend une part de plus en plus grande", "À l’ombre d’abord, puis 10 %, puis 50 %, puis tout le trafic."], ["Elle est revérifiée tous les 30 jours", "Si le gain n’a pas tenu, elle est retirée."], ["Tu gardes « Retirer »", "À tout moment : le trafic revient à l’originale."]];
+      return '<section class="cgrid"><div class="verre carte"><div class="tete"><h2>Comment elle gagne sa liberté</h2>' + NB + '</div><div class="note">Aujourd’hui, tu valides la mise en service. Évolution n’a pas de bouton d’autonomie : sa liberté se gagne par les preuves (pas encore branché).</div><div class="liste">' +
+        niv.map((n) => '<div class="verif ok"><span class="k">✓</span><div><b>' + esc(n[0]) + "</b><small>" + esc(n[1]) + "</small></div><span></span></div>").join("") + "</div></div>" +
+        '<div class="verre carte"><h2>Combien ça peut coûter</h2><div class="note">' + (m.d ? "Ce mois-ci : " + kj(d.depense_mois || 0) + " jetons sur " + kj(b.jetons_mois || 0) + " (" + part + " %). Propositions du jour : " + (pj.fait || 0) + " sur " + (pj.plafond || "?") + "." : "Chargement…") + "</div>" + (m.d ? '<div class="barre"><i style="width:' + part + '%"></i></div>' : "") +
+        '<details><summary class="btn" style="display:inline-block">Régler les plafonds</summary><div style="margin-top:10px">' + (m.d ? mBudget() : "") + "</div></details></div></section>" +
+        '<div class="verre carte"><h2>Qui cherche</h2><div class="note">Choisis un style : il allume ou éteint des chercheurs. Le détail et l’ordre sont dans Sous le capot › Les chercheurs.</div><div class="choix">' +
+        PROFILS.map((p) => '<button class="opt' + (cur === p[0] ? " on" : "") + '" data-profil="' + p[0] + '"><b>' + esc(p[1]) + "</b><span class=\"note\">" + esc(p[2]) + "</span></button>").join("") + (cur === "mesure" ? '<div class="opt on"><b>Sur mesure</b><span class="note">Tu as réglé le détail toi-même : choisis un style pour revenir à un réglage prêt à l’emploi.</span></div>' : "") + "</div></div>" +
+        '<div class="verre carte"><h2>Le frein d’urgence</h2><div class="note">Le frein « gel » est commun à toute la maison : tant qu’il est posé, les agents observent et n’écrivent plus, Évolution comprise. Il se pose et se lève dans Sécurité, pas ici.</div></div>';
+    }
+
     function page() {
       const v = S.vue;
       if (v === "aujourdhui") return aujourdhui();
+      if (v === "reglages") { const m0 = M0(); if (!m0.d) { if (!m0.charge) { m0.charge = true; chargerM().then(() => { m0.charge = false; dessiner(); }); } return '<div class="verdict mu">Chargement…</div>'; } return reglages(); }
       if (v.indexOf("amelio") === 0) return amelio();
       if (v === "capot.points") return atelier();
       if (v === "capot.ecartees") return ecartees();
@@ -825,6 +853,10 @@
     function lier() {
       racine.querySelectorAll("[data-vue]").forEach((b) => b.addEventListener("click", () => aller(b.dataset.vue)));
       if (avecMoteurs()) lierMoteurs();
+      racine.querySelectorAll("[data-profil]").forEach((b) => b.addEventListener("click", () => {
+        const p = PROFILS.find((x) => x[0] === b.dataset.profil), m = M0(); if (!p || !m.d) return;
+        agirM("cascade_regler", { ordre: m.d.cascade.map((e) => ({ id: e.id, on: p[3].indexOf(e.id) >= 0 })) }, "Style « " + p[1] + " » appliqué.");
+      }));
       racine.querySelectorAll("[data-cible]").forEach((b) => b.addEventListener("click", () => { S.sel = b.dataset.cible; S.resultat = null; S.confirmer = null; dessiner(); }));
       racine.querySelectorAll("[data-onglet]").forEach((b) => b.addEventListener("click", () => { S.onglet = b.dataset.onglet; dessiner(); }));
       racine.querySelectorAll("[data-geste]").forEach((b) => b.addEventListener("click", () => geste(b.dataset.geste)));
