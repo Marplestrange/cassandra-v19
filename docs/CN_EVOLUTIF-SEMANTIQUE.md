@@ -12,14 +12,14 @@
 <!-- RÔLE       : Propositions concrètes pour mettre le sens (multilingual-e5-large) au service du moteur Évolutif, éprouvées par des mesures réelles, classées, avec un plan en étapes. -->
 <!-- MÉTHODE    : on part de ce que fait déjà OpenEvolve (docs/CN_OPENEVOLVE-LECTURE.md) et de ce que fait déjà notre code ; chaque idée dit ce qui est mesuré et ce qui reste une hypothèse. -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=bec4e4 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=56229c ▼▼▼ -->
 # Évolutif et le sens : propositions à débattre
 
 Statut : 04-11-2026, après mesures. **Rien n'est construit dans le dépôt.** Ce document propose, Drisse tranche. Il s'appuie sur `docs/CN_OPENEVOLVE-LECTURE.md` et sur la lecture de notre code : `orfan/CN_evolutif.py`, `orfan/CN_orfan.py`, `orfan/CN_moteur_hote.py`, `noyau/CN_moteurs.py`, `noyau/CN_evolution.py`, `noyau/CN_evaluateur.py`, `noyau/CN_encodage.py`, `modules/bibliotheque/CN_module.py`, `docs/CN_FRUGALEVO.md`.
 
 ## Ce qu'il faut retenir en dix lignes
 
-1. **Sur du code, e5-large est inutilisable pour décider.** Une variante **fausse** (une mutation d'un seul signe) est jugée plus proche de l'original (cosinus médian 0,995) qu'un simple **renommage de variables** qui, lui, est correct (0,979) : dans 96 cas sur 100. Le sens ne voit pas le comportement. Il ne peut ni dédupliquer ni filtrer du code.
+1. **Sur du code, e5-large est inutilisable pour décider.** Une variante **fausse** (une mutation d'un seul signe) est jugée plus proche de l'original (cosinus médian 0,995) qu'un simple **renommage de variables** qui, lui, est correct (0,979) : dans 96 cas sur 100. Le sens ne voit pas le comportement. Il ne peut ni dédupliquer ni filtrer du code. Un modèle spécialisé en code (UniXcoder) fait la même erreur (85 cas sur 100) : c'est le principe du texte, pas ce modèle-là.
 2. **Sur des phrases décrivant une idée, e5-large sait reconnaître la même idée reformulée sur la même fonction** (cosinus 0,89–0,98 contre 0,83–0,91 pour des idées différentes), mais seulement sur un petit échantillon (12 textes réels) et avec un seuil étroit.
 3. **Il ne sait pas classer des idées en familles** (exactitude 60 % sur 8 familles ; aire ROC 0,66).
 4. **Il retrouve mal une astuce à partir d'un bout de code** : 34 % au premier rang (hasard : 7 %), alors qu'un détecteur d'arbre syntaxique est exact pour ces cas.
@@ -73,6 +73,8 @@ Statut : 04-11-2026, après mesures. **Rien n'est construit dans le dépôt.** C
 - Question utile : **peut-il séparer le correct du faux, ou une idée d'une simple mise en forme ?** Non. Paires par fonction (50 premières) : le **mutant (faux) est plus proche de l'original que le renommage (correct) dans 96 cas sur 100**, et la variante « autre idée » dans 51 cas sur 52. **Plus un changement est petit dans le texte, plus le cosinus monte, quel que soit son effet.**
 - Le maximum de 1,000 entre deux fonctions « différentes » vient de fichiers de référence identiques (du code copié d'un point à l'autre).
 - Seuils : à 0,95, 0,4 % de fonctions différentes seraient fusionnées ; à 0,97 : 0,21 % ; mais à 0,97 un simple **renommage n'est reconnu que dans 76 % des cas** et une version sans docstring dans 50 %. Il n'existe pas de seuil qui reconnaisse le renommage sans fusionner aussi les mutants (qui sont à 97 % au-dessus de 0,97).
+
+**Un modèle fait pour le code (E8)** : `microsoft/unixcoder-base` (125 M de paramètres, open source, 143 s pour les 50 premières fonctions et leurs variantes, mêmes variantes que E1). Il sépare bien mieux les fonctions différentes (cosinus médian 0,60 contre 0,86 pour e5) mais **a le même défaut** : le mutant faux est plus proche de l'original que le renommage correct dans **85 cas sur 100** (médianes 0,963 contre 0,918), la variante « autre idée » dans 49 sur 52. Un modèle de code lit toujours le texte, pas le comportement. Je n'ai pas testé d'autres modèles de code (ceux que j'ai vus demandent d'exécuter du code distant au chargement, je les ai laissés).
 
 **Phrases d'idées (E2)**, 48 phrases, 8 familles :
 
