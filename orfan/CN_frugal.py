@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #89ba54
+# VERSION CN : 0.1.0  #a200d9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le moins de jetons possible : les règles gratuites d'abord ; sinon un modèle fort propose 2-3 stratégies en texte, un modèle économe les écrit en code, chaque version est vérifiée ici et affinée sur sa raison d'échec.
 # MÉTHODE    : règles, puis stratégies (rôle strategie) → code (rôle executant) → vérification locale → affinage borné ; s'arrête dès qu'une variante prouvée existe ; sans point chaud, aucune dépense.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=89ba54 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a200d9 ▼▼▼
 """Frugal 2 : notre version de l'idée de FrugalEvo (docs/CN_FRUGALEVO.md).
 
   étage 1 · règles déterministes : zéro jeton ; si l'une est prouvée plus rapide, on la rend et on s'arrête ;
@@ -23,6 +23,7 @@
 Il ne rend que des versions vérifiées et ne juge jamais : le contrôleur du noyau décide, ensuite, sur tout le corpus et le jeu réservé. Il tourne dans la cage (orfan/CN_moteur_hote.py).
 """
 import ast
+import json
 import re
 import sys
 import time
@@ -36,8 +37,9 @@ _VIDE = re.compile(r"^\s*[(\[]\s*(empty|vide)", re.I)                  # « (emp
 class MoteurFrugal:
     nom = "frugal"
 
-    def __init__(self, orfan, appeler_modele=None, seuil_chaud_pct: float = 40.0, strategies: int = 3, tours: int = 2, appels_max: int = 6, jetons_max: int = 30000, duree_max_s: float = 90.0):
+    def __init__(self, orfan, appeler_modele=None, seuil_chaud_pct: float = 40.0, plancher_us: float = 50.0, strategies: int = 3, tours: int = 2, appels_max: int = 6, jetons_max: int = 30000, duree_max_s: float = 90.0):
         self.orfan, self.appeler_modele, self.seuil = orfan, appeler_modele, float(seuil_chaud_pct)
+        self.plancher_us = float(plancher_us)                 # sous ce temps moyen par appel, un gain relatif ne vaut aucun jeton
         self.strategies, self.tours = max(1, int(strategies)), max(0, int(tours))
         self.appels_max, self.jetons_max, self.duree_max_s = max(1, int(appels_max)), int(jetons_max), float(duree_max_s)
         self.etages = []                                        # ce que chaque étage a fait, dit au journal
@@ -85,6 +87,30 @@ class MoteurFrugal:
                 if racine in _INTERDITS or (standard is not None and racine and racine not in standard):
                     return racine
         return None
+
+    @staticmethod
+    def _temps_moyen_us(source, fonction, entrees):
+        """Le temps moyen d'un appel de la fonction sur les entrées visibles, en microsecondes (le meilleur de deux passes) ; None si on ne peut pas le mesurer.
+        Le profil dit où va le travail, pas combien il y en a : sur le vrai code de Cassandra, des fonctions « chaudes à 80 % » durent 10 à 40 µs, et doubler leur vitesse ne gagne rien."""
+        try:
+            ns = {}
+            exec(compile(source, "<orfan>", "exec"), ns)
+            f = ns[fonction]
+            echantillon = [json.dumps(e) for e in entrees[:20]]
+            meilleur = None
+            for _ in range(2):
+                n, t0 = 0, time.perf_counter()
+                for e in echantillon:
+                    try:
+                        f(json.loads(e))
+                    except Exception:
+                        pass
+                    n += 1
+                d = (time.perf_counter() - t0) / max(1, n) * 1e6
+                meilleur = d if meilleur is None else min(meilleur, d)
+            return meilleur
+        except Exception:
+            return None
 
     def _region_chaude(self, source, fonction, entrees):
         """Une boucle dont le corps tient sur plusieurs lignes n'a aucune ligne à 40 % (trois lignes à 33 %) : le profil ligne à ligne la rate. On additionne donc par boucle et on garde la plus
@@ -236,15 +262,16 @@ class MoteurFrugal:
         blocs = O.extraire_blocs(reponse)
         if not blocs:
             s["raison"] = "ta réponse ne contient aucun bloc de code python"
+            self._noter(s, False, 0.0, s["raison"], vide=True)       # une idée qui n'a rien donné est inscrite au carnet : la prochaine fois on ne la repaie pas
             return False
         s["texte"] = blocs[0]["texte"]
         return True
 
-    def _noter(self, s, ok, rapport, raison):
+    def _noter(self, s, ok, rapport, raison, vide=False):
         """Une fiche par famille : la dernière issue gagne (une idée raté au tour 0 puis réussie après affinage est une idée qui marche)."""
         if s["titre"] == "sans stratégie":
             return
-        issue = "prouvee" if ok else ("lente" if rapport > 0 else "fausse")
+        issue = "prouvee" if ok else ("lente" if rapport > 0 else ("vide" if vide else "fausse"))
         self.fiches = [f for f in self.fiches if f["famille"] != s["titre"]] + [{"famille": s["titre"], "issue": issue, "detail": ("gain ×%.2f sur le vu" % rapport) if ok else raison[:200], "rapport": round(rapport, 2)}]
 
     @staticmethod
@@ -290,6 +317,10 @@ class MoteurFrugal:
         chaud = self._region_chaude(source, fonction, entrees) or O.point_chaud(source, fonction, entrees, self.seuil)
         if chaud is None:
             self.etages.append("aucun point chaud : aucune dépense")
+            return []
+        moyen = self._temps_moyen_us(source, fonction, entrees)
+        if moyen is not None and moyen < self.plancher_us:
+            self.etages.append("point chaud, mais l'appel dure %.1f µs (plancher %.0f µs) : rien à gagner qui vaille un jeton" % (moyen, self.plancher_us))
             return []
         if self.appeler_modele is None:
             self.etages.append("point chaud à la ligne %d, mais aucun modèle branché" % chaud["ligne"])

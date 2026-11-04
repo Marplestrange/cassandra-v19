@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1426f3
+# VERSION CN : 0.1.0  #d6fb83
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prouve que Frugal 2 ne dépense rien quand il n'y a rien à gagner, plafonne ses appels, affine sur la raison d'un échec et ne rend jamais une version non équivalente.
 # MÉTHODE    : un modèle de banc scripté (aucune clé) derrière le vrai relais de la cage ; le moteur tourne dans son vrai processus.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1426f3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d6fb83 ▼▼▼
 """Bancs de Frugal 2 (orfan/CN_frugal.py)."""
 import sys
 import tempfile
@@ -199,6 +199,12 @@ class Frugal2(unittest.TestCase):
         r = m.proposer(contexte())
         self.assertTrue(r and "sum(x)" in r[0]["texte"])             # la première preuve est rendue au lieu de DelaiEC
         self.assertEqual(m.stats.get("delai_partiel"), 1)
+
+    def test_un_point_chaud_mais_minuscule_ne_depense_rien(self):
+        src = "def f(x):" + chr(10) + "    t = 0" + chr(10) + "    for v in x:" + chr(10) + "        t = t + v * 2" + chr(10) + "    return t" + chr(10)
+        banc = Banc(lambda r, p, n: self.fail("un modèle a été appelé pour une fonction de quelques microsecondes"))
+        r = self.moteur(banc).proposer(contexte(source_reference=src, entrees=[list(range(60)), list(range(80))]))
+        self.assertEqual(r, [])                                        # 60 passages de boucle : chaud à 90 %, mais quelques µs en tout
 
     def test_les_reglages_de_l_admin_changent_le_budget_et_restent_bornes(self):
         banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)
