@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1f80ae
+# VERSION CN : 0.1.0  #10060e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f80ae ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=10060e ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -496,6 +496,30 @@ def brancher(ctx):
         else:
             db.ecrire("DELETE FROM choix WHERE compte=?", (res["compte"],))
 
+    # ------------------------------------------------------------------ dépense d'un rôle (pour un plafond de coût tenu ailleurs)
+    def depense_roles(c, prefixes=None, jour=""):
+        """Les jetons d'UN jour (aujourd'hui par défaut) des rôles dont le nom commence par l'un des `prefixes`, séparés en jetons EN LIGNE (payants) et LOCAUX (gratuits). Aucun montant : le tarif
+        n'est pas d'ici, il appartient à qui tient le plafond (Agents IA). Lisible par tout compte : ce ne sont que des totaux, jamais un message ni une clé."""
+        jour = str(jour or time.strftime("%Y-%m-%d"))
+        prefixes = [str(p).strip().lower() for p in (prefixes or []) if str(p).strip()][:20]
+        sortie = {p: {"appels": 0, "entrees": 0, "sorties": 0, "entrees_en_ligne": 0, "sorties_en_ligne": 0} for p in prefixes}
+        if not prefixes:
+            return sortie
+        fiches = {m["id"]: m for m in db.lire("SELECT id, fournisseur, base_url FROM modeles")}
+        for l in db.lire("SELECT role, modele_id, appels, entrees, sorties FROM usage WHERE jour=?", (jour,)):
+            role = str(l["role"] or "").lower()
+            for p in prefixes:
+                if role.startswith(p):
+                    o = sortie[p]
+                    o["appels"] += l["appels"]
+                    o["entrees"] += l["entrees"]
+                    o["sorties"] += l["sorties"]
+                    m = fiches.get(l["modele_id"])
+                    if m is None or en_ligne(m):                         # un modèle retiré depuis est compté comme payant : on ne sous-estime pas une dépense
+                        o["entrees_en_ligne"] += l["entrees"]
+                        o["sorties_en_ligne"] += l["sorties"]
+        return sortie
+
     # ------------------------------------------------------------------ usage
     def usage(c, jours=30):
         depuis = datetime.fromtimestamp(time.time() - max(1, min(int(jours or 30), 365)) * 86400).strftime("%Y-%m-%d")
@@ -642,7 +666,7 @@ def brancher(ctx):
     # ------------------------------------------------------------------ inscription
     c = ctx
     c.moteur("pulls", moteur_pulls)
-    for cid, f in (("fournisseurs", fournisseurs), ("lister", lister), ("locaux", locaux), ("usage", usage), ("completer", completer), ("moteurs", moteurs), ("question_libre", question_libre)):
+    for cid, f in (("fournisseurs", fournisseurs), ("lister", lister), ("locaux", locaux), ("usage", usage), ("depense_roles", depense_roles), ("completer", completer), ("moteurs", moteurs), ("question_libre", question_libre)):
         c.implementer(cid, f)
     c.implementer("ajouter", ajouter, prouver_ajoute, defaire_ajoute, simuler=lambda x, nom="", **_: "déclarerait le modèle « %s »" % nom)
     c.implementer("instance_ajouter", instance_ajouter, prouver_ajoute, defaire_ajoute, simuler=lambda x, nom="", **_: "déclarerait le modèle d'instance « %s »" % nom)

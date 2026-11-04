@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #23331e
+# VERSION CN : 0.1.0  #aa3741
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le registre des modèles de langage : un modèle se déclare une fois (fournisseur, nom, adresse, clé chiffrée), les rôles de la maison et les comptes y puisent. La clé ne sort jamais du module : tout passe par `completer` (OpenAI-compatible ou Ollama natif, réflexion des modèles raisonneurs bornée, jetons comptés). Un compte n'utilise que SES modèles, jamais la clé du serveur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=23331e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=aa3741 ▼▼▼
 [module]
 id = "modeles"
 nom = "Modèles"
@@ -90,6 +90,12 @@ id = "usage"
 libelle = "Les appels, échecs et jetons par jour, rôle et modèle"
 risque = "lecture"
 droit = "administrer"
+
+[[capacites]]
+id = "depense_roles"
+libelle = "Les jetons du jour des rôles dont le nom commence par un préfixe, en ligne (payants) et locaux (gratuits) : de quoi tenir un plafond de coût sans lire l'usage détaillé"
+risque = "lecture"
+droit = "completer"
 
 [[capacites]]
 id = "question_libre"

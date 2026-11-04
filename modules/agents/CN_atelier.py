@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #03fa78
+# VERSION CN : 0.5.1  #68dc3e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=03fa78 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=68dc3e ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -132,6 +132,28 @@ def brancher_equipe(ctx, reglage):
         return {"palier": p, "confirmer": bool(s.get("confirmer")), "retire": p == "retire", "defaut": t["palier"]}
 
     # ------------------------------------------------------------------ les coûts
+    SERVICES = {"evolution": "Évolution"}       # les services qui appellent un modèle SANS être des agents : leur rôle de modèle commence par leur identifiant ; leur dépense compte dans le plafond de la maison
+    _memo_services = {"t": 0.0, "j": "", "v": {}}
+
+    def depenses_services():
+        """Ce que les services ont dépensé AUJOURD'HUI, en centimes : lu dans l'usage du module Modèles (jamais écrit ici : un module n'écrit pas chez un autre), au tarif par défaut,
+        et GRATUIT pour un modèle local. Gardé 1 s : le plafond se consulte plusieurs fois par tour."""
+        j = eq.jour()
+        if _memo_services["j"] == j and time.time() - _memo_services["t"] < 1.0:
+            return _memo_services["v"]
+        res = {}
+        try:
+            lu = ctx.executer_lecture("modeles.depense_roles", prefixes=list(SERVICES), jour=j) or {}
+        except Exception:
+            lu = {}                                                    # Modèles absent : aucun service ne dépense par lui
+        te, ts = D["tarif_defaut_cts"]["entree"], D["tarif_defaut_cts"]["sortie"]
+        for s in SERVICES:
+            r = lu.get(s) or {}
+            res[s] = {"c": eq.cout_centimes(r.get("entrees_en_ligne", 0), r.get("sorties_en_ligne", 0), te, ts), "n": int(r.get("appels", 0)),
+                      "e": int(r.get("entrees", 0)), "s": int(r.get("sorties", 0))}
+        _memo_services.update(t=time.time(), j=j, v=res)
+        return res
+
     def depense(agent="", compte=None):
         sql, a = "SELECT COALESCE(SUM(centimes),0) AS c, COALESCE(SUM(appels),0) AS n, COALESCE(SUM(entrees),0) AS e, COALESCE(SUM(sorties),0) AS s FROM agent_couts WHERE jour=?", [eq.jour()]
         if agent:
@@ -140,7 +162,28 @@ def brancher_equipe(ctx, reglage):
         if compte is not None:
             sql += " AND compte=?"
             a.append(compte)
-        return dict(db.lire(sql, a)[0])
+        r = dict(db.lire(sql, a)[0])
+        if not agent and compte is None:                                # la dépense de la maison : les agents ET les services
+            for s in depenses_services().values():
+                r["c"] += s["c"]
+                r["n"] += s["n"]
+                r["e"] += s["e"]
+                r["s"] += s["s"]
+        elif agent in SERVICES and compte is None:
+            r = dict(depenses_services()[agent])
+        return r
+
+    def service_plafond(c, service="evolution"):
+        """Un service peut-il encore appeler un modèle payant aujourd'hui ? Le plafond de la maison (et celui du service s'il en a un) se compare à ce que tout le monde a dépensé."""
+        service = str(service or "").strip().lower()
+        if service not in SERVICES:
+            raise ValueError("service inconnu : %s" % " | ".join(SERVICES))
+        pl = plafonds()
+        mien = depenses_services()[service]["c"]
+        v = eq.verdict_plafond(pl, {"global": depense()["c"], service: mien}, service, eq.jour()) if pl else None
+        g = pl.get("global")
+        return {"service": service, "retient": bool(v), "portee": (v or {}).get("portee", ""), "action": (v or {}).get("action", ""), "depense_euros": eq.euros(depense()["c"]),
+                "service_euros": eq.euros(mien), "plafond_euros": eq.euros(g["centimes"]) if g else None}
 
     def compter(agent, compte, usage, local=False):
         """Le coût d'un échange avec le modèle, ajouté au jour : par agent, et par compte pour Itare. Un modèle local est GRATUIT : ses appels et ses jetons se comptent, jamais des centimes
@@ -241,6 +284,10 @@ def brancher_equipe(ctx, reglage):
         lignes = [{"jour": r["jour"], "agent": r["agent"], "appels": r["appels"], "entrees": r["entrees"], "sorties": r["sorties"], "euros": eq.euros(r["c"])}
                   for r in db.lire(sql + " GROUP BY jour, agent ORDER BY jour DESC, agent", a)]
         auj = depense(definition(id)["id"] if id else "")["c"] if voit_tout else depense("itare", compte)["c"]
+        if voit_tout and not id:                                       # les services (Évolution) : leur dépense du jour, avec celle des agents
+            for s, v in depenses_services().items():
+                if v["n"]:
+                    lignes.insert(0, {"jour": eq.jour(), "agent": s, "appels": v["n"], "entrees": v["e"], "sorties": v["s"], "euros": eq.euros(v["c"])})
         res = {"jours": lignes, "total_euros": round(sum(x["euros"] for x in lignes), 6), "aujourdhui_euros": eq.euros(auj)}
         if voit_tout:
             res["plafonds"] = {k: {"euros": eq.euros(v["centimes"]), "action": v["action"], "accord_jour": v["accord_jour"]} for k, v in plafonds().items()}
@@ -384,6 +431,7 @@ def brancher_equipe(ctx, reglage):
             db.ecrire("INSERT OR REPLACE INTO agent_plafonds(portee, centimes, action, accord_jour, maj) VALUES (?,?,?,?,?)", (a["portee"], a["centimes"], a["action"], a["accord_jour"], a["maj"]))
 
     # ------------------------------------------------------------------ inscription
+    ctx.implementer("service_plafond", service_plafond)
     for cid, f in (("equipe", equipe), ("agent", agent), ("couts", couts), ("paliers", paliers)):
         ctx.implementer(cid, f)
     ctx.implementer("agent_regler", agent_regler, prouver_config, defaire_config, simuler=lambda x, id="", champs=None, **_: "réglerait %s : %s" % (id, ", ".join(sorted(champs or {}))))

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #2daf12
+# VERSION CN : 0.5.0  #7c9c1f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=2daf12 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=7c9c1f ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -56,6 +56,15 @@ def brancher(ctx):
         """Le modèle du rôle choisi, par le module Modèles (une lecture). « strategie » prend le rôle fort s'il est réglé, sinon le même. Un modèle muet ou absent est une erreur DITE,
         jamais une réponse inventée."""
         nom_role = str(reglage("modele_role_strategie", "") if role == "strategie" else "") or str(reglage("modele_role", "evolution"))
+        try:
+            plafond = ctx.executer_lecture("agents.service_plafond", service="evolution")    # le plafond de coût de la maison (Agents IA) : atteint, Évolution n'appelle plus de modèle aujourd'hui
+        except Exception as e:
+            if "n'est pas une capacité de lecture" not in str(e):
+                raise RuntimeError("le plafond de dépense n'a pas pu être lu (%s) : par prudence, Évolution n'appelle pas de modèle" % str(e)[:120])
+            plafond = None                                        # Agents IA est absent : aucun plafond n'est posé nulle part, il n'y a rien à respecter
+        if isinstance(plafond, dict) and plafond.get("retient"):
+            raise RuntimeError("le plafond de dépense de la maison est atteint aujourd'hui (%s € sur %s €, action « %s ») : Évolution n'appelle plus de modèle jusqu'à demain, ou jusqu'à ce que tu le relèves dans Agents IA"
+                               % (plafond.get("depense_euros"), plafond.get("plafond_euros"), plafond.get("action")))
         r = ctx.executer_lecture("modeles.completer", messages=[{"role": "user", "content": prompt}], role=nom_role, max_tokens=3000, temperature=0.2)
         if not r or not r.get("ok"):
             raise RuntimeError((r or {}).get("erreur") or "le modèle n'a pas répondu (module Modèles absent, ou rôle « %s » sans modèle)" % nom_role)
