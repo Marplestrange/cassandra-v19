@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0fa00c
+# VERSION CN : 0.1.0  #140d6f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le moins de jetons possible : les règles gratuites d'abord ; sinon un modèle fort propose 2-3 stratégies en texte, un modèle économe les écrit en code, chaque version est vérifiée ici et affinée sur sa raison d'échec.
 # MÉTHODE    : règles, puis stratégies (rôle strategie) → code (rôle executant) → vérification locale → affinage borné ; s'arrête dès qu'une variante prouvée existe ; sans point chaud, aucune dépense.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0fa00c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=140d6f ▼▼▼
 """Frugal 2 : notre version de l'idée de FrugalEvo (docs/CN_FRUGALEVO.md).
 
   étage 1 · règles déterministes : zéro jeton ; si l'une est prouvée plus rapide, on la rend et on s'arrête ;
@@ -128,11 +128,25 @@ class MoteurFrugal:
             lignes.append("Les %d dernières idées ont toutes échoué : toute nouvelle stratégie doit venir d'une famille ABSENTE de cette liste. Une variante, un réglage ou un mélange d'une famille ratée n'est pas une famille nouvelle." % queue)
         return "\n".join(lignes)
 
+    @staticmethod
+    def _juge_texte(contexte) -> str:
+        """Ce que le juge de la maison récompense, dit au modèle fort (l'« analyse de l'évaluateur » de FrugalEvo, sans appel de modèle : les seuils sont connus)."""
+        seuils = contexte.get("seuils") or {}
+        if not seuils:
+            return ""
+        poids = {k: v for k, v in (seuils.get("objectifs") or {}).items() if isinstance(v, (int, float)) and v}
+        txt = "Le juge n'acceptera une version que si elle rend EXACTEMENT les mêmes valeurs sur tout un corpus (dont des cas réservés que tu ne vois pas), gagne au moins %s %% de temps, plus de deux fois le bruit de mesure, et que ce gain tient hors des entrées visibles." % seuils.get("gain_min_pct", 5)
+        if poids and set(poids) != {"latence"}:
+            txt += " Il pèse : " + ", ".join("%s %s" % (k, v) for k, v in sorted(poids.items())) + "."
+        return txt
+
     def _demande_strategies(self, contexte, chaud) -> str:
         lignes = ["Tu conseilles l'optimisation d'une fonction Python PURE : plus rapide, SANS changer son résultat.", "", "Fonction (nom : %s) :" % contexte["fonction"], "```python", contexte["source_reference"].rstrip(), "```", "",
                   "Profil mesuré : la ligne %d porte %s %% du travail : %s" % (chaud["ligne"], chaud["part_pct"], chaud["texte"]), ""]
         if contexte.get("tombes"):
             lignes += ["%d variante(s) ont DÉJÀ échoué sur ce point : ne propose pas une transformation triviale déjà tentée." % len(contexte["tombes"]), ""]
+        if self._juge_texte(contexte):
+            lignes += [self._juge_texte(contexte), ""]
         lignes += self._memoire_texte(contexte.get("memoire") or []).split("\n") if contexte.get("memoire") else []
         lignes += ["Propose %d stratégies VRAIMENT différentes (une autre structure de données, un autre algorithme, un autre découpage : pas un simple réglage). Ne rends AUCUN code : quelqu'un d'autre l'écrira." % self.strategies,
                    "Pour chaque stratégie, ce bloc exactement :", "<STRATEGIE>", "Famille : un mot ou deux qui nomment le mécanisme", "Portée : la ligne ou le bloc à remplacer",
@@ -188,6 +202,12 @@ class MoteurFrugal:
         self._debut, self.appels, self.jetons, self._plein = time.monotonic(), 0, 0, False
         source, fonction, entrees = contexte["source_reference"], contexte["fonction"], contexte.get("entrees") or []
         budget = max(1, int(contexte.get("budget", 3)))
+        o = contexte.get("options") or {}                      # les réglages de l'admin, bornés ici quoi qu'on envoie
+        for nom, cle, bas, haut in (("strategies", "strategies", 1, 5), ("tours", "tours", 0, 4), ("appels_max", "appels_max", 1, 6)):
+            try:
+                setattr(self, nom, min(haut, max(bas, int(o[cle]))))
+            except (KeyError, TypeError, ValueError):
+                pass
         self._memoire, self.fiches = [f for f in (contexte.get("memoire") or []) if isinstance(f, dict)], []
         trouves = []
         for c in O.optimisations(source):

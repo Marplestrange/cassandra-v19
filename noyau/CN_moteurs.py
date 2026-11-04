@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #31b4b6
+# VERSION CN : 0.1.0  #688787
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=31b4b6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=688787 ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -66,9 +66,10 @@ class MoteurProcessus:
     """Un moteur de recherche dans son processus. `appeler_modele(prompt, role) -> texte` est fourni par Cassandra (son registre de modèles) ; le moteur n'y a accès que par le relais."""
 
     def __init__(self, choix: str = "deterministe", appeler_modele=None, orfan: str | Path | None = None, delai_s: float = DELAI_MOTEUR_S, memoire_mo: int = MEMOIRE_MOTEUR_MO,
-                 max_appels: int = MAX_APPELS_MODELE, max_jetons: int = MAX_JETONS, bac: str = "auto", nom: str = "orfan-processus", python: str = "", on_relais=None, carnet=None):
+                 max_appels: int = MAX_APPELS_MODELE, max_jetons: int = MAX_JETONS, bac: str = "auto", nom: str = "orfan-processus", python: str = "", on_relais=None, carnet=None, options=None):
         if choix not in CHOIX and not _ADAPTATEUR.match(str(choix)):
             raise ValueError("choix de moteur inconnu : %r (%s, ou adaptateur:<module>)" % (choix, ", ".join(CHOIX)))
+        self.options = {k: v for k, v in dict(options or {}).items() if isinstance(v, (int, float, str)) and not isinstance(v, bool)}      # les réglages du moteur (Frugal : idées, tours, appels) ; il les borne lui-même
         self._familles = {}                                             # empreinte d'une variante rendue -> sa famille d'idée, pour rapporter le verdict du juge
         self.carnet = carnet                                            # le carnet des idées essayées (Registre.fiches / noter_fiches) : sur le disque, jamais gardé en mémoire vive
         self.on_relais = on_relais                                      # appelé après chaque demande de modèle : {role, modele, jetons_haut, jetons_bas, resultat}
@@ -142,6 +143,8 @@ class MoteurProcessus:
         appels = jetons = 0
         gid = str(contexte.get("point") or "")
         envoi = {k: v for k, v in contexte.items() if not callable(v)}                      # une fonction ne traverse pas la frontière : le moteur reçoit du texte et des données
+        if self.options:
+            envoi["options"] = dict(self.options)
         if self.carnet is not None and gid:
             try:
                 envoi["memoire"] = self.carnet.fiches(gid)                                  # ce que les recherches précédentes sur CE point ont appris (un moteur ne garde rien d'un appel à l'autre)

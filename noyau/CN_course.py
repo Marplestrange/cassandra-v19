@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9e5db9
+# VERSION CN : 0.1.0  #e7952f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Décide quel moteur cherche pour quel point : la cascade (le gratuit d'abord), l'affectation forcée, la course entre moteurs, les plafonds par moteur ; rien n'est mis en service par une course.
 # MÉTHODE    : un moteur à la fois dans son processus, jugé par le même juge sur le même corpus ; chaque étage compte ses jetons ; un plafond atteint saute l'étage et le dit.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9e5db9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e7952f ▼▼▼
 """Lots 3 de la maquette d'Évolution : course, cascade, affectations, budget par moteur.
 
 La CASCADE : les étages actifs, dans l'ordre (le gratuit d'abord). `arret_premiere` : on s'arrête à la première variante prouvée. `modele_si_chaud` : un étage qui dépense un modèle
@@ -51,7 +51,8 @@ def rendement(gain, jetons) -> float:
 class Orchestrateur:
     """`appeler_modele(prompt, role) -> texte` : le registre de modèles de Cassandra. `isoles()` : les étages d'Orfan tournent-ils dans leur processus ? `en_ligne(choix)` : l'Orfan en ligne (le serveur)."""
 
-    def __init__(self, evo, registre, appeler_modele=None, isoles=lambda: True, en_ligne=None, horloge=time.time, delai_s: float = 120.0):
+    def __init__(self, evo, registre, appeler_modele=None, isoles=lambda: True, en_ligne=None, horloge=time.time, delai_s: float = 120.0, options_moteur=None):
+        self.options_moteur = options_moteur
         self.evo, self.reg, self.appeler_modele, self._isoles, self._en_ligne = evo, registre, appeler_modele, isoles, en_ligne
         self._horloge, self.delai_s = horloge, float(delai_s)
 
@@ -81,6 +82,8 @@ class Orchestrateur:
             m = next((x for x in self.reg.liste() if x["id"] == ident), {})
             kw["python"] = m.get("python", "")
         kw["carnet"] = self.reg
+        if callable(self.options_moteur):
+            kw["options"] = self.options_moteur(choix)
         return MoteurProcessus(choix, **kw)
 
     def _chaud(self, module: str, point: str) -> bool:

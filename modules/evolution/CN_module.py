@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #926bf8
+# VERSION CN : 0.5.0  #42c8da
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=926bf8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=42c8da ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -97,7 +97,13 @@ def brancher(ctx):
 
     def orchestre():
         cou = importlib.import_module("noyau.CN_course")
-        return cou.Orchestrateur(evo, registre(), appeler_modele=appeler_modele, isoles=isoles, en_ligne=moteur_en_ligne)
+        return cou.Orchestrateur(evo, registre(), appeler_modele=appeler_modele, isoles=isoles, en_ligne=moteur_en_ligne, options_moteur=options_frugal)
+
+    def options_frugal(choix=""):
+        """Les réglages de Frugal (idées, tours d'affinage, appels) : lus ici, bornés par le moteur lui-même."""
+        if choix and choix != "frugal":
+            return {}
+        return {"strategies": reglage("frugal_strategies", 3), "tours": reglage("frugal_tours", 2), "appels_max": reglage("frugal_appels", 6)}
 
     def moteur_en_ligne(choix):
         """L'Orfan du serveur : il n'écrit que du texte, il n'exécute aucun candidat."""
@@ -118,7 +124,7 @@ def brancher(ctx):
         orfan = importlib.import_module(nom)
         if isoles():                   # le moteur dans son processus : sans clé, plafonné, tué au délai ; les modèles passent par le relais
             mot = importlib.import_module("noyau.CN_moteurs")
-            return mot.MoteurProcessus(choix, appeler_modele=lambda prompt, role="executant": appeler_modele(prompt, role), orfan=importlib.util.find_spec(nom).origin, carnet=registre())
+            return mot.MoteurProcessus(choix, appeler_modele=lambda prompt, role="executant": appeler_modele(prompt, role), orfan=importlib.util.find_spec(nom).origin, carnet=registre(), options=options_frugal(choix))
         if choix == "modele":
             return orfan.MoteurModele(appeler_modele)
         if choix == "les_deux":

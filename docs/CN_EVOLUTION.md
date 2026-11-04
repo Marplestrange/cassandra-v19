@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ba7561 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d7e498 ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -209,7 +209,7 @@ Lecture complète du dépôt FrugalEvo (Apache-2.0) et décisions : `docs/CN_FRU
 - **Ordre** : règles gratuites (si l'une est prouvée plus rapide, on la rend, zéro appel) → s'il n'y a pas de point chaud, rien → sinon le rôle `strategie` rend 2-3 stratégies en texte (blocs `<STRATEGIE>` : famille, portée, gain, plan ; pas de code) → le rôle `executant` écrit chaque stratégie → vérification locale (`comparer_local` : mêmes sorties sur les entrées visibles ET plus rapide, mesure tenue deux fois, copie de la référence refusée) → une version ratée repart au modèle économe avec sa raison (entrée où la sortie diffère, erreur levée, rapport de vitesse) pour un affinage.
 - **Budget borné** : 3 stratégies, 2 tours d'affinage, 6 appels (le plafond du relais), ~30 000 jetons, 90 s ; il s'arrête dès qu'une version est prouvée. Un fort muet laisse une seule tentative sans stratégie.
 - **Mémoire d'un appel à l'autre** : le moteur rend ses fiches (famille, issue, raison), puis le juge du noyau lui rapporte son verdict par un rappel facultatif `verdicts(gid, essais)` appelé en fin de `_juger` (protégé : une panne du carnet ne change jamais un jugement) ; le moteur rend ses fiches (famille, issue, raison) ; `MoteurProcessus` les nettoie et le `Registre` (`moteurs.json`) les garde sur le disque, 24 par point ; elles reviennent dans `contexte["memoire"]` et dans la demande au modèle fort. Une famille déjà ratée n'est pas réécrite ; 6 échecs de suite imposent une famille nouvelle.
-- **Contrat inchangé** : `proposer(contexte)` ; il ne juge jamais ; il tourne dans la cage ; ses appels comptent dans le plafond de coût de la maison (rôles `evolution…`). Aucun réglage nouveau au manifeste (`modele_role` et `modele_role_strategie` suffisent).
+- **Contrat inchangé** : `proposer(contexte)` ; il ne juge jamais ; il tourne dans la cage ; ses appels comptent dans le plafond de coût de la maison (rôles `evolution…`). Trois réglages au manifeste : `frugal_strategies` (1 à 5, défaut 3), `frugal_tours` (0 à 4, défaut 2), `frugal_appels` (1 à 6, défaut 6) ; le moteur les borne lui-même. La demande au modèle fort dit aussi ce que le juge récompense (ses seuils).
 - **Preuves** : `tests/CN_test_frugal2.py` (20 bancs, dont 8 pour la mémoire et le verdict du juge ; modèle scripté : règles suffisantes, pas de point chaud, stratégie fausse puis affinée, version lente renvoyée, plafond d'appels, version non équivalente jamais rendue, fort muet, délai) et `tests/CN_test_course.py` (la course Frugal contre Orfan) ; verts sous Windows et sous Linux réel (Orion, bubblewrap).
 - **Limites** : mesure de vitesse sur les entrées visibles dans un seul processus (le noyau remesure) ; aucun essai avec un vrai modèle ; aucun chiffre de l'article reproduit.
 

@@ -12,7 +12,7 @@
 <!-- RÔLE       : FrugalEvo lu, et Frugal 2 -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c58780 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=2e34aa ▼▼▼ -->
 # FrugalEvo lu, et Frugal 2
 
 Statut : 04-11-2026. Ce document dit ce que fait FrugalEvo, ce que Frugal 2 (`orfan/CN_frugal.py`) en reprend, ce qu'il laisse, et pourquoi.
@@ -75,7 +75,7 @@ Une seule fois, avant la recherche, le modèle fort lit le texte du problème, l
 | Évaluateur = juge dans la boucle | **Laissé** | Chez nous le moteur ne juge JAMAIS : il vérifie seulement « même sortie sur les entrées visibles ET plus rapide » ; le noyau juge sur tout le corpus et le jeu réservé. |
 | Base MAP-Elites à îlots, migration, populations | **Laissé** | Il n'y a qu'une fonction, un seul parent (la référence), un seul appel : rien à peupler. Le moteur « Évolutif » fait déjà des générations. |
 | Règles gratuites d'abord | **Nôtre, gardé** | FrugalEvo n'en a pas : c'est notre atout de coût zéro. |
-| Analyse de l'évaluateur par un modèle | **Laissé** | L'évaluateur de la maison est connu et fixe (vitesse à sortie identique). Elle coûterait un appel du fort pour rien. Le profil de la fonction (point chaud) joue le rôle d'indice. |
+| Analyse de l'évaluateur par un modèle | **Gardé, sans appel de modèle** | Le juge de la maison est connu : le contexte porte ses seuils (gain minimum, poids des objectifs). Frugal 2 les écrit dans la demande au modèle fort (« le juge exige les mêmes valeurs, au moins X % de gain, un gain qui tient hors du vu »). Un appel de plus pour le deviner serait du gaspillage. |
 | Cascade d'ouverture, hedge du fort, assurance | **Laissé** | Ils servent à une recherche longue sur un budget en dollars. Notre appel est court et borné. |
 | Effort de raisonnement qui monte à la stagnation | **Laissé** | Notre relais n'expose pas ce réglage ; le rôle de modèle décide. |
 | Rejets propres à un banc (mutations JAX, profil « txn_scheduling ») | **Laissé** | Spécifiques à leurs bancs. |

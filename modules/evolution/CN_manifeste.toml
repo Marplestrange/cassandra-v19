@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #31413a
+# VERSION CN : 0.5.0  #0bfd04
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=31413a ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=0bfd04 ▼▼▼
 [module]
 id = "evolution"
 nom = "Évolution"
@@ -362,6 +362,33 @@ libelle = "Le rôle de modèle fort (stratège)"
 type = "texte"
 defaut = ""
 aide = "Un rôle du registre de modèles pour les étages qui demandent un modèle plus fort (Frugal, dernier recours). Vide : le même rôle que celui des variantes."
+
+[[reglages]]
+id = "frugal_strategies"
+libelle = "Frugal : idées demandées au modèle fort"
+type = "entier"
+defaut = 3
+minimum = 1
+maximum = 5
+aide = "Combien d'idées (en texte, sans code) Frugal demande au modèle fort. Plus d'idées : plus de chances, mais un appel de plus par idée au modèle économe."
+
+[[reglages]]
+id = "frugal_tours"
+libelle = "Frugal : tours d'affinage"
+type = "entier"
+defaut = 2
+minimum = 0
+maximum = 4
+aide = "Combien de fois Frugal renvoie une version ratée au modèle économe, avec la raison, pour qu'il la corrige. 0 : une seule écriture par idée."
+
+[[reglages]]
+id = "frugal_appels"
+libelle = "Frugal : appels de modèle au plus par recherche"
+type = "entier"
+defaut = 6
+minimum = 1
+maximum = 6
+aide = "Le plafond propre de Frugal (le relais de la cage en pose un aussi, à 6)."
 
 [[reglages]]
 id = "moteurs_isoles"

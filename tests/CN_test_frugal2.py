@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e1a28d
+# VERSION CN : 0.1.0  #352c06
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prouve que Frugal 2 ne dépense rien quand il n'y a rien à gagner, plafonne ses appels, affine sur la raison d'un échec et ne rend jamais une version non équivalente.
 # MÉTHODE    : un modèle de banc scripté (aucune clé) derrière le vrai relais de la cage ; le moteur tourne dans son vrai processus.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e1a28d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=352c06 ▼▼▼
 """Bancs de Frugal 2 (orfan/CN_frugal.py)."""
 import sys
 import tempfile
@@ -150,6 +150,25 @@ class Frugal2(unittest.TestCase):
             return STRATEGIES
         with self.assertRaises(DelaiEC):
             self.moteur(Banc(lent), delai_s=8).proposer(contexte())
+
+    def test_les_reglages_de_l_admin_changent_le_budget_et_restent_bornes(self):
+        banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)
+        self.moteur(banc, options={"strategies": 1, "tours": 0, "appels_max": 6}).proposer(contexte())
+        self.assertEqual([a[0] for a in banc.appels], ["strategie", "executant"])                # une idée demandée, pas d'affinage
+        self.assertIn("1 stratégies", banc.appels[0][1])
+        banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)
+        self.moteur(banc, options={"strategies": 99, "tours": 99, "appels_max": 99}).proposer(contexte())
+        self.assertLessEqual(len(banc.appels), 6)                                                # jamais au-delà des bornes du moteur
+        banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)
+        self.moteur(banc, options={"strategies": "n'importe quoi", "appels_max": 3}).proposer(contexte())
+        self.assertEqual(len(banc.appels), 3)                                                    # une valeur illisible est ignorée, les autres tiennent
+
+    def test_le_fort_apprend_ce_que_le_juge_recompense(self):
+        banc = Banc(lambda r, p, n: STRATEGIES if r == "strategie" else FAUSSE)
+        self.moteur(banc).proposer(contexte(seuils={"gain_min_pct": 5.0, "objectifs": {"latence": 1.0, "memoire": 0.5, "taille": 0.0}}))
+        self.assertIn("au moins 5.0 %", banc.appels[0][1])
+        self.assertIn("memoire 0.5", banc.appels[0][1])
+        self.assertNotIn("taille", banc.appels[0][1].split("Le juge")[1].split("Propose")[0])
 
 
 class Memoire(unittest.TestCase):
