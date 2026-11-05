@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #39f520
+// VERSION CN : 0.2.0  #049498
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=39f520 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=049498 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -239,7 +239,7 @@
     function mBudget() {
       const m = M0(), d = m.d || {}, b = d.budget || {}, pj = d.propositions_jour || {}, mo = (d.moteurs || []).filter((x) => x.essais > 0 || (x.plafond || {}).jetons_jour != null), tot = mo.reduce((a, x) => a + (x.jetons || 0), 0);
       const part = b.jetons_mois ? Math.min(100, Math.round(100 * (d.depense_mois || 0) / b.jetons_mois)) : 0;
-      return '<div class="tete"><div><h3 class="mono" style="font-size:15px">Budget et relais de modèles</h3><div class="note">Ce que la recherche a le droit de dépenser, avec quels modèles, et par où passent les appels.</div></div></div>' + mBandeau() +
+      return '<div class="tete"><div><h3 class="mono" style="font-size:15px">Budget et relais de modèles</h3><div class="note">Ce que la recherche a le droit de dépenser, avec quels modèles, et par où passent les appels.</div></div></div>' +
         '<section class="cgrid"><div class="verre carte"><h2>Plafonds</h2><div class="champs"><label class="champ"><span class="lib">Jetons par mois</span><input type="number" id="mb-mois" min="0" value="' + (b.jetons_mois || 0) + '"></label><label class="champ"><span class="lib">Alerte à (%)</span><input type="number" id="mb-alerte" min="1" max="100" value="' + (b.alerte_pct || 80) + '"></label></div>' +
         '<div class="liste"><label class="inter"><input type="checkbox" id="mb-grat" ' + (b.gratuits_d_abord ? "checked" : "") + '><span class="t"><b class="mono" style="font-size:12.5px">Gratuits d\'abord</b><span class="note">la cascade essaie les étages sans jeton avant ceux qui en dépensent</span></span></label><label class="inter"><input type="checkbox" id="mb-coupe" ' + (b.couper_au_plafond ? "checked" : "") + '><span class="t"><b class="mono" style="font-size:12.5px">Couper la recherche au plafond</b><span class="note">sinon seulement alerter</span></span></label></div>' +
         '<div class="tete"><span class="note">Aujourd\'hui : ' + (pj.fait || 0) + " proposition(s) sur " + (pj.plafond || "?") + " ; " + part + " % du budget du mois. Les propositions par jour sont un réglage du module (Réglages).</span><button class=\"btn prim\" data-ma=\"budget\">Enregistrer</button></div>" + mMsg() + "</div>" +
