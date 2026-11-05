@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dfd060
+# VERSION CN : 0.1.0  #32d9d6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Quand aucun adaptateur n'est écrit à la main pour un chercheur, en génère un d'après l'interface réelle du paquet installé, le vérifie sans l'exécuter, l'éprouve dans la cage avec un faux modèle et l'épingle par son empreinte ; il reste « à relire » : le chercheur ne s'active pas avant l'accord de l'admin.
 # MÉTHODE    : introspection du paquet dans SON environnement ; un modèle écrit ; l'arbre syntaxique refuse les imports dangereux ; un essai à blanc dans le bac, sans réseau ni clé ; le fichier va dans l'environnement du moteur (jamais dans le code de Cassandra) et un adaptateur écrit à la main passe toujours devant.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dfd060 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=32d9d6 ▼▼▼
 """L'adaptateur généré n'est qu'un pont : il traduit le contexte de Cassandra pour le paquet du chercheur et rend du TEXTE (des variantes). Le juge du noyau décide de tout ensuite,
 comme pour n'importe quel moteur ; le moteur tourne dans la cage (sans clé, sans réseau, sans écriture), et ses appels de modèle passent par le relais, compté et plafonné.
 
@@ -100,7 +100,18 @@ def verifier_code(code: str) -> str:
 
 def extraire_code(texte: str) -> str:
     m = re.search(r"```(?:python)?\s*\n(.*?)```", texte or "", re.S)
-    return ((m.group(1) if m else texte) or "").strip() + "\n"
+    code = ((m.group(1) if m else texte) or "").strip() + "\n"
+    try:
+        ast.parse(code)
+    except SyntaxError:
+        if '\\"' in code:                                                          # certains modèles échappent leurs guillemets comme dans du JSON : on essaie sans, seulement si le code tel quel ne se lit pas
+            propre = code.replace('\\"', '"')
+            try:
+                ast.parse(propre)
+                return propre
+            except SyntaxError:
+                pass
+    return code
 
 
 def sonder(python, importer: list, executer, delai_s: float = 120.0) -> list:
