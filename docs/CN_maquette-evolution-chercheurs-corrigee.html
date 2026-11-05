@@ -13,7 +13,7 @@
    2. l'ordre, l'interrupteur et ce que chaque étage a rapporté sont sur la MÊME ligne (avant : trois endroits, et deux façons d'éteindre) ;
    3. un tableau « Ce que chacun a rapporté » : essais, améliorations trouvées, jetons, jetons par amélioration, plafond du jour posé sur place ;
    4. le parcours d'une recherche est dit en une phrase, avec son coût mesuré ;
-   5c. au-delà de 4 méthodes, l'ordre passe en lignes compactes (une ligne par méthode, détail au clic, « Tout déplier ») ;
+   5c. l'ordre de recherche est replié par défaut, quel que soit le nombre de méthodes (une ligne chacune, détail au clic, « Tout déplier ») ;
    5b. prêt pour les chercheurs externes : sélecteur qui devient liste au-delà de 4, pastille « externe », provenance et empreinte, retrait avec confirmation, état « refusé », coût par chercheur (boutons de démonstration en haut) ;
    5. « Installation » et « Relais de modèles » ne sont plus des onglets ici : deux boutons en haut à droite (Choisir les modèles, + Ajouter un chercheur) ;
    6. le détail technique devient une FICHE par chercheur, avec un sélecteur (Orfan, Frugal 2, Évolutif) : identité, chiffres, ses méthodes, ses vérifications, ses derniers appels ;
@@ -179,17 +179,15 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     lier();
   }
   function blocOrdre() {
-    const dense = ETAGES.length > 4;                       // au-delà de 4, une ligne par méthode ; le détail se déplie au clic
-    const ouvert = (e) => !dense || S.ouv[e.id];
+    const ouvert = (e) => !!S.ouv[e.id];                  // une ligne par méthode, quel que soit leur nombre ; le détail se déplie au clic
     const ligne = (e, i) => {
       const rf = refuse(e.m), off = !(e.on && !rf);
       const fleches = '<button class="fl" data-h="' + i + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Monter">↑</button><button class="fl" data-b="' + i + '"' + (i === ETAGES.length - 1 ? " disabled" : "") + ' aria-label="Descendre">↓</button><button class="inter2' + (off ? "" : " on") + '" data-i="' + i + '"' + (rf ? " disabled" : "") + ' role="switch" aria-checked="' + (!off) + '" aria-label="' + esc(e.nom) + '"></button>';
       const puces = '<span class="puce ' + e.cc + '">' + e.cout + "</span>" + (M[e.m].externe ? '<span class="puce al">externe</span>' : "") + (rf ? '<span class="puce dg">refusé</span>' : "");
-      if (!dense) return '<div class="etage' + (off ? " off" : "") + (rf ? " refus" : "") + '"><span class="rg">' + (i + 1) + '</span><div class="nom"><b>' + esc(e.nom) + "</b><span>" + esc(e.ce) + '</span></div><div class="act">' + fleches + '</div><div class="ligne2">' + puces + "<span>" + ligneStat(e) + "</span></div></div>";
       return '<div class="etage dense' + (off ? " off" : "") + (rf ? " refus" : "") + (ouvert(e) ? " ouvert" : "") + '"><span class="rg">' + (i + 1) + '</span><button class="nom-c" data-ouv="' + esc(e.id) + '" aria-expanded="' + !!ouvert(e) + '"><b>' + esc(e.nom) + '</b><span class="chev">' + (ouvert(e) ? "▾" : "▸") + '</span></button><div class="puces-c">' + puces + '</div><div class="act">' + fleches + "</div>" +
         (ouvert(e) ? '<div class="detail-c"><span>' + esc(e.ce) + "</span><span>" + ligneStat(e) + "</span></div>" : "") + "</div>";
     };
-    return '<div class="verre bloc"><div class="tete"><h3>Dans quel ordre ils essaient</h3>' + (dense ? '<button class="btn" data-ouv-tout="' + (Object.keys(S.ouv).length === ETAGES.length ? "non" : "oui") + '">' + (Object.keys(S.ouv).length === ETAGES.length ? "Tout replier" : "Tout déplier") + "</button>" : "") + '</div><div class="note">Le gratuit d’abord. Change l’ordre avec les flèches, éteins avec l’interrupteur : un chercheur éteint saute son tour sans rien perdre de ce qu’il avait en cours.</div>' +
+    return '<div class="verre bloc"><div class="tete"><h3>Dans quel ordre ils essaient</h3>' + ('<button class="btn" data-ouv-tout="' + (Object.keys(S.ouv).length === ETAGES.length ? "non" : "oui") + '">' + (Object.keys(S.ouv).length === ETAGES.length ? "Tout replier" : "Tout déplier") + "</button>") + '</div><div class="note">Le gratuit d’abord. Change l’ordre avec les flèches, éteins avec l’interrupteur : un chercheur éteint saute son tour sans rien perdre de ce qu’il avait en cours.</div>' +
       '<div class="ordre-l">' + ETAGES.map(ligne).join("") + "</div>" +
       '<div class="parcours">' + parcours() + "</div></div>";
   }
