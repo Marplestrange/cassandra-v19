@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d0ad39
+# VERSION CN : 0.1.0  #7f8ced
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Installe un moteur externe d'Évolution depuis un catalogue scellé : environnement à part, paquets épinglés par empreinte, banc d'import, retour arrière complet au moindre échec.
 # MÉTHODE    : catalogue JSON scellé par HMAC (la clé de l'instance) ; un venv par moteur ; `pip --require-hashes` ; chaque étape est journalisée ; un échec défait tout ce qui précède.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d0ad39 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7f8ced ▼▼▼
 """Lot 2 de la maquette d'Évolution : installer un moteur autre qu'Orfan sans lui faire confiance.
 
 Rien ne s'installe qui ne soit dans le CATALOGUE, et le catalogue n'est cru que scellé (HMAC de la clé de l'instance) : un catalogue modifié ou sans sceau est refusé.
@@ -96,7 +96,8 @@ def _executer(commande: list, delai_s: float, cwd=None) -> tuple:
 class Installateur:
     """Installe, dans `dossier`/<id>/, le moteur du catalogue. `executer(commande, delai_s, cwd) -> (code, sortie)` est injectable (les bancs)."""
 
-    def __init__(self, dossier: str | Path, catalogue: str | Path, cle: bytes, registre=None, executer=None, horloge=time.time, delai_s: float = 600.0, adaptateurs: str | Path | None = None):
+    def __init__(self, dossier: str | Path, catalogue: str | Path, cle: bytes, registre=None, executer=None, horloge=time.time, delai_s: float = 600.0, adaptateurs: str | Path | None = None, generateur=None):
+        self.generateur = generateur                                                         # (entree, python, racine, etape) -> {empreinte, code} ; sans lui, un adaptateur à générer est refusé
         self.dossier, self.catalogue, self._cle = Path(dossier), Path(catalogue), cle
         self.adaptateurs = Path(adaptateurs) if adaptateurs else Path(__file__).resolve().parent.parent / "orfan" / "adaptateurs"       # les adaptateurs livrés avec Cassandra
         self.registre, self._exec, self._horloge, self.delai_s = registre, executer or _executer, horloge, float(delai_s)
@@ -106,16 +107,67 @@ class Installateur:
         cat = lire_catalogue(self.catalogue, self._cle)
         return [{"id": e["id"], "nom": e.get("nom", e["id"]), "version": e.get("version", ""), "installe": (self.dossier / e["id"] / "venv").is_dir()} for e in cat.get("moteurs", [])]
 
-    def installer(self, ident: str) -> dict:
-        """Les étapes, dans l'ordre : catalogue scellé → entrée valide → venv → paquets épinglés par empreinte → banc d'import → registre (installé, jamais actif).
-        Rend {ok, etapes:[{nom, ok, detail}]} ; au premier échec, l'environnement est supprimé."""
+    # ── Python posé à la demande (un moteur peut exiger une version que le serveur n'a pas) ──
+    @staticmethod
+    def _version_de(chemin: str) -> str:
+        try:
+            r = subprocess.run([chemin, "--version"], capture_output=True, text=True, timeout=20)
+            return ((r.stdout or "") + (r.stderr or "")).strip().split()[-1]
+        except Exception:
+            return ""
+
+    def _uv(self, etape=None) -> str:
+        """Le programme `uv` (qui pose les interpréteurs Python) : celui du serveur, sinon un à part, installé dans son propre environnement."""
+        trouve = shutil.which("uv")
+        if trouve:
+            return trouve
+        racine = self.dossier.parent / "outils" / "uv"
+        uv = racine / "bin" / "uv"
+        if uv.exists():
+            return str(uv)
+        code, sortie = self._exec([sys.executable, "-m", "venv", str(racine)], self.delai_s, None)
+        if code == 0:
+            code, sortie = self._exec([str(racine / "bin" / "python"), "-m", "pip", "install", "--disable-pip-version-check", "--no-input", "uv"], self.delai_s, None)
+        if code != 0 or not uv.exists():
+            shutil.rmtree(racine, ignore_errors=True)
+            raise InstallationRefusee("l'outil qui pose Python (uv) n'a pas pu être installé : %s" % sortie[-200:])
+        return str(uv)
+
+    def poser_python(self, version: str, etape=None) -> str:
+        """Le chemin d'un Python de cette version EXACTE, posé à côté de celui du serveur (`<données>/pythons`) ; déjà là, il est repris."""
+        if not re.match(r"^\d+\.\d+(\.\d+)?$", str(version)):
+            raise InstallationRefusee("version de Python invalide : %r" % (version,))
+        for nom in ("python" + ".".join(str(version).split(".")[:2]), "python3"):
+            c = shutil.which(nom)
+            if c and self._version_de(c) == str(version):
+                return c
+        pythons = self.dossier.parent / "pythons"
+        env = ["env", "UV_PYTHON_INSTALL_DIR=" + str(pythons), "UV_CACHE_DIR=" + str(self.dossier.parent / "outils" / "uv-cache"), "UV_PYTHON_PREFERENCE=only-managed"]
+        uv = self._uv(etape)
+        code, sortie = self._exec(env + [uv, "python", "install", str(version)], self.delai_s, None)
+        if code != 0:
+            raise InstallationRefusee("Python %s n'a pas pu être posé : %s" % (version, sortie[-200:]))
+        code, sortie = self._exec(env + [uv, "python", "find", str(version)], 120.0, None)
+        chemin = (sortie.strip().splitlines() or [""])[-1].strip()
+        if code != 0 or not os.path.isfile(chemin):
+            raise InstallationRefusee("Python %s posé mais introuvable : %s" % (version, sortie[-200:]))
+        return chemin
+
+    def installer(self, ident: str, progres=None, racine_nom: str = "", declarer: bool = True) -> dict:
+        """Les étapes, dans l'ordre : catalogue scellé → entrée valide → venv (avec Python posé si besoin) → paquets épinglés par empreinte → adaptateur (généré si aucun n'est écrit) → banc d'import → registre (installé, jamais actif).
+        Rend {ok, etapes:[{nom, ok, detail}]} ; au premier échec, l'environnement est supprimé. `progres(etapes)` est appelé après chaque étape ; `racine_nom` et `declarer` servent la mise à jour (installer À CÔTÉ)."""
         etapes: list = []
 
         def etape(nom, ok, detail=""):
             etapes.append({"nom": nom, "ok": bool(ok), "detail": str(detail)[:300]})
+            if progres is not None:
+                try:
+                    progres([dict(e) for e in etapes])
+                except Exception:
+                    pass                                                                      # un rapport d'avancement qui échoue ne coupe jamais une installation
             return ok
 
-        racine = self.dossier / str(ident)
+        racine = self.dossier / str(racine_nom or ident)
         try:
             cat = lire_catalogue(self.catalogue, self._cle)
             etape("catalogue scellé", True)
@@ -132,9 +184,13 @@ class Installateur:
             return {"ok": False, "etapes": etapes}
         try:
             racine.mkdir(parents=True)
-            interpreteur = entree.get("interpreteur") or sys.executable                  # un moteur peut exiger un autre Python (CodeEvolve : 3.13.5) que l'admin a posé
+            interpreteur = entree.get("interpreteur") or sys.executable                  # un moteur peut exiger un autre Python (CodeEvolve : 3.13.5) que Cassandra pose
             if entree.get("interpreteur") and not os.path.isfile(interpreteur):
-                raise InstallationRefusee("l'interpréteur du moteur est absent : %s (le poser d'abord, par exemple `uv python install`)" % interpreteur)
+                if entree.get("python"):
+                    interpreteur = self.poser_python(entree["python"])
+                    etape("Python posé", True, "%s : %s" % (entree["python"], interpreteur))
+                else:
+                    raise InstallationRefusee("l'interpréteur du moteur est absent : %s (le poser d'abord, par exemple `uv python install`)" % interpreteur)
             code, sortie = self._exec([interpreteur, "-m", "venv", str(racine / "venv")], self.delai_s, None)
             if not etape("environnement à part", code == 0, sortie if code else str(racine / "venv")):
                 raise InstallationRefusee("environnement non créé")
@@ -148,6 +204,18 @@ class Installateur:
                     raise InstallationRefusee("paquets non installés")
             else:
                 etape("paquets épinglés par empreinte", True, "aucun paquet à ajouter")
+            genere = None
+            if entree.get("adaptateur_genere"):                                           # aucun adaptateur écrit à la main : le repli
+                if self.generateur is None:
+                    etape("adaptateur généré", False, "aucun générateur d'adaptateur n'est branché")
+                    raise InstallationRefusee("adaptateur non généré")
+                try:
+                    genere = self.generateur(entree, python, racine, etape)
+                except InstallationRefusee:
+                    raise
+                except Exception as e:
+                    etape("adaptateur généré", False, "%s : %s" % (type(e).__name__, e))
+                    raise InstallationRefusee("adaptateur non généré")
             module = str(entree["adaptateur"])
             banc = ("import importlib,sys; sys.path.insert(0, sys.argv[2]); m = importlib.import_module(sys.argv[1]); "
                     "[importlib.import_module(x) for x in getattr(m, 'IMPORTER', [])]")           # l'adaptateur se charge, et le paquet du moteur qu'il annonce aussi
@@ -160,11 +228,53 @@ class Installateur:
             shutil.rmtree(racine, ignore_errors=True)
             etape("retour arrière", not racine.exists(), "environnement supprimé")
             return {"ok": False, "etapes": etapes}
-        if self.registre is not None:
+        if self.registre is not None and declarer:
+            plus = {}
+            if genere:
+                plus["adaptateur_genere"] = {"empreinte": genere.get("empreinte", ""), "relu": False, "ts": self._horloge()}
             self.registre.declarer(ident, entree.get("nom", ident), genre="externe", etat="installe", version=entree.get("version", ""), adaptateur=entree["adaptateur"],
-                                   python=str(python), installe_le=self._horloge())
+                                   python=str(python), installe_le=self._horloge(), **plus)
             etape("registre des moteurs", True, "installé, pas actif : l'activer est un geste à part")
-        return {"ok": True, "etapes": etapes}
+        return {"ok": True, "etapes": etapes, "python": str(python), "racine": str(racine), "empreinte": (genere or {}).get("empreinte", "")}
+
+    def mettre_a_jour(self, ident: str, progres=None) -> dict:
+        """Installe la version NOUVELLE du catalogue à côté de l'ancienne ; si tout passe, on bascule, sinon l'ancienne n'a jamais bougé. Rend {ok, etapes}."""
+        ancienne = self.dossier / ident
+        nouvelle_nom = ident + ".nouveau"
+        if not ancienne.exists():
+            return {"ok": False, "etapes": [{"nom": "refusée", "ok": False, "detail": "ce moteur n'est pas installé : il n'y a rien à mettre à jour"}]}
+        shutil.rmtree(self.dossier / nouvelle_nom, ignore_errors=True)
+        r = self.installer(ident, progres=progres, racine_nom=nouvelle_nom, declarer=False)
+        if not r["ok"]:
+            r["etapes"].append({"nom": "ancienne version", "ok": True, "detail": "elle est restée en place : rien n'a changé"})
+            return r
+        archive = self.dossier / (ident + ".ancien")
+        shutil.rmtree(archive, ignore_errors=True)
+        os.replace(ancienne, archive)
+        try:
+            os.replace(self.dossier / nouvelle_nom, ancienne)
+            python = ancienne / "venv" / ("Scripts" if sys.platform.startswith("win") else "bin") / ("python.exe" if sys.platform.startswith("win") else "python")
+            cat = lire_catalogue(self.catalogue, self._cle)
+            entree = next(e for e in cat["moteurs"] if e["id"] == ident)
+            code, sortie = self._exec([str(python), "-I", "-c", "import importlib,sys; sys.path.insert(0, sys.argv[2]); m = importlib.import_module(sys.argv[1]); [importlib.import_module(x) for x in getattr(m, 'IMPORTER', [])]", str(entree["adaptateur"]), str(self.adaptateurs)], 120.0, str(ancienne))
+            if code != 0:
+                raise InstallationRefusee("la nouvelle version ne se charge pas à sa place définitive : %s" % sortie[-160:])
+        except Exception as e:
+            shutil.rmtree(ancienne, ignore_errors=True)
+            os.replace(archive, ancienne)
+            r["etapes"].append({"nom": "bascule", "ok": False, "detail": str(e)[:200]})
+            r["etapes"].append({"nom": "retour arrière", "ok": True, "detail": "l'ancienne version a été remise : rien n'a changé"})
+            return {"ok": False, "etapes": r["etapes"]}
+        shutil.rmtree(archive, ignore_errors=True)
+        if self.registre is not None:
+            old = next((m for m in self.registre.liste() if m["id"] == ident), {})
+            plus = {"adaptateur_genere": {"empreinte": (r.get("empreinte") or ""), "relu": False, "ts": self._horloge()}} if entree.get("adaptateur_genere") else {}
+            self.registre.declarer(ident, entree.get("nom", ident), genre="externe", etat=old.get("etat", "installe"), version=entree.get("version", ""), adaptateur=entree["adaptateur"],
+                                   python=str(python), installe_le=self._horloge(), **plus)
+            if not plus:
+                self.registre.retirer_champ(ident, "adaptateur_genere")
+        r["etapes"].append({"nom": "bascule", "ok": True, "detail": "la nouvelle version est en place, l'ancienne est retirée"})
+        return r
 
     def desinstaller(self, ident: str) -> dict:
         """Supprime l'environnement du moteur et le remet « prévu » au registre. Les pièces qu'il a fournies restent : elles vivent par leur preuve, pas par lui."""
@@ -173,6 +283,8 @@ class Installateur:
         racine = self.dossier / ident
         existait = racine.exists()
         shutil.rmtree(racine, ignore_errors=True)
+        for reste in (ident + ".nouveau", ident + ".ancien"):
+            shutil.rmtree(self.dossier / reste, ignore_errors=True)
         if self.registre is not None and existait:
             try:
                 self.registre.etat(ident, "prevu")

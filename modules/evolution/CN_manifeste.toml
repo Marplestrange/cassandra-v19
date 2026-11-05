@@ -242,6 +242,57 @@ paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra"]
 
 [[capacites]]
+id = "moteur_installer_tache"
+libelle = "Préparer puis installer un chercheur du répertoire, EN FOND : épingler ses paquets par empreinte et sceller le catalogue, poser le Python qu'il exige, créer son environnement, générer et éprouver son adaptateur s'il n'en existe pas d'écrit, l'inscrire installé (jamais actif d'office)"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le dossier des moteurs de l'instance : un environnement par chercheur", "le catalogue scellé des moteurs", "des téléchargements de paquets (PyPI, GitHub), le temps de l'installation", "un appel de modèle pour écrire un adaptateur manquant"]
+preuve = "la tâche rend ses étapes ; au moindre échec l'environnement est supprimé et le registre n'est pas touché"
+retour = "désinstaller : l'environnement est supprimé, le chercheur repasse « prévu »"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "moteur_maj_tache"
+libelle = "Mettre à jour un chercheur installé, EN FOND : la version nouvelle s'installe à côté de l'ancienne ; on bascule seulement si tout passe, sinon l'ancienne n'a pas bougé"
+risque = "moyen"
+droit = "agir"
+perimetre = ["l'environnement du chercheur (un second est créé à côté, puis échangé)", "le catalogue scellé des moteurs"]
+preuve = "la tâche rend ses étapes ; en cas d'échec l'ancienne version est remise et le catalogue redit ce qui tourne"
+retour = "l'ancienne version n'est retirée qu'après la bascule réussie ; en cas d'échec rien n'a changé"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "moteur_tache"
+libelle = "L'avancement d'une tâche de fond d'Évolution (installation, mise à jour) : ses étapes faites, l'étape en cours, la fin"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "moteur_maj_dispo"
+libelle = "Les mises à jour disponibles des chercheurs externes installés : la version installée et la plus récente (PyPI ou dernier commit du dépôt)"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "moteur_adaptateur_lire"
+libelle = "Lire l'adaptateur généré d'un chercheur : son code, son empreinte, ce que Cassandra en a contrôlé"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "moteur_adaptateur_approuver"
+libelle = "Approuver l'adaptateur généré d'un chercheur après relecture : sans cet accord, le chercheur ne peut pas être activé"
+risque = "faible"
+droit = "agir"
+perimetre = ["le registre des moteurs : une ligne (adaptateur relu)"]
+preuve = "le registre dit que l'adaptateur est relu, pour l'empreinte exacte qu'on a montrée"
+retour = "aucun : pour défaire, désinstaller le chercheur"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
 id = "moteur_controler"
 libelle = "Contrôler l'intégrité d'un moteur de recherche : son programme, son isolation, sa réponse à un ping dans son processus, son modèle, son plafond ; la défaillance trouvée est dite, avec ce qu'on peut faire"
 risque = "faible"

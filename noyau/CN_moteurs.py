@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f0ca9f
+# VERSION CN : 0.1.0  #706fc5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f0ca9f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=706fc5 ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -563,6 +563,28 @@ class Registre:
 
     def moteurs_actifs(self) -> list:
         return [m["id"] for m in self.liste() if m.get("etat") == "actif"]
+
+    def retirer_champ(self, ident: str, champ: str) -> None:
+        with self._verrou:
+            d = self._lire()
+            m = d["moteurs"].get(ident)
+            if m is not None and champ in m:
+                del m[champ]
+                self._ecrire(d)
+
+    def approuver_adaptateur(self, ident: str, empreinte: str) -> dict:
+        """L'admin a RELU l'adaptateur généré de ce moteur : il peut être activé. L'empreinte donnée doit être celle qu'on lui a montrée (le fichier n'a pas changé depuis)."""
+        with self._verrou:
+            d = self._lire()
+            m = d["moteurs"].get(ident)
+            if m is None or not m.get("adaptateur_genere"):
+                raise ValueError("ce moteur n'a pas d'adaptateur généré à approuver")
+            if m["adaptateur_genere"].get("empreinte") != empreinte:
+                raise ValueError("l'empreinte ne correspond pas : l'adaptateur a changé depuis qu'on te l'a montré, relis-le de nouveau")
+            m["adaptateur_genere"]["relu"] = True
+            m["adaptateur_genere"]["relu_le"] = self._horloge()
+            self._ecrire(d)
+            return dict(m["adaptateur_genere"])
 
     # ── la défaillance : ce qu'un moteur a de cassé, et le dernier contrôle ──
     def defaillance(self, ident: str, raison: str) -> None:

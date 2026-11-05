@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #4e40bf
+# VERSION CN : 0.5.0  #3fe2d7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=4e40bf ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=3fe2d7 ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -21,6 +21,7 @@ Ce module ne fait que donner à ces gestes leurs droits, leur preuve et leur ret
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib
 import importlib.util
 import json
@@ -28,6 +29,7 @@ import os
 import re
 import sys
 import time
+from pathlib import Path
 
 _MOTEUR_PERMIS = re.compile(r"^orfan(\.[A-Za-z_][A-Za-z0-9_]*)+$")      # un moteur se trouve DANS le paquet orfan : un réglage n'importe pas n'importe quel module du serveur
 
@@ -232,7 +234,7 @@ def brancher(ctx):
                 "depense_mois": reg.depense_mois(), "propositions_jour": {"fait": evo.tentatives_depuis(), "plafond": max(1, int(reglage("propositions_par_jour", evo.seuils.get("propositions_par_jour", 20))))},
                 "relais": reg.relais(30), "courses": reg.courses(20), "journal": reg.journal(60), "objectifs": reg.objectifs(),
                 "etages": {k: {"moteur": v[0], "nom": v[2], "cout": v[3]} for k, v in reg.etages().items()}, "catalogue": catalogue, "catalogue_erreur": erreur_catalogue,
-                "points": sorted(evo.points.points())}
+                "points": sorted(evo.points.points()), "repertoire": repertoire_vue(), "serveur": serveur_info()}
 
     # ── la cascade, les affectations, le budget, les objectifs ──
     def cascade_regler(c, ordre=None, options=None):
@@ -482,11 +484,203 @@ def brancher(ctx):
         m = next((x for x in registre().liste() if x["id"] == res.get("moteur")), None)
         return bool(m) and "controle" in m
 
+    # ── le répertoire des chercheurs, les tâches de fond, l'adaptateur à relire ──
+    def depot():
+        return importlib.import_module("noyau.CN_repertoire")
+
+    def taches():
+        return importlib.import_module("noyau.CN_taches").TACHES
+
+    def catalogue_lu():
+        """Le catalogue scellé s'il existe et si son sceau tient ; sinon rien (l'écran dit qu'aucun chercheur n'est encore préparé)."""
+        try:
+            ins = importlib.import_module("noyau.CN_installateur")
+            base = evo.rejeu.chemin.parent
+            return {e["id"]: e for e in ins.lire_catalogue(base / "moteurs-catalogue.json", evo.points._cle()).get("moteurs", [])}
+        except Exception:
+            return {}
+
+    def serveur_info():
+        import shutil
+        base = evo.rejeu.chemin.parent
+        return {"python": "%d.%d.%d" % sys.version_info[:3], "venv": importlib.util.find_spec("ensurepip") is not None, "bac": evo.points._nom_bac(),
+                "disque_libre_go": round(shutil.disk_usage(base).free / 1e9, 1), "uv": bool(shutil.which("uv")) or (base / "outils" / "uv" / "bin" / "uv").exists(), "cle": bool(evo.points._cle())}
+
+    def repertoire_vue():
+        R = depot()
+        fiches = {m["id"]: m for m in registre().liste()}
+        cat = catalogue_lu()
+        sortie = [dict(e, statut="livre") for e in R.LIVRES]
+        for e in R.REPERTOIRE:
+            f, c = fiches.get(e["id"]) or {}, cat.get(e["id"])
+            installe = f.get("etat") in ("installe", "actif")
+            g = f.get("adaptateur_genere") or {}
+            sortie.append({"id": e["id"], "nom": e["nom"], "qui": e["qui"], "cible": e["cible"], "cout": e["cout"], "desc": e["desc"], "force": e["force"], "lien": e.get("lien", ""), "python": e.get("python", ""),
+                           "statut": "installe" if installe else "disponible", "prepare": c is not None, "version": (f.get("version") if installe else (c or {}).get("version", "")) or "",
+                           "paquets": len((c or {}).get("paquets", [])), "ecrit": e.get("adaptateur") is not None, "avec_paquet": bool(e.get("paquet") or e.get("github")),
+                           "adaptateur_genere": installe and bool(g), "relu": (not g) or bool(g.get("relu")), "empreinte_adaptateur": g.get("empreinte", ""), "actif": f.get("etat") == "actif"})
+        return sortie
+
+    def generateur_pour(rep, inst):
+        gen = importlib.import_module("noyau.CN_adaptateur_gen")
+        return lambda entree, python, racine, etape: gen.generer(entree, rep, python, racine, etape, appeler_modele, inst._exec, inst.adaptateurs, bac="requis")
+
+    def plan_de(rep, prepare, genere, python_pose):
+        return ([] if prepare else ["préparation des paquets"]) + ["catalogue scellé", "entrée du catalogue"] + (["Python posé"] if python_pose else []) + ["environnement à part", "paquets épinglés par empreinte"] + (["adaptateur généré"] if genere else []) + ["banc d'import de l'adaptateur", "registre des moteurs"]
+
+    def preparer(rep, progres, inst):
+        """Du répertoire au catalogue scellé : Python posé s'il le faut, paquets résolus et empreintés, entrée écrite et scellée. Rend (entrée, étapes faites)."""
+        ep = importlib.import_module("noyau.CN_epinglage")
+        faites = []
+        interp = ""
+        if rep.get("python") and inst._version_de(sys.executable) != rep["python"]:
+            progres(faites, "Python %s : recherche ou pose…" % rep["python"])
+            interp = inst.poser_python(rep["python"])
+            faites.append({"nom": "Python posé", "ok": True, "detail": "%s : %s" % (rep["python"], interp)})
+        progres(faites, "préparation des paquets…")
+        entree = ep.epingler(rep, interpreteur=interp, progres=lambda t: progres(faites, t), executer=inst._exec)
+        if rep.get("python"):
+            entree["python"] = rep["python"]
+        ep.inscrire(inst.catalogue, entree, evo.points._cle())
+        faites.append({"nom": "préparation des paquets", "ok": True, "detail": "%d paquet(s) épinglé(s) par empreinte, catalogue scellé" % len(entree["paquets"])})
+        progres(faites, "")
+        return entree, faites
+
+    def travail_installer(rep, progres):
+        inst = installateur()
+        inst.generateur = generateur_pour(rep, inst)
+        prepare = rep["id"] in catalogue_lu()
+        faites = []
+        if not prepare:
+            _entree, faites = preparer(rep, progres, inst)
+        res = inst.installer(rep["id"], progres=lambda etapes: progres(faites + etapes, ""))
+        res["etapes"] = faites + res["etapes"]
+        registre().journaliser("installation", "%s : %s" % (rep["id"], "installé" if res.get("ok") else "échec"))
+        return res
+
+    def travail_maj(rep, progres):
+        inst = installateur()
+        inst.generateur = generateur_pour(rep, inst)
+        ancien = catalogue_lu().get(rep["id"])
+        if ancien is None:
+            raise ValueError("ce chercheur n'est pas dans le catalogue : rien à mettre à jour")
+        ep = importlib.import_module("noyau.CN_epinglage")
+        faites = []
+        progres(faites, "recherche de la version la plus récente…")
+        nouvelle = ep.epingler(rep, interpreteur=ancien.get("interpreteur", ""), progres=lambda t: progres(faites, t), executer=inst._exec)
+        if rep.get("python"):
+            nouvelle["python"] = rep["python"]
+        if str(nouvelle.get("version")) == str(ancien.get("version")):
+            return {"ok": True, "deja_a_jour": True, "etapes": [{"nom": "version", "ok": True, "detail": "déjà la plus récente : %s" % ancien.get("version")}]}
+        faites.append({"nom": "nouvelle version", "ok": True, "detail": "%s → %s" % (ancien.get("version"), nouvelle.get("version"))})
+        ep.inscrire(inst.catalogue, nouvelle, evo.points._cle())
+        res = inst.mettre_a_jour(rep["id"], progres=lambda etapes: progres(faites + etapes, ""))
+        if not res.get("ok"):
+            ep.inscrire(inst.catalogue, ancien, evo.points._cle())                 # l'ancienne entrée est remise : le catalogue dit toujours ce qui tourne
+        res["etapes"] = faites + res["etapes"]
+        registre().journaliser("mise à jour", "%s : %s" % (rep["id"], "à jour" if res.get("ok") else "échec, ancienne version gardée"))
+        return res
+
+    def moteur_installer_tache(c, moteur=""):
+        """Lance EN FOND la préparation (si besoin) puis l'installation d'un chercheur du répertoire ; rend l'identifiant de la tâche à relire (`moteur_tache`)."""
+        ident = str(moteur or "").strip()
+        rep = depot().trouver(ident)
+        if rep is None:
+            raise ValueError("chercheur inconnu : « %s » (il n'est pas dans le répertoire)" % ident)
+        if any(m["id"] == ident and m.get("etat") in ("installe", "actif") for m in registre().liste()):
+            raise ValueError("« %s » est déjà installé" % rep["nom"])
+        if taches().actif(ident):
+            raise ValueError("une tâche est déjà en cours pour « %s »" % rep["nom"])
+        srv = serveur_info()
+        if not srv["cle"]:
+            raise ValueError("pas de clé d'instance : un catalogue ne peut être cru, rien ne s'installe")
+        if not srv["venv"]:
+            raise ValueError("Python n'a pas son module d'environnements (paquet python3-venv) : l'installer sur le serveur")
+        genere = rep.get("adaptateur") is None
+        if genere and str(srv["bac"]) in ("aucun", "indisponible", "à éprouver"):
+            raise ValueError("un adaptateur généré ne s'éprouve que dans la cage, et ce serveur n'en a pas (paquet bubblewrap) : l'installer sur le serveur")
+        plan = plan_de(rep, ident in catalogue_lu(), genere, bool(rep.get("python")) and rep["python"] != srv["python"])
+        return {"tache": taches().lancer("installer", ident, lambda progres: travail_installer(rep, progres), plan), "moteur": ident, "plan": plan}
+
+    def moteur_maj_tache(c, moteur=""):
+        """Lance EN FOND la mise à jour d'un chercheur installé : la version nouvelle s'installe à côté, on bascule seulement si tout passe, sinon l'ancienne n'a pas bougé."""
+        ident = str(moteur or "").strip()
+        rep = depot().trouver(ident)
+        if rep is None or not any(m["id"] == ident and m.get("genre") == "externe" and m.get("etat") in ("installe", "actif") for m in registre().liste()):
+            raise ValueError("« %s » n'est pas un chercheur externe installé" % ident)
+        if taches().actif(ident):
+            raise ValueError("une tâche est déjà en cours pour « %s »" % rep["nom"])
+        plan = ["nouvelle version", "catalogue scellé", "entrée du catalogue", "environnement à part", "paquets épinglés par empreinte"] + (["adaptateur généré"] if rep.get("adaptateur") is None else []) + ["banc d'import de l'adaptateur", "bascule"]
+        return {"tache": taches().lancer("maj", ident, lambda progres: travail_maj(rep, progres), plan), "moteur": ident, "plan": plan}
+
+    def moteur_tache(c, tache=""):
+        return taches().lire(str(tache))
+
+    def moteur_maj_dispo(c):
+        """Pour chaque chercheur externe installé : la version installée et la plus récente disponible (PyPI, ou le dernier commit du dépôt). Une lecture réseau, un chercheur à la fois, délai court."""
+        import urllib.request
+        ep = importlib.import_module("noyau.CN_epinglage")
+        sortie = []
+        for m in registre().liste():
+            if m.get("genre") != "externe" or m.get("etat") not in ("installe", "actif"):
+                continue
+            rep = depot().trouver(m["id"]) or {}
+            ligne = {"moteur": m["id"], "installee": m.get("version", ""), "disponible": "", "maj": False, "erreur": ""}
+            try:
+                if rep.get("github"):
+                    ligne["disponible"] = ep.resoudre_commit(rep["github"], rep.get("ref", "HEAD"))[:12]
+                elif rep.get("paquet"):
+                    with urllib.request.urlopen("https://pypi.org/pypi/%s/json" % rep["paquet"], timeout=15) as r:
+                        ligne["disponible"] = str(json.loads(r.read().decode("utf-8"))["info"]["version"])
+                ligne["maj"] = bool(ligne["disponible"]) and ligne["disponible"] != ligne["installee"]
+            except Exception as e:
+                ligne["erreur"] = str(e)[:120]
+            sortie.append(ligne)
+        return {"verifie_le": time.time(), "chercheurs": sortie}
+
+    def fichier_adaptateur(ident):
+        fiche = next((m for m in registre().liste() if m["id"] == ident), None)
+        if fiche is None or not fiche.get("adaptateur_genere"):
+            raise ValueError("« %s » n'a pas d'adaptateur généré" % ident)
+        racine = Path(str(fiche.get("python", ""))).parent.parent
+        trouves = sorted(racine.glob("lib/python*/site-packages/%s.py" % fiche.get("adaptateur", "")))
+        if not trouves:
+            raise ValueError("le fichier de l'adaptateur est introuvable dans l'environnement du chercheur")
+        return fiche, trouves[0]
+
+    def moteur_adaptateur_lire(c, moteur=""):
+        """Le code de l'adaptateur généré, son empreinte, ce que Cassandra en a déjà contrôlé : de quoi le relire."""
+        gen = importlib.import_module("noyau.CN_adaptateur_gen")
+        fiche, fichier = fichier_adaptateur(str(moteur or "").strip())
+        code = fichier.read_text(encoding="utf-8")
+        emp = hashlib.sha256(code.encode("utf-8")).hexdigest()
+        return {"moteur": fiche["id"], "code": code, "empreinte": emp, "enregistree": fiche["adaptateur_genere"].get("empreinte", ""), "intact": emp == fiche["adaptateur_genere"].get("empreinte"), "relu": bool(fiche["adaptateur_genere"].get("relu")), "verification": gen.verifier_code(code) or "ok"}
+
+    def moteur_adaptateur_approuver(c, moteur="", empreinte=""):
+        """L'admin a relu l'adaptateur : le chercheur peut être activé. L'empreinte donnée doit être celle du fichier tel qu'il est maintenant."""
+        info = moteur_adaptateur_lire(c, moteur)
+        if info["empreinte"] != str(empreinte) or not info["intact"]:
+            raise ValueError("le fichier a changé depuis qu'on te l'a montré (ou ne correspond plus à son empreinte) : relis-le de nouveau")
+        registre().approuver_adaptateur(info["moteur"], info["empreinte"])
+        registre().journaliser("adaptateur", "%s : adaptateur généré relu et approuvé (%s…)" % (info["moteur"], info["empreinte"][:12]))
+        return {"moteur": info["moteur"], "empreinte": info["empreinte"], "relu": True}
+
+    def prouver_adaptateur(c, res):
+        m = next((x for x in registre().liste() if x["id"] == res.get("moteur")), {})
+        return bool((m.get("adaptateur_genere") or {}).get("relu"))
+
+    def prouver_tache(c, res):
+        return bool(res.get("tache"))
+
     def moteur_etat(c, moteur="", etat=""):
         reg = registre()
         avant = next((m["etat"] for m in reg.liste() if m["id"] == moteur), None)
         if avant is None:
             raise ValueError("moteur inconnu : « %s » (voir evolution.moteurs)" % moteur)
+        fiche = next((m for m in reg.liste() if m["id"] == moteur), {})
+        g = fiche.get("adaptateur_genere")
+        if str(etat) == "actif" and g and not g.get("relu"):
+            raise ValueError("l'adaptateur de « %s » a été généré et n'a pas été relu : relis-le (Installer un chercheur), puis active-le" % fiche.get("nom", moteur))
         reg.etat(str(moteur), str(etat))
         return {"moteur": str(moteur), "avant": avant, "etat": str(etat)}
 
@@ -607,6 +801,12 @@ def brancher(ctx):
     ctx.implementer("moteur_installer", moteur_installer, prouver_installation, defaire_installation)
     ctx.implementer("moteur_etat", moteur_etat, prouver_etat, defaire_etat)
     ctx.implementer("moteur_controler", moteur_controler, prouver_controle, sans_retour)
+    ctx.implementer("moteur_installer_tache", moteur_installer_tache, prouver_tache, sans_retour)
+    ctx.implementer("moteur_maj_tache", moteur_maj_tache, prouver_tache, sans_retour)
+    ctx.implementer("moteur_tache", moteur_tache)
+    ctx.implementer("moteur_maj_dispo", moteur_maj_dispo)
+    ctx.implementer("moteur_adaptateur_lire", moteur_adaptateur_lire)
+    ctx.implementer("moteur_adaptateur_approuver", moteur_adaptateur_approuver, prouver_adaptateur, sans_retour)
     ctx.implementer("proposer", proposer, prouver_proposition, defaire_proposition)
     ctx.implementer("retour", retour, prouver_retour, sans_retour)
     ctx.implementer("visiter", visiter, prouver_visite, sans_retour)
