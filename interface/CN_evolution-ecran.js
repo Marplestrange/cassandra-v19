@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #9b8913
+// VERSION CN : 0.2.0  #59eb2b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=9b8913 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=59eb2b ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -567,128 +567,6 @@
     }
 
     // ═══ ATELIER ═══════════════════════════════════════════════════════════
-    function bandeau() {
-      const tous = S.etat.pieces || [], viv = tousVivants(), enServ = tous.filter((p) => p.etat === "en_service"), ret = tous.filter((p) => p.etat === "retiree");
-      const tombes = Object.values(S.etat.tombes || {}).reduce((a, b) => a + b, 0);
-      const corpus = (S.etat.points || []).reduce((a, p) => a + ((p.corpus || {}).distincts || 0), 0);
-      const pcs = tous.map((p) => evalDe(p).pieges).filter((x) => x && x.score != null);
-      const pg = pcs.length ? Math.round(100 * Math.min.apply(null, pcs.map((x) => x.score))) + " %" : "—";
-      const s = S.etat.seuils || {};
-      return '<div class="verre bandeau">' +
-        '<div><span class="lib">Points d\'évolution</span><span class="v">' + (S.etat.cibles || []).length + '</span><span class="note">déclarés par les modules actifs</span></div>' +
-        '<div><span class="lib">Évaluateur évalué</span><span class="v">' + pg + '</span><span class="note">' + (pcs.length ? "plus faible part de variantes volontairement fausses attrapées, sur " + pcs.length + " pièce(s) ; seuil " + Math.round(100 * (s.pieges_min || 0)) + " %" : "aucune pièce encore : le test se fait avant chaque écriture") + "</span></div>" +
-        '<div><span class="lib">Variantes en service</span><span class="v">' + viv.filter((p) => p.etat === "ombre").length + " en ombre · " + enServ.length + ' promues</span><span class="note">retour instantané disponible sur chaque point</span></div>' +
-        '<div><span class="lib">Retirées · tombes</span><span class="v">' + ret.length + " · " + tombes + '</span><span class="note">une variante échouée n\'est jamais reproposée</span></div>' +
-        '<div><span class="lib">Corpus de rejeu</span><span class="v">' + nb(corpus) + '</span><span class="note">appels réels gardés, un cinquième réservé</span></div>' +
-        '<div><span class="lib">Budget · autonomie</span><span class="v mono">—</span><span class="note">' + NB + " le capital en jetons et le niveau d'autonomie gagnée</span></div></div>";
-    }
-    function rail() {
-      const l = (S.etat.cibles || []).map((c) => {
-        const v = vivante(c.point), e = v ? ETATS[v.etat] : null;
-        return '<button class="cap' + (c.point === S.sel ? " sel" : "") + '" data-cible="' + esc(c.point) + '"><span class="n">' + esc(c.point) + '</span><span class="s">' + (e ? puce(e[0], e[1]) : c.muet ? puce("muette", "mu") : puce("référence")) + "<span>" + nb(c.appels || 0) + " appels</span></span>" +
-          (c.muet ? "" : '<span class="s">valeur <b class="mono">' + (c.valeur_ms == null ? "—" : c.valeur_ms + " ms") + "</b></span>") + "</button>";
-      }).join("");
-      return '<div class="verre rail"><div class="lib" style="padding:2px 4px 6px">Cibles vivantes — classées par valeur espérée</div>' + (l || '<div class="note" style="padding:8px 4px">Aucun module actif ne déclare de point d\'évolution.</div>') +
-        '<div class="note" style="padding:6px 4px 0">Valeur = appels réels × durée moyenne. Un point sans mesure est dit <b>muet</b> : il n\'est pas « à zéro », il n\'est pas mesuré.</div></div>';
-    }
-    function centre() {
-      if (!S.sel) return '<div class="verre centre"><div class="note">Choisis un point à gauche.</div></div>';
-      const c = cible(S.sel), p = point(S.sel) || {}, corpus = p.corpus || {}, v = vivante(S.sel), o = p.ombre;
-      const cadran = c.muet ? "" : '<div class="cadran"><div><span class="lib">Durée moyenne</span><span class="v">' + (c.duree_moyenne_ms == null ? "—" : c.duree_moyenne_ms + " ms") + '</span><span class="note">de la référence</span></div>' +
-        '<div><span class="lib">Gain annoncé</span><span class="v gain">' + (v ? pct(v.gain_annonce) : "—") + '</span><span class="note">' + (v ? "à l'évaluation, sur le jeu réservé" : "aucune pièce") + "</span></div>" +
-        '<div><span class="lib">Écarts en ombre</span><span class="v">' + (o ? o.ecarts : "—") + '</span><span class="note">' + (o ? "sur " + o.appels + " appels comparés" : "pas d'ombre en cours") + "</span></div>" +
-        '<div><span class="lib">Corpus</span><span class="v">' + (corpus.distincts || 0) + '</span><span class="note">' + (corpus.visible || 0) + " vus · " + (corpus.reserve || 0) + " réservés · " + (corpus.dores || 0) + " dorés</span></div></div>";
-      const z = c.muet ? '<div class="note" style="padding:20px 4px">Cette capacité ne déclare aucune mesure. Le moteur ne la touche pas et ne la compte pas parmi les stables : elle est dite muette.</div>' : onglet(c, p, corpus, v, o);
-      return '<div class="verre centre"><div class="tete"><div><h3 class="mono" style="font-size:15px">' + esc(S.sel) + '</h3><div class="note">contrat ' + esc(p.contrat || "?") + " · " + nb(c.appels || 0) + ' appels réels</div></div>' +
-        '<div class="lg">' + (c.muet ? puce("non ciblée", "mu") : puce("cible vivante", "ok")) + puce(version(S.sel)) + (p.suspendue ? puce("suspendue", "dg") : "") + "</div></div>" + cadran +
-        (c.muet ? "" : '<div class="onglets">' + ONGLETS.map((o) => '<button data-onglet="' + o[0] + '" class="' + (o[0] === S.onglet ? "on" : "") + '">' + o[1] + "</button>").join("") + "</div>") + '<div class="zone">' + z + "</div></div>";
-    }
-    function onglet(c, p, corpus, v, o) {
-      if (S.onglet === "lignee") return lignee();
-      if (S.onglet === "ombre") return ombre(p, v, o);
-      if (S.onglet === "contrat") return contrat(p, corpus);
-      if (S.onglet === "versions") return versions();
-      return carte();
-    }
-    function carte() {
-      const l = pieces(S.sel).filter((p) => p.gain_annonce != null), W = 560, H = 120, L = 40, mx = Math.max(10, ...l.map((p) => Math.abs(p.gain_annonce)));
-      const tombes = (S.etat.tombes || {})[S.sel] || 0;
-      let s = '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" style="max-width:720px"><line x1="' + L + '" y1="70" x2="' + (W - 10) + '" y2="70" stroke="var(--line-strong)"/>';
-      l.forEach((p, i) => { const x = L + (W - L - 30) * (Math.max(0, p.gain_annonce) / mx), col = p.etat === "retiree" ? "var(--e-dg)" : p.etat === "ombre" ? "var(--e-al)" : "var(--e-ok)";
-        s += '<g data-p="' + p.num + '"><circle cx="' + x + '" cy="' + (70 - (i % 3) * 18) + '" r="9" fill="' + col + '" opacity="' + (p.etat === "retiree" ? ".4" : "1") + '"/><text x="' + (x + 13) + '" y="' + (73 - (i % 3) * 18) + '">EC' + p.num + " · " + pct(p.gain_annonce) + "</text></g>"; });
-      s += '<text x="' + L + '" y="100">gain annoncé croissant →</text></svg>';
-      return s + '<div class="note" style="margin-top:6px">Chaque pièce posée selon son gain annoncé (vert : en service ou palier · ambre : en ombre · pâle : retirée). ' + tombes + " tombe(s) gardée(s) avec leur raison. " + NB +
-        " la carte qualité-diversité (une case par genre de variante) demande que les variantes écartées soient archivées avec leur profil ; aujourd'hui seules les pièces prouvées le sont.</div>";
-    }
-    function lignee() {
-      const l = pieces(S.sel);
-      if (!l.length) return '<div class="note" style="padding:16px 4px">Aucune pièce sur ce point. Une pièce naît quand le noyau prouve une variante proposée.</div>';
-      const H = l.length * 34 + 20;
-      let s = '<svg viewBox="0 0 560 ' + H + '" width="100%" style="min-width:420px">';
-      l.forEach((p, i) => { const y = i * 34 + 16, col = p.etat === "retiree" ? "var(--e-dg)" : p.etat === "ombre" ? "var(--e-al)" : "var(--e-ok)";
-        if (i) s += '<path d="M' + (30) + " " + (y - 34) + " L30 " + y + '" stroke="var(--e-filet)" stroke-width="1.5" fill="none"/>';
-        s += '<circle cx="30" cy="' + y + '" r="9" fill="' + col + '" opacity="' + (p.etat === "retiree" ? ".45" : "1") + '"/><text x="48" y="' + (y + 3) + '">EC' + p.num + " · " + pct(p.gain_annonce) + " · " + (ETATS[p.etat] || [p.etat])[0] + (p.etat === "retiree" ? " ✕" : "") + "</text>"; });
-      return s + '</svg><div class="note" style="margin-top:6px">La suite des pièces sur ce point, de la plus ancienne en haut. Une pièce retirée reste en lignée, avec sa raison dans la chaîne.</div>';
-    }
-    function ombre(p, v, o) {
-      if (!v || !o) return '<div class="note" style="padding:16px 4px">Aucune variante en ombre sur ce point. Une pièce entre en ombre quand le noyau l\'a prouvée.</div>';
-      return '<div class="cadran"><div><span class="lib">Appels comparés</span><span class="v">' + o.appels + '</span><span class="note">appels réels depuis la mise en ombre</span></div><div><span class="lib">Écarts</span><span class="v ' + (o.ecarts ? "" : "gain") + '">' + o.ecarts + '</span><span class="note">un seul bloque la promotion</span></div>' +
-        '<div><span class="lib">Référence → EC</span><span class="v" style="font-size:13px">' + ms(o.ref_ms) + " → " + ms(o.ec_ms) + '</span><span class="note">gain observé ' + pct(o.gain_pct) + '</span></div><div><span class="lib">Erreurs</span><span class="v">' + o.erreurs + '</span><span class="note">trois écarts en dix minutes suspendent l\'EC</span></div></div>' +
-        '<div class="note" style="margin-top:8px">L\'EC calcule à côté ; la référence répond toujours. ' + (S.etat.seuils ? "Paliers : " + (S.etat.seuils.paliers || []).join(" % → ") + " % du trafic, " + S.etat.seuils.appels_par_palier + " appels par palier." : "") + "</div>";
-    }
-    function contrat(p, corpus) {
-      const s = S.etat.seuils || {};
-      return "<table><tr><th>Élément</th><th>État</th><th>Détail</th></tr>" +
-        '<tr><td>Appels gardés</td><td class="oui">' + (corpus.distincts || 0) + "</td><td>entrées distinctes tirées des appels réels, plus les cas dorés</td></tr>" +
-        '<tr><td>Jeu réservé</td><td class="oui">' + (corpus.reserve || 0) + "</td><td>jamais montré au générateur · partition stable par empreinte</td></tr>" +
-        '<tr><td>Cas dorés</td><td class="oui">' + (corpus.dores || 0) + "</td><td>sorties de la référence, jamais évincés</td></tr>" +
-        '<tr><td>Variantes pièges</td><td class="oui">≥ ' + Math.round(100 * (s.pieges_min || 0)) + " %</td><td>mauvaises exprès : l'évaluateur doit les attraper avant toute écriture</td></tr>" +
-        '<tr><td>Gain exigé</td><td class="oui">≥ ' + (s.gain_min_pct || "?") + " %</td><td>et deux fois le bruit de mesure, tenu sur le jeu réservé</td></tr>" +
-        '<tr><td>Contrat</td><td class="cons">' + esc(p.contrat || "?") + "</td><td>entrée et sortie validées à chaque frontière ; copie JSON de part et d'autre</td></tr>" +
-        '<tr><td>Corpus trop étroit</td><td class="non">seuil : ' + (s.corpus_min || "?") + ' entrées</td><td>sous le seuil, aucune pièce n\'est écrite</td></tr></table>';
-    }
-    function versions() {
-      const m = module(S.sel), dep = S.versions[m] || "?", p = vivante(S.sel);
-      const l = pieces(S.sel).slice().reverse();
-      return '<div class="note"><b>Version dépôt</b> : celle du dépôt, signée, que personne ne modifie. <b>Version EC</b> (Evolution Cassandra) : l\'état de la ligne évoluée posée par-dessus. Écriture : <span class="mono">' + esc(version(S.sel)) + "</span>, une version sémantique valide : l'EC ne passe jamais devant le dépôt.</div>" +
-        '<div class="cadran" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-top:8px"><div><span class="lib">Version dépôt · ' + esc(m) + '</span><span class="v">' + esc(dep) + '</span></div>' +
-        '<div><span class="lib">Version EC en service</span><span class="v">' + (p ? "EC" + p.num : "—") + '</span><span class="note">' + (p ? "empreinte " + esc(p.empreinte) : "aucune : la référence du dépôt sert (EC0)") + "</span></div></div>" +
-        '<div class="lib" style="margin-top:10px">Versions EC de ce point</div>' + (l.length ? "<table><tr><th>EC</th><th>Empreinte</th><th>État</th><th>Gain annoncé</th><th>Créée</th><th>Visite à 30 jours</th></tr>" + l.map((q) => {
-          const e = ETATS[q.etat] || [q.etat, ""], v = q.visite ? JSON.parse(q.visite) : null;
-          return '<tr><td class="mono">EC' + q.num + '</td><td class="mono">' + esc(q.empreinte) + "</td><td>" + puce(e[0], e[1]) + '</td><td class="mono gain">' + pct(q.gain_annonce) + "</td><td>" + date(q.cree) + "</td><td>" + (v ? (v.tenu ? puce("gain confirmé", "ok") : puce("gain perdu : " + pct(v.gain_mesure_pct), "dg")) : '<span class="note">à 30 jours</span>') + "</td></tr>";
-        }).join("") + "</table>" : '<div class="note">Aucune EC sur ce point.</div>') +
-        '<div class="note" style="margin-top:10px">Une EC ne change jamais le manifeste, les signatures de capacités ni les permissions : elle ne remplace que la fonction pure du point, sous le contrat et le disjoncteur du noyau. Le numéro EC ne repart jamais à zéro ; l\'empreinte l\'accroche au contenu.</div>' +
-        '<div class="lg" style="margin-top:8px"><button class="btn" disabled>Proposer au dépôt (patch git)</button>' + NB + "</div>";
-    }
-
-    function analyse() {
-      if (!S.sel) return '<div class="verre analyse"><h2>Analyse</h2><div class="note">Aucun point choisi.</div></div>';
-      const c = cible(S.sel), p = point(S.sel) || {}, v = vivante(S.sel), ch = S.etat.chaine || {};
-      let h = '<div class="verre analyse"><div class="tete"><h2>Analyse</h2>' + puce(v ? S.sel.split(".")[1] + " · EC" + v.num : S.sel.split(".")[1]) + "</div>";
-      if (c.muet) return h + '<div class="note">Rien à prouver : pas de mesure.</div><div class="verdict mu">Non ciblé : pas de mesure, donc pas de fitness. Ce n\'est ni « stable » ni « zéro ».</div></div>';
-      const e = v ? evalDe(v) : null, pj = e && e.pieges;
-      const pr = [
-        ["Test écrit d'abord, rouge puis vert", NB.replace("non branché", "non branché") + " la génération du test rouge n'existe pas ; le rejeu en tient lieu", -1],
-        ["Équivalence sur le rejeu", e ? (e.evalues != null ? e.evalues + " appels sur " + ((e.corpus || {}).distincts || e.evalues) + " identiques à la référence" : "équivalente à la référence") : "aucune pièce à juger", e ? 1 : -1],
-        ["Jeu réservé", e ? (e.gain_reserve_pct != null ? "gain " + pct(e.gain_reserve_pct) + " hors du vu (annoncé " + pct(v.gain_annonce) + ")" : "non évalué") : "aucune pièce à juger", e ? (e.gain_tient === false ? 0 : e.gain_reserve_pct != null ? 1 : -1) : -1],
-        ["Évaluateur sain", pj && pj.score != null ? Math.round(100 * pj.score) + " % des " + (pj.mutants || "?") + " variantes fausses attrapées" : "testé avant chaque écriture", pj && pj.score != null ? 1 : -1],
-        ["Vérificateur indépendant", "une autre famille de modèle, sans le raisonnement du mutateur : non branché", -1],
-        ["Chaîne scellée", ch.ok ? "chaîne vérifiée · " + (ch.mailles || 0) + " maillons" : "RUPTURE à la maille " + esc(ch.rupture_a), ch.ok ? 1 : 0]];
-      h += '<div style="display:flex;flex-direction:column;gap:9px">' + pr.map((q, i) => '<div class="preuve ' + (q[2] === 1 ? "" : q[2] === 0 ? "al" : "mu") + '"><span class="k">' + (q[2] === 1 ? "✓" : q[2] === 0 ? "!" : "·") + "</span><div>" + (i + 1) + ". " + esc(q[0]) + "<small>" + (i === 0 ? q[1] : esc(q[1])) + "</small></div></div>").join("") + "</div>";
-      const sv = S.etat.seuils || {};
-      if (p.suspendue) h += '<div class="verdict dg">EC suspendue par le disjoncteur : ' + esc(p.suspendue.raison) + ". La référence sert ; l'EC est conservée.</div>";
-      else if (!v) h += '<div class="verdict mu">Aucune pièce : toute la charge passe par la référence du dépôt. Propose une variante pour produire des preuves.</div>';
-      else h += '<div class="verdict' + (v.etat === "ombre" ? " al" : "") + '">' + (v.etat === "ombre" ? "Verdict calculé : en ombre. La promotion à " + (sv.paliers || [10])[0] + " % attend " + (sv.ombre_appels || "?") + " appels sans écart, dont " + (sv.ombre_distincts || "?") + " entrées distinctes." : "En " + (ETATS[v.etat] || [v.etat])[0] + ". Un écart suffit à renvoyer toute la charge à la référence.") + "</div>";
-      const part = v ? PARTS[v.etat] : 0;
-      h += '<div><span class="lib">Part du trafic réel</span><div class="routage" style="margin-top:6px">' + [0, 10, 50, 100].map((x) => '<button ' + (x === part ? 'class="on" ' : "") + (x === 0 && v && !S.occupe ? 'data-geste="retour"' : "disabled") + ">" + x + " %</button>").join("") + "</div>" +
-        '<div class="note" style="margin-top:6px">' + (v ? (part ? part + " % des appels passent par l'EC, le reste par la référence. Seul le retour (0 %) se commande ici : la montée se fait seule, par paliers, tant que les preuves tiennent." : "En ombre : l'EC calcule à côté, la référence répond à tous.") : "Toute la charge passe par la référence.") + "</div></div>";
-      h += confirmations() + resultat();
-      h += '<div class="lg"><button class="btn dng" data-geste="retour"' + (v && !S.occupe ? "" : " disabled") + '>Retour instantané</button><button class="btn" disabled title="non branché">Geler cette lignée</button></div>';
-      const tombes = (S.etat.journal || []).filter((x) => x.gid === S.sel && x.verbe === "tombe");
-      h += '<div><span class="lib">Mémoire des échecs donnée au mutateur</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:6px">' + (tombes.length ? tombes.slice(-4).map((x) => '<div class="note" style="border-left:2px solid var(--e-dg);padding-left:8px">' + esc((x.details || {}).raison || "variante tombée") + "</div>").join("") : '<div class="note">' + (((S.etat.tombes || {})[S.sel] || 0) + " tombe(s) gardée(s) ; leur raison est dans la chaîne.") + "</div>") + "</div></div>";
-      h += gestesProposer() + "</div>";
-      return h;
-    }
     function preuveDe(nom) {
       const g = GESTES[nom];
       return '<div class="preu"><b>Risque</b> ' + esc(g.risque) + " · <b>Périmètre</b> " + esc(g.perimetre) + "<br><b>Preuve</b> " + esc(g.preuve) + "<br><b>Retour</b> " + esc(g.retour) + "</div>";
@@ -698,12 +576,6 @@
       if (S.confirmer === "visiter") return preuveDe("visiter") + '<div class="lg"><button class="btn prim" data-geste="visiter-ok">Confirmer : lancer les visites échues</button><button class="btn" data-geste="annuler">Annuler</button></div>';
       if (S.confirmer === "proposer") return preuveDe("proposer") + '<div class="lg"><button class="btn prim" data-geste="proposer-ok"' + (S.occupe ? " disabled" : "") + '>Confirmer : proposer</button><button class="btn" data-geste="annuler">Annuler</button></div>';
       return "";
-    }
-    function gestesProposer() {
-      const s = S.etat.seuils || {};
-      return '<div style="border-top:1px solid var(--e-filet);padding-top:10px;display:flex;flex-direction:column;gap:8px"><span class="lib">Proposer une variante</span><div class="lg"><select id="ev-moteur">' + [["deterministe", "Orfan déterministe (zéro jeton)"], ["modele", "Modèle de langage"], ["les_deux", "Les deux, gratuit d’abord"]].map((o) => '<option value="' + o[0] + '"' + ((S.choixMoteur || "deterministe") === o[0] ? " selected" : "") + ">" + o[1] + "</option>").join("") + '</select>' +
-        '<input type="number" id="ev-budget" min="1" max="10" value="' + (S.choixBudget || 3) + '" style="width:64px" title="variantes évaluées"></div><div class="lg"><button class="btn prim" data-geste="proposer"' + (S.occupe ? " disabled" : "") + ">Proposer une variante</button>" + (S.occupe ? '<span class="note">' + esc(S.attente || "évaluation en cours…") + "</span>" : "") + '<button class="btn" data-geste="visiter">Lancer les visites à 30 jours</button></div>' +
-        '<div class="note"><b>Avant d\'écrire quoi que ce soit, le noyau exige</b> : équivalence sur tout le corpus ; gain d\'au moins ' + (s.gain_min_pct || "?") + " % <i>et</i> deux fois le bruit de mesure, tenu sur le jeu réservé ; un corpus assez fort (" + Math.round(100 * (s.pieges_min || 0)) + " % des variantes fausses attrapées). Sinon : rien n'est écrit.</div></div>";
     }
     function resultat() {
       const r = S.resultat;
@@ -716,27 +588,6 @@
       return h;
     }
 
-    function atelierBas() {
-      const visites = (S.etat.pieces || []).filter((p) => p.etat === "en_service" || p.visite).sort((a, b) => (b.cree || 0) - (a.cree || 0)).slice(0, 5);
-      const vis = visites.length ? visites.map((p) => { const v = p.visite ? JSON.parse(p.visite) : null, reste = p.mise_en_service ? Math.ceil(30 - (Date.now() / 1000 - p.mise_en_service) / 86400) : null;
-        return '<div class="ligne"><div><span class="mono">' + esc(p.gid) + "</span> · EC" + p.num + '<div class="g">annoncé ' + pct(p.gain_annonce) + (v ? " · mesuré " + pct(v.gain_mesure_pct) : "") + "</div></div>" +
-          (v ? puce(v.tenu ? "confirmé" : "retiré · tombe", v.tenu ? "ok" : "dg") : puce(reste != null && reste > 0 ? "échéance dans " + reste + " j" : "à visiter", "al")) + "</div>"; }).join("") : '<div class="note">Aucune pièce en service : rien à visiter.</div>';
-      const sem = Date.now() / 1000 - 7 * 86400, jr = (S.etat.journal || []).filter((e) => e.ts >= sem);
-      const cnt = (v) => jr.filter((e) => e.verbe === v).length;
-      return '<div class="bas">' +
-        '<div class="verre carte"><div class="tete"><h2>Demandes restées sans réponse → module à créer</h2>' + NB + '</div><div class="note">Le journal des 501 et des « pas porté » : ce que les gens demandent et que rien ne sert. La création de brouillons de modules à partir de ces demandes n\'est pas construite.</div></div>' +
-        '<div class="verre carte"><div class="tete"><h2>Constats pour le noyau</h2>' + NB + '</div><div class="note">Le moteur n\'écrit jamais le noyau. Il observera ce qui frotte (limites contournées par plusieurs modules, caches absents) et le rendra pour la prochaine version. Aucun constat n\'est inventé ici.</div></div>' +
-        '<div class="verre carte"><h2>Visites à J+30 — le gain est-il resté ?</h2>' + vis + '<div class="note">Un gain annoncé qui ne tient pas fait retirer la pièce, avec sa tombe. Jamais un « neutre » : le verdict est calculé.</div></div>' +
-        '<div class="verre carte"><h2>Bulletin des sept derniers jours</h2><div class="note mono">calculé sur la chaîne : le modèle ne rédige rien</div>' +
-        '<div class="ligne"><div>Proposées : ' + cnt("proposee") + " · mises en ombre : " + cnt("ombre") + " · retirées : " + (cnt("retiree") + cnt("retour")) + " · tombes : " + cnt("tombe") + "</div></div>" +
-        '<div class="ligne"><div>Muets : ' + ((S.etat.cibles || []).filter((c) => c.muet).map((c) => '<span class="mono">' + esc(c.point) + "</span>").join(", ") || "aucun") + '<div class="g">pas de mesure : ni « stable », ni « zéro »</div></div></div></div></div>' +
-        '<div class="verre carte"><h2>Pourquoi ce n\'est pas un OpenEvolve de plus</h2><div class="note">Les moteurs ouverts évoluent un programme face à un score. Cassandra les branche sur une production vivante. La colonne « État » dit ce qui est construit aujourd\'hui.</div><div class="zone"><table><tr><th>Capacité</th><th>Moteurs ouverts seuls</th><th>Dans Cassandra</th><th>État</th></tr>' +
-        [["Le banc d'essai vient du trafic réel", "non : évaluateur écrit à la main", "corpus de rejeu tiré du journal, jeu réservé", 1], ["L'évaluateur est lui-même évalué", "non", "variantes pièges avant chaque écriture", 1], ["Mise en service sans risque", "rend un fichier", "ombre, paliers du trafic, retour instantané", 1],
-          ["Ne cible que du code vivant", "à vous de choisir", "valeur espérée = appels réels × durée", 1], ["Gain vérifié après coup", "non", "visite à J+30 ; un faux gain retire la pièce", 1], ["Mémoire des échecs", "archive de bons programmes", "tombes par empreinte syntaxique", 1],
-          ["Chaîne d'empreintes unique", "non", "une rupture arrête tout", 1], ["Désaccord entre agents pour l'irréversible", "non", "vérificateur d'une autre famille de modèle", 0], ["Créer des modules à partir de ce qui manque", "non", "brouillons en ombre", 0], ["Échange entre instances", "non", "variantes signées, rejouées chez le receveur", 0]]
-          .map((r) => "<tr><td>" + r[0] + '</td><td class="non">' + r[1] + '</td><td class="cons">' + r[2] + "</td><td>" + (r[3] ? puce("construit", "ok") : NB) + "</td></tr>").join("") + "</table></div></div>";
-    }
-    // ═══ LES FONCTIONS : une liste qui se cherche, une fiche en mots simples, une recherche d'amélioration qui rend compte de ce qu'elle a fait ═══
     const MANIERES = [["deterministe", "Sans modèle", "Des recettes toutes faites, sur ton serveur. Rapide, ça ne coûte rien.", "0 jeton"], ["modele", "Avec un modèle", "Un modèle écrit des versions à essayer. Il trouve des idées que les recettes n’ont pas.", "des milliers de jetons par essai"], ["les_deux", "Les deux, gratuit d’abord", "Les recettes d’abord ; le modèle ne sert que si elles ne trouvent rien.", "0 jeton si ça suffit"]];
     const fmt = (n) => Number(n || 0).toLocaleString("fr-FR");
     const dur = (ms) => (ms == null ? "—" : (ms < 1 ? ms.toFixed(3) : ms.toFixed(ms < 10 ? 2 : 1)).replace(".", ",") + " ms");
@@ -803,10 +654,6 @@
         '<div class="verre"><span class="lib">Versions écartées</span><span class="gros">' + ecart + '</span><span class="note">jamais reproposées</span></div></div>' +
         '<div class="deux"><div class="liste-f verre">' + listeFonctions() + "</div>" + ficheFonction() + "</div>";
     }
-    function atelier() {
-      return bandeau() + '<div class="trois">' + rail() + centre() + analyse() + "</div>" + atelierBas();
-    }
-
     function tiroir() {
       return '<div class="tiroir' + (S.tiroir ? " on" : "") + '" data-a="fermer-fond"><div class="verre"><div class="tete"><h3 class="mono">Moteur de recherche et rôles</h3><button class="btn" data-a="tiroir">Fermer</button></div>' +
         '<div class="note">Orfan est le moteur de Cassandra : natif, sans dépendance externe. Les autres sont des adaptateurs facultatifs prévus pour comparer et laisser le choix à l\'admin ; aucun n\'est branché aujourd\'hui.</div><div class="choix">' +
