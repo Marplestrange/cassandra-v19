@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d96016
+# VERSION CN : 0.1.0  #8ec370
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 1 de la maquette d'Évolution : le moteur dans son processus, le relais de modèles plafonné, le registre et l'attribution des pièces.
 # MÉTHODE    : un vrai processus de moteur (aucune doublure du protocole) ; le modèle est une fonction de banc ; le module Évolution est branché dans un vrai noyau comme au banc du module.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d96016 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ec370 ▼▼▼
 """Bancs des moteurs de recherche : le protocole de processus, le relais, le registre."""
 import json
 import sys
@@ -387,6 +387,54 @@ class ControleDansLeModule(TM.Banc):
 
     def test_un_compte_ordinaire_ne_peut_pas_controler(self):
         self.assertEqual(self.ex("moteur_controler", {"moteur": "orfan"}, compte=TM.SIMPLE)["statut"], "refuse")
+
+
+class InstallationDepuisLEcran(TM.Banc):
+    """Le répertoire à l'écran, la garde d'activation d'un adaptateur généré, les refus de la tâche d'installation."""
+
+    def registre(self):
+        return MO.Registre(self.n.rejeu.chemin.parent / "moteurs.json")
+
+    def test_les_moteurs_rendent_le_repertoire_et_ce_que_le_serveur_sait_faire(self):
+        r = self.ex("moteurs")["resultat"]
+        rep = {e["id"]: e for e in r["repertoire"]}
+        self.assertEqual([e["id"] for e in r["repertoire"] if e["statut"] == "livre"], ["orfan", "frugal", "evolutif"])
+        self.assertEqual(sorted(e["id"] for e in r["repertoire"] if e["statut"] == "disponible"), sorted(["openevolve", "shinka", "codeevolve", "gepa", "llm4ad", "openelm", "dspy", "textgrad", "evoprompt"]))
+        self.assertTrue(rep["gepa"]["ecrit"] and not rep["gepa"]["adaptateur_genere"])
+        self.assertFalse(rep["dspy"]["ecrit"])                                          # pas d'adaptateur écrit : le repli le génèrera
+        self.assertFalse(rep["evoprompt"]["avec_paquet"])                               # une méthode réimplémentée, pas de paquet
+        self.assertEqual(rep["codeevolve"]["python"], "3.13.5")
+        for cle in ("python", "venv", "bac", "disque_libre_go", "uv", "cle"):
+            self.assertIn(cle, r["serveur"])
+
+    def test_un_chercheur_inconnu_ou_deja_installe_ne_lance_aucune_tache(self):
+        self.assertNotEqual(self.ex("moteur_installer_tache", {"moteur": "n-existe-pas"})["statut"], "faite")
+        self.registre().declarer("gepa", "GEPA", genre="externe", etat="installe", version="0.1.4")
+        r = self.ex("moteur_installer_tache", {"moteur": "gepa"})
+        self.assertNotEqual(r["statut"], "faite", r)
+        self.assertIn("déjà installé", str(r))
+
+    def test_un_compte_ordinaire_ne_peut_ni_installer_ni_mettre_a_jour_ni_approuver(self):
+        for cap, args in (("moteur_installer_tache", {"moteur": "gepa"}), ("moteur_maj_tache", {"moteur": "gepa"}), ("moteur_adaptateur_approuver", {"moteur": "gepa", "empreinte": "x"}), ("moteur_adaptateur_lire", {"moteur": "gepa"}),
+                          ("moteur_tache", {"tache": "x"}), ("moteur_maj_dispo", {})):
+            self.assertEqual(self.ex(cap, args, compte=TM.SIMPLE)["statut"], "refuse", cap)
+
+    def test_une_tache_inconnue_est_une_erreur_dite(self):
+        self.assertNotEqual(self.ex("moteur_tache", {"tache": "perdue"})["statut"], "faite")
+
+    def test_un_adaptateur_genere_non_relu_ne_s_active_pas_puis_s_active_une_fois_approuve(self):
+        self.registre().declarer("banc-gen", "Banc généré", genre="externe", etat="installe", adaptateur="CN_adaptateur_banc_gen", adaptateur_genere={"empreinte": "e" * 64, "relu": False})
+        refus = self.ex("moteur_etat", {"moteur": "banc-gen", "etat": "actif"})
+        self.assertNotEqual(refus["statut"], "faite", refus)
+        self.assertIn("pas été relu", str(refus))
+        self.assertEqual({m["id"]: m["etat"] for m in self.registre().liste()}["banc-gen"], "installe")
+        self.registre().approuver_adaptateur("banc-gen", "e" * 64)
+        ok = self.ex("moteur_etat", {"moteur": "banc-gen", "etat": "actif"})
+        self.assertEqual(ok["statut"], "faite", ok)
+
+    def test_desactiver_un_adaptateur_genere_non_relu_reste_permis(self):
+        self.registre().declarer("banc-gen", "Banc généré", genre="externe", etat="actif", adaptateur_genere={"empreinte": "e" * 64, "relu": False})
+        self.assertEqual(self.ex("moteur_etat", {"moteur": "banc-gen", "etat": "installe"})["statut"], "faite")
 
 
 if __name__ == "__main__":

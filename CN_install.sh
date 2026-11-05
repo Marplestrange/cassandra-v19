@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0b295b
+# VERSION CN : 0.1.0  #388619
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0b295b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=388619 ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -118,11 +118,11 @@ installer_paquets() { # paquets... ; non fatal : rend 1 si l'installation échou
 }
 paquets_systeme() { # noms selon la famille : cryptography, outils système
   case "$GEST" in
-    apt-get) echo "python3-cryptography openssl sudo cron iptables openssh-client curl sshpass rclone" ;;
-    dnf|yum) echo "python3-cryptography openssl sudo cronie iptables openssh-clients curl sshpass rclone" ;;
-    zypper)  echo "python3-cryptography openssl sudo cron iptables openssh-clients curl sshpass rclone" ;;
-    pacman)  echo "python-cryptography openssl sudo cronie iptables openssh curl sshpass rclone" ;;
-    apk)     echo "py3-cryptography openssl sudo dcron iptables openssh-client curl sshpass rclone" ;;
+    apt-get) echo "python3-cryptography python3-venv bubblewrap openssl sudo cron iptables openssh-client curl sshpass rclone" ;;
+    dnf|yum) echo "python3-cryptography bubblewrap openssl sudo cronie iptables openssh-clients curl sshpass rclone" ;;
+    zypper)  echo "python3-cryptography bubblewrap openssl sudo cron iptables openssh-clients curl sshpass rclone" ;;
+    pacman)  echo "python-cryptography bubblewrap openssl sudo cronie iptables openssh curl sshpass rclone" ;;
+    apk)     echo "py3-cryptography bubblewrap openssl sudo dcron iptables openssh-client curl sshpass rclone" ;;
   esac
 }
 
