@@ -68,8 +68,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
 .ev .regle{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:10px 0;border-top:1px solid var(--e-filet)}
 .ev .regle:first-of-type{border-top:0}
 .ev .regle .t{display:flex;flex-direction:column;gap:2px}.ev .regle .t b{font-size:14px}.ev .regle .t span{font-size:12.5px;color:var(--e-encre2)}
-.ev .parcours{border:1px dashed var(--accent);border-radius:12px;padding:11px 14px;font-size:13.5px;line-height:1.55;background:var(--e-doux)}
-.ev .parcours .fl2{display:inline-block;padding:1px 9px;border-radius:99px;background:var(--e-verre);border:1px solid var(--e-filet);font:600 12.5px ui-monospace,monospace;margin:1px 0}
+.ev .parcours{border:1px solid var(--e-filet);border-radius:14px;padding:14px 16px;background:linear-gradient(180deg,var(--e-doux),transparent);display:flex;flex-direction:column;gap:12px}.ev .pc-h{font:600 11px var(--font-sans,system-ui);letter-spacing:.09em;text-transform:uppercase;color:var(--e-encre3)}.ev .pc-flux{display:flex;flex-wrap:wrap;align-items:center;gap:6px 4px}.ev .pc-n{display:inline-flex;align-items:center;gap:7px;padding:5px 12px 5px 6px;border-radius:99px;background:var(--e-verre);border:1px solid var(--e-filet);font:500 13px var(--font-sans,system-ui);color:var(--e-encre)}.ev .pc-b{font:600 11px ui-monospace,Menlo,Consolas,monospace;font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent)}.ev .pc-g{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.ev .pc-f{color:var(--e-encre3);font-size:18px;padding:0 2px}.ev .pc-fin{padding:5px 12px;border-radius:99px;font:600 12.5px var(--font-sans,system-ui)}.ev .pc-fin.ok{background:var(--e-okd);color:var(--e-ok)}.ev .pc-fin.mu{background:var(--e-doux);color:var(--e-encre2)}.ev .pc-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.ev .pc-t{display:flex;flex-direction:column;gap:1px;padding:9px 12px;border-radius:12px;background:var(--e-verre);border:1px solid var(--e-filet)}.ev .pc-l{font:600 10.5px var(--font-sans,system-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--e-encre3)}.ev .pc-t b{font:600 16px var(--font-sans,system-ui);color:var(--e-encre)}.ev .pc-t small{font-size:12px;color:var(--e-encre3)}.ev .pc-chaud b{color:var(--e-al)}.ev .pc-vide{color:var(--e-encre2);font-size:13.5px}
 .ev .rapport{width:100%;border-collapse:collapse}
 .ev .rapport th{font:600 10.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre3);padding:6px 8px;text-align:right}
 .ev .rapport th:first-child,.ev .rapport td:first-child{text-align:left}
@@ -154,13 +153,16 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
   }
   function parcours() {
     const l = actifs();
-    if (!l.length) return "Rien ne cherche : active au moins un chercheur.";
+    if (!l.length) return '<div class="pc-vide">Rien ne cherche : active au moins un chercheur.</div>';
     const reg = (id) => REGLES.find((r) => r.id === id).on;
-    const pas = l.map((e, i) => (i ? " puis " : "") + '<span class="fl2">' + esc(e.nom) + "</span>").join("");
     const chers = [], vus = {}; l.forEach((e) => { if (e.cc !== "ok" && !vus[e.m]) { vus[e.m] = 1; chers.push(e.m); } });
-    const couts = chers.map((id) => { const c = coutParEssai(id); return esc(M[id].nom) + " " + (c == null ? "<i>coût pas encore mesuré</i>" : "≈ <b>" + fmt(c) + " jetons</b> par essai"); }).join(" ; ");
-    return "Pour une fonction, la recherche passe par : " + pas + ". " + (reg("arret") ? "Elle s’arrête à la première version prouvée." : "Tous essaient, même après un succès.") +
-      (chers.length ? " Coût mesuré : gratuit si les premières méthodes suffisent, sinon " + couts + "." : " Coût : aucun jeton.") + (reg("chaud") && chers.length ? " Le modèle ne sert que sur les fonctions chaudes." : "");
+    const noeud = (e, i) => '<span class="pc-n"><i class="pc-b">' + (i + 1) + "</i>" + esc(e.nom) + "</span>";
+    const flux = noeud(l[0], 0) + l.slice(1).map((e, i) => '<span class="pc-g"><span class="pc-f" aria-hidden="true">›</span>' + noeud(e, i + 1) + "</span>").join("") +
+      '<span class="pc-g"><span class="pc-f" aria-hidden="true">›</span><span class="pc-fin ' + (reg("arret") ? "ok" : "mu") + '">' + (reg("arret") ? "✓ s’arrête à la première version prouvée" : "tous essaient, même après un succès") + "</span></span>";
+    const tuiles = '<div class="pc-t"><span class="pc-l">Au mieux</span><b>Gratuit</b><small>si les premières méthodes suffisent</small></div>' +
+      chers.map((id) => { const c = coutParEssai(id); return '<div class="pc-t"><span class="pc-l">' + esc(M[id].nom) + "</span><b>" + (c == null ? "à mesurer" : "≈ " + fmt(c)) + "</b><small>" + (c == null ? "pas encore couru" : "jetons par essai") + "</small></div>"; }).join("") +
+      (reg("chaud") && chers.length ? '<div class="pc-t pc-chaud"><span class="pc-l">Modèle</span><b>fonctions chaudes</b><small>seulement celles qui prennent du temps</small></div>' : "");
+    return '<div class="pc-h">Le parcours d’une recherche</div><div class="pc-flux">' + flux + '</div><div class="pc-tuiles">' + tuiles + "</div>";
   }
   function ligneStat(e) {
     const m = M[e.m];
