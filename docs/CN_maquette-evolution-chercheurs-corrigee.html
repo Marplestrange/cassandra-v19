@@ -14,7 +14,7 @@
    3. un tableau « Ce que chacun a rapporté » : essais, améliorations trouvées, jetons, jetons par amélioration, plafond du jour posé sur place ;
    4. le parcours d'une recherche est dit en une phrase, avec son coût mesuré ;
    5. « Installation » et « Relais de modèles » ne sont plus des onglets ici : un lien vers Installer un chercheur et vers Réglages › Quels modèles ;
-   6. le détail technique (genre, exécution, source, 6 vérifications, derniers appels de modèle) reste, replié ;
+   6. le détail technique devient une FICHE par chercheur, avec un sélecteur (Orfan, Frugal 2, Évolutif) : identité, chiffres, ses méthodes, ses vérifications, ses derniers appels ;
    7. vocabulaire simple : « étage », « cascade », « relais », « adaptateur », « EC » disparaissent.
   Les boutons sont vivants. Rien n'est envoyé nulle part.
 -->
@@ -83,7 +83,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
 .ev .preuves-m{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .ev .appels{display:flex;flex-direction:column;gap:4px;margin-top:8px;font:12px ui-monospace,Menlo,Consolas,monospace}
 .ev .appels div{display:grid;grid-template-columns:70px 1fr auto;gap:10px;padding:5px 8px;border-radius:8px;background:var(--e-doux)}
-.ev .msg{font-size:13px;color:var(--e-ok);min-height:18px}
+.ev .msg{font-size:13px;color:var(--e-ok);min-height:18px}.ev .segs{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--e-doux);flex-wrap:wrap}.ev .seg{border:0;background:transparent;border-radius:9px;padding:7px 14px;font:600 13px var(--font-sans,system-ui);color:var(--e-encre2);cursor:pointer}.ev .seg.on{background:var(--accent);color:var(--on-accent)}.ev .fiche-t{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}.ev .fiche-t .act{display:flex;gap:6px;flex-wrap:wrap}.ev .chiffres4{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}.ev .chiffres4>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px 12px;background:var(--e-verre);display:flex;flex-direction:column;gap:2px}.ev .chiffres4 .v{font:600 20px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .meth{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--e-filet);border-radius:11px;background:var(--e-verre);font-size:13.5px}.ev .meth .rg{font:700 13px ui-monospace,monospace;color:var(--accent);width:18px}
 </style>
 </head>
 <body>
@@ -116,8 +116,8 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     { id: "course", t: "Faire courir deux chercheurs quand le premier a réussi", s: "Le suivant essaie aussi : la meilleure des deux versions est gardée.", on: false },
   ];
   const BUDGET = { mois: 2000000, depense: 189000 }, PROP = { fait: 36, plafond: 60 };
-  const APPELS = [["orfan", "gemini-2.5-flash", "5 330"], ["orfan", "gemini-2.5-flash", "5 285"], ["evolutif", "gemini-2.5-flash", "2 280"], ["evolutif", "gemini-2.5-flash", "2 285"], ["orfan", "gemini-2.5-flash", "7 855"]];
-  const S = { msg: "" };
+  const APPELS = [["orfan", "il y a 3 min", "gemini-2.5-flash", "5 330"], ["orfan", "il y a 9 min", "gemini-2.5-flash", "5 285"], ["evolutif", "hier", "gemini-2.5-flash", "2 280"], ["evolutif", "hier", "gemini-2.5-flash", "2 285"], ["orfan", "il y a 21 min", "gemini-2.5-flash", "7 855"]];
+  const S = { msg: "", fiche: "orfan" };
   const racine = document.getElementById("ev");
 
   const actifs = () => ETAGES.filter((e) => e.on);
@@ -170,9 +170,15 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     return '<div class="liens"><button class="lien-c" data-vers="Quels modèles écrivent"><b>Quel modèle écrit les versions ?</b><span>Choisis l’exécutant et le stratège dans Réglages › Quels modèles.</span></button><button class="lien-c" data-vers="Installer un chercheur"><b>Ajouter un autre chercheur</b><span>Aujourd’hui : 3 livrés avec Cassandra, 0 installé. L’installation se fait dans Sous le capot › Installer un chercheur.</span></button></div>';
   }
   function blocTech() {
-    return '<div class="verre bloc"><details class="tech"><summary>Détails techniques de chaque chercheur</summary>' + ["orfan", "frugal", "evolutif"].map((id) => { const m = M[id], ok = m.verifs.filter(Boolean).length;
-      return '<div style="margin-top:12px"><b>' + esc(m.nom) + '</b> <span class="puce ' + (ok === 6 ? "ok" : "al") + '">' + ok + " vérifications sur 6</span><dl class=\"cle\" style=\"margin-top:6px\"><dt>Origine</dt><dd>" + esc(m.genre) + " · " + esc(m.source) + "</dd><dt>Exécution</dt><dd>" + esc(m.proc) + "</dd>" + (m.appels ? "<dt>Modèle</dt><dd>" + m.appels + " appel" + (m.appels > 1 ? "s" : "") + " depuis le début" + (m.refus ? " · " + m.refus + " refusé(s) au plafond" : "") + "</dd>" : "") + '</dl><div class="preuves-m">' + m.verifs.map((v, i) => '<div class="preuve ' + (v ? "" : "mu") + '"><span class="k">' + (v ? "✓" : "·") + "</span><div>" + esc(VERIFS[i]) + "</div></div>").join("") + "</div></div>"; }).join("") +
-      '<div class="lib" style="margin-top:14px">Derniers appels de modèle</div><div class="appels">' + APPELS.map((a) => "<div><span>" + esc(a[0]) + "</span><span>" + esc(a[1]) + "</span><span>" + a[2] + " jetons</span></div>").join("") + "</div></details></div>";
+    const id = S.fiche, m = M[id], ok = m.verifs.filter(Boolean).length, mes = ETAGES.map((e, i) => ({ e, i })).filter((x) => x.e.m === id), ap = APPELS.filter((x) => x[0] === id);
+    const selecteur = ["orfan", "frugal", "evolutif"].map((k) => '<button class="seg' + (S.fiche === k ? " on" : "") + '" data-fiche="' + k + '">' + esc(M[k].nom) + "</button>").join("");
+    return '<div class="verre bloc"><div class="tete"><h3>Fiche d’un chercheur</h3><div class="segs" role="tablist">' + selecteur + "</div></div>" +
+      '<div class="fiche-t"><div><b style="font-size:19px">' + esc(m.nom) + "</b><div class=\"note\">" + esc(m.genre) + " · " + esc(m.source) + '</div></div><div class="act"><span class="puce ' + (m.actif ? "ok" : "mu") + '">' + (m.actif ? "actif" : "éteint") + '</span><span class="puce ' + (ok === 6 ? "ok" : "al") + '">' + ok + " vérifications sur 6</span></div></div>" +
+      '<div class="chiffres4"><div><span class="lib">Essais</span><span class="v">' + m.essais + '</span></div><div><span class="lib">Trouvées</span><span class="v">' + m.trouvees + '</span></div><div><span class="lib">Jetons</span><span class="v">' + (m.jetons ? kj(m.jetons) : "0") + '</span></div><div><span class="lib">Appels de modèle</span><span class="v">' + m.appels + '</span></div></div>' +
+      '<div class="lib">Ses méthodes dans l’ordre de recherche</div>' + (mes.length ? mes.map((x) => '<div class="meth"><span class="rg">' + (x.i + 1) + "</span><span>" + esc(x.e.nom) + '</span><span class="puce ' + x.e.cc + '">' + x.e.cout + "</span>" + (x.e.on ? "" : '<span class="puce mu">éteinte</span>') + "</div>").join("") : '<div class="note">Aucune méthode dans l’ordre de recherche.</div>') +
+      '<dl class="cle"><dt>Exécution</dt><dd>' + esc(m.proc) + "</dd><dt>Aujourd’hui</dt><dd>" + (m.jour.essais ? m.jour.essais + " essais · " + kj(m.jour.jetons) + " jetons" : "rien") + "</dd><dt>Plafond du jour</dt><dd>" + (m.plafond ? fmt(m.plafond) + " jetons" : "aucun") + "</dd>" + (m.refus ? "<dt>Refus</dt><dd>" + m.refus + " appel(s) refusé(s) au plafond</dd>" : "") + "</dl>" +
+      '<div class="lib">Ses vérifications</div><div class="preuves-m">' + m.verifs.map((v, i) => '<div class="preuve ' + (v ? "" : "mu") + '"><span class="k">' + (v ? "✓" : "·") + "</span><div>" + esc(VERIFS[i]) + "</div></div>").join("") + "</div>" +
+      '<div class="lib">Ses derniers appels de modèle</div>' + (ap.length ? '<div class="appels">' + ap.map((a) => "<div><span>" + esc(a[1]) + "</span><span>" + esc(a[2]) + "</span><span>" + a[3] + " jetons</span></div>").join("") + "</div>" : '<div class="note">Aucun appel de modèle : ce chercheur n’en a jamais eu besoin.</div>') + "</div>";
   }
   function lier() {
     racine.querySelectorAll("[data-h]").forEach((b) => b.addEventListener("click", () => { const i = +b.dataset.h; [ETAGES[i - 1], ETAGES[i]] = [ETAGES[i], ETAGES[i - 1]]; dessiner(); }));
@@ -180,6 +186,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     racine.querySelectorAll("[data-i]").forEach((b) => b.addEventListener("click", () => { const e = ETAGES[+b.dataset.i]; e.on = !e.on; M[e.m].actif = ETAGES.some((x) => x.m === e.m && x.on); dessiner(); }));
     racine.querySelectorAll("[data-r]").forEach((b) => b.addEventListener("click", () => { REGLES[+b.dataset.r].on = !REGLES[+b.dataset.r].on; dessiner(); }));
     racine.querySelectorAll("[data-p]").forEach((i) => i.addEventListener("change", () => { M[i.dataset.p].plafond = +i.value || 0; S.msg = M[i.dataset.p].nom + " : " + (+i.value ? "plafond de " + fmt(+i.value) + " jetons par jour posé." : "plus de plafond."); dessiner(); }));
+    racine.querySelectorAll("[data-fiche]").forEach((b) => b.addEventListener("click", () => { S.fiche = b.dataset.fiche; dessiner(); }));
     racine.querySelectorAll("[data-vers]").forEach((b) => b.addEventListener("click", () => alert("Maquette : ici, on ouvrirait « " + b.dataset.vers + " » dans l’application.")));
   }
   const MENU = [["Évolution", 0, "⚘"], ["Aujourd’hui", 1, "☼"], ["Améliorations", 1, "↗"], ["Réglages", 1, "◈"], ["Consignes et seuils", 1, "✎"], ["Sous le capot", 1, "⚙"], ["Les chercheurs", 2, "⊙"], ["Les fonctions", 2, "ƒ"], ["Les comparer", 2, "⇄"], ["Installer un chercheur", 2, "⤓"], ["Filet de sécurité", 2, "⛨"], ["Carnet", 2, "▤"], ["Versions écartées", 2, "⊘"], ["Ce qui est prévu", 2, "✦"], ["Vocabulaire", 2, "Aa"]];
