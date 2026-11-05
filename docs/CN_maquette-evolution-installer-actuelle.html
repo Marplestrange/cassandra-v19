@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette · Évolution · Installer un chercheur (page actuelle, à l'identique)</title>
+<!--
+  CETTE MAQUETTE EST LA PAGE ACTUELLE, SANS RIEN CHANGER.
+  Elle charge le vrai écran (../interface/CN_evolution-ecran.js) et les vraies feuilles de style de l'interface,
+  et lui sert, à la place du serveur, une photo des données réelles d'Argos du 05-11 (104 fonctions, 48 mesurées, 56 muettes).
+  Les boutons sont vivants : choisir une fonction, les onglets, « Proposer une variante » (avec sa confirmation), « Retour instantané »…
+  Les gestes ne touchent à rien : le faux serveur répond « rien n'a été écrit », comme Argos aujourd'hui.
+  Ouvrir ce fichier dans un navigateur, depuis le dépôt (les chemins ../interface/ sont relatifs).
+-->
+<link rel="stylesheet" href="../interface/CN_style.css">
+<link rel="stylesheet" href="../interface/CN_shell.css">
+<link rel="stylesheet" href="../interface/CN_disposition.css">
+<link rel="stylesheet" href="../interface/CN_habillage.css">
+<style>
+  html, body { margin: 0; min-height: 100%; height: auto !important; overflow: auto !important; position: static !important; }
+  body { font-family: Inter, system-ui, Segoe UI, sans-serif; background: var(--bg, #eef3f2); color: var(--txt, #1d2b2a); }
+  .mq-bandeau { position: sticky; top: 0; z-index: 50; background: #17413f; color: #e9f5f3; font: 12.5px/1.4 system-ui, sans-serif; padding: 7px 16px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .mq-bandeau b { color: #fff; }
+  .mq-bandeau button { font: inherit; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; border-radius: 6px; padding: 2px 9px; cursor: pointer; }
+  .mq-cadre { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 18px; padding: 18px; align-items: start; }
+  .mq-menu { position: sticky; top: 52px; border-radius: 14px; padding: 10px; background: rgba(255,255,255,.7); border: 1px solid rgba(0,0,0,.08); backdrop-filter: blur(10px); font-size: 13.5px; }
+  .mq-menu .t { padding: 8px 10px; border-radius: 9px; cursor: pointer; display: flex; gap: 9px; align-items: center; color: inherit; }
+  .mq-menu .t:hover { background: rgba(0,0,0,.05); }
+  .mq-menu .t.on { background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.1); font-weight: 600; }
+  .mq-menu .t.s1 { padding-left: 26px; }
+  .mq-menu .t.s2 { padding-left: 44px; font-size: 12.5px; }
+  .mq-menu .g { opacity: .65; width: 14px; text-align: center; }
+  .mq-corps { min-width: 0; }
+  @media (max-width: 900px) { .mq-cadre { grid-template-columns: 1fr; } .mq-menu { position: static; } }
+</style>
+</head>
+<body>
+<div class="mq-bandeau"><b>Maquette · la page actuelle, à l'identique</b><span>Évolution › Sous le capot › Installer un chercheur · données réelles d'Argos du 05-11 · les gestes ne touchent à rien</span><button id="mq-redo">Recharger la page</button></div>
+<div class="mq-cadre">
+  <nav class="mq-menu" id="mq-menu" aria-label="Menu d'Évolution"></nav>
+  <main class="mq-corps" id="mq-corps"></main>
+</div>
+
+<script>
+/* ═══ 1 · le faux serveur : une photo des données d'Argos (05-11) ═══════════════════════════════════════════ */
+(function () {
+  // mesurées : nom | appels réels | durée moyenne (ms) | corpus : distincts, appels, réservés, visibles, dorés | valeur espérée (ms) | appels du point en service
+  const MES = `planifie.decrire|46849|0.316|74|18|56|61|14804.3|507
+affichage.disposition|4488|2.75|49|12|37|13|12342|149
+planifie.suivante|5718|0.501|2000|397|1603|14|2864.7|507
+planifie.precedente|5713|0.489|2000|408|1592|14|2793.7|507
+fastpanel.lecture|4557|0.463|2000|385|1615|76|2109.9|70
+jour.tuiles|6316|0.297|23|6|17|22|1875.9|203
+securite.sans_options_cible|5411|0.263|162|32|130|36|1423.1|0
+planifie.derive|5726|0.224|15|2|13|15|1282.6|52
+flotte.duree|3867|0.254|18|2|16|15|982.2|315
+dns.analyser|1970|0.366|2000|389|1611|34|721|21
+affichage.idees|1579|0.408|388|68|320|11|644.2|52
+securite.portee|1782|0.351|19|3|16|14|625.5|0
+dns.normaliser|1220|0.413|41|7|34|31|503.9|10
+fastpanel.audit|620|0.422|349|67|282|35|261.6|6
+memoire.perception_monde|9|28.738|83|13|70|83|258.6|0
+mesures.moteur|87|2.449|231|48|183|144|213.1|0
+vue.verdict.composer|83|2.016|132|32|100|49|167.3|1
+securite.outils_analyse|42|2.464|44|12|32|14|103.5|0
+notes.graphe|89|1.146|24|7|17|24|102|1
+dns.derives|122|0.571|21|6|15|20|69.7|1
+securite.adresses_machine|42|1.578|44|4|40|14|66.3|0
+dns.dom_enregistre|144|0.429|22|4|18|20|61.8|1
+securite.fail2ban|42|1.448|44|11|33|14|60.8|0
+securite.docker_publies|42|1.011|15|5|10|14|42.5|0
+modeles.appels_de|95|0.438|20|6|14|19|41.6|0
+flotte.lire_sortie|36|0.956|89|13|76|53|34.4|3
+salon.destinataires_de|3|8.428|16|6|10|16|25.3|0
+planifie.collisions|6|2.475|83|15|68|77|14.9|0
+planifie.occurrences|6|2.266|16|2|14|14|13.6|0
+planifie.apercu|6|1.815|43|13|30|37|10.9|0
+planifie.destructeur|6|1.643|16|1|15|14|9.9|0
+modeles.messages_ollama|17|0.579|32|4|28|17|9.8|0
+memoire.duree_txt|24|0.342|35|7|28|35|8.2|0
+courrier.utf7_decoder|7|1.023|20|6|14|20|7.2|0
+contacts.signaux|1|5.185|28|5|23|28|5.2|0
+memoire.routage|6|0.827|40|5|35|40|5|0
+planifie.segments|6|0.651|33|11|22|31|3.9|0
+securite.de_confiance|8|0.477|22|5|17|14|3.8|0
+agents.prompt_systeme|6|0.589|29|8|21|23|3.5|0
+agents.ton_agent|6|0.564|24|3|21|24|3.4|0
+agents.coherents|7|0.441|22|2|20|15|3.1|0
+memoire.termes|4|0.771|25|11|14|25|3.1|0
+agents.choix_modele|7|0.405|36|7|29|34|2.8|0
+affichage.suggestions_plan|1|1.746|27|10|17|26|1.7|0
+tailscale.resume|1|1.422|22|2|20|21|1.4|0
+agents.resume_resultat|1|0.602|30|3|27|29|0.6|0
+memoire.json_extraire|1|0.631|26|7|19|26|0.6|0`.split("\n").map((l) => l.split("|"));
+  // muettes (jamais appelées) : nom : distincts, réservés, visibles
+  const MUET = `agenda.ical_lire:43:8:35 agenda.plier:36:9:27 agenda.regle_de:12:3:9 agents.choisir_outils:24:4:20 agents.classer_fiche:32:7:25 agents.planifier_recherche:33:10:23 agents.proposer_promotion:31:4:27 agents.rapport_matin:25:4:21 agents.score_source:28:5:23 bibliotheque.decouper:36:7:29 billetterie.commission:25:7:18 contacts.csv_apparier:17:4:13 contacts.csv_decoder:13:4:9 contacts.csv_fiches:26:5:21 contacts.initiales:24:5:19 contacts.meilleure:19:1:18 contacts.norm_nom:36:6:30 contacts.remplissage:19:5:14 contacts.vcard_ecrire:30:8:22 contacts.vcard_lire:33:10:23 courrier.adresse_parts:15:3:12 courrier.date_iso:14:0:14 courrier.decoder_entete:15:2:13 courrier.entetes:41:12:29 courrier.html_en_texte:23:6:17 courrier.motif_technique:17:6:11 courrier.role_du_dossier:25:11:14 courrier.roles_uniques:18:3:15 courrier.style_sur:14:0:14 dolibarr.completer:14:2:12 dolibarr.egaux:14:2:12 dolibarr.regles_dolibarr:36:6:30 flotte.lire_metriques:26:5:21 ged.media_kind:52:12:40 jour.propre:14:6:8 journal.niveau:31:3:28 journal.signature:33:8:25 memoire.cle_de:36:8:28 memoire.jetons:20:4:16 memoire.question_de:20:2:18 notes.dossier_ok:14:5:9 notes.liens_de:23:5:18 notes.lire_entete:24:8:16 notes.md_vers_html:30:7:23 planifie.boucle:12:1:11 projets.date_ok:13:2:11 projets.glissement:14:3:11 sauvegardes.age_mot:14:3:11 sauvegardes.etat:13:2:11 sensorium.cron_derniere:15:1:14 sensorium.duree_txt:16:1:15 sensorium.fp_formes:123:25:98 sensorium.mogwai_table:21:5:16 sensorium.pente:13:3:10 sensorium.sante:60:15:45 sensorium.sys_formes:176:32:144 tailscale.erreur:36:7:29`.split(" ").map((x) => x.split(":"));
+
+  const cibles = [], points = [], tombes = {};
+  MES.forEach((r) => {
+    const n = +r[3];
+    cibles.push({ point: r[0], appels: +r[1], duree_moyenne_ms: +r[2], corpus: n, muet: false, valeur_ms: +r[7] });
+    points.push({ point: r[0], contrat: "1.0", runtime: "python", sert: "reference", ec_refusee: "", suspendue: null, fautes_recentes: 0, appels: +r[8], ec_appels: 0, isolation: "processus", bac: "aucun", routage: null, ombre: null,
+      corpus: { distincts: +r[3], appels: +r[1], reserve: +r[4], visible: +r[5], dores: +r[6], duree_moyenne_ms: +r[2] } });
+    tombes[r[0]] = 0;
+  });
+  MUET.forEach((r) => {
+    cibles.push({ point: r[0], appels: 0, duree_moyenne_ms: null, corpus: +r[1], muet: true, valeur_ms: null });
+    points.push({ point: r[0], contrat: "1.0", runtime: "python", sert: "reference", ec_refusee: "", suspendue: null, fautes_recentes: 0, appels: 0, ec_appels: 0, isolation: "processus", bac: "aucun", routage: null, ombre: null,
+      corpus: { distincts: +r[1], appels: 0, reserve: +r[2], visible: +r[3], dores: +r[1], duree_moyenne_ms: null } });
+    tombes[r[0]] = 0;
+  });
+  points.sort((a, b) => a.point < b.point ? -1 : 1);
+  tombes["affichage.idees"] = 3;
+
+  const etat = { cibles, pieces: [], points, chaine: { ok: true, mailles: 0 }, journal: [],
+    seuils: { gain_min_pct: 5, pieges_min: 0.85, ombre_appels: 200, ombre_distincts: 30, paliers: [10, 50, 100], appels_par_palier: 200, visite_jours: 30, gain_confirme: 0.5, propositions_par_jour: 20, objectifs: { latence: 1, memoire: 0, taille: 0 }, tolerance_objectif_pct: 25 }, tombes };
+
+  const moteurs = { moteurs: [
+      { appels_modele: 2, essais: 1, etat: "actif", genre: "natif", jetons: 13337, nom: "Évolutif", pieces: 0, refus: 0, id: "evolutif", plafond: {}, aujourdhui: { jetons: 0, essais: 0, appels: 0 }, mois: 13337 },
+      { appels_modele: 0, essais: 6, etat: "actif", genre: "natif", jetons: 0, nom: "Frugal", pieces: 0, refus: 0, id: "frugal", plafond: {}, aujourdhui: { jetons: 0, essais: 0, appels: 0 }, mois: 0 },
+      { appels_modele: 18, essais: 12, etat: "actif", genre: "natif", jetons: 88208, nom: "Orfan", pieces: 0, refus: 2, id: "orfan", plafond: {}, aujourdhui: { jetons: 0, essais: 0, appels: 0 }, mois: 88208 }],
+    isoles: true,
+    cascade: [
+      { id: "orfan/deterministe", on: true, actif: true, nom: "Orfan · règles déterministes", cout: "gratuit : zéro jeton" },
+      { id: "frugal", on: true, actif: true, nom: "Frugal 2 · règles, puis idées du modèle fort, code du modèle économe", cout: "peu de jetons : un modèle seulement sur un point chaud" },
+      { id: "orfan/modele", on: true, actif: true, nom: "Orfan · modèle guidé par le profil", cout: "jetons : un modèle écrit les variantes" },
+      { id: "evolutif", on: true, actif: true, nom: "Évolutif · populations et mutations", cout: "jetons : plusieurs générations" }],
+    options: { arret_premiere: true, modele_si_chaud: true, course_si_deux: false }, affectations: {},
+    budget: { jetons_mois: 2000000, alerte_pct: 80, gratuits_d_abord: true, couper_au_plafond: true }, depense_mois: 101545, propositions_jour: { fait: 26, plafond: 60 },
+    objectifs: { poids: { latence: 1, memoire: 0, taille: 0 }, tolerance_pct: 25 },
+    etages: { "orfan/deterministe": { moteur: "orfan", nom: "Orfan · règles déterministes", cout: "gratuit : zéro jeton" }, frugal: { moteur: "frugal", nom: "Frugal 2 · règles, puis idées du modèle fort, code du modèle économe", cout: "peu de jetons : un modèle seulement sur un point chaud" }, "orfan/modele": { moteur: "orfan", nom: "Orfan · modèle guidé par le profil", cout: "jetons : un modèle écrit les variantes" }, evolutif: { moteur: "evolutif", nom: "Évolutif · populations et mutations", cout: "jetons : plusieurs générations" } },
+    catalogue: [], catalogue_erreur: "catalogue des moteurs absent ou sans sceau : /var/cassandra/donnees/moteurs-catalogue.json",
+    relais: [], courses: [], journal: [], points: etat.cibles.map((c) => c.point) };
+  const cage = { os: "linux", isolation: "processus", bac_mode: "auto", bac: "aucun", memoire_mo: 1024, chaine: { ok: true, mailles: 0 }, epreuves: [],
+    garanties: [["Chaque EC tourne dans un processus à part, environnement vidé", 1], ["Le moteur de recherche tourne dans son processus (sans clé, sans fichier écrit)", 1], ["Le bac du système (sans réseau, sans fichier du serveur) enveloppe ces processus", 0], ["Mémoire plafonnée par processus (POSIX)", 1], ["Un processus qui dépasse son délai est tué", 1], ["Une EC ne sert que sous un sceau valide et un routage signé", 1], ["La chaîne des événements est scellée et intacte", 1]].map((g) => ({ texte: g[0], ok: !!g[1] })) };
+  const modeles = { modeles: [
+    { id: "qwen2-5-3b-8f49", nom: "qwen2.5:3b", fournisseur: "ollama", roles: ["agent_relecteur", "principal"] },
+    { id: "deepseek-flash-a1f7", nom: "deepseek-flash", fournisseur: "deepseek", roles: ["agent_cassandra", "evolution_strategie"] },
+    { id: "google-gemini-2-5-flash-c604", nom: "google/gemini-2.5-flash", fournisseur: "openrouter", roles: ["vision", "agent_itare", "evolution"] }] };
+
+  const attente = (v, ms) => new Promise((r) => setTimeout(() => r(JSON.parse(JSON.stringify(v))), ms || 120));
+  window.CASS = {
+    sceneSurMesure: {},
+    agir: async function (cap, args) {
+      args = args || {};
+      if (cap === "evolution.etat") return attente(etat);
+      if (cap === "evolution.moteurs") return attente(moteurs);
+      if (cap === "evolution.cage") return attente(cage);
+      if (cap === "modeles.lister") return attente(modeles);
+      if (cap === "modeles.role_lier") { modeles.modeles.forEach((m) => { m.roles = m.roles.filter((r) => r !== args.role); }); const m = modeles.modeles.find((x) => x.id === args.modele_id); if (m) m.roles.push(args.role); return attente({ role: args.role, modele_id: args.modele_id }); }
+      if (cap === "evolution.proposer") {
+        moteurs.propositions_jour.fait++;
+        const lent = args.moteur === "modele" || args.moteur === "les_deux" || args.moteur === "cascade";
+        return attente({ ok: false, raison: "aucune variante prouvée et plus rapide", essais: [], piece: null, moteur: args.moteur || "" }, lent ? 2500 : 900);
+      }
+      if (cap === "evolution.retour") return attente({ retraits: [] });
+      if (cap === "evolution.visiter") return attente({ visites: [] });
+      if (cap === "evolution.cascade_regler") { if (args.ordre) moteurs.cascade.forEach((e) => { const x = args.ordre.find((o) => o.id === e.id); if (x) e.on = !!x.on; }); return attente({ cascade: moteurs.cascade }); }
+      return attente({});
+    },
+  };
+  // la liste des modules (versions du dépôt) : le vrai écran la lit par /api/modules
+  const fetchVrai = window.fetch ? window.fetch.bind(window) : null;
+  window.fetch = function (url, o) {
+    if (String(url).indexOf("/api/modules") >= 0) return Promise.resolve({ json: async () => ({ modules: ["affichage:0.7.0", "planifie:0.1.4", "agenda:0.3.0", "agents:0.9.0", "bibliotheque:0.2.0", "billetterie:0.4.0", "contacts:0.5.0", "courrier:0.6.0", "dns:0.3.0", "dolibarr:0.4.0", "fastpanel:0.5.0", "flotte:0.2.0", "ged:0.1.0", "jour:0.2.0", "journal:0.1.0", "memoire:0.4.0", "mesures:0.2.0", "modeles:0.6.0", "notes:0.3.0", "projets:0.2.0", "salon:0.2.0", "sauvegardes:0.2.0", "securite:0.5.0", "sensorium:0.1.13", "tailscale:0.2.0", "vue:0.3.0"].map((x) => ({ id: x.split(":")[0], version: x.split(":")[1] })) }) });
+    return fetchVrai ? fetchVrai(url, o) : Promise.reject(new Error("hors ligne"));
+  };
+})();
+</script>
+<script src="../interface/CN_evolution-ecran.js"></script>
+<script>
+/* ═══ 2 · le cadre : un menu à la ressemblance du vrai, puis le vrai écran ═══════════════════════════════════ */
+(function () {
+  const MENU = [["", "Évolution", 0, "⚘"], ["aujourdhui", "Aujourd’hui", 1, "☼"], ["amelio", "Améliorations", 1, "↗"], ["reglages", "Réglages", 1, "◈"], ["consignes", "Consignes et seuils", 1, "✎"], ["capot", "Sous le capot", 1, "⚙"],
+    ["capot.chercheurs", "Les chercheurs", 2, "⊙"], ["capot.points", "Les fonctions", 2, "ƒ"], ["capot.comparer", "Les comparer", 2, "⇄"], ["capot.install", "Installer un chercheur", 2, "⤓"], ["capot.securite", "Filet de sécurité", 2, "⛨"], ["capot.carnet", "Carnet", 2, "▤"], ["capot.ecartees", "Versions écartées", 2, "⊘"], ["capot.vision", "Ce qui est prévu", 2, "✦"], ["capot.vocab", "Vocabulaire", 2, "Aa"]];
+  const menu = document.getElementById("mq-menu"), corps = document.getElementById("mq-corps");
+  function dessinerMenu(vue) {
+    menu.innerHTML = MENU.map((m) => '<div class="t s' + m[2] + (m[0] === vue || (m[0] === "capot" && vue.indexOf("capot.") === 0 && false) ? " on" : "") + '" data-v="' + m[0] + '"><span class="g">' + m[3] + "</span>" + m[1] + "</div>").join("");
+    menu.querySelectorAll("[data-v]").forEach((t) => t.addEventListener("click", () => { if (t.dataset.v) window.evAller(t.dataset.v === "capot" ? "capot.chercheurs" : t.dataset.v); }));
+  }
+  window.evSuivre = (v) => dessinerMenu(v);
+  async function monter() {
+    corps.innerHTML = "";
+    window.__evVue = "capot.install";             // la page ouverte par défaut : Installer un chercheur
+    dessinerMenu("capot.install");
+    await window.CASS.sceneSurMesure.evolution(corps, {});
+  }
+  document.getElementById("mq-redo").addEventListener("click", monter);
+  monter();
+})();
+</script>
+</body>
+</html>

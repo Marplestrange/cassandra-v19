@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette · Évolution · Installer un chercheur (version proposée)</title>
+<!--
+  VERSION PROPOSÉE de « Installer un chercheur », à comparer avec CN_maquette-evolution-installer-actuelle.html (la page d'aujourd'hui, à l'identique).
+
+  Ce que la page actuelle fait mal (constaté sur Argos, 05-11) :
+   - elle est VIDE : le catalogue n'existe pas, et pour en créer un il faut lancer un outil en ligne de commande sur le serveur ;
+   - aucun moteur n'est proposé à l'écran (la liste d'OpenEvolve, ShinkaEvolve, CodeEvolve, GEPA dort dans un tiroir caché) ;
+   - le texte renvoie à « Moteurs, état du moteur », une page qui n'existe plus ;
+   - « Ajouter ou retirer » : on ne retire rien ici ; le même message d'erreur s'affiche deux fois ; cinq étapes en prose, aucun geste.
+
+  Ce que la page proposée change :
+   1. un VRAI CATALOGUE : cartes, recherche, filtres (ce que ça cherche, ce que ça coûte, où ça en est) ;
+   2. un guide « Lequel choisir ? » en trois questions qui met en avant les bons candidats ;
+   3. « Préparer puis installer » en un geste : l'épinglage des paquets (aujourd'hui en ligne de commande) devient une étape de l'écran ;
+   4. une installation suivie EN DIRECT, étape par étape, avec la vraie suite de l'installateur (catalogue scellé, entrée valide, environnement à part, paquets par empreinte, banc d'import, registre), et un retour arrière dit en cas d'échec ;
+   5. une COMPATIBILITÉ avec ce serveur vérifiée avant d'installer (Python, disque, réseau) ;
+   6. après l'installation, le geste suivant est proposé (contrôler, puis activer dans Les chercheurs) : un chercheur installé n'est jamais actif d'office ;
+   7. des pistes qui n'ont pas encore d'adaptateur peuvent être demandées d'un clic.
+
+  Les chercheurs livrés (Orfan, Frugal 2, Évolutif) et les quatre adaptateurs écrits (OpenEvolve, ShinkaEvolve, CodeEvolve, GEPA) sont réels ; les autres entrées sont des pistes à étudier, sans adaptateur.
+  Tout est simulé : aucun serveur, aucune installation réelle. Les versions et les tailles sont des exemples.
+-->
+<link rel="stylesheet" href="../interface/CN_style.css">
+<link rel="stylesheet" href="../interface/CN_shell.css">
+<link rel="stylesheet" href="../interface/CN_disposition.css">
+<link rel="stylesheet" href="../interface/CN_habillage.css">
+<style>
+.ev{--e-verre:var(--surface);--e-filet:var(--line);--e-encre:var(--txt-strong);--e-encre2:var(--txt-soft);--e-encre3:var(--txt-muted);--e-doux:var(--ov-06);--e-ok:var(--ok);--e-al:var(--warn);--e-dg:var(--danger);--e-okd:rgba(4,120,87,.11);--e-ald:rgba(180,83,9,.12);--e-dgd:var(--danger-soft,rgba(190,18,60,.1));display:flex;flex-direction:column;gap:14px;color:var(--txt);font-size:13.5px;line-height:1.5}.ev *{box-sizing:border-box}.ev h1,.ev h2,.ev h3{margin:0;font-weight:600}.ev h1{font:600 19px/1.2 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev h2{font:600 12px/1.3 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre2)}.ev .verre{background:var(--e-verre);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--e-filet);border-radius:16px;box-shadow:var(--shadow-glass)}.ev .mono{font-family:ui-monospace,Menlo,Consolas,monospace}.ev .lib{font:600 10.5px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--e-encre3)}.ev .note{font-size:11.5px;color:var(--e-encre3);line-height:1.5}.ev .btn{border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt);border-radius:10px;padding:7px 12px;font:600 12px ui-monospace,Menlo,Consolas,monospace;cursor:pointer}.ev .btn:hover:not([disabled]){border-color:var(--accent)}.ev .btn.prim{background:var(--accent);color:var(--on-accent);border-color:transparent}.ev .btn.dng{color:var(--e-dg);border-color:var(--e-dg)}.ev .btn[disabled]{opacity:.45;cursor:not-allowed}.ev .puce{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 9px;font:600 10.5px ui-monospace,Menlo,Consolas,monospace;background:var(--e-doux);color:var(--accent);white-space:nowrap}.ev .puce.ok{background:var(--e-okd);color:var(--e-ok)}.ev .puce.al{background:var(--e-ald);color:var(--e-al)}.ev .puce.dg{background:var(--e-dgd);color:var(--e-dg)}.ev .puce.mu{background:var(--e-doux);color:var(--e-encre3)}.ev .nb{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.07em;text-transform:uppercase;border:1px dashed var(--e-filet);border-radius:99px;padding:2px 8px;color:var(--e-encre3);white-space:nowrap}.ev .entete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.ev .entete .d{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ev .vues{display:flex;gap:4px;padding:4px;border-radius:12px;width:max-content;max-width:100%}.ev .vues button{border:0;background:transparent;border-radius:9px;padding:7px 16px;font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre2);cursor:pointer}.ev .vues button.on{background:var(--accent);color:var(--on-accent)}.ev .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--e-filet);overflow:hidden}.ev .hero>div{background:var(--e-verre);padding:18px 18px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}.ev .hero .big{font:600 38px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:-.02em;color:var(--accent)}.ev .hero .big.ok{color:var(--e-ok)}.ev .hero .big.mu{color:var(--e-encre3)}.ev .carte{padding:14px;display:flex;flex-direction:column;gap:9px;min-width:0}.ev .large{grid-column:1/-1}.ev .idee{font:600 10px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}.ev .cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:14px}.ev .tete{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.ev .intention{display:flex;gap:8px;flex-wrap:wrap}.ev .intention input{flex:1;min-width:220px;font:13.5px inherit;padding:10px 12px;border-radius:11px;border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt)}.ev .sugg-t{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--e-encre3)}.ev .sugg-t i{width:7px;height:7px;border-radius:50%;background:var(--e-ok);animation:evbat 2s infinite}@keyframes evbat{0%{box-shadow:0 0 0 0 var(--e-ok)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}.ev .pastilles{display:flex;gap:8px;flex-wrap:wrap}.ev .pas{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:14px;padding:8px 12px;max-width:340px;cursor:pointer;animation:event .45s ease both}.ev .pas:hover{border-color:var(--accent)}.ev .pas b{font:600 12.5px inherit}.ev .pas small{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3)}.ev .pas .ty{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}@keyframes event{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}.ev .compile{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.ev .compile>div,.ev .tuile{border:1px solid var(--e-filet);border-radius:12px;padding:10px;background:var(--e-verre);display:flex;flex-direction:column;gap:4px;font-size:12.5px;min-width:0}.ev .piste{display:grid;grid-template-columns:150px 1fr 120px;gap:10px;align-items:center;font:600 11.5px ui-monospace,Menlo,Consolas,monospace}.ev .piste .t{height:22px;border-radius:7px;background:var(--e-filet);position:relative;overflow:hidden}.ev .piste .t i{position:absolute;inset:0 auto 0 0;background:var(--e-doux);border-right:2px solid var(--accent)}.ev .piste .t i.r{background:var(--e-okd);border-color:var(--e-ok);opacity:.7}.ev .chrono{display:flex;flex-direction:column;border-left:2px solid var(--e-filet);margin-left:7px}.ev .chrono>div{position:relative;padding:5px 0 9px 16px;font-size:12.5px}.ev .chrono>div:before{content:'';position:absolute;left:-7px;top:9px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}.ev .chrono .rouge:before{background:var(--e-dg)}.ev .chrono .vert:before{background:var(--e-ok)}.ev .chrono time{font:600 11px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3);margin-right:8px}.ev .mat{display:grid;grid-template-columns:150px repeat(3,1fr);gap:6px;font-size:12px;align-items:center}.ev .mat .c{border-radius:9px;padding:6px 8px;text-align:center;font:600 11.5px ui-monospace,Menlo,Consolas,monospace;background:var(--e-doux);color:var(--accent)}.ev .mat .c.b{background:var(--e-okd);color:var(--e-ok)}.ev .genomes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.ev .genomes>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px;background:var(--e-verre);display:flex;flex-direction:column;gap:4px;font-size:12.5px}.ev .bandeau{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--e-filet);overflow:hidden}.ev .bandeau>div{background:var(--e-verre);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}.ev .bandeau .v{font:600 17px/1.1 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .barre{height:6px;border-radius:99px;background:var(--e-filet);overflow:hidden}.ev .barre i{display:block;height:100%;background:var(--accent)}.ev .trois{display:grid;grid-template-columns:270px minmax(0,1fr) 330px;gap:14px;align-items:start}@media(max-width:1100px){.ev .trois{grid-template-columns:1fr}}.ev .rail{padding:12px;display:flex;flex-direction:column;gap:6px}.ev .cap{border:1px solid transparent;border-radius:12px;padding:9px 10px;text-align:left;background:transparent;color:inherit;display:flex;flex-direction:column;gap:4px;width:100%;cursor:pointer;font:inherit}.ev .cap:hover{background:var(--e-doux)}.ev .cap.sel{background:var(--e-verre);border-color:var(--accent)}.ev .cap .n{font:600 12px ui-monospace,Menlo,Consolas,monospace;word-break:break-all}.ev .cap .s{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--e-encre2)}.ev .centre{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}.ev .onglets{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--e-filet);padding-bottom:8px}.ev .onglets button{border:0;background:transparent;border-radius:9px;padding:6px 11px;font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre2);cursor:pointer}.ev .onglets button.on{background:var(--e-doux);color:var(--accent)}.ev .zone{overflow-x:auto}.ev .cadran{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.ev .cadran>div{border:1px solid var(--e-filet);border-radius:12px;padding:9px;background:var(--e-verre);display:flex;flex-direction:column;gap:3px}.ev .cadran .v{font:600 16px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .gain{color:var(--e-ok)}.ev .analyse{padding:14px;display:flex;flex-direction:column;gap:11px}.ev .preuve{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:12.5px}.ev .preuve .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px ui-monospace,Menlo,Consolas,monospace;background:var(--e-okd);color:var(--e-ok)}.ev .preuve.al .k{background:var(--e-ald);color:var(--e-al)}.ev .preuve.mu .k{background:var(--e-doux);color:var(--e-encre3)}.ev .preuve small{display:block;color:var(--e-encre3);font-size:11.5px}.ev .verdict{border-radius:12px;padding:10px 12px;font:600 12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--e-okd);color:var(--e-ok)}.ev .verdict.al{background:var(--e-ald);color:var(--e-al)}.ev .verdict.dg{background:var(--e-dgd);color:var(--e-dg)}.ev .verdict.mu{background:var(--e-doux);color:var(--e-encre2)}.ev .routage{display:flex;gap:4px;flex-wrap:wrap}.ev .routage button{flex:1;min-width:46px;border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:8px;padding:6px 4px;font:600 11.5px ui-monospace,Menlo,Consolas,monospace;cursor:pointer}.ev .routage button.on{background:var(--accent);color:var(--on-accent);border-color:transparent}.ev .routage button[disabled]{opacity:.45;cursor:not-allowed}.ev .bas{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.ev .ligne{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--e-filet);font-size:12.5px}.ev .ligne:first-of-type{border-top:0}.ev .ligne .g{color:var(--e-encre3);font-size:11.5px}.ev table{border-collapse:collapse;width:100%;font-size:12.5px}.ev th,.ev td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--e-filet);vertical-align:top}.ev th{font:600 10.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre3)}.ev .oui{color:var(--e-ok);font-weight:600}.ev .non{color:var(--e-encre3)}.ev .cons{color:var(--accent);font-weight:600}.ev .preu{border-left:2px solid var(--line-strong);padding-left:10px;font-size:12px;color:var(--e-encre2);line-height:1.5}.ev select,.ev input[type=number],.ev input[type=text]{border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt);border-radius:9px;padding:6px 9px;font:12.5px ui-monospace,Menlo,Consolas,monospace}.ev .lg{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ev .tiroir{position:fixed;inset:0;background:rgba(16,24,40,.38);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;overflow:auto;z-index:50}.ev .tiroir.on{display:flex}.ev .tiroir .verre{background:var(--surface-solid,var(--surface));max-width:980px;width:100%;padding:18px;display:flex;flex-direction:column;gap:12px}.ev .choix{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.ev .opt{border:1.5px solid var(--e-filet);border-radius:12px;padding:11px;background:transparent;color:inherit;text-align:left;display:flex;flex-direction:column;gap:5px;font:inherit}.ev .opt.on{border-color:var(--accent);background:var(--e-doux)}.ev svg text{font-family:ui-monospace,Menlo,Consolas,monospace;fill:var(--e-encre2);font-size:10.5px}
+html,body{margin:0;min-height:100%;height:auto!important;overflow:auto!important;position:static!important}
+body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2);color:var(--txt,#1d2b2a)}
+.mq-bandeau{position:sticky;top:0;z-index:50;background:#17413f;color:#e9f5f3;font:12.5px/1.4 system-ui,sans-serif;padding:7px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.mq-bandeau b{color:#fff}
+.mq-bandeau button{font:inherit;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:6px;padding:2px 9px;cursor:pointer}
+.mq-cadre{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;padding:18px;align-items:start}
+.mq-menu{position:sticky;top:52px;border-radius:14px;padding:10px;background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.08);backdrop-filter:blur(10px);font-size:13.5px}
+.mq-menu .t{padding:8px 10px;border-radius:9px;display:flex;gap:9px;align-items:center;color:inherit}
+.mq-menu .t.on{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.1);font-weight:600}
+.mq-menu .t.s1{padding-left:26px}.mq-menu .t.s2{padding-left:44px;font-size:12.5px}
+.mq-menu .g{opacity:.65;width:14px;text-align:center}
+.mq-corps{min-width:0}
+@media(max-width:900px){.mq-cadre{grid-template-columns:1fr}.mq-menu{position:static}}
+/* la page proposée : tout est préfixé « in- » pour ne rien heurter dans l'application */
+.ev{font-size:14.5px;max-width:none;width:100%;margin:0}
+.ev .puce{font-weight:600;letter-spacing:0}
+.ev .puce.dg{background:color-mix(in srgb,var(--danger,#be123c) 11%,transparent)!important;color:color-mix(in srgb,var(--danger,#be123c) 72%,var(--txt-strong,#1d2b2a))!important}
+.ev .puce.al{background:color-mix(in srgb,var(--warn,#b45309) 12%,transparent)!important;color:color-mix(in srgb,var(--warn,#b45309) 78%,var(--txt-strong,#1d2b2a))!important}
+.ev .puce.ok{background:color-mix(in srgb,var(--ok,#047857) 12%,transparent)!important;color:color-mix(in srgb,var(--ok,#047857) 80%,var(--txt-strong,#1d2b2a))!important}
+.ev .in-bloc{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.ev .in-tete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ev .in-tete h3{font:600 16px var(--font-sans,system-ui)}
+.ev .in-mes{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ev .in-mc{display:inline-flex;gap:8px;align-items:center;padding:6px 12px 6px 7px;border-radius:99px;border:1px solid var(--e-filet);background:var(--e-verre);font:500 13px var(--font-sans,system-ui)}
+.ev .in-mc i{font:700 11px var(--font-sans,system-ui);font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent)}
+.ev .in-mc small{color:var(--e-encre3);font-size:11.5px}
+.ev .in-guide{border:1px dashed var(--accent);border-radius:14px;padding:12px 16px;background:linear-gradient(180deg,var(--e-doux),transparent)}
+.ev .in-guide summary{cursor:pointer;font:600 14px var(--font-sans,system-ui);color:var(--accent)}
+.ev .in-q{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.ev .in-q .ql{font-size:13px;color:var(--e-encre2)}
+.ev .in-chips{display:flex;gap:6px;flex-wrap:wrap}
+.ev .in-chip{border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:99px;padding:6px 14px;font:600 13px var(--font-sans,system-ui);cursor:pointer}
+.ev .in-chip.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.ev .in-chip b{opacity:.7;margin-left:4px}
+.ev .in-reco{font-size:13.5px;padding:9px 12px;border-radius:11px;background:color-mix(in srgb,var(--ok,#047857) 11%,transparent);color:color-mix(in srgb,var(--ok,#047857) 82%,var(--txt-strong,#1d2b2a))}
+.ev .in-barre{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center}
+.ev .in-rech{flex:1;min-width:220px;font:14px var(--font-sans,system-ui)!important;padding:9px 12px!important;border-radius:11px!important}
+.ev .in-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.ev .in-carte{display:flex;flex-direction:column;gap:10px;padding:14px 15px;border:1.5px solid var(--e-filet);border-radius:15px;background:var(--e-verre);transition:.2s;position:relative}
+.ev .in-carte.reco{border-color:var(--e-ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok,#047857) 14%,transparent)}
+.ev .in-carte.att{opacity:.45}
+.ev .in-ct{display:flex;gap:11px;align-items:center}
+.ev .in-mono{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font:700 19px var(--font-sans,system-ui);flex:none;background:var(--e-doux);color:var(--accent)}
+.ev .in-nom{font:600 16px var(--font-sans,system-ui);color:var(--e-encre)}
+.ev .in-qui{font-size:12px;color:var(--e-encre3)}
+.ev .in-desc{font-size:13.5px;color:var(--e-encre2);line-height:1.5;flex:1}
+.ev .in-tags{display:flex;gap:5px;flex-wrap:wrap}
+.ev .in-pied{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ev .in-pied .lg{gap:6px}
+.ev .in-fiche{padding:18px 20px;display:flex;flex-direction:column;gap:14px;border:1.5px solid var(--accent)}
+.ev .in-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.ev .in-case{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--e-filet);border-radius:13px;background:var(--e-verre)}
+.ev .in-case .lib{margin-bottom:2px}
+.ev .in-comp{display:grid;grid-template-columns:22px 1fr;gap:9px;align-items:start;font-size:13px}
+.ev .in-comp .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px ui-monospace,monospace;background:var(--e-doux)}
+.ev .in-comp.ok .k{background:color-mix(in srgb,var(--ok,#047857) 16%,transparent);color:color-mix(in srgb,var(--ok,#047857) 85%,var(--txt-strong,#1d2b2a))}
+.ev .in-comp.al .k{background:color-mix(in srgb,var(--warn,#b45309) 22%,transparent);color:color-mix(in srgb,var(--warn,#b45309) 85%,var(--txt-strong,#1d2b2a))}
+.ev .in-comp small{display:block;color:var(--e-encre3);font-size:12px}
+.ev .in-pas{display:flex;flex-direction:column;gap:7px}
+.ev .in-p{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:start;font-size:13.5px;color:var(--e-encre3)}
+.ev .in-p .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px ui-monospace,monospace;background:var(--e-doux)}
+.ev .in-p small{display:block;font-size:12px;color:var(--e-encre3)}
+.ev .in-p .r{font:600 12px ui-monospace,monospace;white-space:nowrap}
+.ev .in-p.ok{color:var(--e-encre)}.ev .in-p.ok .k{background:color-mix(in srgb,var(--ok,#047857) 16%,transparent);color:color-mix(in srgb,var(--ok,#047857) 85%,var(--txt-strong,#1d2b2a))}
+.ev .in-p.ko{color:var(--e-encre)}.ev .in-p.ko .k{background:color-mix(in srgb,var(--danger,#be123c) 16%,transparent);color:color-mix(in srgb,var(--danger,#be123c) 80%,var(--txt-strong,#1d2b2a))}.ev .in-p.ko small{color:color-mix(in srgb,var(--danger,#be123c) 70%,var(--txt-strong,#1d2b2a))}
+.ev .in-p.cours{color:var(--accent)}.ev .in-p.cours .k{animation:evbat 1s infinite}
+.ev .in-p.saute{opacity:.5}
+.ev .in-prog{height:6px;border-radius:99px;background:var(--e-filet);overflow:hidden}.ev .in-prog i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .35s}
+.ev .in-fin{border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5}
+.ev .in-fin.bien{background:color-mix(in srgb,var(--ok,#047857) 11%,transparent);color:color-mix(in srgb,var(--ok,#047857) 82%,var(--txt-strong,#1d2b2a))}
+.ev .in-fin.mal{background:color-mix(in srgb,var(--danger,#be123c) 10%,transparent);color:color-mix(in srgb,var(--danger,#be123c) 70%,var(--txt-strong,#1d2b2a))}
+.ev .in-fin .lg{margin-top:9px}
+.ev details.in-sur summary{cursor:pointer;font:600 14px var(--font-sans,system-ui);color:var(--e-encre2)}
+.ev .in-sur ol{margin:10px 0 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;font-size:13.5px;color:var(--e-encre2)}
+.ev .in-vide{padding:22px;text-align:center;color:var(--e-encre3);border:1px dashed var(--e-filet);border-radius:14px}
+.ev .in-msg{font-size:13px;color:var(--e-ok);min-height:18px}
+.ev .in-segm{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--e-doux);flex-wrap:wrap}
+.ev .in-segm button{border:0;background:transparent;border-radius:9px;padding:6px 13px;font:600 13px var(--font-sans,system-ui);color:var(--e-encre2);cursor:pointer}
+.ev .in-segm button.on{background:var(--accent);color:var(--on-accent)}
+.ev .in-lib{font:600 10.5px var(--font-sans,system-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--e-encre3)}
+</style>
+</head>
+<body>
+<div class="mq-bandeau"><b>Maquette · « Installer un chercheur » proposée</b><span>Tout est simulé : aucune installation réelle, versions et tailles données en exemple</span><span style="margin-left:auto">Démonstration :</span><button id="d-raz">Remettre à zéro</button></div>
+<div class="mq-cadre">
+  <nav class="mq-menu" id="mq-menu" aria-label="Menu d'Évolution"></nav>
+  <main class="mq-corps"><div class="ev" id="ev"></div></main>
+</div>
+<script>
+(function () {
+  const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // le catalogue : « livre » = livré avec Cassandra · « adapt » = un adaptateur est écrit, installable après épinglage · « piste » = pas d'adaptateur, à étudier
+  const CAT = [
+    { id: "orfan", nom: "Orfan", etat0: "livre", cible: "code", cout: "sobre", qui: "Cassandra", desc: "Le moteur de la maison : des recettes gratuites d'abord, puis un modèle guidé par la façon dont la fonction est appelée.", force: ["Gratuit tant que les recettes suffisent", "Le plus testé : il tourne déjà"], reqs: [] },
+    { id: "frugal", nom: "Frugal 2", etat0: "livre", cible: "code", cout: "sobre", qui: "Cassandra", desc: "Le chercheur économe : recettes d'abord ; sinon un modèle fort propose des idées, un modèle économe écrit le code.", force: ["Dépense peu de jetons", "Ne s'active que sur les fonctions chaudes"], reqs: [] },
+    { id: "evolutif", nom: "Évolutif", etat0: "livre", cible: "code", cout: "gourmand", qui: "Cassandra", desc: "Des générations de versions qui se croisent et mutent, avec une archive par taille de code.", force: ["Explore largement", "Garde une archive de niches"], reqs: [] },
+    { id: "openevolve", nom: "OpenEvolve", etat0: "adapt", cible: "code", cout: "gourmand", qui: "Projet open source", desc: "Version open source d'AlphaEvolve : îlots de populations et MAP-Elites, évaluation en parallèle, plusieurs objectifs à la fois.", force: ["Très complet, multi-objectifs", "Grande communauté"], reqs: [["Python du serveur", "ok", "Python 3.11 : compatible"], ["Réseau", "ok", "Sortant le temps de l’installation seulement"]], taille: "≈ 310 Mo", paquets: 41, version: "0.4.1", adaptateur: "CN_adaptateur_openevolve" },
+    { id: "shinka", nom: "ShinkaEvolve", etat0: "adapt", cible: "code", cout: "sobre", qui: "Sakana AI · Apache 2.0", desc: "Sobre en essais : îlots, archive et sélection dynamique du modèle. Annonce de bons résultats en moins de 150 évaluations.", force: ["Peu d'essais nécessaires", "Fonctionne avec des modèles locaux"], reqs: [["Python du serveur", "ok", "Python 3.11 : compatible"], ["Réseau", "ok", "Sortant le temps de l’installation seulement"]], taille: "≈ 240 Mo", paquets: 33, version: "0.2.0", adaptateur: "CN_adaptateur_shinka" },
+    { id: "codeevolve", nom: "CodeEvolve", etat0: "adapt", cible: "code", cout: "gourmand", qui: "Projet open source", desc: "Cadre évolutionnaire à îlots. Ses auteurs annoncent de bons résultats face à OpenEvolve et ShinkaEvolve (chiffres publiés par eux-mêmes).", force: ["Résultats publiés élevés", "Mécanisme d'îlots"], reqs: [["Python du serveur", "al", "Exige Python 3.13.5 ; le serveur est en 3.11"], ["Réseau", "ok", "Sortant le temps de l’installation seulement"]], taille: "≈ 190 Mo", paquets: 27, version: "0.1.3", adaptateur: "CN_adaptateur_codeevolve", echec: "interpreteur" },
+    { id: "gepa", nom: "GEPA", etat0: "adapt", cible: "texte", cout: "sobre", qui: "Projet open source", desc: "Améliore des consignes et des politiques d'agents : il joue le candidat, lit ce qui a échoué, demande une réécriture, garde la frontière de Pareto.", force: ["Pour les textes, pas le code", "Apprend des traces d'échec"], reqs: [["Python du serveur", "ok", "Python 3.11 : compatible"], ["Réseau", "ok", "Sortant le temps de l’installation seulement"]], taille: "≈ 120 Mo", paquets: 19, version: "0.0.9", adaptateur: "CN_adaptateur_gepa" },
+    { id: "llm4ad", nom: "LLM4AD", etat0: "piste", cible: "code", cout: "inconnu", qui: "Plateforme de recherche", desc: "Plateforme de conception d'algorithmes par grands modèles de langage (citée dans l'article de ShinkaEvolve). À étudier avant d'écrire un adaptateur." },
+    { id: "openelm", nom: "OpenELM", etat0: "piste", cible: "code", cout: "inconnu", qui: "CarperAI", desc: "Boîte à outils d'évolution par grands modèles de langage. À étudier avant d'écrire un adaptateur." },
+    { id: "dspy", nom: "DSPy", etat0: "piste", cible: "texte", cout: "inconnu", qui: "Stanford", desc: "Cadre pour programmer des modèles de langage et optimiser leurs consignes. À étudier avant d'écrire un adaptateur." },
+    { id: "textgrad", nom: "TextGrad", etat0: "piste", cible: "texte", cout: "inconnu", qui: "Recherche", desc: "Optimisation de texte par retours en langage naturel, à la façon d'une descente de gradient. À étudier avant d'écrire un adaptateur." },
+    { id: "evoprompt", nom: "EvoPrompt", etat0: "piste", cible: "texte", cout: "inconnu", qui: "Article de recherche", desc: "Évolution de consignes par algorithmes évolutionnaires. À étudier avant d'écrire un adaptateur." },
+  ];
+  const ETAPES = ["Préparer : trouver les paquets et calculer leur empreinte", "Le catalogue est scellé", "L'entrée du catalogue est valide", "Un environnement à part est créé", "Les paquets s'installent, un par un, par empreinte", "L'adaptateur se charge (banc d'import)", "Le chercheur est inscrit au registre"];
+  const S = { q: "", cible: "tout", cout: "tout", etat: "tout", quiz: { cible: "", budget: "", local: "" }, fiche: "", inst: null, etats: {}, msg: "", demandes: {}, ouvertGuide: false };
+  CAT.forEach((c) => { S.etats[c.id] = { etat: c.etat0, prepare: c.etat0 !== "adapt" }; });
+  const racine = document.getElementById("ev");
+  const lib = { code: "Code", texte: "Textes et consignes" };
+  const coutP = (c) => ({ sobre: ["Sobre en jetons", "ok"], gourmand: ["Gourmand en jetons", "fort"], inconnu: ["Coût inconnu", "mu"] })[c.cout];
+  const st = (c) => S.etats[c.id];
+  const nbInst = () => CAT.filter((c) => st(c).etat === "installe").length;
+
+  function reco(c) {
+    const q = S.quiz; if (!q.cible && !q.budget && !q.local) return null;
+    if (c.etat0 === "piste") return false;
+    let ok = true;
+    if (q.cible && c.cible !== q.cible) ok = false;
+    if (q.budget === "faible" && c.cout === "gourmand") ok = false;
+    if (q.local === "oui" && !["shinka", "frugal", "orfan"].includes(c.id) && c.id !== "gepa") ok = ok && c.id !== "evolutif";
+    return ok;
+  }
+  function filtres(c) {
+    const q = S.q.trim().toLowerCase();
+    if (q && (c.nom + " " + c.desc + " " + c.qui).toLowerCase().indexOf(q) < 0) return false;
+    if (S.cible !== "tout" && c.cible !== S.cible) return false;
+    if (S.cout !== "tout" && c.cout !== S.cout) return false;
+    if (S.etat === "installables" && !(c.etat0 === "adapt" && st(c).etat !== "installe")) return false;
+    if (S.etat === "installes" && st(c).etat !== "installe") return false;
+    if (S.etat === "livres" && c.etat0 !== "livre") return false;
+    if (S.etat === "pistes" && c.etat0 !== "piste") return false;
+    return true;
+  }
+
+  function mesChercheurs() {
+    const l = CAT.filter((c) => c.etat0 === "livre" || st(c).etat === "installe");
+    return '<div class="verre in-bloc"><div class="in-tete"><h3>Mes chercheurs</h3><button class="btn" data-vers="Les chercheurs">Les gérer dans « Les chercheurs »</button></div><div class="in-mes">' +
+      l.map((c) => '<span class="in-mc"><i>' + esc(c.nom.charAt(0)) + "</i>" + esc(c.nom) + "<small>" + (c.etat0 === "livre" ? "livré" : "installé") + "</small></span>").join("") + "</div></div>";
+  }
+  function guide() {
+    const q = S.quiz, ch = (cle, val, txt) => '<button class="in-chip' + (q[cle] === val ? " on" : "") + '" data-q="' + cle + ":" + val + '">' + txt + "</button>";
+    const n = CAT.filter((c) => reco(c) === true).length;
+    return '<details class="in-guide"' + (S.ouvertGuide ? " open" : "") + '><summary>Je ne sais pas lequel choisir : répondre à trois questions</summary><div class="in-q"><div class="ql">Qu’est-ce que tu veux améliorer ?</div><div class="in-chips">' + ch("cible", "code", "Du code (les fonctions de Cassandra)") + ch("cible", "texte", "Des textes (consignes d’agents)") + '</div><div class="ql">Quel budget en jetons ?</div><div class="in-chips">' + ch("budget", "faible", "Le plus bas possible") + ch("budget", "large", "Peu importe, je veux le meilleur résultat") + '</div><div class="ql">Des modèles tournent-ils chez toi (sans réseau) ?</div><div class="in-chips">' + ch("local", "oui", "Oui, des modèles locaux") + ch("local", "non", "Non") + "</div>" +
+      ((q.cible || q.budget || q.local) ? '<div class="in-reco">' + (n ? n + " candidat" + (n > 1 ? "s" : "") + " conviennent : ils sont mis en avant ci-dessous." : "Aucun candidat ne coche tout : relâche une réponse.") + ' <button class="in-chip" data-q="raz">Effacer</button></div>' : "") + "</div></details>";
+  }
+  function barre() {
+    const seg = (cle, vals) => '<div class="in-segm">' + vals.map((v) => '<button class="' + (S[cle] === v[0] ? "on" : "") + '" data-f="' + cle + ":" + v[0] + '">' + v[1] + "</button>").join("") + "</div>";
+    return '<div class="in-barre"><input class="in-rech" id="in-rech" type="text" placeholder="Chercher un chercheur (nom, ce qu’il fait…)" value="' + esc(S.q) + '">' + seg("cible", [["tout", "Tout"], ["code", "Code"], ["texte", "Textes"]]) + seg("cout", [["tout", "Tout coût"], ["sobre", "Sobre"], ["gourmand", "Gourmand"]]) + seg("etat", [["tout", "Tous"], ["installables", "À installer"], ["installes", "Installés"], ["livres", "Livrés"], ["pistes", "Pistes"]]) + "</div>";
+  }
+  function carte(c) {
+    const e = st(c), r = reco(c), p = coutP(c), prete = e.prepare;
+    let bouton = "", etat = "";
+    if (c.etat0 === "livre") { etat = '<span class="puce">livré avec Cassandra</span>'; bouton = '<button class="btn" data-fiche="' + c.id + '">Voir</button>'; }
+    else if (c.etat0 === "piste") { etat = '<span class="puce mu">piste · pas d’adaptateur</span>'; bouton = S.demandes[c.id] ? '<span class="puce ok">demandé ✓</span>' : '<button class="btn" data-demander="' + c.id + '">Demander un adaptateur</button>'; }
+    else if (e.etat === "installe") { etat = '<span class="puce ok">installé · pas encore actif</span>'; bouton = '<button class="btn prim" data-fiche="' + c.id + '">Contrôler et activer</button>'; }
+    else { etat = prete ? '<span class="puce al">prêt à installer</span>' : '<span class="puce mu">pas encore préparé</span>'; bouton = '<button class="btn prim" data-installer="' + c.id + '"' + (S.inst && !S.inst.fini ? " disabled" : "") + ">" + (prete ? "Installer" : "Préparer puis installer") + "</button>"; }
+    return '<div class="in-carte' + (r === true ? " reco" : "") + (r === false ? " att" : "") + '"><div class="in-ct"><span class="in-mono">' + esc(c.nom.charAt(0)) + '</span><div><div class="in-nom">' + esc(c.nom) + '</div><div class="in-qui">' + esc(c.qui) + '</div></div></div><div class="in-desc">' + esc(c.desc) + '</div><div class="in-tags"><span class="puce">' + lib[c.cible] + '</span><span class="puce ' + p[1] + '">' + p[0] + "</span>" + etat + (r === true ? '<span class="puce ok">conseillé</span>' : "") + '</div><div class="in-pied"><button class="btn" data-fiche="' + c.id + '">Détails</button>' + bouton + "</div></div>";
+  }
+  function compat(c) {
+    if (!c.reqs) return '<div class="in-comp ok"><span class="k">✓</span><div>Rien à vérifier<small>' + (c.etat0 === "livre" ? "il est livré avec Cassandra" : "pas d’adaptateur écrit pour l’instant") + "</small></div></div>";
+    return c.reqs.map((q) => '<div class="in-comp ' + q[1] + '"><span class="k">' + (q[1] === "ok" ? "✓" : "!") + "</span><div>" + esc(q[0]) + "<small>" + esc(q[2]) + "</small></div></div>").join("") + '<div class="in-comp ok"><span class="k">✓</span><div>Place disque<small>' + c.taille + " nécessaires · 18 Go libres</small></div></div>";
+  }
+  function fiche() {
+    const c = CAT.find((x) => x.id === S.fiche); if (!c) return "";
+    const e = st(c);
+    const actions = c.etat0 === "livre" ? '<span class="note">Livré avec Cassandra : on l’active ou le désactive dans « Les chercheurs ».</span>' : c.etat0 === "piste" ? (S.demandes[c.id] ? '<span class="puce ok">demande notée dans le Carnet ✓</span>' : '<button class="btn prim" data-demander="' + c.id + '">Demander un adaptateur</button>') :
+      e.etat === "installe" ? '<button class="btn prim" data-controle="' + c.id + '">Contrôler son intégrité</button><button class="btn" data-vers="Les chercheurs">L’activer dans « Les chercheurs »</button><button class="btn dng" data-desinstaller="' + c.id + '">Désinstaller</button>' : '<button class="btn prim" data-installer="' + c.id + '"' + (S.inst && !S.inst.fini ? " disabled" : "") + ">" + (e.prepare ? "Installer" : "Préparer puis installer") + "</button>";
+    return '<div class="verre in-fiche"><div class="in-tete"><div class="in-ct"><span class="in-mono">' + esc(c.nom.charAt(0)) + '</span><div><div class="in-nom" style="font-size:20px">' + esc(c.nom) + '</div><div class="in-qui">' + esc(c.qui) + (c.version ? " · version " + c.version : "") + '</div></div></div><button class="btn" data-fiche="">Fermer</button></div><div class="in-desc">' + esc(c.desc) + '</div><div class="in-cols">' +
+      (c.force ? '<div class="in-case"><div class="in-lib">Ses points forts</div>' + c.force.map((f) => '<div class="in-comp ok"><span class="k">✓</span><div>' + esc(f) + "</div></div>").join("") + "</div>" : "") +
+      '<div class="in-case"><div class="in-lib">Compatibilité avec ce serveur</div>' + compat(c) + "</div>" +
+      (c.paquets ? '<div class="in-case"><div class="in-lib">Ce qui sera installé</div><div class="in-comp ok"><span class="k">◧</span><div>' + c.paquets + " paquets<small>chacun épinglé par son empreinte, dans un environnement à part</small></div></div><div class=\"in-comp ok\"><span class=\"k\">⛨</span><div>Aucun accès au serveur<small>il tourne dans la cage, sans clé ni réseau ; ses appels de modèle passent par le relais</small></div></div></div>" : "") + "</div>" +
+      '<div class="lg">' + actions + "</div></div>";
+  }
+  function suivi() {
+    const k = S.inst; if (!k) return "";
+    const c = CAT.find((x) => x.id === k.id), fait = k.etapes.filter((e) => e.etat === "ok").length, pct = Math.round(100 * fait / k.etapes.length);
+    const ligne = (e, i) => '<div class="in-p ' + e.etat + '"><span class="k">' + (e.etat === "ok" ? "✓" : e.etat === "ko" ? "✕" : e.etat === "cours" ? "…" : "·") + "</span><div>" + esc(e.t) + (e.s ? "<small>" + esc(e.s) + "</small>" : "") + '</div><span class="r">' + esc(e.r || "") + "</span></div>";
+    let fin = "";
+    if (k.fini && k.ok) fin = '<div class="in-fin bien"><b>' + esc(c.nom) + " est installé.</b> Il n’est pas actif : un chercheur installé ne cherche jamais tout seul.<div class=\"lg\"><button class=\"btn prim\" data-controle=\"" + c.id + '">Contrôler son intégrité</button><button class="btn" data-vers="Les chercheurs">Aller l’activer</button></div></div>';
+    if (k.fini && !k.ok) fin = '<div class="in-fin mal"><b>Installation arrêtée : ' + esc(k.titre) + ".</b> " + esc(k.raison) + " L’environnement a été supprimé : rien n’est resté à moitié installé.<div class=\"lg\">" + (k.aide ? '<button class="btn prim" data-aide="' + c.id + '">' + esc(k.aide) + "</button>" : "") + '<button class="btn" data-installer="' + c.id + '">Réessayer</button></div></div>';
+    return '<div class="verre in-bloc"><div class="in-tete"><h3>Installation de ' + esc(c.nom) + '</h3><span class="puce ' + (k.fini ? (k.ok ? "ok" : "dg") : "al") + '">' + (k.fini ? (k.ok ? "terminée" : "échouée") : "en cours") + '</span></div><div class="in-prog"><i style="width:' + (k.fini && !k.ok ? Math.max(pct, 8) : pct) + '%"></i></div><div class="in-pas">' + k.etapes.map(ligne).join("") + "</div>" + fin + "</div>";
+  }
+  function dessiner() {
+    const vis = CAT.filter(filtres);
+    racine.innerHTML = '<div class="entete"><div><h1>Installer un chercheur</h1><div class="note" style="font-size:13.5px">Choisis un chercheur dans le catalogue : Cassandra le prépare, l’installe et le vérifie, sans que tu touches à un terminal.</div></div></div>' +
+      (S.msg ? '<div class="in-msg">' + esc(S.msg) + "</div>" : "") + mesChercheurs() + guide() + barre() + suivi() + fiche() +
+      '<div class="in-grille">' + (vis.map(carte).join("") || '<div class="in-vide" style="grid-column:1/-1">Aucun chercheur ne correspond. Efface un filtre ou la recherche.</div>') + "</div>" +
+      '<div class="verre in-bloc"><details class="in-sur"><summary>Comment cela reste sûr</summary><ol><li>Chaque chercheur vient d’un <b>catalogue scellé</b> par la clé de ton instance : un catalogue modifié ou sans sceau est refusé.</li><li>Les paquets sont <b>épinglés par empreinte</b> (sha256) : un paquet changé en route ne s’installe pas.</li><li>Chaque chercheur vit dans un <b>environnement à part</b>, dans la cage, sans clé ni réseau ; ses appels de modèle passent par le relais, compté et plafonné.</li><li>Un <b>banc d’import</b> charge l’adaptateur avant l’inscription ; au moindre échec, tout est supprimé.</li><li>Un chercheur installé n’est <b>jamais actif d’office</b> : on le contrôle, puis on l’active.</li></ol></details></div>';
+    lier();
+  }
+
+  function lancerInstallation(id) {
+    const c = CAT.find((x) => x.id === id), e = st(c); if (!c || (S.inst && !S.inst.fini)) return;
+    const etapes = ETAPES.map((t, i) => ({ t: t, etat: "attente", s: "", r: "" }));
+    if (e.prepare) { etapes[0].etat = "saute"; etapes[0].t = "Les paquets sont déjà préparés"; etapes[0].s = "empreintes déjà calculées"; }
+    S.inst = { id: id, etapes: etapes, fini: false, ok: false }; S.fiche = id; dessiner();
+    const details = [
+      "résolution dans un environnement jetable : " + c.paquets + " paquets, empreintes sha256 calculées",
+      "sceau du catalogue vérifié avec la clé de l’instance",
+      c.nom + " " + c.version + " · adaptateur « " + c.adaptateur + " »",
+      "environnement créé · " + c.taille,
+      c.paquets + " paquet(s) installés avec --require-hashes",
+      "l’adaptateur et le paquet du moteur se chargent",
+      "installé, pas actif : l’activer est un geste à part"];
+    let i = e.prepare ? 1 : 0, stop = false;
+    const pas = () => {
+      const k = S.inst; if (!k || k.id !== id) return;
+      if (i >= etapes.length || stop) { k.fini = true; k.ok = !stop; if (k.ok) { st(c).etat = "installe"; st(c).prepare = true; S.msg = c.nom + " est installé."; } dessiner(); return; }
+      etapes[i].etat = "cours"; dessiner();
+      setTimeout(() => {
+        if (c.echec === "interpreteur" && i === 3) {
+          etapes[i].etat = "ko"; etapes[i].s = "l’interpréteur Python 3.13.5 est absent du serveur (celui du serveur est 3.11)"; etapes.slice(i + 1).forEach((x) => { x.etat = "saute"; });
+          etapes.push({ t: "Retour arrière", etat: "ok", s: "l’environnement a été supprimé", r: "" });
+          k.titre = "il lui faut un autre Python"; k.raison = "CodeEvolve exige Python 3.13.5, que le serveur n’a pas."; k.aide = "Poser Python 3.13.5 puis réessayer"; stop = true; i = etapes.length;
+        } else { etapes[i].etat = "ok"; etapes[i].s = details[i]; etapes[i].r = i === 4 ? c.paquets + " paquets" : ""; i++; }
+        pas();
+      }, i === 4 ? 1400 : 650);
+    };
+    setTimeout(pas, 400);
+  }
+
+  function lier() {
+    const q = (s) => racine.querySelectorAll(s);
+    const r = racine.querySelector("#in-rech"); if (r) r.addEventListener("input", () => { S.q = r.value; dessiner(); const n = racine.querySelector("#in-rech"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
+    q("[data-f]").forEach((b) => b.addEventListener("click", () => { const [k, v] = b.dataset.f.split(":"); S[k] = v; dessiner(); }));
+    q("[data-q]").forEach((b) => b.addEventListener("click", () => { if (b.dataset.q === "raz") S.quiz = { cible: "", budget: "", local: "" }; else { const [k, v] = b.dataset.q.split(":"); S.quiz[k] = S.quiz[k] === v ? "" : v; } S.ouvertGuide = true; dessiner(); }));
+    const g = racine.querySelector("details.in-guide"); if (g) g.addEventListener("toggle", () => { S.ouvertGuide = g.open; });
+    q("[data-fiche]").forEach((b) => b.addEventListener("click", () => { S.fiche = b.dataset.fiche; dessiner(); if (S.fiche) { const f = racine.querySelector(".in-fiche"); if (f) f.scrollIntoView({ block: "center", behavior: "smooth" }); } }));
+    q("[data-installer]").forEach((b) => b.addEventListener("click", () => lancerInstallation(b.dataset.installer)));
+    q("[data-demander]").forEach((b) => b.addEventListener("click", () => { S.demandes[b.dataset.demander] = 1; S.msg = "Demande notée dans le Carnet : un adaptateur pour " + CAT.find((c) => c.id === b.dataset.demander).nom + " sera à écrire."; dessiner(); }));
+    q("[data-desinstaller]").forEach((b) => b.addEventListener("click", () => { const c = CAT.find((x) => x.id === b.dataset.desinstaller); if (!confirm("Désinstaller « " + c.nom + " » ? Son environnement est supprimé ; ce qu’il a trouvé reste en place.")) return; st(c).etat = "adapt"; S.inst = null; S.msg = c.nom + " est désinstallé."; dessiner(); }));
+    q("[data-controle]").forEach((b) => b.addEventListener("click", () => { alert("Maquette : ici, on lancerait « Contrôler son intégrité » de la page Les chercheurs."); }));
+    q("[data-aide]").forEach((b) => b.addEventListener("click", () => { const c = CAT.find((x) => x.id === b.dataset.aide); c.reqs[0] = ["Python du serveur", "ok", "Python 3.13.5 posé à côté de celui du serveur"]; c.echec = ""; S.inst = null; S.msg = "Python 3.13.5 posé. Tu peux relancer l’installation."; dessiner(); }));
+    q("[data-vers]").forEach((b) => b.addEventListener("click", () => alert("Maquette : ici, on ouvrirait « " + b.dataset.vers + " » dans l’application.")));
+  }
+  document.getElementById("d-raz").addEventListener("click", () => { location.reload(); });
+  const MENU = [["Évolution", 0, "⚘"], ["Aujourd’hui", 1, "☼"], ["Améliorations", 1, "↗"], ["Réglages", 1, "◈"], ["Consignes et seuils", 1, "✎"], ["Sous le capot", 1, "⚙"], ["Les chercheurs", 2, "⊙"], ["Les fonctions", 2, "ƒ"], ["Les comparer", 2, "⇄"], ["Installer un chercheur", 2, "⤓"], ["Filet de sécurité", 2, "⛨"], ["Carnet", 2, "▤"], ["Versions écartées", 2, "⊘"], ["Ce qui est prévu", 2, "✦"], ["Vocabulaire", 2, "Aa"]];
+  document.getElementById("mq-menu").innerHTML = MENU.map((m) => '<div class="t s' + m[1] + (m[0] === "Installer un chercheur" ? " on" : "") + '"><span class="g">' + m[2] + "</span>" + m[0] + "</div>").join("");
+  dessiner();
+})();
+</script>
+</body>
+</html>
