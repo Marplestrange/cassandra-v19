@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #db100b
+# VERSION CN : 0.1.0  #2ee438
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=db100b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2ee438 ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -47,6 +47,7 @@ from datetime import datetime
 FOURNISSEURS = {
     "deepseek": {"nom": "DeepSeek", "base_url": "https://api.deepseek.com/v1", "defaut": "deepseek-flash", "raisonneur": True, "cle": "requise"},
     "openrouter": {"nom": "OpenRouter", "base_url": "https://openrouter.ai/api/v1", "defaut": "google/gemini-2.5-flash", "raisonneur": True, "cle": "requise"},
+    "omniroute": {"nom": "OmniRoute (passerelle)", "base_url": "", "defaut": "", "raisonneur": False, "cle": "requise"},
     "openai": {"nom": "OpenAI", "base_url": "https://api.openai.com/v1", "defaut": "gpt-4o-mini", "raisonneur": False, "cle": "requise"},
     "google": {"nom": "Google", "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "defaut": "gemini-2.5-flash", "raisonneur": True, "cle": "requise"},
     "groq": {"nom": "Groq", "base_url": "https://api.groq.com/openai/v1", "defaut": "llama-3.3-70b-versatile", "raisonneur": False, "cle": "requise"},
@@ -119,7 +120,7 @@ def brancher(ctx):
 
     def en_ligne(m):
         """Un modèle part chez un fournisseur, sauf Ollama et un serveur personnalisé qui écoute sur cette machine : ceux-là sont gratuits et ne sortent pas."""
-        return m["fournisseur"] != "ollama" and not (m["fournisseur"] == "personnalise" and re.match(r"https?://(127\.|localhost|\[::1\])", m["base_url"] or ""))
+        return m["fournisseur"] != "ollama" and not (m["fournisseur"] in ("personnalise", "omniroute") and re.match(r"https?://(127\.|localhost|\[::1\])", m["base_url"] or ""))
 
     def publique(m, roles=None, choisi=""):
         return {"id": m["id"], "fournisseur": m["fournisseur"], "nom": m["nom"], "base_url": m["base_url"], "a_cle": bool(m["cle"]), "portee": m["portee"],
@@ -200,11 +201,13 @@ def brancher(ctx):
         if not RE_NOM.fullmatch(nom) or nom.endswith(":"):
             raise ValueError("nom de modèle invalide : « %s »" % nom[:80])
         base = str(base or "").strip()
-        if prov == "personnalise":
+        if prov in ("personnalise", "omniroute"):
             if not base:
                 raise ValueError("adresse du serveur manquante")
             if not RE_BASE.fullmatch(base):
                 raise ValueError("adresse du serveur invalide")
+            if prov == "omniroute" and re.fullmatch(r"https?://[^/]+/?", base):
+                base = base.rstrip("/") + "/v1"           # on saisit l'adresse de la passerelle (« http://adresse:20128 ») ; l'API OpenAI est à /v1
         elif prov == "ollama" and base:
             if not RE_BASE.fullmatch(base):
                 raise ValueError("adresse du serveur invalide")

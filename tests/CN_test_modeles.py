@@ -202,9 +202,17 @@ class Registre(Monde):
         self.ok("role_lier", role="principal", modele_id=i, compte=ROOT)
         self.assertIn("rôle", self.echec("instance_retirer", id=i, compte=ROOT))
 
+    def test_omniroute_adresse_et_cle_requises_et_v1_ajoute(self):
+        self.assertIn("adresse", self.echec("ajouter", fournisseur="omniroute", nom="un/modele", cle=CLE, base_url="", compte=BEA))
+        self.assertIn("clé", self.echec("ajouter", fournisseur="omniroute", nom="un/modele", cle="", base_url="http://hote:20128", compte=BEA))
+        mid = self.ok("ajouter", fournisseur="omniroute", nom="un/modele", cle=CLE, base_url="http://hote:20128/", compte=BEA)["id"]
+        self.assertEqual(self.db.lire("SELECT base_url FROM modeles WHERE id=?", (mid,))[0]["base_url"], "http://hote:20128/v1")
+        mid2 = self.ok("ajouter", fournisseur="omniroute", nom="un/autre", cle=CLE, base_url="https://passerelle.exemple.fr/v1", compte=BEA)["id"]
+        self.assertEqual(self.db.lire("SELECT base_url FROM modeles WHERE id=?", (mid2,))[0]["base_url"], "https://passerelle.exemple.fr/v1")
+
     def test_les_fournisseurs(self):
         f = self.ok("fournisseurs")
-        self.assertEqual({x["id"] for x in f["fournisseurs"]}, {"deepseek", "openrouter", "openai", "google", "groq", "ollama", "personnalise"})
+        self.assertEqual({x["id"] for x in f["fournisseurs"]}, {"deepseek", "openrouter", "omniroute", "openai", "google", "groq", "ollama", "personnalise"})
         self.assertTrue([x for x in f["fournisseurs"] if x["id"] == "deepseek"][0]["raisonneur"])
 
 

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #75426f
+// VERSION CN : 0.2.0  #0ac0ce
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=75426f ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=0ac0ce ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -192,13 +192,13 @@
       return '<div class="carte"><h2>Modèles en ligne</h2>' + (l.length ? l.map(ligneModele).join("") : '<p class="note">Aucun modèle en ligne déclaré. Ajoute-en un ci-dessous : fournisseur, nom du modèle, clé d’API.</p>') + "</div>";
     }
     function carteAjout() {
-      const p = prov(), sug = SUGGEST[S.prov] || [], besoin = p.cle !== "aucune", perso = S.prov === "personnalise";
+      const p = prov(), sug = SUGGEST[S.prov] || [], besoin = p.cle !== "aucune", perso = S.prov === "personnalise" || S.prov === "omniroute";
       return '<div class="carte" id="md-ajout"><h2>Ajouter un modèle</h2><p class="note">La clé est chiffrée dans le coffre du noyau dès l’envoi ; elle n’est jamais relue ni réaffichée, ni écrite dans le journal.</p>' +
         '<div class="champs"><label class="ch"><b>Fournisseur</b><select id="md-prov">' + S.f.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === S.prov ? " selected" : "") + ">" + esc(x.nom) + "</option>").join("") + "</select>" +
         (LIENS[S.prov] ? '<span class="note">Créer une clé : ' + esc(LIENS[S.prov]) + "</span>" : "") + "</label>" +
         '<label class="ch"><b>Nom du modèle</b><input type="text" id="md-nom" list="md-sug" value="' + esc(S.form.nom) + '" placeholder="' + esc(p.defaut || "nom du modèle") + '" autocomplete="off" spellcheck="false"><datalist id="md-sug">' + sug.map((x) => '<option value="' + esc(x) + '">').join("") + "</datalist><span class=\"note\">Vide : " + esc(p.defaut || "à saisir") + "</span></label>" +
         (besoin ? '<label class="ch"><b>Clé d’API' + (p.cle === "optionnelle" ? " (facultative)" : "") + '</b><input type="password" id="md-cle" value="" placeholder="sk-…" autocomplete="off" spellcheck="false"></label>' : "") +
-        (perso ? '<label class="ch"><b>Adresse de l’API</b><input type="text" id="md-base" value="' + esc(S.form.base) + '" placeholder="https://… ou http://127.0.0.1:8000/v1" autocomplete="off" spellcheck="false"></label>' : "") + "</div>" +
+        (perso ? '<label class="ch"><b>Adresse de l’API</b><input type="text" id="md-base" value="' + esc(S.form.base) + '" placeholder="' + (S.prov === "omniroute" ? "http://adresse-ou-ip:20128 ou https://passerelle.exemple.fr" : "https://… ou http://127.0.0.1:8000/v1") + '" autocomplete="off" spellcheck="false"></label>' : "") + "</div>" +
         '<div class="acts"><button class="btn pri" data-a="ajouter"' + (S.occupe ? " disabled" : "") + ">" + (S.occupe ? "Un instant…" : "Ajouter et essayer") + "</button></div></div>";
     }
     function ajustement(taille, total) {      // ce que la machine supporte : le modèle, son contexte, et de quoi laisser vivre le reste
