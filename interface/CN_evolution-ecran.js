@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #411eff
+// VERSION CN : 0.2.0  #cbf429
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=411eff ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=cbf429 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -75,6 +75,67 @@
     ".ev .tiroir{position:fixed;inset:0;background:rgba(16,24,40,.38);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;overflow:auto;z-index:50}.ev .tiroir.on{display:flex}.ev .tiroir .verre{background:var(--surface-solid,var(--surface));max-width:980px;width:100%;padding:18px;display:flex;flex-direction:column;gap:12px}" +
     ".ev .choix{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.ev .opt{border:1.5px solid var(--e-filet);border-radius:12px;padding:11px;background:transparent;color:inherit;text-align:left;display:flex;flex-direction:column;gap:5px;font:inherit}.ev .opt.on{border-color:var(--accent);background:var(--e-doux)}" +
     ".ev .vues{flex-wrap:wrap}" +
+    ".ev .in-bloc{padding:16px 18px;display:flex;flex-direction:column;gap:12px}" +
+    ".ev .in-tete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}" +
+    ".ev .in-tete h3{font:600 16px var(--font-sans,system-ui)}" +
+    ".ev .in-mes{display:flex;gap:8px;flex-wrap:wrap;align-items:center}" +
+    ".ev .in-mc{display:inline-flex;gap:8px;align-items:center;padding:6px 12px 6px 7px;border-radius:99px;border:1px solid var(--e-filet);background:var(--e-verre);font:500 13px var(--font-sans,system-ui)}" +
+    ".ev .in-mc i{font:700 11px var(--font-sans,system-ui);font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent)}" +
+    ".ev .in-mc small{color:var(--e-encre3);font-size:11.5px}" +
+    ".ev .in-guide{border:1px dashed var(--accent);border-radius:14px;padding:12px 16px;background:linear-gradient(180deg,var(--e-doux),transparent)}" +
+    ".ev .in-guide summary{cursor:pointer;font:600 14px var(--font-sans,system-ui);color:var(--accent)}" +
+    ".ev .in-q{display:flex;flex-direction:column;gap:8px;margin-top:10px}" +
+    ".ev .in-q .ql{font-size:13px;color:var(--e-encre2)}" +
+    ".ev .in-chips{display:flex;gap:6px;flex-wrap:wrap}" +
+    ".ev .in-chip{border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:99px;padding:6px 14px;font:600 13px var(--font-sans,system-ui);cursor:pointer}" +
+    ".ev .in-chip.on{background:var(--accent);color:var(--on-accent);border-color:transparent}" +
+    ".ev .in-chip b{opacity:.7;margin-left:4px}" +
+    ".ev .in-reco{font-size:13.5px;padding:9px 12px;border-radius:11px;background:color-mix(in srgb,var(--ok,#047857) 11%,transparent);color:color-mix(in srgb,var(--ok,#047857) 82%,var(--txt-strong,#1d2b2a))}" +
+    ".ev .in-barre{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center}" +
+    ".ev .in-rech{flex:1;min-width:220px;font:14px var(--font-sans,system-ui)!important;padding:9px 12px!important;border-radius:11px!important}" +
+    ".ev .in-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}" +
+    ".ev .in-carte{display:flex;flex-direction:column;gap:10px;padding:14px 15px;border:1.5px solid var(--e-filet);border-radius:15px;background:var(--e-verre);transition:.2s;position:relative}" +
+    ".ev .in-carte.reco{border-color:var(--e-ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok,#047857) 14%,transparent)}" +
+    ".ev .in-carte.att{opacity:.45}" +
+    ".ev .in-ct{display:flex;gap:11px;align-items:center}" +
+    ".ev .in-mono{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font:700 19px var(--font-sans,system-ui);flex:none;background:var(--e-doux);color:var(--accent)}" +
+    ".ev .in-nom{font:600 16px var(--font-sans,system-ui);color:var(--e-encre)}" +
+    ".ev .in-qui{font-size:12px;color:var(--e-encre3)}" +
+    ".ev .in-desc{font-size:13.5px;color:var(--e-encre2);line-height:1.5;flex:1}" +
+    ".ev .in-tags{display:flex;gap:5px;flex-wrap:wrap}" +
+    ".ev .in-pied{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}" +
+    ".ev .in-pied .lg{gap:6px}" +
+    ".ev .in-fiche{padding:18px 20px;display:flex;flex-direction:column;gap:14px;border:1.5px solid var(--accent)}" +
+    ".ev .in-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}" +
+    ".ev .in-case{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--e-filet);border-radius:13px;background:var(--e-verre)}" +
+    ".ev .in-case .lib{margin-bottom:2px}" +
+    ".ev .in-comp{display:grid;grid-template-columns:22px 1fr;gap:9px;align-items:start;font-size:13px}" +
+    ".ev .in-comp .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px ui-monospace,monospace;background:var(--e-doux)}" +
+    ".ev .in-comp.ok .k{background:color-mix(in srgb,var(--ok,#047857) 16%,transparent);color:color-mix(in srgb,var(--ok,#047857) 85%,var(--txt-strong,#1d2b2a))}" +
+    ".ev .in-comp.al .k{background:color-mix(in srgb,var(--warn,#b45309) 22%,transparent);color:color-mix(in srgb,var(--warn,#b45309) 85%,var(--txt-strong,#1d2b2a))}" +
+    ".ev .in-comp small{display:block;color:var(--e-encre3);font-size:12px}" +
+    ".ev .in-pas{display:flex;flex-direction:column;gap:7px}" +
+    ".ev .in-p{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:start;font-size:13.5px;color:var(--e-encre3)}" +
+    ".ev .in-p .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px ui-monospace,monospace;background:var(--e-doux)}" +
+    ".ev .in-p small{display:block;font-size:12px;color:var(--e-encre3)}" +
+    ".ev .in-p .r{font:600 12px ui-monospace,monospace;white-space:nowrap}" +
+    ".ev .in-p.ok{color:var(--e-encre)}.ev .in-p.ok .k{background:color-mix(in srgb,var(--ok,#047857) 16%,transparent);color:color-mix(in srgb,var(--ok,#047857) 85%,var(--txt-strong,#1d2b2a))}" +
+    ".ev .in-p.ko{color:var(--e-encre)}.ev .in-p.ko .k{background:color-mix(in srgb,var(--danger,#be123c) 16%,transparent);color:color-mix(in srgb,var(--danger,#be123c) 80%,var(--txt-strong,#1d2b2a))}.ev .in-p.ko small{color:color-mix(in srgb,var(--danger,#be123c) 70%,var(--txt-strong,#1d2b2a))}" +
+    ".ev .in-p.cours{color:var(--accent)}.ev .in-p.cours .k{animation:evbat 1s infinite}" +
+    ".ev .in-p.saute{opacity:.5}" +
+    ".ev .in-prog{height:6px;border-radius:99px;background:var(--e-filet);overflow:hidden}.ev .in-prog i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .35s}" +
+    ".ev .in-fin{border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5}" +
+    ".ev .in-fin.bien{background:color-mix(in srgb,var(--ok,#047857) 11%,transparent);color:color-mix(in srgb,var(--ok,#047857) 82%,var(--txt-strong,#1d2b2a))}" +
+    ".ev .in-fin.mal{background:color-mix(in srgb,var(--danger,#be123c) 10%,transparent);color:color-mix(in srgb,var(--danger,#be123c) 70%,var(--txt-strong,#1d2b2a))}" +
+    ".ev .in-fin .lg{margin-top:9px}" +
+    ".ev details.in-sur summary{cursor:pointer;font:600 14px var(--font-sans,system-ui);color:var(--e-encre2)}" +
+    ".ev .in-sur ol{margin:10px 0 0;padding-left:22px;display:flex;flex-direction:column;gap:7px;font-size:13.5px;color:var(--e-encre2)}" +
+    ".ev .in-vide{padding:22px;text-align:center;color:var(--e-encre3);border:1px dashed var(--e-filet);border-radius:14px}" +
+    ".ev .in-msg{font-size:13px;color:var(--e-ok);min-height:18px}" +
+    ".ev .in-segm{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--e-doux);flex-wrap:wrap}" +
+    ".ev .in-segm button{border:0;background:transparent;border-radius:9px;padding:6px 13px;font:600 13px var(--font-sans,system-ui);color:var(--e-encre2);cursor:pointer}" +
+    ".ev .in-segm button.on{background:var(--accent);color:var(--on-accent)}" +
+    ".ev .in-code{margin:0;padding:12px 14px;border-radius:12px;background:var(--ov-06,rgba(0,0,0,.05));border:1px solid var(--e-filet);font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow:auto;max-height:260px;color:var(--txt)}.ev .in-lib{font:600 10.5px var(--font-sans,system-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--e-encre3)}" +
     ".ev .code{font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;background:var(--ov-06);border:1px solid var(--e-filet);border-radius:12px;padding:12px 14px;overflow-x:auto;white-space:pre;color:var(--txt)}" +
     ".ev .code .k{color:var(--accent)}.ev .code .c{color:var(--e-encre3)}.ev .code .s{color:var(--e-al)}" +
     ".ev .tw{overflow-x:auto;border:1px solid var(--e-filet);border-radius:12px}" +
@@ -290,14 +351,219 @@
         (svg ? svg + '<div class="note">Dernière course : un point par étage (gain de latence, mémoire) ; points pleins : les meilleurs compromis.</div>' : '<div class="note">Lance une course (Sous le capot › Les comparer) pour voir ce que chaque chercheur rend, en gain et en mémoire.</div>') + "</div>";
     }
 
-    // 7 · Installation
-    function mInstall() {
-      const m = M0(), d = m.d || {}, cat = d.catalogue || [], ins = m.install;
-      return '<div class="tete"><div><h3 class="mono" style="font-size:15px">Installation des moteurs externes</h3><div class="note">Orfan, Frugal et Évolutif sont livrés avec Cassandra. Un autre moteur ne s\'installe que depuis un catalogue scellé, paquets épinglés par empreinte.</div></div></div>' +
-        '<section class="cgrid"><div class="verre carte"><h2>Le catalogue</h2>' + (d.catalogue_erreur ? '<div class="verdict al">' + esc(d.catalogue_erreur) + "</div>" : "") +
-        (cat.length ? '<div class="liste">' + cat.map((c) => '<div class="inter" style="align-items:center"><div class="t" style="flex:1"><b class="mono" style="font-size:12.5px">' + esc(c.nom) + " v" + esc(c.version) + '</b><span class="note">' + (c.installe ? "installé" : "disponible") + "</span></div>" + (c.installe ? '<button class="btn dng" data-ma="desinstaller" data-id="' + esc(c.id) + '">Désinstaller</button>' : '<button class="btn prim" data-ma="installer" data-id="' + esc(c.id) + '"' + (m.occupe ? " disabled" : "") + ">" + (m.occupe === "moteur_installer" ? "Installation…" : "Installer") + "</button>") + "</div>").join("") + "</div>" : '<div class="vide">Le catalogue est vide ou absent.</div>') + mMsg() + "</div>" +
-        '<div class="verre carte"><h2>Comment un moteur entre au catalogue</h2><div class="liste">' + ["L'admin lance outils/CN_moteurs_epingler.py sur la machine : il résout le paquet dans un environnement jetable, télécharge chaque dépendance et calcule son empreinte sha256.", "Le catalogue est scellé par la clé de l'instance : un catalogue modifié ou sans sceau est refusé.", "L'installation crée un environnement à part et lance pip avec --require-hashes : un paquet changé en route ne s'installe pas.", "Un banc d'import charge l'adaptateur et le paquet du moteur ; au moindre échec, l'environnement est supprimé.", "Un moteur installé n'est jamais actif d'office : l'activer est un geste à part (Moteurs, état du moteur)."].map((t, i) => '<div class="preuve"><span class="k">' + (i + 1) + "</span><div>" + esc(t) + "</div></div>").join("") + "</div></div></section>" +
-        (ins ? '<div class="verre carte"><h2>Dernière installation · ' + esc(ins.moteur) + "</h2><div class=\"liste\">" + (ins.etapes || []).map((e) => '<div class="verif ' + (e.ok ? "ok" : "dg") + '"><span class="k">' + (e.ok ? "✓" : "✕") + "</span><div>" + esc(e.nom) + "<small>" + esc(e.detail || "") + "</small></div><span></span></div>").join("") + '</div><div class="verdict ' + (ins.ok ? "" : "dg") + '">' + (ins.ok ? "Installé, pas actif." : "Échec : l'environnement a été supprimé, rien n'a changé au registre.") + "</div></div>" : "");
+    // 7 · Installer un chercheur : tout ce que le répertoire propose s'installe d'ici, suivi en direct ; un bouton met à jour les chercheurs installés
+    const IN = () => (S.in = S.in || { q: "", cible: "tout", cout: "tout", etat: "tout", quiz: { cible: "", budget: "", local: "" }, ouvertGuide: false, fiche: "", relire: null, retrait: "", tache: null, maj: null, majOccupe: false, msg: null, suit: false });
+    const repIn = () => dm().repertoire || [];
+    const srvIn = () => dm().serveur || {};
+    const unIn = (id) => repIn().find((x) => x.id === id) || {};
+    const INLIB = { code: "Code", texte: "Textes et consignes" };
+    const INETAPES = { "préparation des paquets": "Préparer : trouver les paquets et calculer leur empreinte", "Python posé": "Python posé à côté de celui du serveur", "catalogue scellé": "Le catalogue est scellé", "entrée du catalogue": "L’entrée du catalogue est valide", "environnement à part": "Un environnement à part est créé", "paquets épinglés par empreinte": "Les paquets s’installent, un par un, par empreinte", "adaptateur généré": "Un adaptateur est écrit, puis éprouvé dans la cage", "banc d’import de l’adaptateur": "L’adaptateur se charge (banc d’import)", "banc d'import de l'adaptateur": "L’adaptateur se charge (banc d’import)", "registre des moteurs": "Le chercheur est inscrit au registre", "nouvelle version": "Chercher la version la plus récente", "bascule": "La nouvelle version prend la place de l’ancienne", "retour arrière": "Retour arrière", "ancienne version": "L’ancienne version" };
+    const INCOURS = { "préparation des paquets": "résolution dans un environnement jetable, une empreinte sha256 par paquet", "paquets épinglés par empreinte": "pip refuse tout paquet dont l’empreinte ne correspond pas", "adaptateur généré": "un modèle écrit le code d’après l’interface réelle du paquet, puis il est éprouvé dans la cage, sans réseau ni clé (compte quelques minutes)", "Python posé": "téléchargement de la version de Python exigée" };
+    const coutIn = (c) => ({ sobre: ["Sobre en jetons", "ok"], gourmand: ["Gourmand en jetons", "fort"], inconnu: ["Coût inconnu", "mu"] })[c.cout] || ["Coût inconnu", "mu"];
+    const installeIn = (c) => c.statut === "installe";
+    const majDe = (c) => ((IN().maj || {})[c.id]) || null;
+    function bloquantsIn(c) {
+      const s = srvIn(), r = [];
+      if (!s.cle) r.push("pas de clé d’instance : un catalogue ne peut être cru");
+      if (!s.venv) r.push("le module d’environnements de Python (paquet python3-venv) manque sur le serveur");
+      if (!c.ecrit && ["aucun", "indisponible", "à éprouver"].indexOf(String(s.bac)) >= 0) r.push("l’adaptateur de ce chercheur doit être généré, et il ne s’éprouve que dans la cage : ce serveur n’en a pas (paquet bubblewrap)");
+      return r;
+    }
+    function recoIn(c) {
+      const q = IN().quiz; if (!q.cible && !q.budget && !q.local) return null;
+      if (q.cible && c.cible !== q.cible) return false;
+      if (q.budget === "faible" && c.cout === "gourmand") return false;
+      if (q.local === "oui" && c.cout === "gourmand") return false;
+      return true;
+    }
+    function filtreIn(c) {
+      const I = IN(), q = I.q.trim().toLowerCase();
+      if (q && (c.nom + " " + c.desc + " " + c.qui).toLowerCase().indexOf(q) < 0) return false;
+      if (I.cible !== "tout" && c.cible !== I.cible) return false;
+      if (I.cout !== "tout" && c.cout !== I.cout) return false;
+      if (I.etat === "installables" && c.statut !== "disponible") return false;
+      if (I.etat === "installes" && !installeIn(c)) return false;
+      if (I.etat === "livres" && c.statut !== "livre") return false;
+      return true;
+    }
+    const occupeIn = () => { const t = IN().tache; return !!(t && !t.fini); };
+
+    function mesChercheursIn() {
+      const I = IN(), l = repIn().filter((c) => c.statut === "livre" || installeIn(c)), nbExt = l.filter(installeIn).length;
+      const nbMaj = Object.keys(I.maj || {}).filter((k) => I.maj[k].maj).length;
+      return '<div class="verre in-bloc"><div class="in-tete"><h3>Mes chercheurs</h3><div class="lg">' + (nbExt ? '<button class="btn" data-in-majdispo' + (I.majOccupe || occupeIn() ? " disabled" : "") + ' title="Regarde, pour chaque chercheur installé, si une version plus récente existe">' + (I.majOccupe ? "Recherche en cours…" : "Chercher des mises à jour") + "</button>" : "") + '<button class="btn" data-vers="capot.chercheurs">Les gérer dans « Les chercheurs »</button></div></div><div class="in-mes">' +
+        l.map((c) => { const m = majDe(c); return '<span class="in-mc"><i>' + esc(c.nom.charAt(0)) + "</i>" + esc(c.nom) + "<small>" + (c.statut === "livre" ? "livré" : "installé" + (c.version ? " · v" + esc(c.version) : "")) + "</small>" + (m && m.maj ? '<span class="puce al">mise à jour</span>' : "") + "</span>"; }).join("") + "</div>" +
+        (I.maj ? '<div class="note">' + (nbMaj ? nbMaj + " chercheur" + (nbMaj > 1 ? "s ont" : " a") + " une version plus récente : ouvre sa fiche pour le mettre à jour." : "Tous les chercheurs installés sont à la dernière version connue.") + (I.majLe ? " Vérifié " + ago(I.majLe) + "." : "") + "</div>" : "") + "</div>";
+    }
+    function guideIn() {
+      const I = IN(), q = I.quiz, ch = (cle, val, txt) => '<button class="in-chip' + (q[cle] === val ? " on" : "") + '" data-in-q="' + cle + ":" + val + '">' + txt + "</button>";
+      const n = repIn().filter((c) => recoIn(c) === true).length;
+      return '<details class="in-guide"' + (I.ouvertGuide ? " open" : "") + '><summary>Je ne sais pas lequel choisir : répondre à trois questions</summary><div class="in-q"><div class="ql">Qu’est-ce que tu veux améliorer ?</div><div class="in-chips">' + ch("cible", "code", "Du code (les fonctions de Cassandra)") + ch("cible", "texte", "Des textes (consignes d’agents)") + '</div><div class="ql">Quel budget en jetons ?</div><div class="in-chips">' + ch("budget", "faible", "Le plus bas possible") + ch("budget", "large", "Peu importe, je veux le meilleur résultat") + '</div><div class="ql">Des modèles tournent-ils chez toi (sans réseau) ?</div><div class="in-chips">' + ch("local", "oui", "Oui, des modèles locaux") + ch("local", "non", "Non") + "</div>" +
+        ((q.cible || q.budget || q.local) ? '<div class="in-reco">' + (n ? n + " candidat" + (n > 1 ? "s" : "") + " conviennent : ils sont mis en avant ci-dessous." : "Aucun candidat ne coche tout : relâche une réponse.") + ' <button class="in-chip" data-in-q="raz">Effacer</button></div>' : "") + "</div></details>";
+    }
+    function barreIn() {
+      const I = IN(), seg = (cle, vals) => '<div class="in-segm">' + vals.map((v) => '<button class="' + (I[cle] === v[0] ? "on" : "") + '" data-in-f="' + cle + ":" + v[0] + '">' + v[1] + "</button>").join("") + "</div>";
+      return '<div class="in-barre"><input class="in-rech" id="in-rech" type="text" placeholder="Chercher un chercheur (nom, ce qu’il fait…)" value="' + esc(I.q) + '">' + seg("cible", [["tout", "Tout"], ["code", "Code"], ["texte", "Textes"]]) + seg("cout", [["tout", "Tout coût"], ["sobre", "Sobre"], ["gourmand", "Gourmand"]]) + seg("etat", [["tout", "Tous"], ["installables", "À installer"], ["installes", "Installés"], ["livres", "Livrés"]]) + "</div>";
+    }
+    function carteIn(c) {
+      const r = recoIn(c), p = coutIn(c), m = majDe(c), bl = bloquantsIn(c).length > 0;
+      let bouton = "", etat = "";
+      if (c.statut === "livre") { etat = '<span class="puce">livré avec Cassandra</span>'; bouton = '<button class="btn" data-in-fiche="' + esc(c.id) + '">Voir</button>'; }
+      else if (installeIn(c)) {
+        const arelire = c.adaptateur_genere && !c.relu;
+        etat = '<span class="puce ok">' + (c.actif ? "installé · actif" : "installé · pas encore actif") + "</span>" + (arelire ? '<span class="puce al">adaptateur à relire</span>' : "") + (m && m.maj ? '<span class="puce al">mise à jour : v' + esc(m.installee) + " → v" + esc(m.disponible) + "</span>" : "");
+        bouton = arelire ? '<button class="btn prim" data-in-relire="' + esc(c.id) + '">Relire l’adaptateur</button>' : (m && m.maj ? '<button class="btn prim" data-in-maj="' + esc(c.id) + '"' + (occupeIn() ? " disabled" : "") + ">Mettre à jour</button>" : '<button class="btn prim" data-in-fiche="' + esc(c.id) + '">Contrôler et activer</button>');
+      } else {
+        etat = c.prepare ? '<span class="puce al">prêt à installer</span>' : '<span class="puce mu">pas encore préparé</span>';
+        bouton = '<button class="btn prim" data-in-inst="' + esc(c.id) + '"' + (occupeIn() || bl ? " disabled" : "") + (bl ? ' title="' + esc(bloquantsIn(c)[0]) + '"' : "") + ">" + (c.prepare ? "Installer" : "Préparer puis installer") + "</button>";
+      }
+      return '<div class="in-carte' + (r === true ? " reco" : "") + (r === false ? " att" : "") + '"><div class="in-ct"><span class="in-mono">' + esc(c.nom.charAt(0)) + '</span><div><div class="in-nom">' + esc(c.nom) + '</div><div class="in-qui">' + esc(c.qui) + '</div></div></div><div class="in-desc">' + esc(c.desc) + '</div><div class="in-tags"><span class="puce">' + (INLIB[c.cible] || c.cible) + '</span><span class="puce ' + p[1] + '">' + p[0] + "</span>" + etat + (!c.ecrit && c.statut !== "livre" ? '<span class="puce mu" title="Il n’existe pas d’adaptateur écrit à la main : Cassandra en écrit un à l’installation, que tu relis avant de l’activer">adaptateur généré</span>' : "") + (r === true ? '<span class="puce ok">conseillé</span>' : "") + '</div><div class="in-pied"><button class="btn" data-in-fiche="' + esc(c.id) + '">Détails</button>' + bouton + "</div></div>";
+    }
+    function compatIn(c) {
+      const s = srvIn(), l = [];
+      const k = (ok, t, d) => '<div class="in-comp ' + (ok ? "ok" : "al") + '"><span class="k">' + (ok ? "✓" : "!") + "</span><div>" + esc(t) + "<small>" + esc(d) + "</small></div></div>";
+      if (c.statut === "livre") return '<div class="in-comp ok"><span class="k">✓</span><div>Rien à vérifier<small>il est livré avec Cassandra</small></div></div>';
+      l.push(c.python ? (c.python === s.python ? k(true, "Python du serveur", "Python " + s.python + " : exactement la version exigée") : k(true, "Python " + c.python + " exigé", "Cassandra le pose toute seule, à côté de celui du serveur (" + s.python + ")" + (s.uv ? "" : " ; elle installe d’abord l’outil uv"))) : k(true, "Python du serveur", "Python " + s.python + " : compatible"));
+      l.push(k(!!s.venv, "Environnements Python", s.venv ? "le serveur sait en créer" : "le paquet python3-venv manque sur le serveur"));
+      l.push(k(true, "Réseau", "sortant le temps de l’installation seulement"));
+      l.push(k((s.disque_libre_go || 0) >= 2, "Place disque", (s.disque_libre_go == null ? "?" : String(s.disque_libre_go).replace(".", ",")) + " Go libres" + ((s.disque_libre_go || 0) >= 2 ? "" : " : trop peu pour un environnement")));
+      if (!c.ecrit) l.push(k(["aucun", "indisponible", "à éprouver"].indexOf(String(s.bac)) < 0, "La cage pour éprouver l’adaptateur", ["aucun", "indisponible", "à éprouver"].indexOf(String(s.bac)) < 0 ? "cage : " + s.bac : "pas de cage sur ce serveur : un adaptateur généré serait refusé"));
+      l.push(k(!!s.cle, "Clé d’instance", s.cle ? "le catalogue peut être scellé et vérifié" : "absente : rien ne peut être cru"));
+      return l.join("");
+    }
+    function ficheIn() {
+      const I = IN(), c = unIn(I.fiche); if (!c.id) return "";
+      const m = majDe(c), bl = bloquantsIn(c), arelire = c.adaptateur_genere && !c.relu, ext = installeIn(c);
+      let actions;
+      if (c.statut === "livre") actions = '<span class="note">Livré avec Cassandra : on l’active ou le désactive dans « Les chercheurs ».</span>';
+      else if (ext) {
+        actions = (arelire ? '<button class="btn prim" data-in-relire="' + esc(c.id) + '">Relire l’adaptateur</button>' : "") +
+          (m && m.maj ? '<button class="btn prim" data-in-maj="' + esc(c.id) + '"' + (occupeIn() ? " disabled" : "") + ">Mettre à jour (v" + esc(m.installee) + " → v" + esc(m.disponible) + ")</button>" : '<button class="btn" data-in-majdispo' + (I.majOccupe || occupeIn() ? " disabled" : "") + ">" + (I.majOccupe ? "Recherche en cours…" : "Chercher une mise à jour") + "</button>") +
+          '<button class="btn' + (arelire || (m && m.maj) ? "" : " prim") + '" data-in-controle="' + esc(c.id) + '">Contrôler son intégrité</button>' +
+          '<button class="btn" data-vers="capot.chercheurs"' + (arelire ? ' disabled title="Relis d’abord l’adaptateur"' : "") + '>L’activer dans « Les chercheurs »</button>' +
+          '<button class="btn dng" data-in-retirer="' + esc(c.id) + '"' + (occupeIn() ? " disabled" : "") + ">Désinstaller</button>";
+      } else actions = '<button class="btn prim" data-in-inst="' + esc(c.id) + '"' + (occupeIn() || bl.length ? " disabled" : "") + ">" + (c.prepare ? "Installer" : "Préparer puis installer") + "</button>" + (bl.length ? '<span class="note">' + esc(bl[0]) + "</span>" : "");
+      const retrait = I.retrait === c.id ? '<div class="alerte"><b>Désinstaller « ' + esc(c.nom) + ' » ?</b> Son environnement est supprimé et ses méthodes sortent de l’ordre de recherche. Ce qu’il a déjà trouvé et mis à l’essai reste en place. Il pourra être réinstallé d’ici.<div class="lg" style="margin-top:8px"><button class="btn dng" data-in-retirer-ok="' + esc(c.id) + '">Oui, désinstaller</button><button class="btn" data-in-retirer="">Annuler</button></div></div>' : "";
+      const adapt = c.statut === "livre" ? "" : '<div class="in-case"><div class="in-lib">Son adaptateur</div>' + (c.ecrit ? '<div class="in-comp ok"><span class="k">✓</span><div>Écrit à la main<small>livré avec Cassandra, relu et éprouvé</small></div></div>' : '<div class="in-comp ' + (ext && !arelire && c.adaptateur_genere ? "ok" : "al") + '"><span class="k">' + (ext && !arelire && c.adaptateur_genere ? "✓" : "!") + "</span><div>Généré par Cassandra" + (ext && c.empreinte_adaptateur ? ' · empreinte <span class="mono">' + esc(c.empreinte_adaptateur.slice(0, 12)) + "…</span>" : "") + "<small>" + (ext ? (arelire ? "à relire avant d’activer le chercheur" : "relu et approuvé") : "il n’existe pas d’adaptateur écrit à la main : Cassandra en génère un à l’installation, éprouvé dans la cage, que tu relis avant l’activation") + "</small></div></div>") + '<div class="in-comp ok"><span class="k">↺</span><div>Règle de repli<small>un adaptateur écrit à la main passe toujours en premier ; le généré ne sert que s’il n’en existe pas, et un échec de l’écrit ne le fait jamais jouer</small></div></div></div>';
+      const sera = c.statut === "livre" ? "" : '<div class="in-case"><div class="in-lib">Ce qui sera installé</div><div class="in-comp ok"><span class="k">◧</span><div>' + (c.paquets ? c.paquets + " paquets" : "Les paquets sont calculés à la préparation") + '<small>chacun épinglé par son empreinte sha256, dans un environnement à part</small></div></div><div class="in-comp ok"><span class="k">⛨</span><div>Aucun accès au serveur<small>il tourne dans la cage, sans clé ni réseau ; ses appels de modèle passent par le relais</small></div></div>' + (c.lien ? '<div class="in-comp ok"><span class="k">↗</span><div>Sa source<small class="mono">' + esc(c.lien) + "</small></div></div>" : "") + "</div>";
+      return '<div class="verre in-fiche" id="in-fiche"><div class="in-tete"><div class="in-ct"><span class="in-mono">' + esc(c.nom.charAt(0)) + '</span><div><div class="in-nom" style="font-size:20px">' + esc(c.nom) + '</div><div class="in-qui">' + esc(c.qui) + (c.version ? " · version " + esc(c.version) : "") + '</div></div></div><button class="btn" data-in-fiche="">Fermer</button></div><div class="in-desc">' + esc(c.desc) + '</div><div class="in-cols">' +
+        ((c.force || []).length ? '<div class="in-case"><div class="in-lib">Ses points forts</div>' + c.force.map((f) => '<div class="in-comp ok"><span class="k">✓</span><div>' + esc(f) + "</div></div>").join("") + "</div>" : "") +
+        '<div class="in-case"><div class="in-lib">Compatibilité avec ce serveur</div>' + compatIn(c) + "</div>" + adapt + sera + "</div>" + retrait + '<div class="lg">' + actions + "</div></div>";
+    }
+    function relectureIn() {
+      const I = IN(), R = I.relire; if (!R) return "";
+      const c = unIn(R.id);
+      if (R.charge) return '<div class="verre in-fiche"><div class="verdict mu">Lecture de l’adaptateur de ' + esc(c.nom || R.id) + "…</div></div>";
+      if (R.erreur) return '<div class="verre in-fiche"><div class="verdict dg">' + esc(R.erreur) + '</div><div class="lg"><button class="btn" data-in-relire="">Fermer</button></div></div>';
+      const d = R.d, ctl = (ok, t, x) => '<div class="in-comp ' + (ok ? "ok" : "al") + '"><span class="k">' + (ok ? "✓" : "!") + "</span><div>" + t + "<small>" + x + "</small></div></div>";
+      const pret = d.intact && d.verification === "ok";
+      return '<div class="verre in-fiche"><div class="in-tete"><div><div class="in-nom" style="font-size:19px">Relire l’adaptateur de ' + esc(c.nom || R.id) + '</div><div class="in-qui">Généré à l’installation · rien ne s’active avant ton accord</div></div><button class="btn" data-in-relire="">Fermer</button></div>' +
+        '<div class="in-cols"><div class="in-case"><div class="in-lib">Ce que Cassandra a déjà contrôlé</div>' + ctl(d.verification === "ok", "Le code est valide", d.verification === "ok" ? "il se lit, et n’appelle rien d’interdit (réseau, lancement de programme, écriture de fichier)" : esc(d.verification)) + ctl(true, "Essai à blanc réussi", "dans la cage, avec un faux modèle : il a rendu une variante") + ctl(d.intact, "Empreinte épinglée", d.intact ? esc(d.empreinte.slice(0, 16)) + "… : le fichier est tel qu’il a été écrit" : "le fichier ne correspond plus à son empreinte : il a changé") + "</div>" +
+        '<div class="in-case" style="grid-column:span 2"><div class="in-lib">Le code</div><pre class="in-code">' + esc(d.code) + "</pre></div></div>" +
+        '<div class="lg"><button class="btn prim" data-in-approuver="' + esc(R.id) + '"' + (pret ? "" : " disabled") + '>Je l’ai relu : l’approuver</button><button class="btn" data-in-relire="">Plus tard</button><span class="note">Un adaptateur écrit à la main, s’il existe un jour, prendra le relais sans que tu aies rien à refaire.</span></div></div>';
+    }
+    function lignesTacheIn(t) {
+      const faites = t.etapes || [], plan = t.plan || [], parNom = {};
+      faites.forEach((e) => { if (!parNom[e.nom] || !e.ok) parNom[e.nom] = e; });
+      const rows = []; let curseur = false;
+      plan.forEach((nom) => {
+        const e = parNom[nom], lib = INETAPES[nom] || nom;
+        if (e) rows.push({ t: lib, etat: e.ok ? "ok" : "ko", s: e.detail || "" });
+        else if (!t.fini && !curseur) { curseur = true; rows.push({ t: lib, etat: "cours", s: t.en_cours || INCOURS[nom] || "" }); }
+        else rows.push({ t: lib, etat: t.fini ? "saute" : "attente", s: "" });
+      });
+      faites.forEach((e) => { if (plan.indexOf(e.nom) < 0) rows.push({ t: INETAPES[e.nom] || e.nom, etat: e.ok ? "ok" : "ko", s: e.detail || "" }); });
+      return rows;
+    }
+    function suiviIn() {
+      const t = IN().tache; if (!t) return "";
+      const c = unIn(t.moteur), nom = c.nom || t.moteur, maj = t.nature === "maj", rows = lignesTacheIn(t);
+      const fait = rows.filter((e) => e.etat === "ok").length, pct = rows.length ? Math.round(100 * fait / rows.length) : 0;
+      const ligne = (e) => '<div class="in-p ' + e.etat + '"><span class="k">' + (e.etat === "ok" ? "✓" : e.etat === "ko" ? "✕" : e.etat === "cours" ? "…" : "·") + "</span><div>" + esc(e.t) + (e.s ? "<small>" + esc(e.s) + "</small>" : "") + "</div><span class=\"r\"></span></div>";
+      let fin = "";
+      if (t.fini) {
+        const res = t.resultat || {}, ko = (t.etapes || []).filter((e) => !e.ok && e.nom !== "retour arrière" && e.nom !== "ancienne version")[0];
+        const arelire = c.adaptateur_genere && !c.relu;
+        if (t.ok && res.deja_a_jour) fin = '<div class="in-fin bien"><b>' + esc(nom) + " est déjà à la dernière version.</b> Rien n’a changé.</div>";
+        else if (t.ok) fin = '<div class="in-fin bien"><b>' + esc(nom) + (maj ? " est à jour." : " est installé.") + "</b> " + (maj ? "La nouvelle version a pris la place de l’ancienne." : "Il n’est pas actif : un chercheur installé ne cherche jamais tout seul.") + (arelire ? " Son adaptateur a été généré par Cassandra et a réussi son essai à blanc, mais personne ne l’a lu : <b>relis-le avant de pouvoir activer ce chercheur.</b>" : "") + '<div class="lg">' + (arelire ? '<button class="btn prim" data-in-relire="' + esc(t.moteur) + '">Relire l’adaptateur</button>' : '<button class="btn prim" data-in-controle="' + esc(t.moteur) + '">Contrôler son intégrité</button><button class="btn" data-vers="capot.chercheurs">Aller l’activer</button>') + "</div></div>";
+        else fin = '<div class="in-fin mal"><b>' + (maj ? "Mise à jour arrêtée" : "Installation arrêtée") + (ko ? " : " + esc(INETAPES[ko.nom] || ko.nom) : "") + ".</b> " + esc((ko && ko.detail) || t.erreur || "") + (maj ? " L’ancienne version est restée en place : rien n’a changé." : " L’environnement a été supprimé : rien n’est resté à moitié installé.") + '<div class="lg"><button class="btn prim" data-in-' + (maj ? "maj" : "inst") + '="' + esc(t.moteur) + '">Réessayer</button><button class="btn" data-in-fermer>Fermer</button></div></div>';
+      }
+      return '<div class="verre in-bloc"><div class="in-tete"><h3>' + (maj ? "Mise à jour" : "Installation") + " de " + esc(nom) + '</h3><span class="puce ' + (t.fini ? (t.ok ? "ok" : "dg") : "al") + '">' + (t.fini ? (t.ok ? "terminée" : "échouée") : "en cours") + '</span></div><div class="in-prog"><i style="width:' + (t.fini && !t.ok ? Math.max(pct, 8) : pct) + '%"></i></div><div class="in-pas">' + rows.map(ligne).join("") + "</div>" + fin + "</div>";
+    }
+    function installer() {
+      const I = IN(), d = dm();
+      if (!d.repertoire) return '<div class="verdict al">Le répertoire des chercheurs n’a pas pu être lu : le module Évolution est-il à jour ?</div>';
+      if (!I.tache && (d.taches || []).length && !I.suit) { const a = d.taches[0]; I.tache = { id: a.id, moteur: a.moteur, nature: a.nature, plan: [], etapes: [], fini: false, ok: false, en_cours: "" }; setTimeout(() => suivreIn(a.id), 0); }
+      const vis = repIn().filter(filtreIn);
+      return mMsg() + (I.msg ? '<div class="verdict ' + (I.msg.ok ? "" : "dg") + '" role="status">' + esc(I.msg.t) + "</div>" : "") + mesChercheursIn() + guideIn() + barreIn() + '<div id="in-suivi">' + suiviIn() + "</div>" + relectureIn() + ficheIn() +
+        '<div class="in-grille">' + (vis.map(carteIn).join("") || '<div class="in-vide" style="grid-column:1/-1">Aucun chercheur ne correspond. Efface un filtre ou la recherche.</div>') + "</div>" +
+        '<div class="verre in-bloc"><details class="in-sur"><summary>Comment cela reste sûr</summary><ol><li>Chaque chercheur vient d’un <b>catalogue scellé</b> par la clé de ton instance : un catalogue modifié ou sans sceau est refusé.</li><li>Les paquets sont <b>épinglés par empreinte</b> (sha256) : un paquet changé en route ne s’installe pas.</li><li>Chaque chercheur vit dans un <b>environnement à part</b>, dans la cage, sans clé ni réseau ; ses appels de modèle passent par le relais, compté et plafonné.</li><li>Un chercheur sans adaptateur écrit à la main reçoit un adaptateur <b>généré, éprouvé dans la cage, puis relu par toi</b> avant toute activation.</li><li>Un <b>banc d’import</b> charge l’adaptateur avant l’inscription ; au moindre échec, tout est supprimé. Une mise à jour s’installe à côté : l’ancienne version ne bouge que si la nouvelle passe tout.</li><li>Un chercheur installé n’est <b>jamais actif d’office</b> : on le contrôle, puis on l’active.</li></ol></details></div>';
+    }
+    // la tâche vit sur le serveur : l'écran la relit toutes les secondes et ne redessine que le suivi
+    async function suivreIn(id) {
+      const I = IN(); if (I.suit) return; I.suit = true;
+      let echecs = 0;
+      try {
+        for (let n = 0; n < 2400; n++) {
+          if (!document.body.contains(racine)) return;
+          let t = null;
+          try { t = await CASS.agir("evolution.moteur_tache", { tache: id }); echecs = 0; } catch (e) { echecs++; }
+          if (t && t.id) { I.tache = Object.assign({}, t); const z = racine.querySelector("#in-suivi"); if (z && S.vue === "capot.install") z.innerHTML = suiviIn(); }
+          if (t && t.fini) break;
+          if (echecs >= 8) { I.msg = { ok: false, t: "Le suivi ne répond plus (la tâche continue peut-être sur le serveur) : recharge la page pour la retrouver." }; break; }
+          await new Promise((r) => setTimeout(r, 1200));
+        }
+      } finally { I.suit = false; }
+      await chargerM(); try { S.etat = await CASS.agir("evolution.etat", {}); } catch (e) { /* le cockpit se relira */ }
+      if (I.tache && I.tache.ok && I.tache.nature === "maj" && I.maj && I.maj[I.tache.moteur]) I.maj[I.tache.moteur].maj = false;
+      dessiner();
+    }
+    async function lancerIn(id, nature) {
+      const I = IN(); if (occupeIn()) return;
+      I.msg = null; I.relire = null; I.fiche = id;
+      let r;
+      try { r = await CASS.agir("evolution." + (nature === "maj" ? "moteur_maj_tache" : "moteur_installer_tache"), { moteur: id }); }
+      catch (e) { I.msg = { ok: false, t: e.message || String(e) }; return dessiner(); }
+      I.tache = { id: r.tache, moteur: id, nature: nature, plan: r.plan || [], etapes: [], fini: false, ok: false, en_cours: "" };
+      dessiner(); suivreIn(r.tache);
+      const f = racine.querySelector("#in-suivi"); if (f && f.scrollIntoView) f.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+    async function chercherMajIn() {
+      const I = IN(); if (I.majOccupe) return;
+      I.majOccupe = true; I.msg = null; dessiner();
+      try {
+        const r = await CASS.agir("evolution.moteur_maj_dispo", {}); I.maj = {}; (r.chercheurs || []).forEach((x) => { I.maj[x.moteur] = x; }); I.majLe = r.verifie_le;
+        const n = (r.chercheurs || []).filter((x) => x.maj).length, ko = (r.chercheurs || []).filter((x) => x.erreur).length;
+        I.msg = { ok: true, t: n ? n + " mise" + (n > 1 ? "s" : "") + " à jour disponible" + (n > 1 ? "s" : "") + "." : "Tout est à jour." + (ko ? " (" + ko + " chercheur" + (ko > 1 ? "s" : "") + " n’ont pas pu être vérifiés.)" : "") };
+      } catch (e) { I.msg = { ok: false, t: "La recherche de mises à jour a échoué : " + (e.message || e) }; }
+      I.majOccupe = false; dessiner();
+    }
+    function lierIn() {
+      const I = IN(), q = (s) => racine.querySelectorAll(s);
+      const r = racine.querySelector("#in-rech"); if (r) r.addEventListener("input", () => { I.q = r.value; dessiner(); const n = racine.querySelector("#in-rech"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
+      q("[data-in-f]").forEach((b) => b.addEventListener("click", () => { const p = b.dataset.inF.split(":"); I[p[0]] = p[1]; dessiner(); }));
+      q("[data-in-q]").forEach((b) => b.addEventListener("click", () => { if (b.dataset.inQ === "raz") I.quiz = { cible: "", budget: "", local: "" }; else { const p = b.dataset.inQ.split(":"); I.quiz[p[0]] = I.quiz[p[0]] === p[1] ? "" : p[1]; } I.ouvertGuide = true; dessiner(); }));
+      const g = racine.querySelector("details.in-guide"); if (g) g.addEventListener("toggle", () => { I.ouvertGuide = g.open; });
+      q("[data-in-fiche]").forEach((b) => b.addEventListener("click", () => { I.fiche = b.dataset.inFiche; I.retrait = ""; dessiner(); if (I.fiche) { const f = racine.querySelector("#in-fiche"); if (f && f.scrollIntoView) f.scrollIntoView({ block: "center", behavior: "smooth" }); } }));
+      q("[data-in-inst]").forEach((b) => b.addEventListener("click", () => lancerIn(b.dataset.inInst, "installer")));
+      q("[data-in-maj]").forEach((b) => b.addEventListener("click", () => lancerIn(b.dataset.inMaj, "maj")));
+      q("[data-in-majdispo]").forEach((b) => b.addEventListener("click", chercherMajIn));
+      q("[data-in-fermer]").forEach((b) => b.addEventListener("click", () => { I.tache = null; dessiner(); }));
+      q("[data-in-retirer]").forEach((b) => b.addEventListener("click", () => { I.retrait = b.dataset.inRetirer; dessiner(); }));
+      q("[data-in-retirer-ok]").forEach((b) => b.addEventListener("click", async () => { const id = b.dataset.inRetirerOk, nom = unIn(id).nom || id; I.retrait = ""; I.fiche = ""; I.tache = null; if (I.maj) delete I.maj[id]; await agirM("moteur_desinstaller", { moteur: id }, nom + " est désinstallé."); }));
+      q("[data-in-relire]").forEach((b) => b.addEventListener("click", async () => {
+        const id = b.dataset.inRelire; if (!id) { I.relire = null; return dessiner(); }
+        I.relire = { id: id, charge: true }; dessiner();
+        try { I.relire = { id: id, d: await CASS.agir("evolution.moteur_adaptateur_lire", { moteur: id }) }; } catch (e) { I.relire = { id: id, erreur: e.message || String(e) }; }
+        dessiner(); const f = racine.querySelector(".in-fiche"); if (f && f.scrollIntoView) f.scrollIntoView({ block: "center", behavior: "smooth" });
+      }));
+      q("[data-in-approuver]").forEach((b) => b.addEventListener("click", async () => {
+        const id = b.dataset.inApprouver, R = I.relire; if (!R || !R.d) return;
+        try { await CASS.agir("evolution.moteur_adaptateur_approuver", { moteur: id, empreinte: R.d.empreinte }); I.msg = { ok: true, t: "Adaptateur de " + (unIn(id).nom || id) + " approuvé. Tu peux contrôler le chercheur, puis l’activer." }; }
+        catch (e) { I.msg = { ok: false, t: e.message || String(e) }; }
+        I.relire = null; await chargerM(); dessiner();
+      }));
+      q("[data-in-controle]").forEach((b) => b.addEventListener("click", async () => { const id = b.dataset.inControle; const c = CH(); c.fiche = id; c.ctrl = null; c.retrait = ""; await aller("capot.chercheurs"); controlerCh(id); }));
     }
 
     // 8 · Cage et preuves
@@ -337,8 +603,6 @@
         const a = b.dataset.ma, id = b.dataset.id;
         if (a === "actualiser") { await chargerM(); S.etat = await CASS.agir("evolution.etat", {}); return dessiner(); }
         if (a === "etat") return agirM("moteur_etat", { moteur: id, etat: b.dataset.v }, "État du moteur enregistré.");
-        if (a === "installer") { const r = await agirM("moteur_installer", { moteur: id }, (x) => (x.ok ? "Installé, pas actif." : "Installation refusée : " + (((x.etapes || []).slice(-2)[0] || {}).detail || "voir les étapes."))); m.install = r ? Object.assign({ moteur: id }, r) : null; m.vue = "install"; return dessiner(); }
-        if (a === "desinstaller") { if (!confirm("Désinstaller ce moteur ? Son environnement est supprimé ; ses pièces restent.")) return; return agirM("moteur_desinstaller", { moteur: id }, "Désinstallé."); }
         if (a === "lancer") { lirePrepa(); const et = Object.keys(m.course.actifs).filter((k) => m.course.actifs[k]);
           const r = await agirM("course", { point: m.course.point, etages: et, budget: m.course.budget, limite: m.course.limite, critere: m.course.crit }, (x) => "Course terminée : " + (x.vainqueur ? "gagnant " + x.vainqueur : "aucune variante prouvée") + ".");
           if (r) { const c = (M0().d.courses || []).find((h) => h.id === r.id); m.derniere = Object.assign({}, r, { resultats: r.resultats }); } return dessiner(); }
@@ -561,12 +825,12 @@
     // ═══ LA NAVIGATION : le menu de gauche porte les pages (Aujourd'hui, Améliorations et ses états, Réglages, Consignes, Sous le capot et ses pages) ═══
     const TITRES = { aujourdhui: "Aujourd’hui", amelio: "Les améliorations", reglages: "Réglages", consignes: "Consignes et seuils", capot: "Sous le capot" };
     const SOUS_TITRES = { aujourdhui: "Ce que Cassandra améliore, ce qui mérite ton regard, et de quoi lui demander mieux.", amelio: "Ce qui a été essayé, ce qui sert, ce qui a été retiré.", reglages: "Qui cherche, dans quel ordre, et pour combien.", consignes: "Les consignes d’agent et les seuils qu’elle peut améliorer, et comment on les juge.",
-      "capot.chercheurs": "Les moteurs qui cherchent des améliorations.", "capot.points": "Les fonctions de Cassandra qu’elle peut rendre plus rapides, et ce qu’on a déjà essayé dessus.", "capot.comparer": "Faire courir les chercheurs les uns contre les autres.", "capot.install": "Ajouter ou retirer un chercheur du catalogue scellé.", "capot.securite": "La cage, les preuves et ce qui protège.", "capot.carnet": "Tout ce qui s’est passé, chaîné et scellé.", "capot.ecartees": "Les versions retirées, et ce qu’il en reste.", "capot.vision": "Ce qui existe, et ce qui n’est pas encore construit.", "capot.vocab": "Les mots employés dans cet écran." };
+      "capot.chercheurs": "Les moteurs qui cherchent des améliorations.", "capot.points": "Les fonctions de Cassandra qu’elle peut rendre plus rapides, et ce qu’on a déjà essayé dessus.", "capot.comparer": "Faire courir les chercheurs les uns contre les autres.", "capot.install": "Choisis un chercheur : Cassandra le prépare, l’installe, le vérifie et le tient à jour, sans que tu touches à un terminal.", "capot.securite": "La cage, les preuves et ce qui protège.", "capot.carnet": "Tout ce qui s’est passé, chaîné et scellé.", "capot.ecartees": "Les versions retirées, et ce qu’il en reste.", "capot.vision": "Ce qui existe, et ce qui n’est pas encore construit.", "capot.vocab": "Les mots employés dans cet écran." };
     const TCAPOT = { "capot.chercheurs": "Les chercheurs", "capot.points": "Les fonctions", "capot.comparer": "Les comparer", "capot.install": "Installer un chercheur", "capot.securite": "Filet de sécurité", "capot.carnet": "Carnet", "capot.ecartees": "Versions écartées", "capot.vision": "Ce qui est prévu", "capot.vocab": "Vocabulaire" };
     Object.keys(TCAPOT).forEach((k) => { TITRES[k] = TCAPOT[k]; });
     ["amelio.toutes", "amelio.essai", "amelio.service", "amelio.retiree"].forEach((k) => { TITRES[k] = TITRES.amelio; SOUS_TITRES[k] = SOUS_TITRES.amelio; });
     const norme = (v) => (v === "capot" ? "capot.chercheurs" : v === "amelio" ? "amelio.toutes" : (TITRES[v] ? v : "aujourdhui"));
-    const MVUE = { aujourdhui: [], reglages: ["budget"], consignes: ["juges"], "capot.chercheurs": [], "capot.points": [], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
+    const MVUE = { aujourdhui: [], reglages: ["budget"], consignes: ["juges"], "capot.chercheurs": [], "capot.points": [], "capot.comparer": ["course"], "capot.install": [], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
     const avecMoteurs = () => !!MVUE[S.vue];
     function suivre() { try { if (typeof window.evSuivre === "function") window.evSuivre(S.vue); } catch (e) { /* le menu se remettra à jour au prochain geste */ } }
     async function aller(vue) {
@@ -913,6 +1177,7 @@
       if (v.indexOf("amelio") === 0) return amelio();
       if (v === "capot.points") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return fonctions(); }
       if (v === "capot.chercheurs") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return mp.d ? chercheurs() : (mp.msg ? mMsg() : '<div class="verdict mu">Chargement…</div>'); }
+      if (v === "capot.install") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return mp.d ? installer() : (mp.msg ? mMsg() : '<div class="verdict mu">Chargement…</div>'); }
       if (v === "capot.vocab") return vocab();
       if (v === "capot.ecartees") return ecartees();
       if (v === "capot.vision") return cockpit();
@@ -923,7 +1188,7 @@
       }
       const vs = MVUE[v] || ["moteurs"];
       if (v === "consignes") return consignes() + mMsg();
-      return vs.map((k) => { m.vue = k; return { course: mCourse, budget: mBudget, juges: mJuges, install: mInstall, cage: mCage, journal: mJournal }[k](); }).join("") + mMsg();
+      return vs.map((k) => { m.vue = k; return { course: mCourse, budget: mBudget, juges: mJuges, cage: mCage, journal: mJournal }[k](); }).join("") + mMsg();
     }
 
     function dessiner() {
@@ -940,6 +1205,7 @@
       racine.querySelectorAll("[data-vue]").forEach((b) => b.addEventListener("click", () => aller(b.dataset.vue)));
       if (avecMoteurs()) lierMoteurs();
       if (S.vue === "capot.chercheurs" && M0().d) lierChercheurs();
+      if (S.vue === "capot.install" && M0().d) lierIn();
       const vq = racine.querySelector("#ev-vq"); if (vq) vq.addEventListener("input", () => { S.vq = vq.value; dessiner(); const n = racine.querySelector("#ev-vq"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
       const fq = racine.querySelector("#ev-fq"); if (fq) fq.addEventListener("input", () => { S.fq = fq.value; dessiner(); const n = racine.querySelector("#ev-fq"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
       racine.querySelectorAll("[data-tous]").forEach((b) => b.addEventListener("click", () => { S.tous = true; dessiner(); }));
