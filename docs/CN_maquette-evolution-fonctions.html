@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette · Évolution · Les fonctions : actuelle ou proposée</title>
+<!--
+  UNE SEULE PAGE POUR COMPARER. Deux boutons en haut :
+   - « Version proposée » : la page corrigée (CN_maquette-evolution-fonctions-corrigee.html)  ← affichée au départ ;
+   - « Page actuelle »   : la page d'aujourd'hui, à l'identique (CN_maquette-evolution-fonctions-actuelle.html).
+  Ouvrir ce fichier depuis le dépôt (les deux autres sont chargés à côté, dans le même dossier docs/).
+-->
+<style>
+  html, body { margin: 0; height: 100%; font-family: system-ui, Segoe UI, sans-serif; background: #eef3f2; }
+  body { display: flex; flex-direction: column; }
+  .barre { flex: none; display: flex; gap: 10px; align-items: center; padding: 10px 16px; background: #17413f; color: #e9f5f3; flex-wrap: wrap; }
+  .barre b { color: #fff; margin-right: 6px; }
+  .barre button { font: 600 14px system-ui; padding: 8px 18px; border-radius: 99px; border: 1.5px solid rgba(255,255,255,.4); background: transparent; color: #fff; cursor: pointer; }
+  .barre button.on { background: #fff; color: #17413f; border-color: #fff; }
+  .barre span { font-size: 12.5px; opacity: .85; }
+  iframe { flex: 1; width: 100%; border: 0; display: none; background: #eef3f2; }
+  iframe.on { display: block; }
+</style>
+</head>
+<body>
+<div class="barre">
+  <b>Les fonctions :</b>
+  <button id="b-p" class="on">Version proposée</button>
+  <button id="b-a">Page actuelle</button>
+  <span id="dit">Tu regardes : la version proposée (liste filtrable, muettes repliées, vrai retour de recherche).</span>
+</div>
+<iframe id="f-p" class="on" src="CN_maquette-evolution-fonctions-corrigee.html?v=4" title="Version proposée"></iframe>
+<iframe id="f-a" src="CN_maquette-evolution-fonctions-actuelle.html?v=4" title="Page actuelle"></iframe>
+<script>
+  const bp = document.getElementById("b-p"), ba = document.getElementById("b-a"), fp = document.getElementById("f-p"), fa = document.getElementById("f-a"), dit = document.getElementById("dit");
+  function voir(proposee) {
+    bp.classList.toggle("on", proposee); ba.classList.toggle("on", !proposee);
+    fp.classList.toggle("on", proposee); fa.classList.toggle("on", !proposee);
+    dit.textContent = proposee ? "Tu regardes : la version proposée (liste filtrable, muettes repliées, vrai retour de recherche)." : "Tu regardes : la page actuelle de la V19, à l'identique.";
+  }
+  bp.addEventListener("click", () => voir(true));
+  ba.addEventListener("click", () => voir(false));
+</script>
+</body>
+</html>
