@@ -105,9 +105,9 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
   };
   const VERIFS = ["Il répond au contrat des chercheurs", "Il tourne dans un processus à part", "Il a déjà appelé un modèle", "Son installation est vérifiée", "Il a déjà couru contre un autre", "Un plafond du jour est posé"];
   let ETAGES = [
-    { id: "orfan/deterministe", m: "orfan", nom: "Recettes toutes faites", ce: "Mémoïser, sortir un calcul d’une boucle, remplacer une liste par un ensemble… Des réécritures classiques, sans modèle.", cout: "Gratuit", cc: "ok", on: true },
+    { id: "orfan/deterministe", m: "orfan", nom: "Orfan · règles déterministes", ce: "Des recettes toutes faites, sans modèle : mémoïser, sortir un calcul d’une boucle, remplacer une liste par un ensemble…", cout: "Gratuit", cc: "ok", on: true },
     { id: "frugal", m: "frugal", nom: "Frugal 2", ce: "Cherche d’abord avec des recettes. Si rien ne marche et que la fonction est vraiment chaude, un modèle fort donne des idées et un modèle économe écrit le code.", cout: "Peu de jetons", cc: "ok", on: true },
-    { id: "orfan/modele", m: "orfan", nom: "Orfan avec modèle", ce: "Un modèle écrit des versions à essayer, guidé par la façon dont la fonction est vraiment appelée.", cout: "Des jetons", cc: "al", on: true },
+    { id: "orfan/modele", m: "orfan", nom: "Orfan · modèle guidé par le profil", ce: "Un modèle écrit des versions à essayer, guidé par la façon dont la fonction est vraiment appelée.", cout: "Des jetons", cc: "al", on: true },
     { id: "evolutif", m: "evolutif", nom: "Évolutif", ce: "Plusieurs générations de versions qui se croisent et mutent, comme une sélection naturelle. Le plus lent et le plus cher.", cout: "Beaucoup de jetons", cc: "dg", on: true },
   ];
   const REGLES = [
