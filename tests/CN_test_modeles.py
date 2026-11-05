@@ -210,9 +210,20 @@ class Registre(Monde):
         mid2 = self.ok("ajouter", fournisseur="omniroute", nom="un/autre", cle=CLE, base_url="https://passerelle.exemple.fr/v1", compte=BEA)["id"]
         self.assertEqual(self.db.lire("SELECT base_url FROM modeles WHERE id=?", (mid2,))[0]["base_url"], "https://passerelle.exemple.fr/v1")
 
+    def test_chaque_fournisseur_en_ligne_a_une_adresse_https_et_une_cle_requise(self):
+        import importlib.util
+        sp = importlib.util.spec_from_file_location("modeles_table", Path(__file__).resolve().parent.parent / "modules" / "modeles" / "CN_module.py")
+        mod = importlib.util.module_from_spec(sp)
+        sp.loader.exec_module(mod)
+        for k, v in mod.FOURNISSEURS.items():
+            if k in ("ollama", "personnalise", "omniroute"):
+                continue
+            self.assertTrue(v["base_url"].startswith("https://"), k)
+            self.assertEqual(v["cle"], "requise", k)
+
     def test_les_fournisseurs(self):
         f = self.ok("fournisseurs")
-        self.assertEqual({x["id"] for x in f["fournisseurs"]}, {"deepseek", "openrouter", "omniroute", "openai", "google", "groq", "ollama", "personnalise"})
+        self.assertEqual({x["id"] for x in f["fournisseurs"]}, {"deepseek", "openrouter", "omniroute", "openai", "google", "groq", "ollama", "personnalise", "anthropic", "mistral", "xai", "together", "fireworks", "cerebras", "nvidia", "sambanova", "deepinfra", "moonshot", "zai", "alibaba"})
         self.assertTrue([x for x in f["fournisseurs"] if x["id"] == "deepseek"][0]["raisonneur"])
 
 

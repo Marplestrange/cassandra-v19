@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #0ac0ce
+// VERSION CN : 0.2.0  #b32fc3
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=0ac0ce ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=b32fc3 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -28,9 +28,21 @@
     openai: ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1"],
     google: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"],
     groq: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "qwen/qwen3-32b"],
+    anthropic: ["claude-sonnet-5-5", "claude-haiku-5-5", "claude-opus-5-5"],
+    mistral: ["mistral-small-latest", "mistral-large-latest", "codestral-latest"],
+    xai: ["grok-4", "grok-3-mini"],
+    together: ["meta-llama/Llama-3.3-70B-Instruct-Turbo", "Qwen/Qwen2.5-72B-Instruct-Turbo", "deepseek-ai/DeepSeek-V3"],
+    fireworks: ["accounts/fireworks/models/llama-v3p3-70b-instruct"],
+    cerebras: ["llama-3.3-70b", "qwen-3-32b"],
+    nvidia: ["meta/llama-3.3-70b-instruct", "nvidia/llama-3.1-nemotron-70b-instruct"],
+    sambanova: ["Meta-Llama-3.3-70B-Instruct"],
+    deepinfra: ["meta-llama/Llama-3.3-70B-Instruct", "Qwen/Qwen2.5-72B-Instruct"],
+    moonshot: ["kimi-k2-0905-preview"],
+    zai: ["glm-4.6"],
+    alibaba: ["qwen-plus", "qwen-max", "qwen-turbo"],
     ollama: ["qwen2.5:3b", "qwen3:4b-instruct", "llama3.2:3b"],
   };
-  const LIENS = { deepseek: "platform.deepseek.com", openrouter: "openrouter.ai/keys", openai: "platform.openai.com/api-keys", google: "aistudio.google.com/apikey", groq: "console.groq.com/keys" };
+  const LIENS = { deepseek: "platform.deepseek.com", openrouter: "openrouter.ai/keys", openai: "platform.openai.com/api-keys", google: "aistudio.google.com/apikey", groq: "console.groq.com/keys", anthropic: "console.anthropic.com/settings/keys", mistral: "console.mistral.ai/api-keys", xai: "console.x.ai", together: "api.together.ai/settings/api-keys", fireworks: "fireworks.ai/account/api-keys", cerebras: "cloud.cerebras.ai", nvidia: "build.nvidia.com", sambanova: "cloud.sambanova.ai/apis", deepinfra: "deepinfra.com/dash/api_keys", moonshot: "platform.moonshot.ai", zai: "z.ai/manage-apikey/apikey-list", alibaba: "modelstudio.console.alibabacloud.com" };
   const DEFAUTS = ["principal", "itare_citadelle"];                      // les rôles que prennent Cassandra, Amizo et Itare quand on ne leur en donne pas d’autre
 
   const CSS = ".md{display:flex;flex-direction:column;gap:16px;color:var(--txt);font-size:13.5px;line-height:1.5}.md *{box-sizing:border-box}.md h1,.md h2,.md h3,.md p{margin:0}.md .mono{font-family:" + MONO + "}" +

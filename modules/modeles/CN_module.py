@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2ee438
+# VERSION CN : 0.1.0  #79e4ff
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2ee438 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=79e4ff ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -51,6 +51,18 @@ FOURNISSEURS = {
     "openai": {"nom": "OpenAI", "base_url": "https://api.openai.com/v1", "defaut": "gpt-4o-mini", "raisonneur": False, "cle": "requise"},
     "google": {"nom": "Google", "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "defaut": "gemini-2.5-flash", "raisonneur": True, "cle": "requise"},
     "groq": {"nom": "Groq", "base_url": "https://api.groq.com/openai/v1", "defaut": "llama-3.3-70b-versatile", "raisonneur": False, "cle": "requise"},
+    "anthropic": {"nom": "Anthropic (Claude)", "base_url": "https://api.anthropic.com/v1/", "defaut": "claude-sonnet-5-5", "raisonneur": False, "cle": "requise"},
+    "mistral": {"nom": "Mistral", "base_url": "https://api.mistral.ai/v1", "defaut": "mistral-small-latest", "raisonneur": False, "cle": "requise"},
+    "xai": {"nom": "xAI (Grok)", "base_url": "https://api.x.ai/v1", "defaut": "grok-4", "raisonneur": True, "cle": "requise"},
+    "together": {"nom": "Together AI", "base_url": "https://api.together.xyz/v1", "defaut": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "raisonneur": False, "cle": "requise"},
+    "fireworks": {"nom": "Fireworks AI", "base_url": "https://api.fireworks.ai/inference/v1", "defaut": "accounts/fireworks/models/llama-v3p3-70b-instruct", "raisonneur": False, "cle": "requise"},
+    "cerebras": {"nom": "Cerebras", "base_url": "https://api.cerebras.ai/v1", "defaut": "llama-3.3-70b", "raisonneur": False, "cle": "requise"},
+    "nvidia": {"nom": "NVIDIA NIM", "base_url": "https://integrate.api.nvidia.com/v1", "defaut": "meta/llama-3.3-70b-instruct", "raisonneur": True, "cle": "requise"},
+    "sambanova": {"nom": "SambaNova", "base_url": "https://api.sambanova.ai/v1", "defaut": "Meta-Llama-3.3-70B-Instruct", "raisonneur": False, "cle": "requise"},
+    "deepinfra": {"nom": "DeepInfra", "base_url": "https://api.deepinfra.com/v1/openai", "defaut": "meta-llama/Llama-3.3-70B-Instruct", "raisonneur": False, "cle": "requise"},
+    "moonshot": {"nom": "Moonshot (Kimi)", "base_url": "https://api.moonshot.ai/v1", "defaut": "kimi-k2-0905-preview", "raisonneur": False, "cle": "requise"},
+    "zai": {"nom": "Z.ai (GLM)", "base_url": "https://api.z.ai/api/paas/v4", "defaut": "glm-4.6", "raisonneur": True, "cle": "requise"},
+    "alibaba": {"nom": "Alibaba (Qwen, Model Studio)", "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "defaut": "qwen-plus", "raisonneur": False, "cle": "requise"},
     "ollama": {"nom": "Ollama (local)", "base_url": "http://127.0.0.1:11434/v1", "defaut": "qwen2.5:3b", "raisonneur": False, "cle": "aucune"},
     "personnalise": {"nom": "Personnalisé (compatible OpenAI)", "base_url": "", "defaut": "", "raisonneur": False, "cle": "optionnelle"},
 }
