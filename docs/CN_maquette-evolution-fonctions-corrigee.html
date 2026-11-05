@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette · Évolution · Les fonctions (version corrigée)</title>
+<!--
+  VERSION CORRIGÉE de « Les fonctions », à comparer avec CN_maquette-evolution-fonctions-actuelle.html (la page d'aujourd'hui, à l'identique).
+  Mêmes données réelles d'Argos (05-11), mêmes feuilles de style, même vocabulaire simple que la maquette validée (CN_maquette-evolution-simple.html).
+  Ce qui change, point par point :
+   1. une liste qui se filtre et se cherche, triée par ce qu'il y a à gagner ;
+   2. les 56 fonctions jamais appelées sont repliées : elles ne servent à rien ici ;
+   3. un vrai retour après une recherche : ce qui a été essayé, ce que ça a coûté, où trouver le résultat ;
+   4. les cartes « non branché » et l'argumentaire sont retirés de la page (une ligne renvoie vers « Ce qui est prévu ») ;
+   5. le vocabulaire interne (pièce, EC, tombe, lignée, contrat de rejeu, mutateur…) devient des mots simples ; le détail technique reste, replié.
+  Les boutons sont vivants. « Chercher une amélioration » simule une recherche (aucun serveur) : sur planifie.decrire avec un modèle, elle en « trouve » une pour montrer l'écran de réussite.
+-->
+<link rel="stylesheet" href="../interface/CN_style.css">
+<link rel="stylesheet" href="../interface/CN_shell.css">
+<link rel="stylesheet" href="../interface/CN_disposition.css">
+<link rel="stylesheet" href="../interface/CN_habillage.css">
+<style>
+.ev{--e-verre:var(--surface);--e-filet:var(--line);--e-encre:var(--txt-strong);--e-encre2:var(--txt-soft);--e-encre3:var(--txt-muted);--e-doux:var(--ov-06);--e-ok:var(--ok);--e-al:var(--warn);--e-dg:var(--danger);--e-okd:rgba(4,120,87,.11);--e-ald:rgba(180,83,9,.12);--e-dgd:var(--danger-soft,rgba(190,18,60,.1));display:flex;flex-direction:column;gap:14px;color:var(--txt);font-size:13.5px;line-height:1.5}.ev *{box-sizing:border-box}.ev h1,.ev h2,.ev h3{margin:0;font-weight:600}.ev h1{font:600 19px/1.2 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev h2{font:600 12px/1.3 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre2)}.ev .verre{background:var(--e-verre);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--e-filet);border-radius:16px;box-shadow:var(--shadow-glass)}.ev .mono{font-family:ui-monospace,Menlo,Consolas,monospace}.ev .lib{font:600 10.5px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--e-encre3)}.ev .note{font-size:11.5px;color:var(--e-encre3);line-height:1.5}.ev .btn{border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt);border-radius:10px;padding:7px 12px;font:600 12px ui-monospace,Menlo,Consolas,monospace;cursor:pointer}.ev .btn:hover:not([disabled]){border-color:var(--accent)}.ev .btn.prim{background:var(--accent);color:var(--on-accent);border-color:transparent}.ev .btn.dng{color:var(--e-dg);border-color:var(--e-dg)}.ev .btn[disabled]{opacity:.45;cursor:not-allowed}.ev .puce{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 9px;font:600 10.5px ui-monospace,Menlo,Consolas,monospace;background:var(--e-doux);color:var(--accent);white-space:nowrap}.ev .puce.ok{background:var(--e-okd);color:var(--e-ok)}.ev .puce.al{background:var(--e-ald);color:var(--e-al)}.ev .puce.dg{background:var(--e-dgd);color:var(--e-dg)}.ev .puce.mu{background:var(--e-doux);color:var(--e-encre3)}.ev .nb{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.07em;text-transform:uppercase;border:1px dashed var(--e-filet);border-radius:99px;padding:2px 8px;color:var(--e-encre3);white-space:nowrap}.ev .entete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.ev .entete .d{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ev .vues{display:flex;gap:4px;padding:4px;border-radius:12px;width:max-content;max-width:100%}.ev .vues button{border:0;background:transparent;border-radius:9px;padding:7px 16px;font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre2);cursor:pointer}.ev .vues button.on{background:var(--accent);color:var(--on-accent)}.ev .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--e-filet);overflow:hidden}.ev .hero>div{background:var(--e-verre);padding:18px 18px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}.ev .hero .big{font:600 38px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:-.02em;color:var(--accent)}.ev .hero .big.ok{color:var(--e-ok)}.ev .hero .big.mu{color:var(--e-encre3)}.ev .carte{padding:14px;display:flex;flex-direction:column;gap:9px;min-width:0}.ev .large{grid-column:1/-1}.ev .idee{font:600 10px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}.ev .cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:14px}.ev .tete{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.ev .intention{display:flex;gap:8px;flex-wrap:wrap}.ev .intention input{flex:1;min-width:220px;font:13.5px inherit;padding:10px 12px;border-radius:11px;border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt)}.ev .sugg-t{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--e-encre3)}.ev .sugg-t i{width:7px;height:7px;border-radius:50%;background:var(--e-ok);animation:evbat 2s infinite}@keyframes evbat{0%{box-shadow:0 0 0 0 var(--e-ok)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}.ev .pastilles{display:flex;gap:8px;flex-wrap:wrap}.ev .pas{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:14px;padding:8px 12px;max-width:340px;cursor:pointer;animation:event .45s ease both}.ev .pas:hover{border-color:var(--accent)}.ev .pas b{font:600 12.5px inherit}.ev .pas small{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3)}.ev .pas .ty{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}@keyframes event{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}.ev .compile{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.ev .compile>div,.ev .tuile{border:1px solid var(--e-filet);border-radius:12px;padding:10px;background:var(--e-verre);display:flex;flex-direction:column;gap:4px;font-size:12.5px;min-width:0}.ev .piste{display:grid;grid-template-columns:150px 1fr 120px;gap:10px;align-items:center;font:600 11.5px ui-monospace,Menlo,Consolas,monospace}.ev .piste .t{height:22px;border-radius:7px;background:var(--e-filet);position:relative;overflow:hidden}.ev .piste .t i{position:absolute;inset:0 auto 0 0;background:var(--e-doux);border-right:2px solid var(--accent)}.ev .piste .t i.r{background:var(--e-okd);border-color:var(--e-ok);opacity:.7}.ev .chrono{display:flex;flex-direction:column;border-left:2px solid var(--e-filet);margin-left:7px}.ev .chrono>div{position:relative;padding:5px 0 9px 16px;font-size:12.5px}.ev .chrono>div:before{content:'';position:absolute;left:-7px;top:9px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}.ev .chrono .rouge:before{background:var(--e-dg)}.ev .chrono .vert:before{background:var(--e-ok)}.ev .chrono time{font:600 11px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3);margin-right:8px}.ev .mat{display:grid;grid-template-columns:150px repeat(3,1fr);gap:6px;font-size:12px;align-items:center}.ev .mat .c{border-radius:9px;padding:6px 8px;text-align:center;font:600 11.5px ui-monospace,Menlo,Consolas,monospace;background:var(--e-doux);color:var(--accent)}.ev .mat .c.b{background:var(--e-okd);color:var(--e-ok)}.ev .genomes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.ev .genomes>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px;background:var(--e-verre);display:flex;flex-direction:column;gap:4px;font-size:12.5px}.ev .bandeau{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--e-filet);overflow:hidden}.ev .bandeau>div{background:var(--e-verre);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}.ev .bandeau .v{font:600 17px/1.1 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .barre{height:6px;border-radius:99px;background:var(--e-filet);overflow:hidden}.ev .barre i{display:block;height:100%;background:var(--accent)}.ev .trois{display:grid;grid-template-columns:270px minmax(0,1fr) 330px;gap:14px;align-items:start}@media(max-width:1100px){.ev .trois{grid-template-columns:1fr}}.ev .rail{padding:12px;display:flex;flex-direction:column;gap:6px}.ev .cap{border:1px solid transparent;border-radius:12px;padding:9px 10px;text-align:left;background:transparent;color:inherit;display:flex;flex-direction:column;gap:4px;width:100%;cursor:pointer;font:inherit}.ev .cap:hover{background:var(--e-doux)}.ev .cap.sel{background:var(--e-verre);border-color:var(--accent)}.ev .cap .n{font:600 12px ui-monospace,Menlo,Consolas,monospace;word-break:break-all}.ev .cap .s{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--e-encre2)}.ev .centre{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}.ev .onglets{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--e-filet);padding-bottom:8px}.ev .onglets button{border:0;background:transparent;border-radius:9px;padding:6px 11px;font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre2);cursor:pointer}.ev .onglets button.on{background:var(--e-doux);color:var(--accent)}.ev .zone{overflow-x:auto}.ev .cadran{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.ev .cadran>div{border:1px solid var(--e-filet);border-radius:12px;padding:9px;background:var(--e-verre);display:flex;flex-direction:column;gap:3px}.ev .cadran .v{font:600 16px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .gain{color:var(--e-ok)}.ev .analyse{padding:14px;display:flex;flex-direction:column;gap:11px}.ev .preuve{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:12.5px}.ev .preuve .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px ui-monospace,Menlo,Consolas,monospace;background:var(--e-okd);color:var(--e-ok)}.ev .preuve.al .k{background:var(--e-ald);color:var(--e-al)}.ev .preuve.mu .k{background:var(--e-doux);color:var(--e-encre3)}.ev .preuve small{display:block;color:var(--e-encre3);font-size:11.5px}.ev .verdict{border-radius:12px;padding:10px 12px;font:600 12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--e-okd);color:var(--e-ok)}.ev .verdict.al{background:var(--e-ald);color:var(--e-al)}.ev .verdict.dg{background:var(--e-dgd);color:var(--e-dg)}.ev .verdict.mu{background:var(--e-doux);color:var(--e-encre2)}.ev .routage{display:flex;gap:4px;flex-wrap:wrap}.ev .routage button{flex:1;min-width:46px;border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:8px;padding:6px 4px;font:600 11.5px ui-monospace,Menlo,Consolas,monospace;cursor:pointer}.ev .routage button.on{background:var(--accent);color:var(--on-accent);border-color:transparent}.ev .routage button[disabled]{opacity:.45;cursor:not-allowed}.ev .bas{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.ev .ligne{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--e-filet);font-size:12.5px}.ev .ligne:first-of-type{border-top:0}.ev .ligne .g{color:var(--e-encre3);font-size:11.5px}.ev table{border-collapse:collapse;width:100%;font-size:12.5px}.ev th,.ev td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--e-filet);vertical-align:top}.ev th{font:600 10.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre3)}.ev .oui{color:var(--e-ok);font-weight:600}.ev .non{color:var(--e-encre3)}.ev .cons{color:var(--accent);font-weight:600}.ev .preu{border-left:2px solid var(--line-strong);padding-left:10px;font-size:12px;color:var(--e-encre2);line-height:1.5}.ev select,.ev input[type=number],.ev input[type=text]{border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt);border-radius:9px;padding:6px 9px;font:12.5px ui-monospace,Menlo,Consolas,monospace}.ev .lg{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ev .tiroir{position:fixed;inset:0;background:rgba(16,24,40,.38);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;overflow:auto;z-index:50}.ev .tiroir.on{display:flex}.ev .tiroir .verre{background:var(--surface-solid,var(--surface));max-width:980px;width:100%;padding:18px;display:flex;flex-direction:column;gap:12px}.ev .choix{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.ev .opt{border:1.5px solid var(--e-filet);border-radius:12px;padding:11px;background:transparent;color:inherit;text-align:left;display:flex;flex-direction:column;gap:5px;font:inherit}.ev .opt.on{border-color:var(--accent);background:var(--e-doux)}.ev svg text{font-family:ui-monospace,Menlo,Consolas,monospace;fill:var(--e-encre2);font-size:10.5px}
+html,body{margin:0;min-height:100%}
+body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2);color:var(--txt,#1d2b2a)}
+.mq-bandeau{position:sticky;top:0;z-index:50;background:#17413f;color:#e9f5f3;font:12.5px/1.4 system-ui,sans-serif;padding:7px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.mq-bandeau b{color:#fff}
+.mq-cadre{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;padding:18px;align-items:start}
+.mq-menu{position:sticky;top:52px;border-radius:14px;padding:10px;background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.08);backdrop-filter:blur(10px);font-size:13.5px}
+.mq-menu .t{padding:8px 10px;border-radius:9px;display:flex;gap:9px;align-items:center;color:inherit}
+.mq-menu .t.on{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.1);font-weight:600}
+.mq-menu .t.s1{padding-left:26px}.mq-menu .t.s2{padding-left:44px;font-size:12.5px}
+.mq-menu .g{opacity:.65;width:14px;text-align:center}
+.mq-corps{min-width:0}
+@media(max-width:900px){.mq-cadre{grid-template-columns:1fr}.mq-menu{position:static}}
+/* la page corrigée */
+.ev{font-size:14.5px;max-width:none;width:100%;margin:0}
+.ev h1{font-size:24px}
+.ev .titre-p{font:600 14px var(--font-sans,system-ui);color:var(--e-encre2)}
+.ev .stats4{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.ev .stats4>div{padding:14px 16px;display:flex;flex-direction:column;gap:3px}
+.ev .gros{font:600 30px/1.1 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}
+.ev .deux{display:grid;grid-template-columns:340px minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:1000px){.ev .deux{grid-template-columns:1fr}}
+.ev .liste-f{padding:12px;display:flex;flex-direction:column;gap:8px;position:sticky;top:60px;max-height:calc(100vh - 80px)}
+.ev .liste-f .scroll{overflow:auto;display:flex;flex-direction:column;gap:4px;min-height:120px}
+.ev .recherche{width:100%;font:14px var(--font-sans,system-ui)!important;padding:9px 11px!important;border-radius:11px!important}
+.ev .fn{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;text-align:left;border:1px solid transparent;background:transparent;color:inherit;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;width:100%}
+.ev .fn:hover{background:var(--e-doux)}.ev .fn.sel{background:var(--e-verre);border-color:var(--accent)}
+.ev .fn .n{font:600 12.5px ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+.ev .fn .m{grid-column:1/-1;display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--e-encre3)}
+.ev .fn .bar{flex:1;height:5px;border-radius:99px;background:var(--e-filet);overflow:hidden}.ev .fn .bar i{display:block;height:100%;background:var(--accent)}
+.ev .repli{border-top:1px solid var(--e-filet);padding-top:8px}
+.ev .repli summary{cursor:pointer;font:600 12.5px var(--font-sans,system-ui);color:var(--e-encre2);padding:4px 2px}
+.ev .fn.muet .n{font-weight:500;color:var(--e-encre3)}
+.ev .fiche{padding:18px 20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.ev .etat-f{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ev .phrase{font:600 17px/1.4 var(--font-sans,system-ui);color:var(--e-encre)}
+.ev .chiffres{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.ev .chiffres>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px 12px;background:var(--e-verre);display:flex;flex-direction:column;gap:2px}
+.ev .chiffres .v{font:600 20px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}
+.ev .bloc{border:1px solid var(--e-filet);border-radius:14px;padding:14px 16px;background:var(--e-verre);display:flex;flex-direction:column;gap:11px}
+.ev .bloc h3{font:600 16px var(--font-sans,system-ui)}
+.ev .manieres{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.ev .maniere{display:flex;flex-direction:column;gap:5px;text-align:left;border:1.5px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:13px;padding:12px;cursor:pointer;font:inherit}
+.ev .maniere b{font-size:14.5px}.ev .maniere span{font-size:12.5px;color:var(--e-encre2)}.ev .maniere em{font-style:normal;font:600 11.5px ui-monospace,monospace;color:var(--e-encre3)}
+.ev .maniere.sel{border-color:var(--accent);background:var(--e-doux)}
+.ev .essais-l{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ev .essais-l input[type=range]{flex:1;min-width:160px;accent-color:var(--accent)}
+.ev .deroule{display:flex;flex-direction:column;gap:8px}
+.ev .de{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:start;font-size:14px;color:var(--e-encre3)}
+.ev .de.ok{color:var(--e-encre)}.ev .de.cours{color:var(--accent)}.ev .de.ko{color:var(--e-dg)}
+.ev .de .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px ui-monospace,monospace;background:var(--e-doux)}
+.ev .de.ok .k{background:var(--e-okd);color:var(--e-ok)}.ev .de.ko .k{background:var(--e-dgd);color:var(--e-dg)}
+.ev .de small{display:block;color:var(--e-encre3);font-size:12px}
+.ev .de .r{font:600 12.5px ui-monospace,monospace;color:var(--e-encre2);white-space:nowrap}
+.ev .issue{border-radius:12px;padding:12px 14px;font:600 14px/1.45 var(--font-sans,system-ui)}
+.ev .issue.bien{background:var(--e-okd);color:var(--e-ok)}.ev .issue.rien{background:var(--e-ald);color:var(--e-al)}.ev .issue.mal{background:var(--e-dgd);color:var(--e-dg)}
+.ev .issue .lien{display:inline-block;margin-top:6px;font-weight:600;text-decoration:underline;cursor:pointer}
+.ev .onglets button{font-size:13px}
+.ev .hist{display:flex;flex-direction:column;gap:6px}
+.ev .hist .l{display:grid;grid-template-columns:90px 1fr auto;gap:10px;padding:8px 10px;border:1px solid var(--e-filet);border-radius:11px;font-size:13px;align-items:center}
+.ev details.tech summary{cursor:pointer;font:600 13px var(--font-sans,system-ui);color:var(--e-encre2)}
+.ev .prevu{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:11px 14px;border:1px dashed var(--e-filet);border-radius:12px;font-size:13px;color:var(--e-encre2)}
+.ev .prevu a{font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer}
+.ev .sois{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ev .sois button{border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:9px;padding:7px 4px;font:600 12.5px ui-monospace,monospace;cursor:pointer}
+.ev .sois button.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
+</style>
+</head>
+<body>
+<div class="mq-bandeau"><b>Maquette · « Les fonctions » corrigée</b><span>Mêmes données réelles d'Argos du 05-11 · à comparer avec la page actuelle · rien n'est envoyé nulle part</span></div>
+<div class="mq-cadre">
+  <nav class="mq-menu" id="mq-menu" aria-label="Menu d'Évolution"></nav>
+  <main class="mq-corps"><div class="ev" id="ev"></div></main>
+</div>
+<script>
+(function () {
+  // mesurées : nom | appels réels | durée moyenne (ms) | corpus : distincts, appels, réservés, visibles, dorés | valeur espérée (ms) | appels du point en service
+  const MES = `planifie.decrire|46849|0.316|74|18|56|61|14804.3|507
+affichage.disposition|4488|2.75|49|12|37|13|12342|149
+planifie.suivante|5718|0.501|2000|397|1603|14|2864.7|507
+planifie.precedente|5713|0.489|2000|408|1592|14|2793.7|507
+fastpanel.lecture|4557|0.463|2000|385|1615|76|2109.9|70
+jour.tuiles|6316|0.297|23|6|17|22|1875.9|203
+securite.sans_options_cible|5411|0.263|162|32|130|36|1423.1|0
+planifie.derive|5726|0.224|15|2|13|15|1282.6|52
+flotte.duree|3867|0.254|18|2|16|15|982.2|315
+dns.analyser|1970|0.366|2000|389|1611|34|721|21
+affichage.idees|1579|0.408|388|68|320|11|644.2|52
+securite.portee|1782|0.351|19|3|16|14|625.5|0
+dns.normaliser|1220|0.413|41|7|34|31|503.9|10
+fastpanel.audit|620|0.422|349|67|282|35|261.6|6
+memoire.perception_monde|9|28.738|83|13|70|83|258.6|0
+mesures.moteur|87|2.449|231|48|183|144|213.1|0
+vue.verdict.composer|83|2.016|132|32|100|49|167.3|1
+securite.outils_analyse|42|2.464|44|12|32|14|103.5|0
+notes.graphe|89|1.146|24|7|17|24|102|1
+dns.derives|122|0.571|21|6|15|20|69.7|1
+securite.adresses_machine|42|1.578|44|4|40|14|66.3|0
+dns.dom_enregistre|144|0.429|22|4|18|20|61.8|1
+securite.fail2ban|42|1.448|44|11|33|14|60.8|0
+securite.docker_publies|42|1.011|15|5|10|14|42.5|0
+modeles.appels_de|95|0.438|20|6|14|19|41.6|0
+flotte.lire_sortie|36|0.956|89|13|76|53|34.4|3
+salon.destinataires_de|3|8.428|16|6|10|16|25.3|0
+planifie.collisions|6|2.475|83|15|68|77|14.9|0
+planifie.occurrences|6|2.266|16|2|14|14|13.6|0
+planifie.apercu|6|1.815|43|13|30|37|10.9|0
+planifie.destructeur|6|1.643|16|1|15|14|9.9|0
+modeles.messages_ollama|17|0.579|32|4|28|17|9.8|0
+memoire.duree_txt|24|0.342|35|7|28|35|8.2|0
+courrier.utf7_decoder|7|1.023|20|6|14|20|7.2|0
+contacts.signaux|1|5.185|28|5|23|28|5.2|0
+memoire.routage|6|0.827|40|5|35|40|5|0
+planifie.segments|6|0.651|33|11|22|31|3.9|0
+securite.de_confiance|8|0.477|22|5|17|14|3.8|0
+agents.prompt_systeme|6|0.589|29|8|21|23|3.5|0
+agents.ton_agent|6|0.564|24|3|21|24|3.4|0
+agents.coherents|7|0.441|22|2|20|15|3.1|0
+memoire.termes|4|0.771|25|11|14|25|3.1|0
+agents.choix_modele|7|0.405|36|7|29|34|2.8|0
+affichage.suggestions_plan|1|1.746|27|10|17|26|1.7|0
+tailscale.resume|1|1.422|22|2|20|21|1.4|0
+agents.resume_resultat|1|0.602|30|3|27|29|0.6|0
+memoire.json_extraire|1|0.631|26|7|19|26|0.6|0`.split("\n").map((l) => l.split("|"));
+  // muettes (jamais appelées) : nom : distincts, réservés, visibles
+  const MUET = `agenda.ical_lire:43:8:35 agenda.plier:36:9:27 agenda.regle_de:12:3:9 agents.choisir_outils:24:4:20 agents.classer_fiche:32:7:25 agents.planifier_recherche:33:10:23 agents.proposer_promotion:31:4:27 agents.rapport_matin:25:4:21 agents.score_source:28:5:23 bibliotheque.decouper:36:7:29 billetterie.commission:25:7:18 contacts.csv_apparier:17:4:13 contacts.csv_decoder:13:4:9 contacts.csv_fiches:26:5:21 contacts.initiales:24:5:19 contacts.meilleure:19:1:18 contacts.norm_nom:36:6:30 contacts.remplissage:19:5:14 contacts.vcard_ecrire:30:8:22 contacts.vcard_lire:33:10:23 courrier.adresse_parts:15:3:12 courrier.date_iso:14:0:14 courrier.decoder_entete:15:2:13 courrier.entetes:41:12:29 courrier.html_en_texte:23:6:17 courrier.motif_technique:17:6:11 courrier.role_du_dossier:25:11:14 courrier.roles_uniques:18:3:15 courrier.style_sur:14:0:14 dolibarr.completer:14:2:12 dolibarr.egaux:14:2:12 dolibarr.regles_dolibarr:36:6:30 flotte.lire_metriques:26:5:21 ged.media_kind:52:12:40 jour.propre:14:6:8 journal.niveau:31:3:28 journal.signature:33:8:25 memoire.cle_de:36:8:28 memoire.jetons:20:4:16 memoire.question_de:20:2:18 notes.dossier_ok:14:5:9 notes.liens_de:23:5:18 notes.lire_entete:24:8:16 notes.md_vers_html:30:7:23 planifie.boucle:12:1:11 projets.date_ok:13:2:11 projets.glissement:14:3:11 sauvegardes.age_mot:14:3:11 sauvegardes.etat:13:2:11 sensorium.cron_derniere:15:1:14 sensorium.duree_txt:16:1:15 sensorium.fp_formes:123:25:98 sensorium.mogwai_table:21:5:16 sensorium.pente:13:3:10 sensorium.sante:60:15:45 sensorium.sys_formes:176:32:144 tailscale.erreur:36:7:29`.split(" ").map((x) => x.split(":"));
+
+
+  const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const F = [];                                       // les fonctions : mesurées d'abord, par valeur espérée
+  MES.forEach((r) => F.push({ id: r[0], appels: +r[1], ms: +r[2], corpus: +r[3], reserve: +r[4], visible: +r[5], dores: +r[6], valeur: +r[7], muet: false, tombes: r[0] === "affichage.idees" ? 3 : 0 }));
+  MUET.forEach((r) => F.push({ id: r[0], appels: 0, ms: null, corpus: +r[1], reserve: +r[2], visible: +r[3], dores: +r[1], valeur: 0, muet: true, tombes: 0 }));
+  const vmax = Math.max.apply(null, F.map((f) => f.valeur));
+  const fmt = (n) => Number(n).toLocaleString("fr-FR");
+  const dur = (ms) => ms == null ? "—" : (ms < 1 ? ms.toFixed(3) : ms.toFixed(ms < 10 ? 2 : 1)).replace(".", ",") + " ms";
+  const MANIERES = [["gratuit", "Sans modèle", "Des recettes toutes faites, sur ta machine. Rapide, ça ne coûte rien.", "0 jeton"], ["modele", "Avec un modèle", "Un modèle écrit des versions à essayer. Il trouve des idées que les recettes n'ont pas.", "quelques milliers de jetons par essai"], ["les_deux", "Les deux, gratuit d'abord", "Les recettes d'abord ; le modèle ne se sert que si elles ne trouvent rien.", "0 jeton si ça suffit"]];
+  const S = { sel: "planifie.decrire", q: "", maniere: "les_deux", essais: 3, onglet: "essaye", res: null, occupe: false, ouvertMuets: false, demo: false };
+  const racine = document.getElementById("ev");
+
+  function liste() {
+    const q = S.q.trim().toLowerCase(), ok = (f) => !q || f.id.toLowerCase().indexOf(q) >= 0;
+    const m = F.filter((f) => !f.muet && ok(f)), mu = F.filter((f) => f.muet && ok(f));
+    const ligne = (f) => '<button class="fn' + (f.muet ? " muet" : "") + (S.sel === f.id ? " sel" : "") + '" data-f="' + f.id + '"><span class="n">' + esc(f.id) + "</span>" + (f.tombes ? '<span class="puce al">' + f.tombes + " écartée" + (f.tombes > 1 ? "s" : "") + "</span>" : "<span></span>") +
+      '<span class="m">' + (f.muet ? "jamais appelée" : fmt(f.appels) + " appels · " + dur(f.ms) + '<span class="bar"><i style="width:' + Math.max(3, Math.round(100 * f.valeur / vmax)) + '%"></i></span>') + "</span></button>";
+    return '<input class="recherche" id="rech" type="text" placeholder="Chercher une fonction (ex. planifie, dns…)" value="' + esc(S.q) + '">' +
+      '<div class="lib">Où il y a le plus à gagner · ' + m.length + "</div>" +
+      '<div class="scroll">' + (m.map(ligne).join("") || '<div class="note" style="padding:8px">Aucune fonction mesurée ne correspond.</div>') +
+      (mu.length ? '<details class="repli"' + (S.ouvertMuets || q ? " open" : "") + "><summary>" + mu.length + " fonctions pas encore mesurées (jamais appelées)</summary>" + mu.map(ligne).join("") + "</details>" : "") + "</div>";
+  }
+
+  function fiche() {
+    const f = F.find((x) => x.id === S.sel); if (!f) return '<div class="fiche verre"><div class="note">Choisis une fonction dans la liste.</div></div>';
+    const mod = f.id.split(".")[0], ver = { affichage: "0.7.0", planifie: "0.1.4" }[mod] || "0.1.0";
+    const piece = S.demo && f.id === "planifie.decrire";
+    const phrase = f.muet ? "Cette fonction n'a jamais été appelée : il n'y a rien à mesurer, donc rien à améliorer pour l'instant."
+      : piece ? "Une amélioration est à l'essai : elle tourne à côté de l'originale, sans que personne reçoive son résultat."
+      : "Aucune amélioration pour l'instant. Cassandra utilise la version d'origine.";
+    let h = '<div class="fiche verre"><div class="etat-f"><h1 class="mono" style="font-size:20px">' + esc(f.id) + "</h1>" + (piece ? '<span class="puce al">à l’essai</span>' : f.muet ? '<span class="puce mu">pas mesurée</span>' : '<span class="puce ok">version d’origine</span>') + (f.tombes ? '<span class="puce al">' + f.tombes + " version" + (f.tombes > 1 ? "s" : "") + " écartée" + (f.tombes > 1 ? "s" : "") + "</span>" : "") + "</div>" +
+      '<div class="phrase">' + esc(phrase) + "</div>";
+    h += '<div class="chiffres"><div><span class="lib">Temps moyen</span><span class="v">' + dur(f.ms) + '</span><span class="note">par appel</span></div><div><span class="lib">Appelée</span><span class="v">' + fmt(f.appels) + '</span><span class="note">fois, vraiment</span></div><div><span class="lib">À gagner</span><span class="v">' + (f.muet ? "—" : (f.valeur >= 1000 ? fmt(Math.round(f.valeur / 1000)) + " s" : Math.round(f.valeur) + " ms")) + '</span><span class="note">de temps cumulé, au mieux</span></div><div><span class="lib">Exemples gardés</span><span class="v">' + fmt(f.corpus) + '</span><span class="note">pour vérifier une version</span></div></div>';
+    if (piece) {
+      h += '<div class="bloc"><h3>Sa mise en service</h3><div class="note">Elle sert d’abord personne (à côté), puis une part grandissante du trafic. À chaque étape tu peux revenir à l’originale.</div><div class="sois">' + [0, 10, 50, 100].map((p) => '<button class="' + (S.part === p || (S.part == null && p === 0) ? "on" : "") + '" data-part="' + p + '">' + p + " %</button>").join("") + '</div><div class="lg"><button class="btn dng" data-a="retour">Retirer l’amélioration</button><button class="btn" data-a="geler">Ne plus y toucher</button></div></div>';
+    }
+    h += '<div class="bloc"><h3>Chercher une amélioration</h3><div class="note">Cassandra essaie d’écrire une version plus rapide de cette fonction. Elle ne la garde que si elle rend exactement le même résultat sur les ' + fmt(f.corpus) + " exemples réels gardés, et qu’elle est vraiment plus rapide. Sinon, rien n’est changé.</div>" +
+      '<div class="manieres">' + MANIERES.map((m) => '<button class="maniere' + (S.maniere === m[0] ? " sel" : "") + '" data-m="' + m[0] + '"><b>' + m[1] + "</b><span>" + m[2] + "</span><em>" + m[3] + "</em></button>").join("") + "</div>" +
+      '<div class="essais-l"><span>Combien de versions essayer ?</span><input type="range" id="ess" min="1" max="10" value="' + S.essais + '"><b class="mono" id="essv">' + S.essais + "</b></div>" +
+      '<div class="lg"><button class="btn prim" data-a="chercher"' + (S.occupe || f.muet ? " disabled" : "") + ">" + (S.occupe ? "Recherche en cours…" : "Chercher une amélioration") + "</button>" + (f.muet ? '<span class="note">Impossible : cette fonction n’a jamais servi.</span>' : "") + "</div>" + resultat() + "</div>";
+    h += '<div class="bloc"><div class="onglets">' + [["essaye", "Ce qui a été essayé"], ["exemples", "Exemples de vérification"]].map((o) => '<button class="' + (S.onglet === o[0] ? "on" : "") + '" data-o="' + o[0] + '">' + o[1] + "</button>").join("") + "</div>" + onglet(f) +
+      '<details class="tech"><summary>Détails techniques</summary><dl class="cle" style="margin-top:8px"><dt>Version du module</dt><dd class="mono">' + ver + "</dd><dt>Contrat</dt><dd class=\"mono\">1.0 (python)</dd><dt>Isolation</dt><dd>processus à part, sans bac</dd><dt>Exemples</dt><dd>" + f.visible + " vus · " + f.reserve + " réservés · " + f.dores + " dorés</dd></dl></details></div>";
+    h += '<div class="prevu"><span>Ce qui n’est pas encore construit (désaccord entre agents, modules créés à partir des demandes, échange entre instances…) est maintenant dans <a data-vers="capot.vision">Ce qui est prévu</a>.</span></div></div>';
+    return h;
+  }
+  function onglet(f) {
+    if (S.onglet === "exemples") return '<div class="note">Cassandra rejoue chaque version sur de vrais appels gardés du journal. Un cinquième est mis de côté : le juge seul le voit, jamais celui qui écrit.</div><div class="chiffres"><div><span class="lib">Vus par le chercheur</span><span class="v">' + f.visible + '</span></div><div><span class="lib">Mis de côté</span><span class="v">' + f.reserve + '</span></div><div><span class="lib">Exemples « d’or »</span><span class="v">' + f.dores + '</span><span class="note">cas difficiles toujours rejoués</span></div></div>';
+    const lignes = (S.demo && f.id === "planifie.decrire" ? [["aujourd’hui", "Version 1 · à l’essai", "−18 % de temps", "ok"]] : []).concat(f.tombes ? [["avant-hier", "Version écartée", "résultat différent sur 1 exemple", "ko"], ["avant-hier", "Version écartée", "plus lente que l’originale", "ko"], ["avant-hier", "Version écartée", "résultat différent sur 3 exemples", "ko"]] : []);
+    if (!lignes.length) return '<div class="note">Rien n’a encore été gardé pour cette fonction. Les essais sans résultat n’apparaissent que dans « Carnet » (Sous le capot).</div>';
+    return '<div class="hist">' + lignes.map((l) => '<div class="l"><span class="note">' + l[0] + "</span><span>" + l[1] + '</span><span class="puce ' + (l[3] === "ok" ? "ok" : "dg") + '">' + l[2] + "</span></div>").join("") + '</div><div class="note">Une version écartée n’est jamais reproposée : Cassandra en garde l’empreinte.</div>';
+  }
+  function resultat() {
+    const r = S.res; if (!r) return "";
+    let h = '<div class="deroule">';
+    r.etapes.forEach((e) => { h += '<div class="de ' + e.etat + '"><span class="k">' + (e.etat === "ok" ? "✓" : e.etat === "ko" ? "✕" : "…") + "</span><span>" + esc(e.t) + (e.s ? "<small>" + esc(e.s) + "</small>" : "") + '</span><span class="r">' + esc(e.r || "") + "</span></div>"; });
+    h += "</div>";
+    if (r.fini) h += '<div class="issue ' + (r.trouve ? "bien" : "rien") + '">' + (r.trouve ? "Une amélioration a été trouvée : −18 % de temps, résultat identique sur tous les exemples. Elle tourne à l’essai, à côté de l’originale." + ' <br><a class="lien" data-vers="amelio.essai">La voir dans Améliorations →</a>' : "Aucune version n’est à la fois identique à l’originale et plus rapide. Rien n’a été changé." + "<br><small style=\"font-weight:500\">Ce n’est pas une panne : certaines fonctions sont déjà assez rapides. Tu peux essayer une autre manière, ou plus de versions.</small>") + "</div>";
+    h += r.fini ? '<div class="note">Coût de cette recherche : ' + fmt(r.jetons) + " jeton" + (r.jetons > 1 ? "s" : "") + " · " + r.duree + ' s · propositions du jour : ' + r.jour + " sur 60.</div>" : "";
+    return h;
+  }
+
+  function dessiner() {
+    const fa = F.filter((f) => !f.muet).length;
+    racine.innerHTML = '<div class="entete"><div><h1>Les fonctions</h1><div class="note" style="font-size:13.5px">Les fonctions de Cassandra qu’elle peut rendre plus rapides, et ce qu’on a déjà essayé dessus.</div></div></div>' +
+      '<div class="stats4"><div class="verre"><span class="lib">Fonctions suivies</span><span class="gros">' + F.length + '</span><span class="note">' + fa + " mesurées, " + (F.length - fa) + " jamais appelées</span></div>" +
+      '<div class="verre"><span class="lib">Améliorations en service</span><span class="gros">' + (S.demo ? 1 : 0) + '</span><span class="note">' + (S.demo ? "à l’essai, à côté de l’originale" : "la version d’origine sert partout") + "</span></div>" +
+      '<div class="verre"><span class="lib">Essayé aujourd’hui</span><span class="gros">' + jour() + ' <span style="font-size:15px;color:var(--e-encre3)">/ 60</span></span><span class="note">recherches lancées</span></div>' +
+      '<div class="verre"><span class="lib">Versions écartées</span><span class="gros">3</span><span class="note">jamais reproposées</span></div></div>' +
+      '<div class="deux"><div class="liste-f verre">' + liste() + "</div>" + fiche() + "</div>";
+    lier();
+  }
+  let _jour = 26; const jour = () => _jour;
+
+  function lancer() {
+    const f = F.find((x) => x.id === S.sel); if (!f || S.occupe) return;
+    const avecModele = S.maniere !== "gratuit", n = S.essais, trouve = avecModele && f.id === "planifie.decrire" && !S.demo;
+    S.occupe = true; _jour++;
+    const jetons = avecModele ? (S.maniere === "modele" || !trouve ? 5200 * n : 5200 * 2) : 0;
+    const etapes = [{ etat: "cours", t: "Je prépare les " + fmt(f.corpus) + " exemples de vérification", r: "" }];
+    S.res = { etapes, fini: false }; dessiner();
+    const suite = [
+      () => { etapes[0] = { etat: "ok", t: "Exemples prêts : " + fmt(f.corpus) + " (" + f.reserve + " mis de côté pour le juge)", r: "" }; etapes.push({ etat: "cours", t: S.maniere === "gratuit" ? "J’essaie les recettes toutes faites" : "Je demande des idées au modèle", r: "" }); },
+      () => { etapes[1] = { etat: "ok", t: S.maniere === "gratuit" ? "Recettes essayées" : "Le modèle a écrit " + n + " version" + (n > 1 ? "s" : "") + " à essayer", s: avecModele ? "≈ " + fmt(jetons) + " jetons dépensés" : "aucun jeton dépensé", r: avecModele ? fmt(jetons) + " jetons" : "gratuit" }; etapes.push({ etat: "cours", t: "Je vérifie chaque version : même résultat que l’originale ?", r: "" }); },
+      () => { etapes[2] = trouve ? { etat: "ok", t: "Une version rend exactement le même résultat sur tous les exemples", s: "les autres sont écartées et ne seront plus reproposées", r: "1 sur " + n } : { etat: "ko", t: "Aucune version ne rend exactement le même résultat tout en allant plus vite", s: "elles ont été comparées une à une", r: "0 sur " + n }; etapes.push({ etat: "cours", t: "Je mesure la vitesse sur les exemples mis de côté", r: "" }); },
+      () => { etapes[3] = trouve ? { etat: "ok", t: "Elle est plus rapide, et ça tient sur les exemples jamais vus", r: "−18 %" } : { etat: "ko", t: "Pas de gain mesuré", r: "—" }; S.res = { etapes, fini: true, trouve, jetons: jetons, duree: (avecModele ? 41 : 1.2), jour: _jour }; S.occupe = false; if (trouve) S.demo = true; dessiner(); },
+    ];
+    let i = 0; const pas = () => { if (i >= suite.length) return; suite[i++](); if (i < suite.length) { dessiner(); setTimeout(pas, 700); } };
+    setTimeout(pas, 600);
+  }
+
+  function lier() {
+    racine.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => { S.sel = b.dataset.f; S.res = null; dessiner(); }));
+    const r = racine.querySelector("#rech"); if (r) r.addEventListener("input", () => { S.q = r.value; dessiner(); const n = racine.querySelector("#rech"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
+    racine.querySelectorAll("[data-m]").forEach((b) => b.addEventListener("click", () => { S.maniere = b.dataset.m; dessiner(); }));
+    const e = racine.querySelector("#ess"); if (e) e.addEventListener("input", () => { S.essais = +e.value; racine.querySelector("#essv").textContent = e.value; });
+    racine.querySelectorAll("[data-o]").forEach((b) => b.addEventListener("click", () => { S.onglet = b.dataset.o; dessiner(); }));
+    racine.querySelectorAll("[data-part]").forEach((b) => b.addEventListener("click", () => { S.part = +b.dataset.part; dessiner(); }));
+    racine.querySelectorAll("[data-a]").forEach((b) => b.addEventListener("click", () => { const a = b.dataset.a; if (a === "chercher") lancer(); if (a === "retour") { S.demo = false; S.res = null; dessiner(); } if (a === "geler") alert("Maquette : cette fonction ne sera plus modifiée par Cassandra."); }));
+    racine.querySelectorAll("[data-vers]").forEach((b) => b.addEventListener("click", () => alert("Maquette : ici, on ouvrirait « " + b.dataset.vers + " » dans le menu de gauche.")));
+    const d = racine.querySelector("details.repli"); if (d) d.addEventListener("toggle", () => { S.ouvertMuets = d.open; });
+  }
+
+  const MENU = [["Évolution", 0, "⚘"], ["Aujourd’hui", 1, "☼"], ["Améliorations", 1, "↗"], ["Réglages", 1, "◈"], ["Consignes et seuils", 1, "✎"], ["Sous le capot", 1, "⚙"], ["Les chercheurs", 2, "⊙"], ["Les fonctions", 2, "ƒ"], ["Les comparer", 2, "⇄"], ["Installer un chercheur", 2, "⤓"], ["Filet de sécurité", 2, "⛨"], ["Carnet", 2, "▤"], ["Versions écartées", 2, "⊘"], ["Ce qui est prévu", 2, "✦"], ["Vocabulaire", 2, "Aa"]];
+  document.getElementById("mq-menu").innerHTML = MENU.map((m) => '<div class="t s' + m[1] + (m[0] === "Les fonctions" ? " on" : "") + '"><span class="g">' + m[2] + "</span>" + m[0] + "</div>").join("");
+  dessiner();
+})();
+</script>
+</body>
+</html>
