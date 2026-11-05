@@ -13,6 +13,7 @@
    2. l'ordre, l'interrupteur et ce que chaque étage a rapporté sont sur la MÊME ligne (avant : trois endroits, et deux façons d'éteindre) ;
    3. un tableau « Ce que chacun a rapporté » : essais, améliorations trouvées, jetons, jetons par amélioration, plafond du jour posé sur place ;
    4. le parcours d'une recherche est dit en une phrase, avec son coût mesuré ;
+   5c. au-delà de 4 méthodes, l'ordre passe en lignes compactes (une ligne par méthode, détail au clic, « Tout déplier ») ;
    5b. prêt pour les chercheurs externes : sélecteur qui devient liste au-delà de 4, pastille « externe », provenance et empreinte, retrait avec confirmation, état « refusé », coût par chercheur (boutons de démonstration en haut) ;
    5. « Installation » et « Relais de modèles » ne sont plus des onglets ici : deux boutons en haut à droite (Choisir les modèles, + Ajouter un chercheur) ;
    6. le détail technique devient une FICHE par chercheur, avec un sélecteur (Orfan, Frugal 2, Évolutif) : identité, chiffres, ses méthodes, ses vérifications, ses derniers appels ;
@@ -84,7 +85,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
 .ev .preuves-m{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .ev .appels{display:flex;flex-direction:column;gap:4px;margin-top:8px;font:12px ui-monospace,Menlo,Consolas,monospace}
 .ev .appels div{display:grid;grid-template-columns:70px 1fr auto;gap:10px;padding:5px 8px;border-radius:8px;background:var(--e-doux)}
-.ev .msg{font-size:13px;color:var(--e-ok);min-height:18px}.ev .etage.refus{border-color:var(--e-dg);border-style:dashed}.ev .alerte{border-radius:12px;padding:11px 14px;background:var(--e-dgd);color:var(--e-dg);font-size:13.5px;line-height:1.5}.ev select[data-fichesel]{font:600 13px var(--font-sans,system-ui);padding:7px 10px;border-radius:10px}.ev .segs{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--e-doux);flex-wrap:wrap}.ev .seg{border:0;background:transparent;border-radius:9px;padding:7px 14px;font:600 13px var(--font-sans,system-ui);color:var(--e-encre2);cursor:pointer}.ev .seg.on{background:var(--accent);color:var(--on-accent)}.ev .fiche-t{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}.ev .fiche-t .act{display:flex;gap:6px;flex-wrap:wrap}.ev .chiffres4{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}.ev .chiffres4>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px 12px;background:var(--e-verre);display:flex;flex-direction:column;gap:2px}.ev .chiffres4 .v{font:600 20px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .meth{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--e-filet);border-radius:11px;background:var(--e-verre);font-size:13.5px}.ev .meth .rg{font:700 13px ui-monospace,monospace;color:var(--accent);width:18px}
+.ev .msg{font-size:13px;color:var(--e-ok);min-height:18px}.ev .ordre-l{display:flex;flex-direction:column;gap:8px}.ev .etage.dense{grid-template-columns:28px minmax(0,1fr) auto auto;padding:7px 10px;gap:4px 10px;border-radius:12px}.ev .etage.dense .nom-c{display:flex;gap:8px;align-items:center;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;text-align:left;padding:4px 0;min-width:0}.ev .etage.dense .nom-c b{font-size:14px}.ev .etage.dense .chev{color:var(--e-encre3);font-size:12px}.ev .puces-c{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.ev .etage.dense .fl{width:28px;height:28px}.ev .etage.dense .detail-c{grid-column:2/-1;display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--e-encre2);padding:2px 0 4px}.ev .etage.refus{border-color:var(--e-dg);border-style:dashed}.ev .alerte{border-radius:12px;padding:11px 14px;background:var(--e-dgd);color:var(--e-dg);font-size:13.5px;line-height:1.5}.ev select[data-fichesel]{font:600 13px var(--font-sans,system-ui);padding:7px 10px;border-radius:10px}.ev .segs{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--e-doux);flex-wrap:wrap}.ev .seg{border:0;background:transparent;border-radius:9px;padding:7px 14px;font:600 13px var(--font-sans,system-ui);color:var(--e-encre2);cursor:pointer}.ev .seg.on{background:var(--accent);color:var(--on-accent)}.ev .fiche-t{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}.ev .fiche-t .act{display:flex;gap:6px;flex-wrap:wrap}.ev .chiffres4{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}.ev .chiffres4>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px 12px;background:var(--e-verre);display:flex;flex-direction:column;gap:2px}.ev .chiffres4 .v{font:600 20px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .meth{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--e-filet);border-radius:11px;background:var(--e-verre);font-size:13.5px}.ev .meth .rg{font:700 13px ui-monospace,monospace;color:var(--accent);width:18px}
 </style>
 </head>
 <body>
@@ -118,7 +119,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
   ];
   const BUDGET = { mois: 2000000, depense: 189000 }, PROP = { fait: 36, plafond: 60 };
   const APPELS = [["orfan", "il y a 3 min", "gemini-2.5-flash", "5 330"], ["orfan", "il y a 9 min", "gemini-2.5-flash", "5 285"], ["evolutif", "hier", "gemini-2.5-flash", "2 280"], ["evolutif", "hier", "gemini-2.5-flash", "2 285"], ["orfan", "il y a 21 min", "gemini-2.5-flash", "7 855"]];
-  const S = { msg: "", fiche: "orfan", retrait: "" };
+  const S = { msg: "", fiche: "orfan", retrait: "", ouv: {} };
   const SNAP = JSON.stringify({ M: M, E: ETAGES });
   const ids = () => Object.keys(M);
   const tot = (k) => ids().reduce((a, i) => a + (M[i][k] || 0), 0);
@@ -178,9 +179,18 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     lier();
   }
   function blocOrdre() {
-    return '<div class="verre bloc"><h3>Dans quel ordre ils essaient</h3><div class="note">Le gratuit d’abord. Change l’ordre avec les flèches, éteins avec l’interrupteur : un chercheur éteint saute son tour sans rien perdre de ce qu’il avait en cours.</div>' +
-      ETAGES.map((e, i) => { const rf = refuse(e.m); return '<div class="etage' + (e.on && !rf ? "" : " off") + (rf ? " refus" : "") + '"><span class="rg">' + (i + 1) + '</span><div class="nom"><b>' + esc(e.nom) + "</b><span>" + esc(e.ce) + '</span></div><div class="act"><button class="fl" data-h="' + i + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Monter">↑</button><button class="fl" data-b="' + i + '"' + (i === ETAGES.length - 1 ? " disabled" : "") + ' aria-label="Descendre">↓</button><button class="inter2' + (e.on && !rf ? " on" : "") + '" data-i="' + i + '"' + (rf ? " disabled" : "") + ' role="switch" aria-checked="' + (e.on && !rf) + '" aria-label="' + esc(e.nom) + '"></button></div>' +
-        '<div class="ligne2"><span class="puce ' + e.cc + '">' + e.cout + "</span>" + (M[e.m].externe ? '<span class="puce al">externe</span>' : "") + "<span>" + ligneStat(e) + "</span></div></div>"; }).join("") +
+    const dense = ETAGES.length > 4;                       // au-delà de 4, une ligne par méthode ; le détail se déplie au clic
+    const ouvert = (e) => !dense || S.ouv[e.id];
+    const ligne = (e, i) => {
+      const rf = refuse(e.m), off = !(e.on && !rf);
+      const fleches = '<button class="fl" data-h="' + i + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Monter">↑</button><button class="fl" data-b="' + i + '"' + (i === ETAGES.length - 1 ? " disabled" : "") + ' aria-label="Descendre">↓</button><button class="inter2' + (off ? "" : " on") + '" data-i="' + i + '"' + (rf ? " disabled" : "") + ' role="switch" aria-checked="' + (!off) + '" aria-label="' + esc(e.nom) + '"></button>';
+      const puces = '<span class="puce ' + e.cc + '">' + e.cout + "</span>" + (M[e.m].externe ? '<span class="puce al">externe</span>' : "") + (rf ? '<span class="puce dg">refusé</span>' : "");
+      if (!dense) return '<div class="etage' + (off ? " off" : "") + (rf ? " refus" : "") + '"><span class="rg">' + (i + 1) + '</span><div class="nom"><b>' + esc(e.nom) + "</b><span>" + esc(e.ce) + '</span></div><div class="act">' + fleches + '</div><div class="ligne2">' + puces + "<span>" + ligneStat(e) + "</span></div></div>";
+      return '<div class="etage dense' + (off ? " off" : "") + (rf ? " refus" : "") + (ouvert(e) ? " ouvert" : "") + '"><span class="rg">' + (i + 1) + '</span><button class="nom-c" data-ouv="' + esc(e.id) + '" aria-expanded="' + !!ouvert(e) + '"><b>' + esc(e.nom) + '</b><span class="chev">' + (ouvert(e) ? "▾" : "▸") + '</span></button><div class="puces-c">' + puces + '</div><div class="act">' + fleches + "</div>" +
+        (ouvert(e) ? '<div class="detail-c"><span>' + esc(e.ce) + "</span><span>" + ligneStat(e) + "</span></div>" : "") + "</div>";
+    };
+    return '<div class="verre bloc"><div class="tete"><h3>Dans quel ordre ils essaient</h3>' + (dense ? '<button class="btn" data-ouv-tout="' + (Object.keys(S.ouv).length === ETAGES.length ? "non" : "oui") + '">' + (Object.keys(S.ouv).length === ETAGES.length ? "Tout replier" : "Tout déplier") + "</button>" : "") + '</div><div class="note">Le gratuit d’abord. Change l’ordre avec les flèches, éteins avec l’interrupteur : un chercheur éteint saute son tour sans rien perdre de ce qu’il avait en cours.</div>' +
+      '<div class="ordre-l">' + ETAGES.map(ligne).join("") + "</div>" +
       '<div class="parcours">' + parcours() + "</div></div>";
   }
   function blocRegles() {
@@ -214,6 +224,8 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     racine.querySelectorAll("[data-p]").forEach((i) => i.addEventListener("change", () => { M[i.dataset.p].plafond = +i.value || 0; S.msg = M[i.dataset.p].nom + " : " + (+i.value ? "plafond de " + fmt(+i.value) + " jetons par jour posé." : "plus de plafond."); dessiner(); }));
     racine.querySelectorAll("[data-fiche]").forEach((b) => b.addEventListener("click", () => { S.fiche = b.dataset.fiche; S.retrait = ""; dessiner(); }));
     racine.querySelectorAll("[data-fichesel]").forEach((x) => x.addEventListener("change", () => { S.fiche = x.value; S.retrait = ""; dessiner(); }));
+    racine.querySelectorAll("[data-ouv]").forEach((b) => b.addEventListener("click", () => { const k = b.dataset.ouv; if (S.ouv[k]) delete S.ouv[k]; else S.ouv[k] = 1; dessiner(); }));
+    racine.querySelectorAll("[data-ouv-tout]").forEach((b) => b.addEventListener("click", () => { if (b.dataset.ouvTout === "oui") ETAGES.forEach((e) => { S.ouv[e.id] = 1; }); else S.ouv = {}; dessiner(); }));
     racine.querySelectorAll("[data-retirer]").forEach((b) => b.addEventListener("click", () => { S.retrait = b.dataset.retirer; dessiner(); }));
     racine.querySelectorAll("[data-annuler]").forEach((b) => b.addEventListener("click", () => { S.retrait = ""; dessiner(); }));
     racine.querySelectorAll("[data-retirer-ok]").forEach((b) => b.addEventListener("click", () => { const id = b.dataset.retirerOk; const nom = M[id].nom; delete M[id]; ETAGES = ETAGES.filter((e) => e.m !== id); S.retrait = ""; S.msg = nom + " retiré."; dessiner(); }));
@@ -221,7 +233,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
   }
   let nExt = 0;
   function ajouterExterne(ref) {
-    nExt++; const id = "ext" + nExt, nom = ref ? "Mutagène (externe)" : "Sculpteur (externe)";
+    nExt++; const id = "ext" + nExt, nom = (ref ? "Mutagène " : "Sculpteur ") + nExt + " (externe)";
     M[id] = { nom: nom, externe: true, origine: "catalogue des chercheurs · paquet épinglé par empreinte", empreinte: ref ? "sha256:4be1…c902" : "sha256:9f3c…a71d", statut: ref ? "refuse" : "ok", raison: ref ? "L’empreinte du paquet ne correspond pas à celle du catalogue scellé." : "", essais: 0, trouvees: 0, jetons: 0, appels: 0, jour: { jetons: 0, essais: 0 }, refus: 0, plafond: 0, actif: !ref, source: ref ? "paquet « mutagene » · version 0.3" : "paquet « sculpteur » · version 1.2", genre: "externe", proc: "processus à part, dans la cage", verifs: ref ? [1, 1, 0, 0, 0, 0] : [1, 1, 0, 1, 0, 0] };
     ETAGES.push({ id: id, m: id, nom: nom, ce: "Chercheur installé depuis le catalogue scellé. Il cherche à son tour, après les autres.", cout: "Coût pas encore mesuré", cc: "al", on: !ref });
     S.fiche = id; S.retrait = ""; dessiner();
