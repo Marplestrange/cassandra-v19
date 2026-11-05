@@ -1,5 +1,5 @@
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- TITRE      : Évolutif et le sens : propositions à débattre -->
+<!-- TITRE      : Sedal et le sens : propositions à débattre -->
 <!-- LICENCE    : AGPL-3.0 -->
 <!-- AUTEUR     : Atek Drisse -->
 <!-- GIT        : github.com/Marplestrange -->
@@ -9,13 +9,13 @@
 <!-- VERSION CN : 0.1.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
-<!-- RÔLE       : Propositions concrètes pour mettre le sens (multilingual-e5-large) au service du moteur Évolutif, éprouvées par des mesures réelles, classées, avec un plan en étapes. -->
+<!-- RÔLE       : Propositions concrètes pour mettre le sens (multilingual-e5-large) au service du moteur Sedal, éprouvées par des mesures réelles, classées, avec un plan en étapes. -->
 <!-- MÉTHODE    : on part de ce que fait déjà OpenEvolve (docs/CN_OPENEVOLVE-LECTURE.md) et de ce que fait déjà notre code ; chaque idée dit ce qui est mesuré et ce qui reste une hypothèse. -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ecd253 ▼▼▼ -->
-# Évolutif et le sens : propositions à débattre
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=b669df ▼▼▼ -->
+# Sedal et le sens : propositions à débattre
 
-Statut : 04-11-2026, après mesures. **Rien n'est construit dans le dépôt.** Ce document propose, Drisse tranche. Il s'appuie sur `docs/CN_OPENEVOLVE-LECTURE.md` et sur la lecture de notre code : `orfan/CN_evolutif.py`, `orfan/CN_orfan.py`, `orfan/CN_moteur_hote.py`, `noyau/CN_moteurs.py`, `noyau/CN_evolution.py`, `noyau/CN_evaluateur.py`, `noyau/CN_encodage.py`, `modules/bibliotheque/CN_module.py`, `docs/CN_FRUGALEVO.md`.
+Statut : 04-11-2026, après mesures. **Rien n'est construit dans le dépôt.** Ce document propose, Drisse tranche. Il s'appuie sur `docs/CN_OPENEVOLVE-LECTURE.md` et sur la lecture de notre code : `orfan/CN_sedal.py`, `orfan/CN_orfan.py`, `orfan/CN_moteur_hote.py`, `noyau/CN_moteurs.py`, `noyau/CN_evolution.py`, `noyau/CN_evaluateur.py`, `noyau/CN_encodage.py`, `modules/bibliotheque/CN_module.py`, `docs/CN_FRUGALEVO.md`.
 
 ## Ce qu'il faut retenir en dix lignes
 
@@ -24,7 +24,7 @@ Statut : 04-11-2026, après mesures. **Rien n'est construit dans le dépôt.** C
 3. **Il ne sait pas classer des idées en familles** (exactitude 60 % sur 8 familles ; aire ROC 0,66).
 4. **Il retrouve mal une astuce à partir d'un bout de code** : 34 % au premier rang (hasard : 7 %), alors qu'un détecteur d'arbre syntaxique est exact pour ces cas.
 5. **Le vrai gisement est ailleurs : nos modèles se répètent, et le dire au modèle suffit à l'arrêter.** Sur 4 fonctions réelles, 3 échantillons chacun (même prompt) : 3 fonctions sur 4 ont rendu **la même idée trois fois** ; la 4ᵉ, deux fois sur trois (sur les 8 échantillons n° 2 et 3, 7 répétaient l'idée du premier). Quand on ajoute au prompt « idée déjà essayée : … », **les 8 échantillons suivants ont tous changé d'idée** (une seule avec un recouvrement partiel). Cela ne coûte aucun encodage.
-6. **Le moteur Évolutif ignore les tombes** (il ne les sème pas dans son ensemble `vus`) : une variante déjà morte peut occuper l'un des 3 créneaux envoyés au juge. Et le prompt ne donne au modèle que le **nombre** de tombes, jamais leur contenu.
+6. **Le moteur Sedal ignore les tombes** (il ne les sème pas dans son ensemble `vus`) : une variante déjà morte peut occuper l'un des 3 créneaux envoyés au juge. Et le prompt ne donne au modèle que le **nombre** de tombes, jamais leur contenu.
 7. **Les 5 recettes gratuites ne s'appliquent à aucune des 98 références réelles** de la maison : la première étape de la cascade n'apporte rien sur le code actuel ; la dépense est tout entière dans le modèle.
 8. **Coût mesuré** : une idée (une phrase) = 0,27 s ; un code de 15 lignes = 1,0 s ; 36 des 98 fichiers de référence dépassent les 512 jetons que le modèle lit (le reste est coupé). Le modèle, une fois chargé, occupe 2,7 à 2,9 Go.
 9. **Ce que je recommande** : d'abord ce qui ne demande pas e5 (donner le contenu des tombes et des idées déjà tentées au modèle, semer les tombes dans `vus`, empreinte d'arbre normalisée), puis un **guichet d'idées** (phrases seulement, jamais le code), limité au même point. On abandonne l'encodage du code et les familles par prototypes.
@@ -114,9 +114,9 @@ Statut : 04-11-2026, après mesures. **Rien n'est construit dans le dépôt.** C
 ## 1. Ce que la lecture du code établit
 
 1. **Le modèle ne reçoit des tombes qu'un nombre.** `noyau/CN_evolution.py` (`_juger`) passe `contexte["tombes"]`, une liste d'empreintes ; `orfan/CN_orfan.py:construire_prompt` et `orfan/CN_frugal.py` n'en tirent que « N variante(s) ont DÉJÀ échoué ». La table `tombes(gid, ast, raison, ts)` ne garde ni le texte de la variante ni son idée.
-2. **Évolutif ne sème pas les tombes** (`vus = {self._cle(source)}` seulement, `orfan/CN_evolutif.py`). Le juge les écarte ensuite (`deja_vue`), mais après que `candidats[:budget]` les a comptées parmi les 3 créneaux.
+2. **Sedal ne sème pas les tombes** (`vus = {self._cle(source)}` seulement, `orfan/CN_sedal.py`). Le juge les écarte ensuite (`deja_vue`), mais après que `candidats[:budget]` les a comptées parmi les 3 créneaux.
 3. **Les tombes ne reconnaissent que l'identique** (`empreinte_ast`, l'arbre syntaxique brut).
-4. Évolutif : 2 générations, 2 parents, 3 sorties, niches de `lignes // 4`. Le juge n'évalue que `budget` candidats : **la dépense à réduire, ce sont les jetons du modèle** (relais `CN_moteurs.MoteurProcessus`), pas le calcul du juge.
+4. Sedal : 2 générations, 2 parents, 3 sorties, niches de `lignes // 4`. Le juge n'évalue que `budget` candidats : **la dépense à réduire, ce sont les jetons du modèle** (relais `CN_moteurs.MoteurProcessus`), pas le calcul du juge.
 5. Le moteur tourne dans une cage sans réseau et parle au serveur par lignes JSON (`CN_moteur_hote.py`, `{"op":"modele"}`) ; rien n'y encode.
 6. 52 points d'évolution seulement (`docs/CN_EVOLUTION.md` § 7 ter) : toute idée qui « apprend du passé » démarre avec très peu de données.
 7. Décision de Drisse (04-11) : **e5-large est résident, chargé à l'installation de Cassandra, et sert aussi à la mémoire.** Le coût mémoire (2,7–2,9 Go) est donc déjà payé : seul le temps de calcul compte pour le guichet, sur une machine partagée avec la mémoire.
@@ -141,7 +141,7 @@ serveur -> moteur  {"ok":true,"voisins":[[{"id":"t41","cos":0.93,"etat":"morte|t
 
 - **Il ne prend que des phrases, pas du code** (mesure § 0.2 : le code ne sert à rien ici, et coûte 1 à 2,5 s). Une phrase = 0,27 s.
 - **Il rend des voisins (identifiant, cosinus, état, raison), jamais des vecteurs.** L'ensemble de comparaison (les idées de CE point) reste côté serveur, cloisonné ; les vecteurs sont gardés en base (1 024 réels = 4 Ko par idée).
-- **Côté serveur** : `noyau/CN_moteurs.py`, la boucle de `MoteurProcessus.proposer` traite `op == "modele"` ; on y ajoute `op == "sens"` (appel à `noyau.CN_encodage.service().encoder(textes, "query")`). **Côté cage** : `orfan/CN_moteur_hote.py` ajoute à `modele()` une fonction jumelle `sens()`, passée au moteur en paramètre optionnel (`MoteurEvolutif(orfan, modele, sens=None)`).
+- **Côté serveur** : `noyau/CN_moteurs.py`, la boucle de `MoteurProcessus.proposer` traite `op == "modele"` ; on y ajoute `op == "sens"` (appel à `noyau.CN_encodage.service().encoder(textes, "query")`). **Côté cage** : `orfan/CN_moteur_hote.py` ajoute à `modele()` une fonction jumelle `sens()`, passée au moteur en paramètre optionnel (`MoteurSedal(orfan, modele, sens=None)`).
 - **Comptage et plafond**, comme le relais (`Registre.noter_relais`) : par moteur et par jour, appels, textes, signes ; un plafond (`plafond_sens_jour`) ; au plafond ou si `service().pret()` est faux, réponse « indisponible ». **Le moteur doit toujours savoir se passer du guichet.**
 - Bornes : 16 phrases par appel, 600 signes par phrase.
 - **Le modèle est partagé avec la mémoire** : un plafond de temps de calcul pour que la recherche d'Évolution ne ralentisse pas la mémoire (à 2 fils, une phrase prend 0,27 s ; un lot de 8, 0,9 s).
@@ -153,7 +153,7 @@ Pour chacune : (a) quoi · (b) où dans le code · (c) comment e5 sert · (d) ga
 ### P0 — Que les tombes gardent l'idée, et que le modèle la voie  ·  *sans e5*  ·  **à faire**
 
 (a) On grave dans chaque tombe le **texte** de la variante, son **hypothèse** et le type de raison ; le prompt montre au modèle les 3 à 5 dernières idées mortes **en mots**, pas un nombre. **Et** (P0b), à l'intérieur d'une même recherche, on dit au modèle de la génération suivante les idées déjà proposées dans cette recherche.
-(b) `noyau/CN_evolution.py` : table `tombes` (colonnes `texte`, `hypothese` par `ALTER TABLE … ADD COLUMN`), `_tomber`, `tombes()` ; `_juger` ajoute `contexte["idees_mortes"]: [{hypothese, raison}]`. `orfan/CN_orfan.py:construire_prompt` et `orfan/CN_frugal.py` listent ces idées. `orfan/CN_evolutif.py:proposer` ajoute à `vus` les empreintes des tombes (corrige § 1.2) et passe les hypothèses des enfants déjà obtenus au prompt de la génération suivante.
+(b) `noyau/CN_evolution.py` : table `tombes` (colonnes `texte`, `hypothese` par `ALTER TABLE … ADD COLUMN`), `_tomber`, `tombes()` ; `_juger` ajoute `contexte["idees_mortes"]: [{hypothese, raison}]`. `orfan/CN_orfan.py:construire_prompt` et `orfan/CN_frugal.py` listent ces idées. `orfan/CN_sedal.py:proposer` ajoute à `vus` les empreintes des tombes (corrige § 1.2) et passe les hypothèses des enfants déjà obtenus au prompt de la génération suivante.
 (c) Pas d'e5.
 (d) **Mesuré** (E5, E7) : sans la liste, 7 échantillons sur 8 répètent l'idée du premier ; avec la liste d'une idée déjà essayée, 8 sur 8 en changent. **Reste à mesurer** : que les nouvelles idées soient justes et plus rapides (il faut passer par le juge), et l'effet d'une liste plus longue (5 idées) sur la qualité.
 (e) Quelques centaines de signes de prompt en plus. Zéro mémoire.
@@ -163,7 +163,7 @@ Pour chacune : (a) quoi · (b) où dans le code · (c) comment e5 sert · (d) ga
 ### P1 — Entonnoir de l'idée avant le code, **limité au même point**  ·  *e5 sur des phrases*  ·  **à tenter après P0**
 
 (a) Avant que le modèle économe n'écrive du code, on compare l'**idée en prose** aux idées déjà tentées ou mortes **sur ce point** ; une idée qui reformule une idée déjà tentée (cosinus au-dessus d'un seuil étroit) ne passe pas à l'écriture.
-(b) Pour Frugal : entre « le modèle fort propose 2-3 plans » et « le modèle économe les implémente » (`orfan/CN_frugal.py`). Pour Évolutif : il faudrait ajouter une étape de stratégie (aujourd'hui l'hypothèse arrive avec le code), sinon le filtre n'économise que le temps de `comparer_local`.
+(b) Pour Frugal : entre « le modèle fort propose 2-3 plans » et « le modèle économe les implémente » (`orfan/CN_frugal.py`). Pour Sedal : il faudrait ajouter une étape de stratégie (aujourd'hui l'hypothèse arrive avec le code), sinon le filtre n'économise que le temps de `comparer_local`.
 (c) e5 reconnaît la reformulation d'une même idée sur la même fonction (mesuré : 0,89–0,98 contre ≤ 0,91 pour des idées différentes ; seuil 0,915 : 7 sur 10 reconnues, 0 fausse fusion sur 56 paires de contrôle). Il ne reconnaît **pas** des idées du même genre entre fonctions différentes (E2) : on compare donc **dans le point**, jamais d'un point à l'autre.
 (d) Gain : jetons de l'exécutant non dépensés sur des répétitions. **Hypothèse chiffrée par la mesure E5** : dans 3 cas sur 4, 2 échantillons sur 3 étaient des répétitions de l'idée du premier ; un filtre parfait aurait épargné 2 appels sur 3. Mesure à faire : calibrer le seuil sur ≥ 100 paires d'idées **étiquetées à la main**, avec les journaux de P0 ; exiger ≥ 95 % de précision avant de rejeter quoi que ce soit.
 (e) Coût : 1 à 5 phrases par recherche, 0,27 s chacune ; le modèle est déjà résident (décision de Drisse).
@@ -196,7 +196,7 @@ Exactitude 60 % sur 8 familles, aire ROC 0,66 (§ 0.2), à notre échelle (≤ 5
 ### P5 — Niche par comportement d'exécution (sans e5)  ·  **à comparer**
 
 (a) Ranger les variantes d'après ce qu'elles font : compte de lignes exécutées par rapport à la référence (`profil`, déjà là), mémoire. Deux variantes de même comportement sont dans la même niche, quel que soit leur texte.
-(b) `MoteurEvolutif._niche` ; `profil` existe.
+(b) `MoteurSedal._niche` ; `profil` existe.
 (c) Pas d'e5, et c'est la leçon de E1 : le texte (et son sens) ne voit pas le comportement ; un mutant faux a un cosinus de 0,995.
 (d) Hypothèse. Mesure : sur 10 points, comparer les niches aux niches `lignes // 4` à la main.
 (e)(f) : un descripteur bruité (le temps) crée de fausses niches ; préférer le compte de lignes.
@@ -205,7 +205,7 @@ Exactitude 60 % sur 8 familles, aire ROC 0,66 (§ 0.2), à notre échelle (≤ 5
 ### P6 — Déduplication de variantes : **empreinte normalisée seulement**  ·  *sans e5*  ·  **à faire**
 
 (a) Écarter les enfants qui sont la même chose autrement écrite.
-(b) `MoteurEvolutif._cle` et `noyau/CN_evolution.empreinte_ast`.
+(b) `MoteurSedal._cle` et `noyau/CN_evolution.empreinte_ast`.
 (c) **Les cosinus de code sont rejetés** (E1 : aucun seuil ne sépare renommage et mutant). Reste l'arbre normalisé : renommer les variables locales dans l'ordre d'apparition, retirer les docstrings, replier les constantes, ordonner les opérandes des opérations commutatives **sûres** (pas `a - b`, pas les flottants).
 (d) Mesure : sur les 98 références, combien de variantes fabriquées (renommage, sans docstring) sont ramenées à la même empreinte (attendu : toutes) et combien de mutants sont à tort fusionnés (attendu : aucun).
 (e) Négligeable. (f) Une normalisation qui fusionne deux choses différentes : se limiter aux cas sûrs.
@@ -260,7 +260,7 @@ Le modèle de sens ne vaut que sur des **phrases décrivant une idée**, dans **
 - **Étape 0 — sans e5** (petit) : P0 + P0b, semer les tombes dans `vus`, P6, P7. Résultat déjà obtenu (E7) : quand on lui nomme l'idée déjà prise, le modèle change d'idée (8 sur 8, petit échantillon). Porte de sortie restante : que ces idées nouvelles passent le juge au moins aussi souvent que les répétitions (à mesurer sur les vrais points avec leur corpus).
 - **Étape 1 — journal** : pendant quelques semaines, écrire texte et hypothèse de chaque variante (jugée ou non). Sans cela, aucune calibration sérieuse.
 - **Étape 2 — calibrer P1** sur ≥ 100 paires d'idées réelles étiquetées à la main (aire ROC et précision à 0,90 / 0,915 / 0,93). **Porte de sortie** : précision < 95 % → on n'ouvre pas le guichet.
-- **Étape 3 — le guichet d'idées** (§ 2) et P1 dans Frugal / Évolutif, avec plafond et repli.
+- **Étape 3 — le guichet d'idées** (§ 2) et P1 dans Frugal / Sedal, avec plafond et repli.
 - **Étape 4 — P2 par détecteurs** et le manuel d'astuces ; **P5** à comparer aux niches de taille.
 - **Étape 5 — P3**, quand le journal montre trois gains de la même famille.
 

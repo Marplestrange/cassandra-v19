@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1b85c4
+# VERSION CN : 0.1.0  #c1954f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1b85c4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c1954f ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -38,7 +38,7 @@ try:
 except ImportError:                                                  # chargé par son chemin (un banc, un module)
     from noyau.CN_points import DelaiEC, ErreurEC, _Travailleur, bac_os          # type: ignore
 
-CHOIX = ("deterministe", "modele", "les_deux", "evolutif", "frugal")
+CHOIX = ("deterministe", "modele", "les_deux", "sedal", "frugal")
 _ADAPTATEUR = re.compile(r"^adaptateur:[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
 DELAI_MOTEUR_S = 120.0
 MEMOIRE_MOTEUR_MO = 768
@@ -49,11 +49,11 @@ ETATS = ("actif", "installe", "prevu")
 ETAGES = {"orfan/deterministe": ("orfan", "deterministe", "Orfan · règles déterministes", "gratuit : zéro jeton"),
           "frugal": ("frugal", "frugal", "Frugal · règles, puis idées du modèle fort, code du modèle économe", "peu de jetons : un modèle seulement sur un point chaud"),
           "orfan/modele": ("orfan", "modele", "Orfan · modèle guidé par le profil", "jetons : un modèle écrit les variantes"),
-          "evolutif": ("evolutif", "evolutif", "Évolutif · populations et mutations", "jetons : plusieurs générations")}
-CASCADE_DEFAUT = [("orfan/deterministe", True), ("frugal", True), ("orfan/modele", True), ("evolutif", False)]
+          "sedal": ("sedal", "sedal", "Sedal · populations et mutations", "jetons : plusieurs générations")}
+CASCADE_DEFAUT = [("orfan/deterministe", True), ("frugal", True), ("orfan/modele", True), ("sedal", False)]
 OPTIONS_DEFAUT = {"arret_premiere": True, "modele_si_chaud": True, "course_si_deux": False}
 BUDGET_DEFAUT = {"jetons_mois": 2000000, "alerte_pct": 80, "gratuits_d_abord": True, "couper_au_plafond": True}
-NATIFS = {"orfan": "Orfan", "frugal": "Frugal", "evolutif": "Évolutif"}
+NATIFS = {"orfan": "Orfan", "frugal": "Frugal", "sedal": "Sedal"}
 POIDS_OBJECTIFS = {"latence": 1.0, "memoire": 0.0, "taille": 0.0}
 
 

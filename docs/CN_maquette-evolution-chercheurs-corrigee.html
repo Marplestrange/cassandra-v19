@@ -6,7 +6,7 @@
 <title>Maquette · Évolution · Les chercheurs (version proposée)</title>
 <!--
   VERSION PROPOSÉE de « Les chercheurs », à comparer avec CN_maquette-evolution-chercheurs-actuelle.html (la page d'aujourd'hui, à l'identique).
-  Chiffres réels d'Argos du 05-11 : Orfan 28 essais, 1 amélioration, 176 k jetons ; Frugal : 6 essais, 0 jeton ; Évolutif : 1 essai, 13 k jetons ;
+  Chiffres réels d'Argos du 05-11 : Orfan 28 essais, 1 amélioration, 176 k jetons ; Frugal : 6 essais, 0 jeton ; Sedal : 1 essai, 13 k jetons ;
   budget 189 k sur 2 000 k ; 36 recherches sur 60 aujourd'hui.
   Ce qui change, point par point :
    1. UNE phrase d'état en tête (qui cherche, ce que ça coûte), au lieu de sept cartes de statistiques ;
@@ -20,7 +20,7 @@
    5c. l'ordre de recherche est replié par défaut, quel que soit le nombre de méthodes (une ligne chacune, détail au clic, « Tout déplier ») ;
    5b. prêt pour les chercheurs externes : sélecteur qui devient liste au-delà de 4, pastille « externe », provenance et empreinte, retrait avec confirmation, état « refusé », coût par chercheur (boutons de démonstration en haut) ;
    5. « Installation » et « Relais de modèles » ne sont plus des onglets ici : deux boutons en haut à droite (Choisir les modèles, + Ajouter un chercheur) ;
-   6. le détail technique devient une FICHE par chercheur, avec un sélecteur (Orfan, Frugal, Évolutif) : identité, chiffres, ses méthodes, ses vérifications, ses derniers appels ;
+   6. le détail technique devient une FICHE par chercheur, avec un sélecteur (Orfan, Frugal, Sedal) : identité, chiffres, ses méthodes, ses vérifications, ses derniers appels ;
    7. vocabulaire simple : « étage », « cascade », « relais », « adaptateur », « EC » disparaissent.
   Les boutons sont vivants. Rien n'est envoyé nulle part.
 -->
@@ -106,14 +106,14 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
   const M = {
     orfan: { nom: "Orfan", essais: 28, trouvees: 1, jetons: 176000, appels: 42, jour: { jetons: 87000, essais: 16 }, refus: 2, plafond: 0, actif: true, source: "livré avec Cassandra · orfan/CN_orfan.py", genre: "natif", proc: "processus à part, dans la cage", verifs: [1, 1, 1, 1, 1, 0] },
     frugal: { nom: "Frugal", essais: 6, trouvees: 0, jetons: 0, appels: 0, jour: { jetons: 0, essais: 0 }, refus: 0, plafond: 0, actif: true, source: "livré avec Cassandra · orfan/CN_frugal.py", genre: "natif", proc: "processus à part, dans la cage", verifs: [1, 1, 0, 1, 1, 0] },
-    evolutif: { nom: "Évolutif", essais: 1, trouvees: 0, jetons: 13337, appels: 2, jour: { jetons: 0, essais: 0 }, refus: 0, plafond: 0, actif: true, source: "livré avec Cassandra · orfan/CN_evolutif.py", genre: "natif", proc: "processus à part, dans la cage", verifs: [1, 1, 1, 1, 0, 0] },
+    sedal: { nom: "Sedal", essais: 1, trouvees: 0, jetons: 13337, appels: 2, jour: { jetons: 0, essais: 0 }, refus: 0, plafond: 0, actif: true, source: "livré avec Cassandra · orfan/CN_sedal.py", genre: "natif", proc: "processus à part, dans la cage", verifs: [1, 1, 1, 1, 0, 0] },
   };
   const VERIFS = ["Il répond au contrat des chercheurs", "Il tourne dans un processus à part", "Il a déjà appelé un modèle", "Son installation est vérifiée", "Il a déjà couru contre un autre", "Un plafond du jour est posé"];
   let ETAGES = [
     { id: "orfan/deterministe", m: "orfan", nom: "Orfan · règles déterministes", ce: "Des recettes toutes faites, sans modèle : mémoïser, sortir un calcul d’une boucle, remplacer une liste par un ensemble…", cout: "Gratuit", cc: "ok", on: true },
     { id: "frugal", m: "frugal", nom: "Frugal", ce: "Cherche d’abord avec des recettes. Si rien ne marche et que la fonction est vraiment chaude, un modèle fort donne des idées et un modèle économe écrit le code.", cout: "Peu de jetons", cc: "ok", on: true },
     { id: "orfan/modele", m: "orfan", nom: "Orfan · modèle guidé par le profil", ce: "Un modèle écrit des versions à essayer, guidé par la façon dont la fonction est vraiment appelée.", cout: "Des jetons", cc: "al", on: true },
-    { id: "evolutif", m: "evolutif", nom: "Évolutif", ce: "Plusieurs générations de versions qui se croisent et mutent, comme une sélection naturelle. Le plus lent et le plus cher.", cout: "Beaucoup de jetons", cc: "fort", on: true },
+    { id: "sedal", m: "sedal", nom: "Sedal", ce: "Plusieurs générations de versions qui se croisent et mutent, comme une sélection naturelle. Le plus lent et le plus cher.", cout: "Beaucoup de jetons", cc: "fort", on: true },
   ];
   const REGLES = [
     { id: "arret", t: "S’arrêter dès qu’une amélioration est prouvée", s: "Sinon tous les chercheurs essaient, tant que le budget le permet.", on: true },
@@ -121,7 +121,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     { id: "course", t: "Faire courir deux chercheurs quand le premier a réussi", s: "Le suivant essaie aussi : la meilleure des deux versions est gardée.", on: false },
   ];
   const BUDGET = { mois: 2000000, depense: 189000 }, PROP = { fait: 36, plafond: 60 };
-  const APPELS = [["orfan", "il y a 3 min", "gemini-2.5-flash", "5 330"], ["orfan", "il y a 9 min", "gemini-2.5-flash", "5 285"], ["evolutif", "hier", "gemini-2.5-flash", "2 280"], ["evolutif", "hier", "gemini-2.5-flash", "2 285"], ["orfan", "il y a 21 min", "gemini-2.5-flash", "7 855"]];
+  const APPELS = [["orfan", "il y a 3 min", "gemini-2.5-flash", "5 330"], ["orfan", "il y a 9 min", "gemini-2.5-flash", "5 285"], ["sedal", "hier", "gemini-2.5-flash", "2 280"], ["sedal", "hier", "gemini-2.5-flash", "2 285"], ["orfan", "il y a 21 min", "gemini-2.5-flash", "7 855"]];
   const S = { msg: "", fiche: "orfan", retrait: "", ouv: {}, rap: {}, essai: { ouvert: false, fn: "planifie.decrire", occupe: false, res: "" }, verif: "", ctrl: null };
   const SNAP = JSON.stringify({ M: M, E: ETAGES });
   const ids = () => Object.keys(M);
@@ -140,7 +140,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
   function phrase() {
     const n = actifs().length, partM = Math.round(100 * BUDGET.depense / BUDGET.mois);
     if (!n) return "Aucun chercheur n’est actif : Cassandra ne cherche plus d’améliorations.";
-    const nm = nomsMoteursActifs(); return n + " méthode" + (n > 1 ? "s" : "") + " de recherche active" + (n > 1 ? "s" : "") + " sur " + ETAGES.length + ", portée" + (n > 1 ? "s" : "") + " par " + nm + " chercheur" + (nm > 1 ? "s" : "") + ". Ils ont trouvé " + (M.orfan.trouvees + M.frugal.trouvees + M.evolutif.trouvees) + " amélioration en " + (M.orfan.essais + M.frugal.essais + M.evolutif.essais) + " essais, pour " + kj(BUDGET.depense) + " jetons ce mois-ci (" + partM + " % du budget).";
+    const nm = nomsMoteursActifs(); return n + " méthode" + (n > 1 ? "s" : "") + " de recherche active" + (n > 1 ? "s" : "") + " sur " + ETAGES.length + ", portée" + (n > 1 ? "s" : "") + " par " + nm + " chercheur" + (nm > 1 ? "s" : "") + ". Ils ont trouvé " + (M.orfan.trouvees + M.frugal.trouvees + M.sedal.trouvees) + " amélioration en " + (M.orfan.essais + M.frugal.essais + M.sedal.essais) + " essais, pour " + kj(BUDGET.depense) + " jetons ce mois-ci (" + partM + " % du budget).";
   }
   function titreEtat() {
     const n = actifs().length, partM = Math.round(100 * BUDGET.depense / BUDGET.mois);
@@ -305,7 +305,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     racine.querySelectorAll("[data-fa-ferme]").forEach((b) => b.addEventListener("click", () => { S.essai.ouvert = false; dessiner(); }));
     racine.querySelectorAll("[data-fa-fn]").forEach((x) => x.addEventListener("change", () => { S.essai.fn = x.value; }));
     racine.querySelectorAll("[data-fa-lancer]").forEach((b) => b.addEventListener("click", () => {
-      const id = b.dataset.faLancer, m = M[id], fn = S.essai.fn, cout = m.nom.indexOf("Évolutif") === 0 || id === "evolutif" ? 13300 : id === "orfan" ? 6300 : 0;
+      const id = b.dataset.faLancer, m = M[id], fn = S.essai.fn, cout = m.nom.indexOf("Sedal") === 0 || id === "sedal" ? 13300 : id === "orfan" ? 6300 : 0;
       S.essai.occupe = true; dessiner();
       setTimeout(() => { m.essais++; m.jetons += cout; m.jour.essais++; m.jour.jetons += cout; BUDGET.depense += cout; PROP.fait++; S.essai.occupe = false; S.essai.ouvert = false; S.essai.res = m.nom + " sur " + fn + " : aucune version à la fois identique et plus rapide. Coût : " + (cout ? "≈ " + fmt(cout) + " jetons" : "0 jeton") + ". Rien n’a été changé."; dessiner(); }, 1400);
     }));
@@ -323,7 +323,7 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     ETAGES.push({ id: id, m: id, nom: nom, ce: "Chercheur installé depuis le catalogue scellé. Il cherche à son tour, après les autres.", cout: "Coût pas encore mesuré", cc: "al", on: !ref });
     S.fiche = id; S.retrait = ""; dessiner();
   }
-  document.getElementById("d-pan").addEventListener("click", () => { const id = S.fiche; if (!M[id] || refuse(id)) return; M[id].panne = id === "orfan" || id === "evolutif" ? { etape: 4, raison: "Le modèle de langage ne répond pas (délai dépassé après 120 s)." } : { etape: 3, raison: "Le chercheur ne répond plus à une demande de test (délai dépassé)." }; S.ctrl = null; dessiner(); });
+  document.getElementById("d-pan").addEventListener("click", () => { const id = S.fiche; if (!M[id] || refuse(id)) return; M[id].panne = id === "orfan" || id === "sedal" ? { etape: 4, raison: "Le modèle de langage ne répond pas (délai dépassé après 120 s)." } : { etape: 3, raison: "Le chercheur ne répond plus à une demande de test (délai dépassé)." }; S.ctrl = null; dessiner(); });
   document.getElementById("d-add").addEventListener("click", () => ajouterExterne(false));
   document.getElementById("d-ref").addEventListener("click", () => ajouterExterne(true));
   document.getElementById("d-raz").addEventListener("click", () => { const o = JSON.parse(SNAP); Object.keys(M).forEach((k) => delete M[k]); Object.assign(M, o.M); ETAGES = o.E; S.fiche = "orfan"; S.retrait = ""; S.msg = ""; S.ctrl = null; dessiner(); });

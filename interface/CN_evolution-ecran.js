@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #cbf429
+// VERSION CN : 0.2.0  #35c007
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=cbf429 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=35c007 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -230,12 +230,12 @@
     const FICHES = {
       orfan: ["Le moteur de Cassandra : les règles déterministes d'abord (zéro jeton), puis un modèle guidé par le profil de l'appel. Un étage « règles » et un étage « modèle ».", "livré avec Cassandra · orfan/CN_orfan.py"],
       frugal: ["Le chercheur économe. Il essaie d'abord les recettes gratuites. Sinon, un modèle fort imagine deux ou trois idées en mots (sans code), un modèle économe écrit chaque idée, et Frugal vérifie lui-même chaque version : même résultat et plus rapide. Une version ratée est renvoyée au modèle économe avec la raison, pour qu'il la corrige, un nombre de fois limité. Sans partie qui travaille beaucoup, il ne dépense rien.", "livré avec Cassandra · orfan/CN_frugal.py"],
-      evolutif: ["Une recherche par populations : générations, une archive par niche de taille de code, les règles se composent et un modèle mute le meilleur parent ; chaque enfant est mesuré avant d'être gardé.", "livré avec Cassandra · orfan/CN_evolutif.py"],
+      sedal: ["Une recherche par populations : générations, une archive par niche de taille de code, les règles se composent et un modèle mute le meilleur parent ; chaque enfant est mesuré avant d'être gardé.", "livré avec Cassandra · orfan/CN_sedal.py"],
       gepa: ["GEPA : optimisation réflexive de texte et frontière de Pareto. Il joue le candidat, lit ce qui a échoué, demande à un modèle de réécrire ; sa réflexion passe par le relais de la cage.", "catalogue scellé · paquets épinglés par empreinte"],
       shinka: ["ShinkaEvolve (Sakana AI) : îlots, archive, sélection dynamique de modèles. Il parle au serveur « OpenAI » local de la cage ; ses programmes sont relus dans sa base.", "catalogue scellé · paquets épinglés par empreinte"],
       openevolve: ["OpenEvolve, le projet externe : îlots et MAP-Elites. Il tourne dans son propre environnement, dans la cage, et ne parle à un modèle que par le relais.", "catalogue scellé · paquets épinglés par empreinte"]
     };
-    const COUL = { orfan: "var(--accent)", frugal: "var(--e-ok)", evolutif: "var(--e-al)", openevolve: "var(--e-dg)", gepa: "var(--accent)", shinka: "var(--e-al)" };
+    const COUL = { orfan: "var(--accent)", frugal: "var(--e-ok)", sedal: "var(--e-al)", openevolve: "var(--e-dg)", gepa: "var(--accent)", shinka: "var(--e-al)" };
     const kj = (v) => (v == null ? "—" : v >= 10000 ? Math.round(v / 1000) + " k" : v >= 1000 ? (v / 1000).toFixed(1).replace(".", ",") + " k" : String(v));
     const num1 = (v) => (v == null ? "—" : String(v).replace(".", ","));
     const ago = (t) => { const s = Math.max(0, Date.now() / 1000 - t); return s < 90 ? "à l'instant" : s < 5400 ? "il y a " + Math.round(s / 60) + " min" : s < 129600 ? "il y a " + Math.round(s / 3600) + " h" : "il y a " + Math.round(s / 86400) + " j"; };
@@ -477,7 +477,8 @@
     }
     function suiviIn() {
       const t = IN().tache; if (!t) return "";
-      const c = unIn(t.moteur), nom = c.nom || t.moteur, maj = t.nature === "maj", rows = lignesTacheIn(t);
+      const c = unIn(t.moteur), nom = c.nom || t.moteur, maj = t.nature === "maj", dejaAJour = !!((t.resultat || {}).deja_a_jour);
+      const rows = dejaAJour ? (t.etapes || []).map((e) => ({ t: "Version", etat: e.ok ? "ok" : "ko", s: e.detail || "" })) : lignesTacheIn(t);
       const fait = rows.filter((e) => e.etat === "ok").length, pct = rows.length ? Math.round(100 * fait / rows.length) : 0;
       const ligne = (e) => '<div class="in-p ' + e.etat + '"><span class="k">' + (e.etat === "ok" ? "✓" : e.etat === "ko" ? "✕" : e.etat === "cours" ? "…" : "·") + "</span><div>" + esc(e.t) + (e.s ? "<small>" + esc(e.s) + "</small>" : "") + "</div><span class=\"r\"></span></div>";
       let fin = "";
@@ -890,7 +891,7 @@
 
     const PROFILS = [["gratuit", "Gratuit seul", "Les recettes sans modèle, rien d’autre. Ça ne coûte rien.", ["orfan/deterministe"]],
       ["equilibre", "Équilibré", "Le gratuit d’abord, puis un modèle économe sur ce qui prend vraiment du temps.", ["orfan/deterministe", "frugal"]],
-      ["approfondi", "Approfondi", "Tous les chercheurs, y compris par populations. Plus lent et plus cher, il trouve plus.", ["orfan/deterministe", "frugal", "orfan/modele", "evolutif"]]];
+      ["approfondi", "Approfondi", "Tous les chercheurs, y compris par populations. Plus lent et plus cher, il trouve plus.", ["orfan/deterministe", "frugal", "orfan/modele", "sedal"]]];
     const profilActuel = () => { const on = ((M0().d || {}).cascade || []).filter((e) => e.on).map((e) => e.id).sort().join("|"); const p = PROFILS.find((x) => x[3].slice().sort().join("|") === on); return p ? p[0] : "mesure"; };
     const ROLES_EV = [["evolution", "Qui exécute", "Écrit les variantes et les essaie. Un modèle économe suffit."], ["evolution_strategie", "Qui conçoit la stratégie", "Propose les pistes à explorer. Un modèle plus fort rend plus ; s’il n’y en a pas, l’exécutant s’en charge."]];
     function modelesCarte() {
@@ -938,7 +939,7 @@
         .replace("Planchers (JSON)", "Minimums du noyau (JSON)")
         .replace("Référence (JSON)", "Réglage actuel (JSON)");
     }
-    const VOCAB = [["Amélioration", "Une version d’une fonction de Cassandra, plus rapide et rendant exactement le même résultat."], ["Pièce", "Le nom technique d’une amélioration proposée : elle a un numéro et une empreinte."], ["À l’ombre", "Elle tourne en parallèle de l’originale, sans que personne ne reçoive son résultat : on compare seulement."], ["Palier", "La part du trafic qu’elle sert : à l’ombre, puis 10 %, 50 %, tout."], ["Chercheur", "Un moteur qui invente des versions (Orfan, Frugal, Évolutif ou un moteur externe)."], ["Cascade", "L’ordre dans lequel les chercheurs essaient : le gratuit d’abord."], ["Juge", "Le contrôleur qui décide si une version est identique à l’originale. Il ne s’améliore jamais."], ["Tombe", "L’empreinte d’une version échouée : elle n’est jamais reproposée."], ["Chaîne scellée", "Le carnet de tout ce qui s’est passé, chaîné : une rupture se voit."], ["Cage et bac", "Les chercheurs tournent dans un processus à part, sans réseau ni accès au serveur."], ["Retour", "Retirer une amélioration : le trafic revient à l’originale, en un geste."]];
+    const VOCAB = [["Amélioration", "Une version d’une fonction de Cassandra, plus rapide et rendant exactement le même résultat."], ["Pièce", "Le nom technique d’une amélioration proposée : elle a un numéro et une empreinte."], ["À l’ombre", "Elle tourne en parallèle de l’originale, sans que personne ne reçoive son résultat : on compare seulement."], ["Palier", "La part du trafic qu’elle sert : à l’ombre, puis 10 %, 50 %, tout."], ["Chercheur", "Un moteur qui invente des versions (Orfan, Frugal, Sedal ou un moteur externe)."], ["Cascade", "L’ordre dans lequel les chercheurs essaient : le gratuit d’abord."], ["Juge", "Le contrôleur qui décide si une version est identique à l’originale. Il ne s’améliore jamais."], ["Tombe", "L’empreinte d’une version échouée : elle n’est jamais reproposée."], ["Chaîne scellée", "Le carnet de tout ce qui s’est passé, chaîné : une rupture se voit."], ["Cage et bac", "Les chercheurs tournent dans un processus à part, sans réseau ni accès au serveur."], ["Retour", "Retirer une amélioration : le trafic revient à l’originale, en un geste."]];
     function vocab() {
       const q = (S.vq || "").toLowerCase(), l = VOCAB.filter((x) => !q || (x[0] + " " + x[1]).toLowerCase().indexOf(q) >= 0);
       return '<div class="champ"><input type="text" id="ev-vq" placeholder="Chercher un mot" value="' + esc(S.vq || "") + '"></div><div class="liste">' + (l.map((x) => '<div class="verre carte"><b>' + esc(x[0]) + '</b><span class="note">' + esc(x[1]) + "</span></div>").join("") || '<div class="vide">Aucun mot ne correspond.</div>') + "</div>";
@@ -950,7 +951,7 @@
       "orfan/deterministe": ["Des recettes toutes faites, sans modèle : mémoïser, sortir un calcul d’une boucle, remplacer une liste par un ensemble…", "Gratuit", "ok"],
       "frugal": ["Cherche d’abord avec des recettes. Si rien ne marche et que la fonction est vraiment chaude, un modèle fort donne des idées et un modèle économe écrit le code.", "Peu de jetons", "ok"],
       "orfan/modele": ["Un modèle écrit des versions à essayer, guidé par la façon dont la fonction est vraiment appelée.", "Des jetons", "al"],
-      "evolutif": ["Plusieurs générations de versions qui se croisent et mutent, comme une sélection naturelle. Le plus lent et le plus cher.", "Beaucoup de jetons", "fort"]
+      "sedal": ["Plusieurs générations de versions qui se croisent et mutent, comme une sélection naturelle. Le plus lent et le plus cher.", "Beaucoup de jetons", "fort"]
     };
     const CONSEILS_CH = ["Son contrat avec Cassandra n’est pas respecté.", "Il ne tourne pas à l’écart du reste.", "Il n’a pas encore appelé de modèle. Normal s’il n’en a pas besoin.", "Son installation n’est pas vérifiée.", "Il n’a jamais couru contre un autre : lance une course dans « Les comparer ».", "Aucun plafond du jour : pose-en un dans « Ce que chacun a rapporté »."];
     const VERIFS_CH = ["Il répond au contrat des chercheurs", "Il tourne dans un processus à part", "Il a déjà appelé un modèle", "Son installation est vérifiée", "Il a déjà couru contre un autre", "Un plafond du jour est posé"];

@@ -6,18 +6,18 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b096a5
+# VERSION CN : 0.1.0  #1ac05b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Fait tourner un moteur de recherche d'Évolution (Orfan, ou un moteur externe derrière le même contrat) dans un processus à part, sans clé, sans réseau, avec un relais pour parler à un modèle.
 # MÉTHODE    : une ligne JSON par message sur l'entrée et la sortie standard ; le moteur ne voit jamais un jeton : il demande un modèle au serveur, qui compte et plafonne.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b096a5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1ac05b ▼▼▼
 """Le protocole de processus d'un moteur de recherche (docs/CN_EVOLUTION.md, « moteurs »).
 
 Lancé par noyau/CN_moteurs.py : `python -I CN_moteur_hote.py <chemin de CN_orfan.py> <choix> <mémoire en octets>`.
 
-  choix : deterministe | modele | les_deux (Orfan) · evolutif | frugal (orfan/CN_evolutif.py, CN_frugal.py) · adaptateur:<module> (un moteur externe, son module expose proposer(contexte, modele))
+  choix : deterministe | modele | les_deux (Orfan) · sedal | frugal (orfan/CN_sedal.py, CN_frugal.py) · adaptateur:<module> (un moteur externe, son module expose proposer(contexte, modele))
 
   serveur -> moteur  {"op":"ping"}                      →  moteur -> serveur {"op":"pong"}      (contrôle d'intégrité : le moteur est chargé et répond ; aucun modèle)
   serveur -> moteur  {"op":"proposer","contexte":{…}}
@@ -133,8 +133,8 @@ def main():
         moteur = orfan.MoteurModele(modele)
     elif choix == "les_deux":
         moteur = orfan.MoteurComposite(orfan.MoteurDeterministe(), orfan.MoteurModele(modele))
-    elif choix == "evolutif":
-        moteur = frere("orfan_evolutif", "CN_evolutif.py").MoteurEvolutif(orfan, modele)
+    elif choix == "sedal":
+        moteur = frere("orfan_sedal", "CN_sedal.py").MoteurSedal(orfan, modele)
     elif choix == "frugal":
         moteur = frere("orfan_frugal", "CN_frugal.py").MoteurFrugal(orfan, modele)
     elif choix.startswith("adaptateur:"):                        # un moteur externe : un module de son environnement, `proposer(contexte, modele) -> candidats`

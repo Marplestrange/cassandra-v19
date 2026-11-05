@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #92c7e7
+# VERSION CN : 0.1.0  #afca07
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Décide quel moteur cherche pour quel point : la cascade (le gratuit d'abord), l'affectation forcée, la course entre moteurs, les plafonds par moteur ; rien n'est mis en service par une course.
 # MÉTHODE    : un moteur à la fois dans son processus, jugé par le même juge sur le même corpus ; chaque étage compte ses jetons ; un plafond atteint saute l'étage et le dit.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=92c7e7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=afca07 ▼▼▼
 """Lots 3 de la maquette d'Évolution : course, cascade, affectations, budget par moteur.
 
 La CASCADE : les étages actifs, dans l'ordre (le gratuit d'abord). `arret_premiere` : on s'arrête à la première variante prouvée. `modele_si_chaud` : un étage qui dépense un modèle
@@ -39,7 +39,7 @@ except ImportError:                                                  # chargé p
 
 CRITERES = ("rendement", "brut", "duree")
 BUDGETS = ("jetons", "essais", "temps")
-ETAGES_A_MODELE = {"orfan/modele", "evolutif"}                      # les étages qui dépensent un modèle d'office (Frugal décide seul, d'après son profil) ; un moteur externe aussi
+ETAGES_A_MODELE = {"orfan/modele", "sedal"}                      # les étages qui dépensent un modèle d'office (Frugal décide seul, d'après son profil) ; un moteur externe aussi
 PLANCHER_JETONS = 1000
 
 
@@ -100,7 +100,7 @@ class Orchestrateur:
         """Un étage : ses garde-fous, sa recherche, ce qu'elle a coûté. Rend {etage, moteur, saute, raison, r, stats, duree_s}."""
         ident = self.reg.etages()[etage][0]
         sortie = {"etage": etage, "moteur": ident, "saute": False, "raison": "", "r": None, "stats": {}, "duree_s": 0.0}
-        etat = next((m.get("etat") for m in self.reg.liste() if m["id"] == ident), "actif" if ident in ("orfan", "frugal", "evolutif") else "prevu")
+        etat = next((m.get("etat") for m in self.reg.liste() if m["id"] == ident), "actif" if ident in ("orfan", "frugal", "sedal") else "prevu")
         if etat != "actif":
             sortie.update(saute=True, raison="moteur « %s » non actif (%s)" % (ident, etat))
             return sortie

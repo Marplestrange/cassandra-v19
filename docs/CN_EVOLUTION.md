@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9e1826 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=2299a3 ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -181,7 +181,7 @@ Lots 1 et 2 de la maquette `docs/CN_maquette-evolution-moteurs.html`, construits
 
 Tout ce que la maquette `docs/CN_maquette-evolution-moteurs.html` montrait existe maintenant, et l'écran Évolution a une vue « Moteurs » branchée dessus (`interface/CN_evolution-ecran.js`).
 
-- **Trois moteurs livrés** : Orfan (règles + modèle), **Frugal** (`orfan/CN_frugal.py` : règles gratuites ; sinon le modèle fort propose des stratégies en texte, le modèle économe les écrit, chaque version est vérifiée sur place et affinée sur sa raison d'échec ; sans point chaud, aucune dépense — voir 2 duodecies), **Évolutif** (`orfan/CN_evolutif.py` : générations, une archive par niche de taille, mutation par modèle). Frugal et Évolutif exécutent des candidats pour les vérifier : ils ne tournent que dans la cage (jamais dans le serveur). Un « point chaud » : une ligne qui porte au moins 40 % du travail ET a tourné au moins 50 fois.
+- **Trois moteurs livrés** : Orfan (règles + modèle), **Frugal** (`orfan/CN_frugal.py` : règles gratuites ; sinon le modèle fort propose des stratégies en texte, le modèle économe les écrit, chaque version est vérifiée sur place et affinée sur sa raison d'échec ; sans point chaud, aucune dépense — voir 2 duodecies), **Sedal** (`orfan/CN_sedal.py` : générations, une archive par niche de taille, mutation par modèle). Frugal et Sedal exécutent des candidats pour les vérifier : ils ne tournent que dans la cage (jamais dans le serveur). Un « point chaud » : une ligne qui porte au moins 40 % du travail ET a tourné au moins 50 fois.
 - **Un moteur externe réel de bout en bout** : OpenEvolve 0.4.1 (`orfan/adaptateurs/CN_adaptateur_openevolve.py`), installé depuis un catalogue scellé (27 paquets épinglés par empreinte par `outils/CN_moteurs_epingler.py`), exécuté dans son venv sous bubblewrap ; il ne parle à un modèle que par un serveur « OpenAI » local dans la cage, qui aboutit au relais. Éprouvé sur Orion (Debian 12), avec un modèle de banc ; le banc `tests/CN_test_moteur_externe_reel.py` le rejoue (`CN_TEST_RESEAU=1`). Un moteur externe écrit dans son dossier (64 Mo) et a des fils ; il n'a ni réseau ni accès aux fichiers du serveur.
 - **La cascade** (`noyau/CN_course.py`) : étages dans l'ordre, le gratuit d'abord ; `arret_premiere`, `modele_si_chaud`, `course_si_deux` ; un étage forcé sur un point par `affecter`. Un moteur au plafond du jour, ou le budget du mois atteint, saute l'étage et le dit.
 - **La course** : plusieurs étages sur le même point, jugés par le même juge sur le même corpus ; tableau (variantes, équivalentes, gain, tient hors du vu, jetons, rendement, mémoire, durée) et classement par rendement (points de gain par millier de jetons, au moins mille comptés), gain brut ou durée. Une course n'écrit aucune pièce ; `course_adopter` rejuge la variante gardée, puis la met en ombre.

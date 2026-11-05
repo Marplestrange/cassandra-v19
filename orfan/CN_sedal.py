@@ -1,19 +1,19 @@
 # ══════════════════════════════════════════════
-# TITRE      : Le moteur évolutif d'Orfan
+# TITRE      : Le moteur Sedal d'Orfan
 # LICENCE    : AGPL-3.0
 # AUTEUR     : Atek Drisse
 # GIT        : github.com/Marplestrange
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #995bca
+# VERSION CN : 0.1.0  #48b7e9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Une recherche par populations (générations, archive par niche de taille) : les règles déterministes se composent, un modèle mute le meilleur parent, chaque enfant est mesuré avant d'être gardé.
 # MÉTHODE    : graine fixe par point (même entrée, même recherche), forme MAP-Elites réduite (une niche par taille de code), fitness = rapport de temps sur les entrées visibles, équivalence vérifiée d'abord.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=995bca ▼▼▼
-"""Le moteur évolutif (la famille d'OpenEvolve, réduite à ce qui tient dans la cage).
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=48b7e9 ▼▼▼
+"""Le moteur Sedal (la famille d'OpenEvolve, réduite à ce qui tient dans la cage).
 
 Une population de variantes ÉQUIVALENTES sur les entrées visibles. Chaque génération : les meilleurs parents (plus un parent d'une autre niche de taille, pour ne pas s'enfermer dans
 une seule forme de code) donnent des enfants — les règles déterministes d'Orfan appliquées au parent, et, si un modèle est branché, une mutation qu'il écrit. Un enfant n'entre dans
@@ -26,11 +26,11 @@ import hashlib
 import random
 
 
-class MoteurEvolutif:
-    nom = "evolutif"
+class MoteurSedal:
+    nom = "sedal"
 
     def __init__(self, orfan, appeler_modele=None, generations: int = 1, parents: int = 2, essais: int = 2):
-        """Mesuré sur 17 fonctions (docs/CN_EVOLUTIF-SEMANTIQUE.md) : une génération trouve les mêmes gains que deux pour 4× moins de temps ; le modèle varie d'un tirage à l'autre, d'où `essais` tirages indépendants par parent."""
+        """Mesuré sur 17 fonctions (docs/CN_SEDAL-SEMANTIQUE.md) : une génération trouve les mêmes gains que deux pour 4× moins de temps ; le modèle varie d'un tirage à l'autre, d'où `essais` tirages indépendants par parent."""
         self.orfan, self.appeler_modele = orfan, appeler_modele
         self.generations, self.parents, self.essais = max(1, int(generations)), max(1, int(parents)), max(1, int(essais))
         self.journal = []
@@ -101,7 +101,7 @@ class MoteurEvolutif:
                             break
             examiner(enfants, g)
         classes = sorted(archive.values(), key=lambda v: -v[0])
-        return [{"texte": t, "hypothese": "%s (génération %d, ×%.2f sur le vu)" % (h, gen, r), "origine": "evolutif"} for r, t, h, gen in classes[:budget]]
+        return [{"texte": t, "hypothese": "%s (génération %d, ×%.2f sur le vu)" % (h, gen, r), "origine": "sedal"} for r, t, h, gen in classes[:budget]]
 # ▲▲▲ FIN BORNE CN ▲▲▲
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════
 # EC : néant (un moteur d'évolution ne s'évolue pas : c'est du R&D, docs/CN_EVOLUTION.md).

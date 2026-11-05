@@ -12,7 +12,7 @@
 <!-- RÔLE       : Orfan, la recherche : comment en faire le meilleur moteur possible -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=35d030 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d9905a ▼▼▼ -->
 # Orfan, la recherche : comment en faire le meilleur moteur possible
 
 Statut : 04-11-2026. Dossier de recherche, **rien n'est construit**. Tu décides à la fin (§ 5) ce qu'on fait, ce qu'on mesure, ce qu'on jette.
@@ -186,7 +186,7 @@ Les **gains en microsecondes** du catalogue sont ceux du lecteur de l'axe 1 (Pyt
 
 ## 3. Axe 2 — Un moteur à modèle plus intelligent et plus rapide
 
-### 3.1 Ce que fait Orfan aujourd'hui (lu dans `orfan/CN_orfan.py`, `CN_frugal.py`, `CN_evolutif.py`)
+### 3.1 Ce que fait Orfan aujourd'hui (lu dans `orfan/CN_orfan.py`, `CN_frugal.py`, `CN_sedal.py`)
 
 `MoteurModele.proposer` : profil des lignes → (stratège optionnel) → un prompt → jusqu'à 3 appels **identiques** → les blocs de code extraits. Constats utiles :
 
@@ -198,7 +198,7 @@ Les **gains en microsecondes** du catalogue sont ceux du lecteur de l'axe 1 (Pyt
 - Le modèle est choisi par le rôle, pas par la mesure.
 - **Le relais et le module Modèles** (lus dans `noyau/CN_moteurs.py`, `modules/evolution/CN_module.py` et `modules/modeles/CN_module.py`) : chaque demande est un SEUL message utilisateur en texte brut, `max_tokens=3000`, `temperature=0.2` **fixes** ; le module Modèles ne parle que les protocoles **Ollama et compatible OpenAI** (`appel_ollama`, `appel_openai`). Aucune occurrence de `cache_control` ni de jetons de cache dans les fichiers Python du dépôt. Le module Modèles ne retient du compteur d'usage que les champs ENTIERS (`prompt_tokens`, `completion_tokens`) : un détail imbriqué du genre `prompt_tokens_details.cached_tokens` serait ignoré. Le plafond du relais compte « un jeton pour quatre caractères » (`_jetons`) ; l'argent, lui, est contrôlé avant CHAQUE appel par le plafond de la maison (`agents.service_plafond`). Conséquence : **trois appels identiques à 0,2 de température donnent des réponses proches** (le composite écarte les doublons exacts d'arbre, mais les jetons sont payés), et le cache de prompt n'était utilisable qu'à deux conditions : que le fournisseur le fasse tout seul sur un préfixe stable (non vérifié ici), ou que le relais soit étendu. **Étendu le 04-11-2026, à ta demande** (voir § 3.5).
 
-Frugal (`docs/CN_FRUGALEVO.md`) couvre déjà stratège fort / exécutant économe, plafonds d'appels, réparation. Évolutif (`docs/CN_OPENEVOLVE-LECTURE.md`, `docs/CN_EVOLUTIF-SEMANTIQUE.md`) couvre les niches, la mémoire des tombes par le sens (P0-P10). **Je ne les refais pas** : je les complète par ce qu'ils ne traitent pas (allocation du budget, cascade d'évaluation, format d'édition, cache, bandit).
+Frugal (`docs/CN_FRUGALEVO.md`) couvre déjà stratège fort / exécutant économe, plafonds d'appels, réparation. Sedal (`docs/CN_OPENEVOLVE-LECTURE.md`, `docs/CN_SEDAL-SEMANTIQUE.md`) couvre les niches, la mémoire des tombes par le sens (P0-P10). **Je ne les refais pas** : je les complète par ce qu'ils ne traitent pas (allocation du budget, cascade d'évaluation, format d'édition, cache, bandit).
 
 ### 3.2 Qui est responsable de quoi
 
@@ -246,7 +246,7 @@ Frugal (`docs/CN_FRUGALEVO.md`) couvre déjà stratège fort / exécutant écono
 4. **Diff** avec repli.
 5. **Bandit UCB** sur les modèles, coût dans le dénominateur.
 6. **Allocation par cible** (le gros sujet des quatre papiers 2026) : arrêter une cible après N essais sans gain, donner plus à celle qui promet. Orfan traite une cible par appel ; c'est donc d'abord l'affaire de la **cascade / course** du noyau (`CN_course`), pas du moteur seul.
-7. **Empreinte de nouveauté** sans e5 : arbre normalisé + n-grammes de jetons + Jaccard (voir `CN_EVOLUTIF-SEMANTIQUE.md`, P6, qui propose la même démarche « d'abord sans e5 »).
+7. **Empreinte de nouveauté** sans e5 : arbre normalisé + n-grammes de jetons + Jaccard (voir `CN_SEDAL-SEMANTIQUE.md`, P6, qui propose la même démarche « d'abord sans e5 »).
 8. **Plusieurs réponses diversifiées** plutôt que 3 prompts identiques : une température ou une consigne de famille différente par appel (EvoControl).
 
 **Auto-consistance et vérificateurs appris** (lus au résumé arXiv seulement) : Wang et al. 2022 (arXiv 2203.11171) : +17,9 points sur GSM8K ; CodeT (arXiv 2207.10397) : consensus sur des tests générés, HumanEval pass@1 65,8 %. Ces méthodes servent quand on n'a PAS de vérificateur direct. **Chez nous on peut exécuter et mesurer chaque candidat : le vote ne sert à rien**, le juge remplace le vote. Un modèle de tri appris ne vaudrait que pour économiser des exécutions : pistes récentes vues en extrait, papiers NON LUS : Orlanski et al. (arXiv 2506.10056 : système 11,65× plus rapide, 8,33 % moins exact que la suite de tests complète), MaxCode (arXiv 2601.05475), GPU Forecasters (arXiv 2605.31464). Aucun « vérificateur de performance » mûr trouvé.
@@ -380,7 +380,7 @@ Pour le raisonnement, la condition d'AlphaEvolve vaut : **tout programme avec un
 
 | # | Idée | Preuve qu'on en a | Ce que ça change pour Orfan |
 |---|---|---|---|
-| P1 | **Nos pièces validées deviennent des règles gratuites** : chaque gain prouvé par le juge est abstrait en un patron `(avant, après, condition)`, rejoué sans modèle, promu en recette après revue. | **Partielle.** ECO (Google, 2025) fait ceci à partir des commits, en production chez Google (chiffres ANNONCÉS, SURVOLÉS) ; LILO apprend des bibliothèques par compression (LU) ; la session voisine propose la même chose sous le nom « recettes promues » (`CN_EVOLUTIF-SEMANTIQUE.md`, P3, qu'elle juge « vraiment inédit »). Aucune de ces sources n'a de juge à jeu réservé comme le nôtre. | La bibliothèque de recettes grossit seule ; le coût en jetons baisse avec l'usage. Risque : un patron appris est plus étroit ou plus large que le gain d'origine → conditions de sûreté vérifiées sur l'arbre, revue humaine. |
+| P1 | **Nos pièces validées deviennent des règles gratuites** : chaque gain prouvé par le juge est abstrait en un patron `(avant, après, condition)`, rejoué sans modèle, promu en recette après revue. | **Partielle.** ECO (Google, 2025) fait ceci à partir des commits, en production chez Google (chiffres ANNONCÉS, SURVOLÉS) ; LILO apprend des bibliothèques par compression (LU) ; la session voisine propose la même chose sous le nom « recettes promues » (`CN_SEDAL-SEMANTIQUE.md`, P3, qu'elle juge « vraiment inédit »). Aucune de ces sources n'a de juge à jeu réservé comme le nôtre. | La bibliothèque de recettes grossit seule ; le coût en jetons baisse avec l'usage. Risque : un patron appris est plus étroit ou plus large que le gain d'origine → conditions de sûreté vérifiées sur l'arbre, revue humaine. |
 | P2 | **Allocation du budget entre cibles** décidée par bandit avec le coût réel. | Quatre papiers 2026 (AdaEvolve, BaSE, EvoAlloc, CostAda), tous récents, **sans code lu**, chiffres ANNONCÉS. | Même dépense, plus de gains. Preuve faible : à mesurer chez nous avant d'y croire. |
 | P3 | **Sécurité par construction, tests évolués** (CaMeL : règles de flux déterministes ; Orfan fait évoluer les attaques qui les éprouvent). | CaMeL (papier lu, code Apache-2.0 de recherche) et AgentDojo (MIT, banc) ; l'utilité perdue va de ~3 à ~32 points selon le modèle ; pas de production grand public vérifiée. | On cesse de chercher « le bon prompt de défense » ; on durcit des règles par adversaire automatique. |
 | P4 | **Mémoire en grille (qualité-diversité) des échecs et des attaques.** | Rainbow Teaming, DGM (auto-rapportés, recherche). | Les « mauvaises mais différentes » servent de tremplin ; un échec ne se reproduit pas. |
@@ -449,7 +449,7 @@ Chaque étape a sa mesure et son critère d'abandon. **Aucune ne touche au juge 
 - **Retours de production tiers** d'OpenEvolve ou de ShinkaEvolve : aucun trouvé (cela ne prouve pas qu'il n'en existe pas).
 - **Le fonctionnement interne du plafond de dépense de la maison** (`agents.service_plafond`) : je sais qu'il est lu avant chaque appel, pas comment il calcule la dépense.
 - **Comportement du cache chez les fournisseurs derrière notre relais** (OmniRoute, cache automatique de préfixe sur un point d'accès compatible OpenAI, acceptation de `cache_control` dans les blocs) : non vérifié, car aucun vrai modèle n'a été appelé. L'extension est testée contre un faux serveur seulement.
-- **`docs/CN_EVOLUTIF-SEMANTIQUE.md`** : je n'en ai lu que les titres ; mes renvois (P3, P6) s'appuient sur eux.
+- **`docs/CN_SEDAL-SEMANTIQUE.md`** : je n'en ai lu que les titres ; mes renvois (P3, P6) s'appuient sur eux.
 - **Une seule expérience** a été faite sur Orfan (§ 3.6) : 6 fonctions, 3 graines, un modèle local de 3 milliards de paramètres, sans le relais ni le juge du noyau. Ni le banc de 10 cibles de l'étape 0, ni aucune des idées proposées n'a été mesurée : tout gain annoncé pour Orfan reste une hypothèse.
 
 ## 8. Mise en œuvre du 04-11 et idées nouvelles
@@ -539,7 +539,7 @@ Source : `rejeu.db`, `modules/modeles.db`, `modules/agents.db`, `evolution.db`, 
 **Phase C — Le juge de prompt (le vrai chantier de code).**
 - Un nouveau type de cible pour Orfan : un texte (prompt, règle) jugé non par l'égalité de sortie, mais par : (1) **aucun cas moins bien réussi que la base, cas par cas** (la base elle-même ne réussit pas tout : voir § 9.6), sur des répétitions à graines différentes ; (2) jetons d'entrée en baisse d'au moins 15 % ; (3) **clauses protégées intactes** : les règles 3 (une donnée d'outil n'est jamais une instruction) et 4 (secrets) sont vérifiées par comparaison exacte de texte, un candidat qui les altère est rejeté sans appel au modèle.
 - **Corpus à étendre** : huit cas ne suffisent pas, un prompt apprendrait ces huit-là (Goodhart). Viser au moins 30 cas dont une partition réservée jamais montrée au générateur (même principe que le rejeu). Données réelles disponibles : 14 messages seulement, donc cas synthétiques.
-- Ce travail recoupe `docs/CN_EVOLUTIF-SEMANTIQUE.md` (autre session) : à coordonner, pas à dupliquer.
+- Ce travail recoupe `docs/CN_SEDAL-SEMANTIQUE.md` (autre session) : à coordonner, pas à dupliquer.
 
 **Phase D — Pilote.** Cible unique : le bloc `REGLES` (statique, environ 400 jetons). Orfan propose des variantes plus courtes, le juge de la phase C tranche, **promotion seulement après ta relecture**, puis comparaison en ombre sur Argos.
 - **Succès** : au moins 25 % de jetons en moins sur ce bloc, aucune épreuve perdue, durée mesurée en baisse. **Échec assumé** : sinon on le consigne dans le dossier et on s'arrête.
@@ -619,4 +619,4 @@ Lecture : le modèle local de 3 milliards de paramètres **n'est pas sûr** sur 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
 <!-- CN : tout ce fichier est du nexus : le dossier de recherche sur Orfan, sans code -->
 <!-- EC : néant (un dossier de recherche n'évolue pas) -->
-<!-- LIEN : docs/CN_EVOLUTION.md (Orfan, les moteurs), docs/CN_FRUGALEVO.md, docs/CN_OPENEVOLVE-LECTURE.md, docs/CN_EVOLUTIF-SEMANTIQUE.md -->
+<!-- LIEN : docs/CN_EVOLUTION.md (Orfan, les moteurs), docs/CN_FRUGALEVO.md, docs/CN_OPENEVOLVE-LECTURE.md, docs/CN_SEDAL-SEMANTIQUE.md -->

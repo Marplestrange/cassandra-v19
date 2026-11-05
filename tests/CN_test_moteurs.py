@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8ec370
+# VERSION CN : 0.1.0  #3a8137
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 1 de la maquette d'Évolution : le moteur dans son processus, le relais de modèles plafonné, le registre et l'attribution des pièces.
 # MÉTHODE    : un vrai processus de moteur (aucune doublure du protocole) ; le modèle est une fonction de banc ; le module Évolution est branché dans un vrai noyau comme au banc du module.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ec370 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3a8137 ▼▼▼
 """Bancs des moteurs de recherche : le protocole de processus, le relais, le registre."""
 import json
 import sys
@@ -165,7 +165,7 @@ class DansLeModule(TM.Banc):
     def test_les_moteurs_se_lisent_et_orfan_y_est_declare(self):
         r = self.ex("moteurs")
         self.assertEqual(r["statut"], "faite", r)
-        self.assertEqual([m["id"] for m in r["resultat"]["moteurs"]], ["evolutif", "frugal", "orfan"])
+        self.assertEqual([m["id"] for m in r["resultat"]["moteurs"]], ["frugal", "orfan", "sedal"])
         self.assertTrue(r["resultat"]["isoles"])                                                        # Orfan dans sa cage par défaut
 
     def test_une_proposition_est_comptee_et_sa_piece_attribuee(self):
@@ -398,7 +398,7 @@ class InstallationDepuisLEcran(TM.Banc):
     def test_les_moteurs_rendent_le_repertoire_et_ce_que_le_serveur_sait_faire(self):
         r = self.ex("moteurs")["resultat"]
         rep = {e["id"]: e for e in r["repertoire"]}
-        self.assertEqual([e["id"] for e in r["repertoire"] if e["statut"] == "livre"], ["orfan", "frugal", "evolutif"])
+        self.assertEqual([e["id"] for e in r["repertoire"] if e["statut"] == "livre"], ["orfan", "frugal", "sedal"])
         self.assertEqual(sorted(e["id"] for e in r["repertoire"] if e["statut"] == "disponible"), sorted(["openevolve", "shinka", "codeevolve", "gepa", "llm4ad", "openelm", "dspy", "textgrad", "evoprompt"]))
         self.assertTrue(rep["gepa"]["ecrit"] and not rep["gepa"]["adaptateur_genere"])
         self.assertFalse(rep["dspy"]["ecrit"])                                          # pas d'adaptateur écrit : le repli le génèrera

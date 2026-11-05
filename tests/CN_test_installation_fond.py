@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b41bdd
+# VERSION CN : 0.1.0  #348497
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prouve que tout chercheur du répertoire peut être préparé, installé et mis à jour depuis l'écran : l'épinglage, Python posé, le repli de l'adaptateur généré (vérifié sans être exécuté), la mise à jour qui bascule ou qui revient, les tâches de fond.
 # MÉTHODE    : aucun réseau, aucun vrai pip : un exécuteur de banc écrit des faux environnements ; le modèle est une fonction de banc.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b41bdd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=348497 ▼▼▼
 """Bancs de l'installation depuis l'écran."""
 import json
 import os
@@ -146,6 +146,12 @@ class Epinglage(Banc):
                 return super().__call__(commande, delai_s, cwd)
         e = E.epingler(self.rep(), executer=Coupe(self.base), executer_plein=Gros(self.base))
         self.assertEqual(len(e["paquets"]), 61)                                    # 61 paquets figés, pas les 2 ou 3 qui tiennent dans 40 caractères
+
+    def test_le_code_extrait_n_est_pas_coupe_par_des_barrieres_qu_il_contient_lui_meme(self):
+        reponse = "```python\nimport re\nBLOCS = re.compile(r\"```(?:python)?\\s*\\n(.*?)```\")\nIMPORTER = ['x']\n```\nvoilà"
+        code = G.extraire_code(reponse)
+        self.assertIn("IMPORTER", code)                                              # le premier « ``` » interne n'est pas la fin du bloc
+        self.assertEqual(G.extraire_code("Idée\n```python\ndef f(x):\n    return 1\n```"), "def f(x):\n    return 1\n")
 
     def test_un_adaptateur_a_generer_est_marque_dans_l_entree(self):
         e = E.epingler(self.rep(adaptateur=None, importer=["monpaquet"]), executer=self.faux)

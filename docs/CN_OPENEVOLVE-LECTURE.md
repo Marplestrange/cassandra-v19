@@ -9,10 +9,10 @@
 <!-- VERSION CN : 0.1.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
-<!-- RÔLE       : Notes de lecture du code d'OpenEvolve, en mots simples, avec renvois fichier:fonction, pour préparer le débat sur la sémantique d'Évolutif. -->
+<!-- RÔLE       : Notes de lecture du code d'OpenEvolve, en mots simples, avec renvois fichier:fonction, pour préparer le débat sur la sémantique d'Sedal. -->
 <!-- MÉTHODE    : lecture du dépôt (clone en lecture seule, hors du dépôt Cassandra) ; ce qui est lu en détail et ce qui est seulement survolé sont séparés. -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7f3f03 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=373a47 ▼▼▼ -->
 # OpenEvolve lu : notes de lecture
 
 Statut : 04-11-2026. Lecture seule : rien de ce dépôt n'a été installé ni exécuté dans le serveur Cassandra. Le texte de ce document est de moi ; aucune ligne d'OpenEvolve n'est copiée.
@@ -59,7 +59,7 @@ Une boucle : on choisit un programme **parent** et quelques programmes **inspira
 
 **La grille MAP-Elites** (`database._add`, `_calculate_feature_coords`). Chaque programme reçoit des coordonnées dans une grille ; une case ne garde qu'un programme, le meilleur (`_is_better` : le score de fitness, hors dimensions de la grille). Par défaut deux dimensions (`DatabaseConfig.feature_dimensions`) : `complexity` et `diversity`, 10 cases chacune. Une dimension peut être n'importe quelle mesure rendue par l'évaluateur (valeur continue, mise à l'échelle par `_scale_feature_value`, min-max par défaut).
 
-**Comment la « diversité » est mesurée (point capital).** Ce n'est PAS un calcul de sens. `_fast_code_diversity` (database.py) additionne : 0,1 × la différence de longueur du texte + 10 × la différence du nombre de lignes + 0,5 × le nombre de caractères présents dans un code et pas dans l'autre. Elle est moyennée contre un petit ensemble de référence de 20 programmes (`diversity_reference_size`, choisi gloutonnement par `_update_diversity_reference_set`). Le docstring dit lui-même « fast approximation ». Et la « complexité » est la **longueur du texte** (`len(program.code)`). Donc leur grille de qualité-diversité par défaut est : taille × une approximation de taille. C'est ce que fait déjà Évolutif (une niche par taille de code), en moins fin.
+**Comment la « diversité » est mesurée (point capital).** Ce n'est PAS un calcul de sens. `_fast_code_diversity` (database.py) additionne : 0,1 × la différence de longueur du texte + 10 × la différence du nombre de lignes + 0,5 × le nombre de caractères présents dans un code et pas dans l'autre. Elle est moyennée contre un petit ensemble de référence de 20 programmes (`diversity_reference_size`, choisi gloutonnement par `_update_diversity_reference_set`). Le docstring dit lui-même « fast approximation ». Et la « complexité » est la **longueur du texte** (`len(program.code)`). Donc leur grille de qualité-diversité par défaut est : taille × une approximation de taille. C'est ce que fait déjà Sedal (une niche par taille de code), en moins fin.
 
 **Les îlots** (`num_islands`, 5 par défaut). Des sous-populations séparées. Un enfant reste dans l'îlot de son parent (`_add`). Les parents et les inspirations sont tirés dans l'îlot (`sample_from_island`, `_sample_inspirations`). **Migration** (`migrate_programs`, `_migrate_one`) : tous les `migration_interval` générations (50 par défaut), les 10 % meilleurs de chaque îlot sont copiés dans les deux îlots voisins (anneau) ; une copie n'est faite que si aucun programme de l'îlot cible n'a exactement le même code (`p.code == migrant.code`, égalité de texte) ; les copies ne migrent jamais à nouveau.
 
@@ -117,6 +117,6 @@ Ce que ce filtre **fait** : il évite que la base se remplisse de quasi-copies. 
 1. La partie « sémantique » d'OpenEvolve est **une seule fonction de filtre à l'entrée de la base**, éteinte par défaut, qui encode du code avec un modèle distant. Tout le reste (diversité, voisins, types d'inspirations) est de la taille du texte et des mots-clés.
 2. Elle n'économise **aucun jeton ni aucun temps de calcul**, parce qu'elle vient après l'évaluation. Une version qui agit AVANT (sur l'idée, avant d'écrire le code ; ou sur la variante, avant de la juger) serait plus utile et n'existe pas chez eux.
 3. Ils n'ont **ni mémoire des échecs ni cache d'évaluation**. Chez nous, les tombes existent déjà (par empreinte exacte de l'arbre syntaxique) : on est devant eux sur ce point, et il s'agit surtout de les rendre plus intelligentes.
-4. Leur grille « qualité-diversité » est grossière. Il y a de la place pour mieux, sans forcément un modèle de sens : une mesure de **comportement à l'exécution** serait plus honnête pour notre problème (voir `docs/CN_EVOLUTIF-SEMANTIQUE.md`).
+4. Leur grille « qualité-diversité » est grossière. Il y a de la place pour mieux, sans forcément un modèle de sens : une mesure de **comportement à l'exécution** serait plus honnête pour notre problème (voir `docs/CN_SEDAL-SEMANTIQUE.md`).
 5. Le sens n'est jamais une preuve, chez eux non plus : l'évaluateur reste le juge ; le filtre de nouveauté ne fait que refuser une entrée.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->

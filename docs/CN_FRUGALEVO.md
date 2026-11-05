@@ -12,7 +12,7 @@
 <!-- RÔLE       : FrugalEvo lu, et Frugal -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=58f1fd ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7bd53f ▼▼▼ -->
 # FrugalEvo lu, et Frugal
 
 Statut : 04-11-2026. Ce document dit ce que fait FrugalEvo, ce que Frugal (`orfan/CN_frugal.py`) en reprend, ce qu'il laisse, et pourquoi.
@@ -73,7 +73,7 @@ Une seule fois, avant la recherche, le modèle fort lit le texte du problème, l
 | Budget borné, prévision du coût | **Gardé, en appels et en jetons** | Nous n'avons pas de dollars ici : le relais plafonne déjà les appels et les jetons, et Agents IA tient le plafond de coût de la maison. Frugal ajoute ses propres bornes (tours, appels). |
 | Pilotes + course ordonnée entre stratégies | **Gardé en miniature** | Chaque stratégie reçoit un premier essai ; on affine d'abord la plus prometteuse (la plus rapide encore équivalente, sinon la moins fausse). |
 | Évaluateur = juge dans la boucle | **Laissé** | Chez nous le moteur ne juge JAMAIS : il vérifie seulement « même sortie sur les entrées visibles ET plus rapide » ; le noyau juge sur tout le corpus et le jeu réservé. |
-| Base MAP-Elites à îlots, migration, populations | **Laissé** | Il n'y a qu'une fonction, un seul parent (la référence), un seul appel : rien à peupler. Le moteur « Évolutif » fait déjà des générations. |
+| Base MAP-Elites à îlots, migration, populations | **Laissé** | Il n'y a qu'une fonction, un seul parent (la référence), un seul appel : rien à peupler. Le moteur « Sedal » fait déjà des générations. |
 | Règles gratuites d'abord | **Nôtre, gardé** | FrugalEvo n'en a pas : c'est notre atout de coût zéro. |
 | Analyse de l'évaluateur par un modèle | **Gardé, sans appel de modèle** | Le juge de la maison est connu : le contexte porte ses seuils (gain minimum, poids des objectifs). Frugal les écrit dans la demande au modèle fort (« le juge exige les mêmes valeurs, au moins X % de gain, un gain qui tient hors du vu »). Un appel de plus pour le deviner serait du gaspillage. |
 | Cascade d'ouverture, hedge du fort, assurance | **Laissé** | Ils servent à une recherche longue sur un budget en dollars. Notre appel est court et borné. |

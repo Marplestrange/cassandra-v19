@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #889966
+# VERSION CN : 0.5.0  #205d2e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=889966 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=205d2e ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -457,7 +457,7 @@ def brancher(ctx):
         spec = importlib.util.find_spec(nom)
         if spec is None or not spec.origin:
             return False, "le fichier du moteur est introuvable"
-        fichier = {"orfan": spec.origin, "frugal": os.path.join(os.path.dirname(spec.origin), "CN_frugal.py"), "evolutif": os.path.join(os.path.dirname(spec.origin), "CN_evolutif.py")}.get(ident, spec.origin)
+        fichier = {"orfan": spec.origin, "frugal": os.path.join(os.path.dirname(spec.origin), "CN_frugal.py"), "sedal": os.path.join(os.path.dirname(spec.origin), "CN_sedal.py")}.get(ident, spec.origin)
         try:
             with open(fichier, "r", encoding="utf-8") as f:
                 ast.parse(f.read())

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9765dd
+# VERSION CN : 0.1.0  #486199
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Quand aucun adaptateur n'est écrit à la main pour un chercheur, en génère un d'après l'interface réelle du paquet installé, le vérifie sans l'exécuter, l'éprouve dans la cage avec un faux modèle et l'épingle par son empreinte ; il reste « à relire » : le chercheur ne s'active pas avant l'accord de l'admin.
 # MÉTHODE    : introspection du paquet dans SON environnement ; un modèle écrit ; l'arbre syntaxique refuse les imports dangereux ; un essai à blanc dans le bac, sans réseau ni clé ; le fichier va dans l'environnement du moteur (jamais dans le code de Cassandra) et un adaptateur écrit à la main passe toujours devant.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9765dd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=486199 ▼▼▼
 """L'adaptateur généré n'est qu'un pont : il traduit le contexte de Cassandra pour le paquet du chercheur et rend du TEXTE (des variantes). Le juge du noyau décide de tout ensuite,
 comme pour n'importe quel moteur ; le moteur tourne dans la cage (sans clé, sans réseau, sans écriture), et ses appels de modèle passent par le relais, compté et plafonné.
 
@@ -99,19 +99,21 @@ def verifier_code(code: str) -> str:
 
 
 def extraire_code(texte: str) -> str:
-    m = re.search(r"```(?:python)?\s*\n(.*?)```", texte or "", re.S)
-    code = ((m.group(1) if m else texte) or "").strip() + "\n"
-    try:
-        ast.parse(code)
-    except SyntaxError:
-        if '\\"' in code:                                                          # certains modèles échappent leurs guillemets comme dans du JSON : on essaie sans, seulement si le code tel quel ne se lit pas
-            propre = code.replace('\\"', '"')
-            try:
-                ast.parse(propre)
-                return propre
-            except SyntaxError:
-                pass
-    return code
+    """Le code de la réponse. Le code d'un adaptateur peut LUI-MÊME contenir trois apostrophes inversées (une expression régulière qui lit des blocs de code) : le premier « ``` » rencontré n'est donc pas forcément la fin. On prend d'abord de la première barrière à la dernière ; si cela ne se lit pas (plusieurs blocs), de la première à la suivante."""
+    texte = texte or ""
+    candidats = []
+    for motif in (r"```(?:python)?[ \t]*\n(.*)```", r"```(?:python)?[ \t]*\n(.*?)```"):
+        m = re.search(motif, texte, re.S)
+        if m:
+            candidats.append(m.group(1).strip() + "\n")
+    candidats.append(texte.strip() + "\n")
+    for code in candidats:
+        try:
+            ast.parse(code)
+            return code
+        except SyntaxError:
+            continue
+    return candidats[0]
 
 
 def sonder(python, importer: list, executer, delai_s: float = 120.0) -> list:

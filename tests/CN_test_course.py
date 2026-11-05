@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a5ea9d
+# VERSION CN : 0.1.0  #5ab5db
 # VERSION EC : néant
 # EC LIÉES   : néant
-# RÔLE       : Bancs des lots 3 et 4 de la maquette d'Évolution : cascade, affectations, plafonds, course, juge des prompts et des politiques, objectifs multiples, moteurs évolutif et frugal.
+# RÔLE       : Bancs des lots 3 et 4 de la maquette d'Évolution : cascade, affectations, plafonds, course, juge des prompts et des politiques, objectifs multiples, moteurs Sedal et Frugal.
 # MÉTHODE    : de vrais processus de moteur et un vrai noyau ; le modèle est une fonction de banc ; le temps du registre est une horloge de banc.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a5ea9d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ab5db ▼▼▼
 """Bancs du lot 3 (course, cascade, affectations, budget par moteur) et du lot 4 (juges, objectifs multiples)."""
 import json
 import sys
@@ -160,10 +160,10 @@ class RegistreCourse(unittest.TestCase):
             self.r.declarer(ident, nom, genre="natif", etat="actif")
 
     def test_la_cascade_par_defaut_puis_reordonnee_puis_refusee_si_inconnue(self):
-        self.assertEqual([(e["id"], e["on"]) for e in self.r.cascade()], [("orfan/deterministe", True), ("frugal", True), ("orfan/modele", True), ("evolutif", False)])
-        self.r.regler_cascade([{"id": "evolutif", "on": True}, {"id": "orfan/deterministe", "on": True}])
+        self.assertEqual([(e["id"], e["on"]) for e in self.r.cascade()], [("orfan/deterministe", True), ("frugal", True), ("orfan/modele", True), ("sedal", False)])
+        self.r.regler_cascade([{"id": "sedal", "on": True}, {"id": "orfan/deterministe", "on": True}])
         ids = [e["id"] for e in self.r.cascade()]
-        self.assertEqual(ids[:2], ["evolutif", "orfan/deterministe"])
+        self.assertEqual(ids[:2], ["sedal", "orfan/deterministe"])
         self.assertEqual(set(ids), set(MO.ETAGES))                                           # les étages oubliés reviennent en fin, éteints
         with self.assertRaises(ValueError):
             self.r.regler_cascade([{"id": "magie", "on": True}])
@@ -243,17 +243,17 @@ class MoteursNatifs(unittest.TestCase):
     def contexte(self):
         return {"point": "a.b", "source_reference": SRC, "fonction": "f", "contrat": {}, "entrees": ENTREES, "tombes": [], "budget": 3, "seuils": {}}
 
-    def test_l_evolutif_dans_la_cage_rend_une_variante_plus_rapide_et_verifiee(self):
-        m = MO.MoteurProcessus("evolutif", delai_s=90)
+    def test_sedal_dans_la_cage_rend_une_variante_plus_rapide_et_verifiee(self):
+        m = MO.MoteurProcessus("sedal", delai_s=90)
         r = m.proposer(self.contexte())
         self.assertTrue(r)
-        self.assertEqual(r[0]["origine"], "evolutif")
+        self.assertEqual(r[0]["origine"], "sedal")
         self.assertIn("min(x)", r[0]["texte"])
 
-    def test_l_evolutif_avec_un_modele_muet_garde_ce_qu_il_a(self):
+    def test_sedal_avec_un_modele_muet_garde_ce_qu_il_a(self):
         def muet(p, role):
             raise RuntimeError("quota")
-        r = MO.MoteurProcessus("evolutif", appeler_modele=muet, delai_s=90).proposer(self.contexte())
+        r = MO.MoteurProcessus("sedal", appeler_modele=muet, delai_s=90).proposer(self.contexte())
         self.assertTrue(r)                                                                      # les règles ont trouvé : le modèle muet n'arrête pas la recherche
 
     def test_le_frugal_ne_depense_rien_quand_les_regles_suffisent(self):
@@ -365,13 +365,13 @@ class DansLeModule(TM.Banc):
         self.assertTrue(self.ex("etat")["resultat"]["chaine"]["ok"])
 
     def test_une_course_refuse_ce_qui_n_en_est_pas_une(self):
-        for args in ({"etages": ["frugal"]}, {"etages": ["frugal", "frugal"]}, {"etages": ["frugal", "magie"]}, {"etages": ["frugal", "evolutif"], "critere": "beauté"},
-                     {"etages": ["frugal", "evolutif"], "budget": "or"}, {"etages": ["frugal", "evolutif"], "limite": 0}):
+        for args in ({"etages": ["frugal"]}, {"etages": ["frugal", "frugal"]}, {"etages": ["frugal", "magie"]}, {"etages": ["frugal", "sedal"], "critere": "beauté"},
+                     {"etages": ["frugal", "sedal"], "budget": "or"}, {"etages": ["frugal", "sedal"], "limite": 0}):
             self.assertNotEqual(self.ex("course", dict({"point": "labo.somme_min"}, **args))["statut"], "faite", args)
 
     def test_un_compte_ordinaire_ne_peut_rien_regler_ni_courir(self):
         for cap, args in (("cascade_regler", {}), ("affecter", {"point": "labo.somme_min", "etage": "frugal"}), ("budget_regler", {"jetons_mois": 1}), ("moteur_plafonner", {"moteur": "orfan", "jetons_jour": 1}),
-                          ("course", {"point": "labo.somme_min", "etages": ["frugal", "evolutif"]}), ("juger_prompt", {}), ("cage", {}), ("bac_eprouver", {})):
+                          ("course", {"point": "labo.somme_min", "etages": ["frugal", "sedal"]}), ("juger_prompt", {}), ("cage", {}), ("bac_eprouver", {})):
             self.assertEqual(self.ex(cap, args, compte=TM.SIMPLE)["statut"], "refuse", cap)
 
     def test_le_budget_et_les_objectifs_se_reglent_avec_retour(self):
@@ -416,7 +416,7 @@ class DansLeModule(TM.Banc):
     def test_le_catalogue_et_la_desinstallation_sont_dits(self):
         e = self.etat()
         self.assertEqual(e["catalogue"], [])
-        self.assertIn("evolutif", {m["id"] for m in e["moteurs"]})
+        self.assertIn("sedal", {m["id"] for m in e["moteurs"]})
         self.assertNotEqual(self.ex("moteur_desinstaller", {"moteur": "../.."})["statut"], "faite")
 
 
@@ -426,4 +426,4 @@ if __name__ == "__main__":
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════
 # EC : néant (des bancs).
 # CN : tout ce fichier est du nexus : les bancs des lots 3 et 4.
-# LIEN : noyau/CN_course.py, noyau/CN_moteurs.py, noyau/CN_juge_prompt.py, noyau/CN_objectifs.py, orfan/CN_evolutif.py, orfan/CN_frugal.py, modules/evolution.
+# LIEN : noyau/CN_course.py, noyau/CN_moteurs.py, noyau/CN_juge_prompt.py, noyau/CN_objectifs.py, orfan/CN_sedal.py, orfan/CN_frugal.py, modules/evolution.
