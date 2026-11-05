@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #df4dc7
+# VERSION CN : 0.5.1  #5647ac
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=df4dc7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=5647ac ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
@@ -257,6 +257,35 @@ perimetre = ["Itare : le compte qui agit, jamais un autre", "Cassandra, Amizo, s
 preuve = "relire la ligne de palier de cet outil"
 retour = "remettre le palier d'avant (ou le palier du catalogue), gardé dans le résultat de l'acte"
 paliers = ["auto", "raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "dotations"
+libelle = "Les familles de Cassandra et d'Itare : les modules dont ils sont propriétaires (leur manifeste) et ce que l'administrateur leur a prêté en plus"
+risque = "lecture"
+droit = "regler_agent"
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "dotation_poser"
+libelle = "Doter un agent d'une famille qui n'est pas la sienne : un module, une tuile du menu (desk, parc…) ou la famille d'un autre agent. Sa propre famille, elle, ne se prête ni ne se retire"
+risque = "moyen"
+droit = "regler_agent"
+perimetre = ["Cassandra et Itare seulement : Amizo garde ses six outils", "l'administrateur seulement", "les outils du module, de la tuile ou de la famille nommés, dans la limite de ce que chaque capacité permet à cet acteur ([qui]) et à ce compte (droit)"]
+preuve = "relire la ligne de dotation"
+retour = "retirer la dotation, ou remettre celle d'avant, gardée dans le résultat de l'acte"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "dotation_retirer"
+libelle = "Retirer à un agent une famille qu'on lui avait prêtée : il retrouve la répartition ordinaire. Ses propres modules, eux, restent à lui"
+risque = "moyen"
+droit = "regler_agent"
+perimetre = ["une dotation posée par l'administrateur", "jamais la famille propre de l'agent : elle ne dépend d'aucune dotation"]
+preuve = "relire : la ligne de dotation n'existe plus"
+retour = "reposer la dotation retirée, gardée dans le résultat de l'acte"
+paliers = ["raconter"]
 qui = ["humain", "compte"]
 
 [[capacites]]

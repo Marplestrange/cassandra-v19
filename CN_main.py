@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d6def8
+# VERSION CN : 0.1.0  #668303
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d6def8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=668303 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -179,7 +179,7 @@ class Noyau:
                     except (OSError, ValueError) as ex:
                         log.warning("corpus doré illisible (%s) : %s", corpus.name, ex)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "defaire_acte": self.executeur.defaire_acte, "outils": self._outils, "droits": self.droits, "identite": self.identite, "societe_de": (lambda c: self.identite.societe_de(c)), "societes": (lambda: [x["id"] for x in self.identite.societes(tout=True)]), "acces_societe": (lambda compte, soc: soc in self.droits.societes_de(compte)), "module_ouvert": (lambda soc, m: self.identite.module_ouvert(soc, m.id, m.importance, m.essentiel, m.instance)), "reglages": self.reglages,
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "defaire_acte": self.executeur.defaire_acte, "outils": self._outils, "proprietaires": self._proprietaires, "droits": self.droits, "identite": self.identite, "societe_de": (lambda c: self.identite.societe_de(c)), "societes": (lambda: [x["id"] for x in self.identite.societes(tout=True)]), "acces_societe": (lambda compte, soc: soc in self.droits.societes_de(compte)), "module_ouvert": (lambda soc, m: self.identite.module_ouvert(soc, m.id, m.importance, m.essentiel, m.instance)), "reglages": self.reglages,
                         "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "frein_actif": lambda nom: nom in self.freins(), "partage_actif": lambda s, d, t: self.identite.partage_actif(s, d, t), "racine": self.racine, "point": self.points.appeler, "evolution": self.evolution,
                         "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
                         "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, sante=self.sante_module, sante_tous=self.sante_tous, contributions=self.contributions, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, sections=self.sections_modules, gel=lambda: "gel" in self.freins(), activer=self.activer, desactiver=self.desactiver)})
@@ -224,6 +224,11 @@ class Noyau:
     def _manifestes_actifs(self) -> list:
         connus, _ = self._connus()
         return [connus[i][0] for i in sorted(self._branches) if i in connus]
+
+    def _proprietaires(self) -> dict:
+        """Qui répond de chaque module actif et dans quelle tuile du menu il se range : {module: (propriétaire, tuile)}, lu sur les manifestes.
+        Une métadonnée publique (la liste des modules la donne déjà) : elle sert à garder à chaque agent les outils de ses propres modules."""
+        return {m.id: (m.proprietaire, m.groupe) for m in self._manifestes_actifs()}
 
     def _lecture(self, cle: str, args: dict, compte: str = "", societe: str = ""):
         """Une lecture pour le compte d'un module : jamais une écriture, et un échec rend None au lieu de casser l'appelant."""

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #586efe
+# VERSION CN : 0.1.0  #34f6ad
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=586efe ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=34f6ad ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -268,6 +268,14 @@ class Contexte:
         if not self.manifeste.permissions.agir:
             raise PermissionError("le module « %s » n'a pas demandé d'agir comme un agent ([permissions] agir)" % self.module)
         return self._intro["outils"](self.compte, acteur)
+
+    def proprietaires(self) -> dict:
+        """{module actif: (propriétaire, tuile du menu)}, lu sur les manifestes. Pour le module qui répartit les outils entre les agents ([permissions] agir) :
+        l'agent propriétaire d'un module garde les outils de ce module, quelle que soit la liste qui les répartit."""
+        if not self.manifeste.permissions.agir:
+            raise PermissionError("le module « %s » n'a pas demandé d'agir comme un agent ([permissions] agir)" % self.module)
+        f = self._intro.get("proprietaires")
+        return dict(f()) if f else {}
 
     def chiffrer(self, valeur, etiquette: str, compte: str = "") -> str:
         """Chiffre un secret pour la base de CE module (AES-256-GCM, clé du serveur). L'étiquette et le module sont liés au chiffré : copié ailleurs, il ne se lit plus."""

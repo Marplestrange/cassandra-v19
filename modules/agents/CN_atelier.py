@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #68dc3e
+# VERSION CN : 0.5.1  #752dbf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=68dc3e ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=752dbf ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -102,12 +102,52 @@ def brancher_equipe(ctx, reglage):
 
     # ------------------------------------------------------------------ les paliers par outil
     def surcharges(agent, compte):
-        return {r["outil"]: {"palier": r["palier"], "confirmer": bool(r["confirmer"])} for r in db.lire("SELECT * FROM agent_paliers WHERE agent=? AND compte=?", (agent, compte))}
+        """Les paliers posés sur les outils d'un agent. Un « retire » posé sur un outil de SA propre famille ne compte pas : le propriétaire d'un module garde ses outils quoi qu'il arrive."""
+        return {r["outil"]: {"palier": r["palier"], "confirmer": bool(r["confirmer"])} for r in db.lire("SELECT * FROM agent_paliers WHERE agent=? AND compte=?", (agent, compte)) if not (r["palier"] == "retire" and possede(agent, r["outil"]))}
 
     memoire_outils = {}                                           # (acteur, compte) -> (instant, outils) : dériver ~600 outils du catalogue coûte cher, on ne le refait pas à chaque écran
 
+    # Qui répond de quel module (le manifeste) et ce que l'administrateur a prêté : lus au plus toutes les 20 s, car un outil se décide des centaines de fois par dérivation.
+    memo_famille = {"t": 0.0, "proprietaires": {}, "dotations": {}}
+
+    def oublier_famille():
+        memo_famille["t"] = 0.0
+        memoire_outils.clear()
+
+    def lire_famille():
+        if time.time() - memo_famille["t"] > 20:
+            try:
+                memo_famille["proprietaires"] = ctx.proprietaires()
+            except Exception:
+                memo_famille["proprietaires"] = {}
+            memo_famille["dotations"] = {}
+            try:
+                for r in db.lire("SELECT agent, portee, cible FROM agent_dotations"):
+                    memo_famille["dotations"].setdefault(r["agent"], set()).add((r["portee"], r["cible"]))
+            except Exception:
+                pass
+            memo_famille["t"] = time.time()
+        return memo_famille
+
+    def possede(agent, cle):
+        """Le propriétaire déclaré d'un module (son manifeste) garde les outils de ce module : aucune liste, aucun retrait ne l'en prive tant que le module est dans sa famille."""
+        return bool(agent) and lire_famille()["proprietaires"].get(cle.split(".", 1)[0], ("", ""))[0] == agent
+
+    def dote(agent, cle):
+        """Une famille qui n'est pas la sienne, confiée à cet agent par l'administrateur (un module, une tuile du menu, ou la famille d'un autre agent) : retirée, elle ne laisse rien."""
+        f = lire_famille()
+        mod = cle.split(".", 1)[0]
+        proprio, tuile = f["proprietaires"].get(mod, ("", ""))
+        for portee, cible in f["dotations"].get(agent, ()):
+            if (portee == "module" and cible == mod) or (portee == "tuile" and tuile and cible == tuile) or (portee == "agent" and proprio and cible == proprio):
+                return True
+        return False
+
     def dans_sa_famille(agent, cle):
-        """La répartition du catalogue : Cassandra tient l'infrastructure (jamais le bureau), Itare le bureau (jamais l'infrastructure) ; les autres modules sont communs, et Amizo a ses six outils."""
+        """La répartition du catalogue : Cassandra tient l'infrastructure (jamais le bureau), Itare le bureau (jamais l'infrastructure) ; les autres modules sont communs, et Amizo a ses six outils.
+        Deux règles passent avant ces listes : l'agent propriétaire d'un module (son manifeste) en garde tous les outils, jamais dépossédé ; et l'administrateur peut doter un autre agent d'une famille qui n'est pas la sienne."""
+        if possede(agent, cle) or dote(agent, cle):
+            return True
         r = D.get("repartition", {})
         interdit = r.get("sans", {}).get(agent)
         return not interdit or cle.split(".", 1)[0] not in r.get(interdit, [])
@@ -375,6 +415,8 @@ def brancher_equipe(ctx, reglage):
         conf = int(bool(confirmer)) if confirmer is not None else (avant["confirmer"] if avant else 0)
         if t["risque"] == "lecture" and (p == "raconter" or conf):
             raise ValueError("une lecture n'a ni palier « raconter » ni confirmation : seulement « retire »")
+        if p == "retire" and possede(d["acteur_outils"], outil):
+            raise ValueError("%s est propriétaire du module de cet outil : un outil de sa propre famille ne lui est jamais retiré" % d["nom"])
         if p == "retire" and conf:
             raise ValueError("un outil retiré ne se confirme pas")
         if p == "defaut":
@@ -430,8 +472,91 @@ def brancher_equipe(ctx, reglage):
         else:
             db.ecrire("INSERT OR REPLACE INTO agent_plafonds(portee, centimes, action, accord_jour, maj) VALUES (?,?,?,?,?)", (a["portee"], a["centimes"], a["action"], a["accord_jour"], a["maj"]))
 
+    # ------------------------------------------------------------------ les dotations : la famille d'un autre, prêtée et reprise
+    def portee_cible(portee, cible):
+        portee, cible = str(portee or "").strip().lower(), str(cible or "").strip().lower()
+        if portee not in ("module", "tuile", "agent"):
+            raise ValueError("portée : module | tuile | agent")
+        return portee, cible
+
+    def modules_vises(portee, cible):
+        f = lire_famille()["proprietaires"]
+        if portee == "module":
+            return [cible] if cible in f else []
+        if portee == "tuile":
+            return [m for m, (_, g) in f.items() if g and g == cible]
+        return [m for m, (p, _) in f.items() if p and p == cible]
+
+    def agent_dotable(agent):
+        compte = compte_agit()
+        if not admin(compte):
+            raise PermissionError("les familles se confient depuis l'administration")
+        d = definition(agent)
+        if d["acteur_outils"] not in ("cassandra", "itare"):
+            raise ValueError("%s ne reçoit pas de famille : Amizo garde ses six outils, les services n'en ont pas" % d["nom"])
+        return d, compte
+
+    def dotations(c):
+        compte = compte_agit()
+        if not admin(compte):
+            return {"agents": []}
+        f = lire_famille()
+        sortie = []
+        for d in definitions().values():
+            a = d["acteur_outils"]
+            if a not in ("cassandra", "itare"):
+                continue
+            sortie.append({"agent": a, "nom": d["nom"], "propres": sorted(m for m, (p, _) in f["proprietaires"].items() if p == a),
+                           "dotations": [{"portee": p, "cible": x, "modules": len(modules_vises(p, x))} for p, x in sorted(f["dotations"].get(a, ()))]})
+        return {"agents": sortie}
+
+    def dotation_poser(c, agent="", portee="", cible=""):
+        d, compte = agent_dotable(agent)
+        a, (portee, cible) = d["acteur_outils"], portee_cible(portee, cible)
+        modules = modules_vises(portee, cible)
+        if not modules:
+            raise ValueError("rien à doter : aucun module actif pour %s « %s »" % (portee, cible))
+        if all(lire_famille()["proprietaires"][m][0] == a for m in modules):
+            raise ValueError("%s est déjà propriétaire de tout cela : sa propre famille ne se prête pas" % d["nom"])
+        avant = db.lire("SELECT * FROM agent_dotations WHERE agent=? AND portee=? AND cible=?", (a, portee, cible))
+        db.ecrire("INSERT OR REPLACE INTO agent_dotations(agent, portee, cible, par, le) VALUES (?,?,?,?,?)", (a, portee, cible, compte, time.time()))
+        oublier_famille()
+        return {"agent": a, "portee": portee, "cible": cible, "modules": len(modules), "avant": dict(avant[0]) if avant else None}
+
+    def prouver_dotation(c, res):
+        return bool(db.lire("SELECT 1 FROM agent_dotations WHERE agent=? AND portee=? AND cible=?", (res["agent"], res["portee"], res["cible"])))
+
+    def defaire_dotation(c, res):
+        a = res["avant"]
+        if a is None:
+            db.ecrire("DELETE FROM agent_dotations WHERE agent=? AND portee=? AND cible=?", (res["agent"], res["portee"], res["cible"]))
+        else:
+            db.ecrire("INSERT OR REPLACE INTO agent_dotations(agent, portee, cible, par, le) VALUES (?,?,?,?,?)", (a["agent"], a["portee"], a["cible"], a["par"], a["le"]))
+        oublier_famille()
+
+    def dotation_retirer(c, agent="", portee="", cible=""):
+        d, compte = agent_dotable(agent)
+        a, (portee, cible) = d["acteur_outils"], portee_cible(portee, cible)
+        avant = db.lire("SELECT * FROM agent_dotations WHERE agent=? AND portee=? AND cible=?", (a, portee, cible))
+        if not avant:
+            raise ValueError("%s n'a pas cette dotation : rien à retirer (ses propres modules ne se retirent jamais)" % d["nom"])
+        db.ecrire("DELETE FROM agent_dotations WHERE agent=? AND portee=? AND cible=?", (a, portee, cible))
+        oublier_famille()
+        return {"agent": a, "portee": portee, "cible": cible, "avant": dict(avant[0])}
+
+    def prouver_retrait(c, res):
+        return not db.lire("SELECT 1 FROM agent_dotations WHERE agent=? AND portee=? AND cible=?", (res["agent"], res["portee"], res["cible"]))
+
+    def defaire_retrait(c, res):
+        a = res["avant"]
+        db.ecrire("INSERT OR REPLACE INTO agent_dotations(agent, portee, cible, par, le) VALUES (?,?,?,?,?)", (a["agent"], a["portee"], a["cible"], a["par"], a["le"]))
+        oublier_famille()
+
     # ------------------------------------------------------------------ inscription
     ctx.implementer("service_plafond", service_plafond)
+    ctx.implementer("dotations", dotations)
+    ctx.implementer("dotation_poser", dotation_poser, prouver_dotation, defaire_dotation, simuler=lambda x, agent="", portee="", cible="", **_: "confierait à %s les outils de %s « %s »" % (agent, portee, cible))
+    ctx.implementer("dotation_retirer", dotation_retirer, prouver_retrait, defaire_retrait, simuler=lambda x, agent="", portee="", cible="", **_: "retirerait à %s les outils de %s « %s »" % (agent, portee, cible))
     for cid, f in (("equipe", equipe), ("agent", agent), ("couts", couts), ("paliers", paliers)):
         ctx.implementer(cid, f)
     ctx.implementer("agent_regler", agent_regler, prouver_config, defaire_config, simuler=lambda x, id="", champs=None, **_: "réglerait %s : %s" % (id, ", ".join(sorted(champs or {}))))
@@ -514,7 +639,7 @@ def brancher_equipe(ctx, reglage):
     ctx.implementer("economies", economies)
 
     # ce que le tour de conversation emploie
-    return SimpleNamespace(effectif=effectif, limite=limite, surcharges=surcharges, outils_de=outils_de, dans_sa_famille=dans_sa_famille, repartition=lambda: D.get("repartition", {}), compter=compter, verdict=verdict, retenir=retenir, definitions=definitions, palier_outil=palier_outil,
+    return SimpleNamespace(effectif=effectif, limite=limite, surcharges=surcharges, outils_de=outils_de, dans_sa_famille=dans_sa_famille, possede=possede, dote=dote, repartition=lambda: D.get("repartition", {}), compter=compter, verdict=verdict, retenir=retenir, definitions=definitions, palier_outil=palier_outil,
                            cible=cible, definition=definition, admin=admin, calcul_cerveau=calcul_cerveau)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

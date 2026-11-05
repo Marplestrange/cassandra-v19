@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #170c51
+# VERSION CN : 0.1.0  #3e3d1a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'équipe d'agents : droits, capacités de lecture et de réglage, coût par jour, plafonds, cloisonnement, et l'absence d'outil de secret chez Itare et les agents invités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=170c51 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3e3d1a ▼▼▼
 """Bancs de l'équipe d'agents : droits, capacités de lecture et de réglage, coût par jour, plafonds, cloisonnement, et l'absence d'outil de secret chez Itare et les agents invités."""
 import shutil
 import sys
@@ -204,10 +204,11 @@ class Reglages(Equipe):
         cap.defaire(self.ctx, r)
         p = {x["cle"]: x for x in self.agent("paliers", compte=BEA, id="itare")["paliers"]}["notes.creer"]
         self.assertEqual((p["palier"], p["pose"], p["confirmer"]), ("auto", False, False))
-        self.regler("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="retire")
+        self.regler("palier_regler", compte=BEA, agent="itare", outil="memoire.lister", palier="retire")           # un outil d'un module qui n'est pas à Itare : il se retire
         self.assertEqual(self.agent("equipe", compte=BEA)["equipe"][0]["outils"]["retire"], 1)
-        self.regler("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="defaut")
+        self.regler("palier_regler", compte=BEA, agent="itare", outil="memoire.lister", palier="defaut")
         self.assertEqual(self.agent("equipe", compte=BEA)["equipe"][0]["outils"]["retire"], 0)
+        self.refuse("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="retire")             # un outil de SA famille (notes est à Itare) : jamais
 
     def test_niveau_regler_se_defait(self):
         r = self.regler("niveau_regler", compte=BEA, agent="itare", niveau="observer")
@@ -253,7 +254,7 @@ class Cloisonnement(Equipe):
         self.assertEqual(self.agent("agent", compte=ROOT, id="itare")["agent"]["nom"], "Max")
         self.assertEqual(self.agent("agent", compte=BEA, id="itare")["agent"]["nom"], "Rita")
         self.assertEqual(self.agent("agent", compte=LEO, id="itare")["agent"]["nom"], "Itare")
-        self.regler("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="retire")
+        self.regler("palier_regler", compte=BEA, agent="itare", outil="memoire.lister", palier="retire")
         self.assertEqual(self.agent("equipe", compte=ROOT)["equipe"][1]["outils"]["retire"], 0)
         self.assertEqual(self.agent("equipe", compte=LEO)["equipe"][0]["outils"]["retire"], 0)
 
@@ -292,12 +293,19 @@ class Paliers(Equipe):
         self.assertEqual(len(self.db.lire("SELECT * FROM agent_attentes")), 2)          # une autre demande, une autre attente
 
     def test_retire_enleve_l_outil_a_l_agent(self):
-        self.regler("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="retire")
-        r = self.causer("Crée une note", [self.creer(), texte("Je ne peux pas.")], agent="itare")
-        self.assertEqual(self.notes(), [])
-        noms = {t["function"]["name"] for t in self.faux.requetes[0]["corps"]["tools"]}
-        self.assertNotIn("notes__creer", noms)
-        self.assertIn("inconnu", [m for m in self.msgs(r["conversation_id"]) if m["role"] == "tool"][0]["contenu"].lower())
+        """Un outil d'un module qui n'est pas à l'agent se retire : le modèle ne le voit plus. Un outil de SA famille (notes est à Itare) ne se retire jamais."""
+        def offerts():
+            n = len(self.faux.requetes)
+            self.causer("Salut", [texte("Bonjour.")], agent="itare")
+            return {t["function"]["name"] for t in self.faux.requetes[n]["corps"]["tools"]}
+        self.assertIn("memoire__lister", offerts())
+        self.regler("palier_regler", compte=BEA, agent="itare", outil="memoire.lister", palier="retire")
+        apres = offerts()
+        self.assertNotIn("memoire__lister", apres)
+        self.refuse("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="retire")
+        propres = {o["cle"]: o for o in self.agent("agent", compte=BEA, id="itare")["outils"]}
+        self.assertIn("notes.creer", propres)
+        self.assertFalse(propres["notes.creer"]["retire"])
 
     def test_le_palier_pose_pour_un_agent_ne_touche_pas_les_autres(self):
         self.regler("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="raconter")
