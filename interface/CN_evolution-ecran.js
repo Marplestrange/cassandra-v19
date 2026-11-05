@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #dd38b2
+// VERSION CN : 0.2.0  #9b8913
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=dd38b2 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=9b8913 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -787,7 +787,7 @@
       const r = S.resultat;
       if (!r) return "";
       if (r.erreur || r.visites || r.retraits) return resultat();
-      const jet = (r.etages || []).reduce((a, e) => a + (e.jetons || 0), 0), l = r.essais || [];
+      const jet = S.jetonsRech != null ? S.jetonsRech : (r.etages || []).reduce((a, e) => a + (e.jetons || 0), 0), l = r.essais || [];
       let h = '<div class="issue ' + (r.ok ? "bien" : "rien") + '">' + (r.ok ? "Une amélioration a été trouvée (" + esc(r.piece.ec) + ", " + pct(r.piece.gain_annonce_pct) + " de temps), avec exactement le même résultat sur tous les exemples. Elle tourne à l’essai, à côté de l’originale." + ' <br><a class="lien" data-vers="amelio.essai">La voir dans Améliorations →</a>' : "Aucune version n’est à la fois identique à l’originale et plus rapide. Rien n’a été changé." + '<br><small style="font-weight:500">' + esc(r.raison || "") + ". Ce n’est pas une panne : certaines fonctions sont déjà assez rapides. Tu peux essayer une autre manière, ou plus de versions.</small>") + "</div>";
       if (l.length) h += '<div class="tw"><table><thead><tr><th>Version</th><th>Résultat</th><th class="num">Gain</th></tr></thead><tbody>' + l.map((e, i) => "<tr><td>" + (i + 1) + "</td><td>" + esc(e.verdict) + '</td><td class="num">' + pct(e.gain_pct) + "</td></tr>").join("") + "</tbody></table></div>";
       const pj = (M0().d || {}).propositions_jour;
@@ -1013,7 +1013,7 @@
       if (nom === "annuler") { S.confirmer = null; return dessiner(); }
       if (nom === "proposer" || nom === "retour" || nom === "visiter") { const em = racine.querySelector("#ev-moteur"), eb = racine.querySelector("#ev-budget"); if (em) S.choixMoteur = em.value; if (eb) S.choixBudget = parseInt(eb.value, 10) || 3; S.confirmer = nom; S.vue = "capot.points"; suivre(); return dessiner(); }
       const moteur = (racine.querySelector("#ev-moteur") || {}).value || S.choixMoteur || "deterministe", budget = parseInt((racine.querySelector("#ev-budget") || {}).value, 10) || S.choixBudget || 3;
-      S.confirmer = null; S.occupe = true; S.resultat = null; S.attente = null; S.dureeS = null; const t0 = Date.now(); dessiner();
+      S.confirmer = null; S.occupe = true; S.resultat = null; S.attente = null; S.dureeS = null; S.jetonsRech = null; const t0 = Date.now(), dep0 = ((M0().d || {}).depense_mois); dessiner();
       try {
         if (nom === "proposer-ok") {
           const fait0 = async () => { try { return (((await CASS.agir("evolution.moteurs", {})) || {}).propositions_jour || {}).fait || 0; } catch (e) { return -1; } };
@@ -1037,7 +1037,7 @@
       S.occupe = false;
       S.dureeS = Math.round((Date.now() - t0) / 1000);
       await charger();
-      try { await chargerM(); } catch (e) { /* le compteur du jour se relira à l'actualisation */ }
+      try { await chargerM(); const dep1 = (M0().d || {}).depense_mois; if (dep0 != null && dep1 != null) S.jetonsRech = Math.max(0, dep1 - dep0); } catch (e) { /* le compteur du jour se relira à l'actualisation */ }
       dessiner();
     }
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #28503f
+# VERSION CN : 0.5.0  #0b1f97
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=28503f ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=0b1f97 ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -228,7 +228,7 @@ def brancher(ctx):
         except Exception as e:
             catalogue, erreur_catalogue = [], str(e)
         return {"moteurs": liste, "isoles": isoles(), "cascade": reg.cascade(), "options": reg.options(), "affectations": reg.affectations(), "budget": reg.budget(),
-                "depense_mois": reg.depense_mois(), "propositions_jour": {"fait": evo.tentatives_depuis(), "plafond": int(evo.seuils["propositions_par_jour"])},
+                "depense_mois": reg.depense_mois(), "propositions_jour": {"fait": evo.tentatives_depuis(), "plafond": max(1, int(reglage("propositions_par_jour", evo.seuils.get("propositions_par_jour", 20))))},
                 "relais": reg.relais(30), "courses": reg.courses(20), "journal": reg.journal(60), "objectifs": reg.objectifs(),
                 "etages": {k: {"moteur": v[0], "nom": v[2], "cout": v[3]} for k, v in reg.etages().items()}, "catalogue": catalogue, "catalogue_erreur": erreur_catalogue,
                 "points": sorted(evo.points.points())}
