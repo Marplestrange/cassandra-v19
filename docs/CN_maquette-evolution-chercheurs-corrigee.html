@@ -13,7 +13,7 @@
    2. l'ordre, l'interrupteur et ce que chaque étage a rapporté sont sur la MÊME ligne (avant : trois endroits, et deux façons d'éteindre) ;
    3. un tableau « Ce que chacun a rapporté » : essais, améliorations trouvées, jetons, jetons par amélioration, plafond du jour posé sur place ;
    4. le parcours d'une recherche est dit en une phrase, avec son coût mesuré ;
-   5. « Installation » et « Relais de modèles » ne sont plus des onglets ici : un lien vers Installer un chercheur et vers Réglages › Quels modèles ;
+   5. « Installation » et « Relais de modèles » ne sont plus des onglets ici : deux boutons en haut à droite (Choisir les modèles, + Ajouter un chercheur) ;
    6. le détail technique devient une FICHE par chercheur, avec un sélecteur (Orfan, Frugal 2, Évolutif) : identité, chiffres, ses méthodes, ses vérifications, ses derniers appels ;
    7. vocabulaire simple : « étage », « cascade », « relais », « adaptateur », « EC » disparaissent.
   Les boutons sont vivants. Rien n'est envoyé nulle part.
@@ -161,10 +161,10 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
   function dessiner() {
     const partM = Math.round(100 * BUDGET.depense / BUDGET.mois), partJ = Math.round(100 * PROP.fait / PROP.plafond);
     racine.innerHTML =
-      '<div class="entete"><div><h1>Les chercheurs</h1><div class="note" style="font-size:13.5px">Ceux qui cherchent comment rendre Cassandra plus rapide : dans quel ordre, combien ça coûte, ce que chacun a rapporté.</div></div></div>' +
+      '<div class="entete"><div><h1>Les chercheurs</h1><div class="note" style="font-size:13.5px">Ceux qui cherchent comment rendre Cassandra plus rapide : dans quel ordre, combien ça coûte, ce que chacun a rapporté.</div></div><div class="d"><button class="btn" data-vers="Réglages › Quels modèles" title="Choisir l’exécutant et le stratège">Choisir les modèles</button><button class="btn prim" data-vers="Installer un chercheur" title="Aujourd’hui : 3 livrés avec Cassandra, 0 installé">+ Ajouter un chercheur</button></div></div>' +
       '<div class="verre etat"><div class="etat-t"><div class="etat-l"><span class="pt-e ' + (actifs().length ? (partM >= 80 ? "al" : "ok") : "dg") + '"></span><div><div class="etat-h">' + esc(titreEtat()) + '</div><div class="etat-s">' + esc(sousEtat()) + '</div></div></div>' +
       '<div class="anneaux">' + anneau(partJ, PROP.fait, "sur " + PROP.plafond, "Recherches aujourd’hui") + anneau(partM, partM + " %", kj(BUDGET.depense) + " sur " + kj(BUDGET.mois), "Budget du mois") + "</div></div></div>" +
-      '<div class="deuxc"><div class="col">' + blocOrdre() + blocRegles() + '</div><div class="col">' + blocRapport() + blocLiens() + blocTech() + "</div></div>";
+      '<div class="deuxc"><div class="col">' + blocOrdre() + blocRegles() + '</div><div class="col">' + blocRapport() + blocTech() + "</div></div>";
     lier();
   }
   function blocOrdre() {
