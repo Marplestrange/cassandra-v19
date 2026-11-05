@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #b32fc3
+// VERSION CN : 0.2.0  #b9483c
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=b32fc3 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=b9483c ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -40,9 +40,13 @@
     moonshot: ["kimi-k2-0905-preview"],
     zai: ["glm-4.6"],
     alibaba: ["qwen-plus", "qwen-max", "qwen-turbo"],
+    perplexity: ["sonar", "sonar-pro", "sonar-reasoning"],
+    github: ["openai/gpt-4.1", "meta/Llama-3.3-70B-Instruct", "deepseek/DeepSeek-V3-0324"],
+    cohere: ["command-a-03-2025", "command-r-plus-08-2024"],
     ollama: ["qwen2.5:3b", "qwen3:4b-instruct", "llama3.2:3b"],
   };
-  const LIENS = { deepseek: "platform.deepseek.com", openrouter: "openrouter.ai/keys", openai: "platform.openai.com/api-keys", google: "aistudio.google.com/apikey", groq: "console.groq.com/keys", anthropic: "console.anthropic.com/settings/keys", mistral: "console.mistral.ai/api-keys", xai: "console.x.ai", together: "api.together.ai/settings/api-keys", fireworks: "fireworks.ai/account/api-keys", cerebras: "cloud.cerebras.ai", nvidia: "build.nvidia.com", sambanova: "cloud.sambanova.ai/apis", deepinfra: "deepinfra.com/dash/api_keys", moonshot: "platform.moonshot.ai", zai: "z.ai/manage-apikey/apikey-list", alibaba: "modelstudio.console.alibabacloud.com" };
+  const EX_CLE = { openai: "sk-…", deepseek: "sk-…", openrouter: "sk-or-…", google: "AIza…", groq: "gsk_…", anthropic: "sk-ant-…", xai: "xai-…", perplexity: "pplx-…", github: "github_pat_… (droit « models »)", mistral: "clé Mistral", cohere: "clé Cohere" };   // un EXEMPLE de forme, jamais une règle : aucune clé n’est refusée pour son préfixe
+  const LIENS = { deepseek: "platform.deepseek.com", openrouter: "openrouter.ai/keys", openai: "platform.openai.com/api-keys", google: "aistudio.google.com/apikey", groq: "console.groq.com/keys", perplexity: "perplexity.ai/settings/api", github: "github.com/settings/personal-access-tokens", cohere: "dashboard.cohere.com/api-keys", anthropic: "console.anthropic.com/settings/keys", mistral: "console.mistral.ai/api-keys", xai: "console.x.ai", together: "api.together.ai/settings/api-keys", fireworks: "fireworks.ai/account/api-keys", cerebras: "cloud.cerebras.ai", nvidia: "build.nvidia.com", sambanova: "cloud.sambanova.ai/apis", deepinfra: "deepinfra.com/dash/api_keys", moonshot: "platform.moonshot.ai", zai: "z.ai/manage-apikey/apikey-list", alibaba: "modelstudio.console.alibabacloud.com" };
   const DEFAUTS = ["principal", "itare_citadelle"];                      // les rôles que prennent Cassandra, Amizo et Itare quand on ne leur en donne pas d’autre
 
   const CSS = ".md{display:flex;flex-direction:column;gap:16px;color:var(--txt);font-size:13.5px;line-height:1.5}.md *{box-sizing:border-box}.md h1,.md h2,.md h3,.md p{margin:0}.md .mono{font-family:" + MONO + "}" +
@@ -209,7 +213,7 @@
         '<div class="champs"><label class="ch"><b>Fournisseur</b><select id="md-prov">' + S.f.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === S.prov ? " selected" : "") + ">" + esc(x.nom) + "</option>").join("") + "</select>" +
         (LIENS[S.prov] ? '<span class="note">Créer une clé : ' + esc(LIENS[S.prov]) + "</span>" : "") + "</label>" +
         '<label class="ch"><b>Nom du modèle</b><input type="text" id="md-nom" list="md-sug" value="' + esc(S.form.nom) + '" placeholder="' + esc(p.defaut || "nom du modèle") + '" autocomplete="off" spellcheck="false"><datalist id="md-sug">' + sug.map((x) => '<option value="' + esc(x) + '">').join("") + "</datalist><span class=\"note\">Vide : " + esc(p.defaut || "à saisir") + "</span></label>" +
-        (besoin ? '<label class="ch"><b>Clé d’API' + (p.cle === "optionnelle" ? " (facultative)" : "") + '</b><input type="password" id="md-cle" value="" placeholder="sk-…" autocomplete="off" spellcheck="false"></label>' : "") +
+        (besoin ? '<label class="ch"><b>Clé d’API' + (p.cle === "optionnelle" ? " (facultative)" : "") + '</b><input type="password" id="md-cle" value="" placeholder="' + esc(EX_CLE[S.prov] || "clé d’API") + '" autocomplete="off" spellcheck="false"></label>' : "") +
         (perso ? '<label class="ch"><b>Adresse de l’API</b><input type="text" id="md-base" value="' + esc(S.form.base) + '" placeholder="' + (S.prov === "omniroute" ? "http://adresse-ou-ip:20128 ou https://passerelle.exemple.fr" : "https://… ou http://127.0.0.1:8000/v1") + '" autocomplete="off" spellcheck="false"></label>' : "") + "</div>" +
         '<div class="acts"><button class="btn pri" data-a="ajouter"' + (S.occupe ? " disabled" : "") + ">" + (S.occupe ? "Un instant…" : "Ajouter et essayer") + "</button></div></div>";
     }

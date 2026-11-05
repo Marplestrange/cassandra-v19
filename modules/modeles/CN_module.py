@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #79e4ff
+# VERSION CN : 0.1.0  #ef9c1e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=79e4ff ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ef9c1e ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -63,6 +63,9 @@ FOURNISSEURS = {
     "moonshot": {"nom": "Moonshot (Kimi)", "base_url": "https://api.moonshot.ai/v1", "defaut": "kimi-k2-0905-preview", "raisonneur": False, "cle": "requise"},
     "zai": {"nom": "Z.ai (GLM)", "base_url": "https://api.z.ai/api/paas/v4", "defaut": "glm-4.6", "raisonneur": True, "cle": "requise"},
     "alibaba": {"nom": "Alibaba (Qwen, Model Studio)", "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "defaut": "qwen-plus", "raisonneur": False, "cle": "requise"},
+    "perplexity": {"nom": "Perplexity", "base_url": "https://api.perplexity.ai", "defaut": "sonar", "raisonneur": True, "cle": "requise"},
+    "github": {"nom": "GitHub Models", "base_url": "https://models.github.ai/inference", "defaut": "openai/gpt-4.1", "raisonneur": False, "cle": "requise"},
+    "cohere": {"nom": "Cohere", "base_url": "https://api.cohere.ai/compatibility/v1", "defaut": "command-a-03-2025", "raisonneur": False, "cle": "requise"},
     "ollama": {"nom": "Ollama (local)", "base_url": "http://127.0.0.1:11434/v1", "defaut": "qwen2.5:3b", "raisonneur": False, "cle": "aucune"},
     "personnalise": {"nom": "Personnalisé (compatible OpenAI)", "base_url": "", "defaut": "", "raisonneur": False, "cle": "optionnelle"},
 }
