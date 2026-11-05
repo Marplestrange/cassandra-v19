@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d537d2
+# VERSION CN : 0.1.0  #913dfb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Fait tourner en fond ce qui dure des minutes (préparer, installer, mettre à jour un chercheur) et rend son avancement à l'écran qui le demande, au lieu de faire attendre une requête qui expirerait.
 # MÉTHODE    : un fil par tâche, un état lisible à tout moment (étapes faites, étape en cours, fin) ; une seule tâche à la fois par chercheur ; la mémoire du processus, rien d'écrit : une tâche perdue au redémarrage se refait.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d537d2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=913dfb ▼▼▼
 """Les installations durent plusieurs minutes (résoudre les paquets, les télécharger, écrire et éprouver un adaptateur) : la passerelle coupe une requête au bout d'une minute. La tâche tourne
 donc dans un fil du serveur et l'écran la relit toutes les secondes (`evolution.moteur_tache`)."""
 from __future__ import annotations
@@ -34,6 +34,10 @@ class Taches:
     def actif(self, ident: str) -> bool:
         with self._verrou:
             return any(t["moteur"] == ident and not t["fini"] for t in self._d.values())
+
+    def actives(self) -> list:
+        with self._verrou:
+            return [{"id": t["id"], "nature": t["nature"], "moteur": t["moteur"]} for t in self._d.values() if not t["fini"]]
 
     def lancer(self, nature: str, ident: str, travail, plan=None) -> str:
         """`travail(progres) -> dict` ; `progres(etapes=None, en_cours=None)` met l'état à jour. Rend l'identifiant de la tâche."""

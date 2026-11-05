@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d4d979
+# VERSION CN : 0.1.0  #b41bdd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prouve que tout chercheur du répertoire peut être préparé, installé et mis à jour depuis l'écran : l'épinglage, Python posé, le repli de l'adaptateur généré (vérifié sans être exécuté), la mise à jour qui bascule ou qui revient, les tâches de fond.
 # MÉTHODE    : aucun réseau, aucun vrai pip : un exécuteur de banc écrit des faux environnements ; le modèle est une fonction de banc.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d4d979 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b41bdd ▼▼▼
 """Bancs de l'installation depuis l'écran."""
 import json
 import os
@@ -130,6 +130,22 @@ class Epinglage(Banc):
         self.assertEqual([p["requis"] for p in e["paquets"]], ["monpaquet==1.0.0", "libutile==2.1"])
         self.assertTrue(all(h.startswith("sha256:") and len(h) == 71 for p in e["paquets"] for h in p["empreintes"]))
         I.verifier_entree(e)                                                       # l'entrée épinglée est une entrée valide du catalogue
+
+    def test_le_gel_des_versions_est_lu_en_entier_meme_si_l_executeur_coupe_la_sortie(self):
+        class Coupe(Faux):
+            def __call__(s, commande, delai_s, cwd):
+                code, sortie = super().__call__(commande, delai_s, cwd)
+                return code, sortie[-40:]                                          # l'exécuteur de l'installateur ne garde que la fin
+        gros = Faux(self.base)
+        gros_freeze = "".join("paquet%d==1.%d\n" % (i, i) for i in range(60))
+        gros.__call__ = None
+        class Gros(Faux):
+            def __call__(s, commande, delai_s, cwd):
+                if "pip" in commande and "freeze" in commande:
+                    return 0, "monpaquet==1.0.0\n" + gros_freeze
+                return super().__call__(commande, delai_s, cwd)
+        e = E.epingler(self.rep(), executer=Coupe(self.base), executer_plein=Gros(self.base))
+        self.assertEqual(len(e["paquets"]), 61)                                    # 61 paquets figés, pas les 2 ou 3 qui tiennent dans 40 caractères
 
     def test_un_adaptateur_a_generer_est_marque_dans_l_entree(self):
         e = E.epingler(self.rep(adaptateur=None, importer=["monpaquet"]), executer=self.faux)

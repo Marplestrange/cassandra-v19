@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #3fe2d7
+# VERSION CN : 0.5.0  #12d8c5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=3fe2d7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=12d8c5 ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -234,7 +234,7 @@ def brancher(ctx):
                 "depense_mois": reg.depense_mois(), "propositions_jour": {"fait": evo.tentatives_depuis(), "plafond": max(1, int(reglage("propositions_par_jour", evo.seuils.get("propositions_par_jour", 20))))},
                 "relais": reg.relais(30), "courses": reg.courses(20), "journal": reg.journal(60), "objectifs": reg.objectifs(),
                 "etages": {k: {"moteur": v[0], "nom": v[2], "cout": v[3]} for k, v in reg.etages().items()}, "catalogue": catalogue, "catalogue_erreur": erreur_catalogue,
-                "points": sorted(evo.points.points()), "repertoire": repertoire_vue(), "serveur": serveur_info()}
+                "points": sorted(evo.points.points()), "repertoire": repertoire_vue(), "serveur": serveur_info(), "taches": taches().actives()}
 
     # ── la cascade, les affectations, le budget, les objectifs ──
     def cascade_regler(c, ordre=None, options=None):
@@ -528,6 +528,10 @@ def brancher(ctx):
     def plan_de(rep, prepare, genere, python_pose):
         return ([] if prepare else ["préparation des paquets"]) + ["catalogue scellé", "entrée du catalogue"] + (["Python posé"] if python_pose else []) + ["environnement à part", "paquets épinglés par empreinte"] + (["adaptateur généré"] if genere else []) + ["banc d'import de l'adaptateur", "registre des moteurs"]
 
+    def executer_epinglage(inst):
+        """Les exécuteurs de l'épinglage : ceux de l'installateur seulement s'il en a un d'injecté (un banc) ; sinon ceux, sans coupure de sortie, de l'épinglage."""
+        return {} if getattr(inst._exec, "__name__", "") == "_executer" else {"executer": inst._exec}
+
     def preparer(rep, progres, inst):
         """Du répertoire au catalogue scellé : Python posé s'il le faut, paquets résolus et empreintés, entrée écrite et scellée. Rend (entrée, étapes faites)."""
         ep = importlib.import_module("noyau.CN_epinglage")
@@ -538,7 +542,7 @@ def brancher(ctx):
             interp = inst.poser_python(rep["python"])
             faites.append({"nom": "Python posé", "ok": True, "detail": "%s : %s" % (rep["python"], interp)})
         progres(faites, "préparation des paquets…")
-        entree = ep.epingler(rep, interpreteur=interp, progres=lambda t: progres(faites, t), executer=inst._exec)
+        entree = ep.epingler(rep, interpreteur=interp, progres=lambda t: progres(faites, t), **executer_epinglage(inst))
         if rep.get("python"):
             entree["python"] = rep["python"]
         ep.inscrire(inst.catalogue, entree, evo.points._cle())
@@ -567,7 +571,7 @@ def brancher(ctx):
         ep = importlib.import_module("noyau.CN_epinglage")
         faites = []
         progres(faites, "recherche de la version la plus récente…")
-        nouvelle = ep.epingler(rep, interpreteur=ancien.get("interpreteur", ""), progres=lambda t: progres(faites, t), executer=inst._exec)
+        nouvelle = ep.epingler(rep, interpreteur=ancien.get("interpreteur", ""), progres=lambda t: progres(faites, t), **executer_epinglage(inst))
         if rep.get("python"):
             nouvelle["python"] = rep["python"]
         if str(nouvelle.get("version")) == str(ancien.get("version")):

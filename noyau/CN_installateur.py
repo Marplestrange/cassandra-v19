@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7f8ced
+# VERSION CN : 0.1.0  #f3d202
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Installe un moteur externe d'Évolution depuis un catalogue scellé : environnement à part, paquets épinglés par empreinte, banc d'import, retour arrière complet au moindre échec.
 # MÉTHODE    : catalogue JSON scellé par HMAC (la clé de l'instance) ; un venv par moteur ; `pip --require-hashes` ; chaque étape est journalisée ; un échec défait tout ce qui précède.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7f8ced ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f3d202 ▼▼▼
 """Lot 2 de la maquette d'Évolution : installer un moteur autre qu'Orfan sans lui faire confiance.
 
 Rien ne s'installe qui ne soit dans le CATALOGUE, et le catalogue n'est cru que scellé (HMAC de la clé de l'instance) : un catalogue modifié ou sans sceau est refusé.
@@ -159,7 +159,10 @@ class Installateur:
         etapes: list = []
 
         def etape(nom, ok, detail=""):
-            etapes.append({"nom": nom, "ok": bool(ok), "detail": str(detail)[:300]})
+            texte = str(detail)
+            if len(texte) > 300:
+                texte = texte[:300] if ok else "…" + texte[-299:]                              # l'erreur d'un échec est en BAS de la sortie : on garde la fin
+            etapes.append({"nom": nom, "ok": bool(ok), "detail": texte})
             if progres is not None:
                 try:
                     progres([dict(e) for e in etapes])
