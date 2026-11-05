@@ -42,8 +42,8 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
 .ev .gros{font:600 30px/1.1 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}
 .ev .deux{display:grid;grid-template-columns:340px minmax(0,1fr);gap:14px;align-items:start}
 @media(max-width:1000px){.ev .deux{grid-template-columns:1fr}}
-.ev .liste-f{padding:12px;display:flex;flex-direction:column;gap:8px;position:sticky;top:60px;max-height:calc(100vh - 80px)}
-.ev .liste-f .scroll{overflow:auto;display:flex;flex-direction:column;gap:4px;min-height:120px}
+.ev .liste-f{padding:12px;display:flex;flex-direction:column;gap:8px}
+.ev .liste-f .scroll{display:flex;flex-direction:column;gap:4px}.ev .plus{border:1px dashed var(--e-filet);background:transparent;color:var(--accent);border-radius:11px;padding:8px;font:600 13px var(--font-sans,system-ui);cursor:pointer}
 .ev .recherche{width:100%;font:14px var(--font-sans,system-ui)!important;padding:9px 11px!important;border-radius:11px!important}
 .ev .fn{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;text-align:left;border:1px solid transparent;background:transparent;color:inherit;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;width:100%}
 .ev .fn:hover{background:var(--e-doux)}.ev .fn.sel{background:var(--e-verre);border-color:var(--accent)}
@@ -156,7 +156,7 @@ memoire.json_extraire|1|0.631|26|7|19|26|0.6|0`.split("\n").map((l) => l.split("
   const fmt = (n) => Number(n).toLocaleString("fr-FR");
   const dur = (ms) => ms == null ? "—" : (ms < 1 ? ms.toFixed(3) : ms.toFixed(ms < 10 ? 2 : 1)).replace(".", ",") + " ms";
   const MANIERES = [["gratuit", "Sans modèle", "Des recettes toutes faites, sur ta machine. Rapide, ça ne coûte rien.", "0 jeton"], ["modele", "Avec un modèle", "Un modèle écrit des versions à essayer. Il trouve des idées que les recettes n'ont pas.", "quelques milliers de jetons par essai"], ["les_deux", "Les deux, gratuit d'abord", "Les recettes d'abord ; le modèle ne se sert que si elles ne trouvent rien.", "0 jeton si ça suffit"]];
-  const S = { sel: "planifie.decrire", q: "", maniere: "les_deux", essais: 3, onglet: "essaye", res: null, occupe: false, ouvertMuets: false, demo: false };
+  const S = { tous: false, sel: "planifie.decrire", q: "", maniere: "les_deux", essais: 3, onglet: "essaye", res: null, occupe: false, ouvertMuets: false, demo: false };
   const racine = document.getElementById("ev");
 
   function liste() {
@@ -166,7 +166,7 @@ memoire.json_extraire|1|0.631|26|7|19|26|0.6|0`.split("\n").map((l) => l.split("
       '<span class="m">' + (f.muet ? "jamais appelée" : fmt(f.appels) + " appels · " + dur(f.ms) + '<span class="bar"><i style="width:' + Math.max(3, Math.round(100 * f.valeur / vmax)) + '%"></i></span>') + "</span></button>";
     return '<input class="recherche" id="rech" type="text" placeholder="Chercher une fonction (ex. planifie, dns…)" value="' + esc(S.q) + '">' +
       '<div class="lib">Où il y a le plus à gagner · ' + m.length + "</div>" +
-      '<div class="scroll">' + (m.map(ligne).join("") || '<div class="note" style="padding:8px">Aucune fonction mesurée ne correspond.</div>') +
+      '<div class="scroll">' + ((q || S.tous ? m : m.slice(0, 10)).map(ligne).join("") + (!q && !S.tous && m.length > 10 ? '<button class="plus" data-tous="1">Voir les ' + (m.length - 10) + " autres fonctions mesurées</button>" : "") || '<div class="note" style="padding:8px">Aucune fonction mesurée ne correspond.</div>') +
       (mu.length ? '<details class="repli"' + (S.ouvertMuets || q ? " open" : "") + "><summary>" + mu.length + " fonctions pas encore mesurées (jamais appelées)</summary>" + mu.map(ligne).join("") + "</details>" : "") + "</div>";
   }
 
@@ -239,6 +239,7 @@ memoire.json_extraire|1|0.631|26|7|19|26|0.6|0`.split("\n").map((l) => l.split("
 
   function lier() {
     racine.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => { S.sel = b.dataset.f; S.res = null; dessiner(); }));
+    racine.querySelectorAll("[data-tous]").forEach((b) => b.addEventListener("click", () => { S.tous = true; dessiner(); }));
     const r = racine.querySelector("#rech"); if (r) r.addEventListener("input", () => { S.q = r.value; dessiner(); const n = racine.querySelector("#rech"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
     racine.querySelectorAll("[data-m]").forEach((b) => b.addEventListener("click", () => { S.maniere = b.dataset.m; dessiner(); }));
     const e = racine.querySelector("#ess"); if (e) e.addEventListener("input", () => { S.essais = +e.value; racine.querySelector("#essv").textContent = e.value; });
