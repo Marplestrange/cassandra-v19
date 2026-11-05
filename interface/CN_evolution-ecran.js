@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #02d945
+// VERSION CN : 0.2.0  #dd38b2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=02d945 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=dd38b2 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -112,7 +112,7 @@
     ".ev svg.sp{width:100%;height:34px;display:block}" +
     ".ev .cap .n{word-break:normal}" +
     ".ev .legende{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:9px 14px;border-left:3px solid var(--e-al)}" +
-    ".ev svg text{font-family:" + MONO + ";fill:var(--e-encre2);font-size:10.5px}";
+    ".ev svg text{font-family:" + MONO + ";fill:var(--e-encre2);font-size:10.5px}.ev .stats4{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.ev .stats4>div{padding:14px 16px;display:flex;flex-direction:column;gap:3px}.ev .gros{font:600 30px/1.1 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .deux{display:grid;grid-template-columns:340px minmax(0,1fr);gap:14px;align-items:start}@media(max-width:1000px){.ev .deux{grid-template-columns:1fr}}.ev .liste-f{padding:12px;display:flex;flex-direction:column;gap:8px}.ev .liste-f .defile{display:flex;flex-direction:column;gap:4px}.ev .plus{border:1px dashed var(--e-filet);background:transparent;color:var(--accent);border-radius:11px;padding:8px;font:600 13px var(--font-sans,system-ui);cursor:pointer}.ev .recherche{width:100%;font:14px var(--font-sans,system-ui)!important;padding:9px 11px!important;border-radius:11px!important}.ev .fn{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;text-align:left;border:1px solid transparent;background:transparent;color:inherit;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;width:100%}.ev .fn:hover{background:var(--e-doux)}.ev .fn.sel{background:var(--e-verre);border-color:var(--accent)}.ev .fn .n{font:600 12.5px ui-monospace,Menlo,Consolas,monospace;word-break:break-all}.ev .fn .m{grid-column:1/-1;display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--e-encre3)}.ev .fn .bar{flex:1;height:5px;border-radius:99px;background:var(--e-filet);overflow:hidden}.ev .fn .bar i{display:block;height:100%;background:var(--accent)}.ev .repli{border-top:1px solid var(--e-filet);padding-top:8px}.ev .repli summary{cursor:pointer;font:600 12.5px var(--font-sans,system-ui);color:var(--e-encre2);padding:4px 2px}.ev .fn.muet .n{font-weight:500;color:var(--e-encre3)}.ev .fiche{padding:18px 20px;display:flex;flex-direction:column;gap:16px;min-width:0}.ev .etat-f{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ev .phrase{font:600 17px/1.4 var(--font-sans,system-ui);color:var(--e-encre)}.ev .chiffres{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.ev .chiffres>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px 12px;background:var(--e-verre);display:flex;flex-direction:column;gap:2px}.ev .chiffres .v{font:600 20px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .bloc{border:1px solid var(--e-filet);border-radius:14px;padding:14px 16px;background:var(--e-verre);display:flex;flex-direction:column;gap:11px}.ev .bloc h3{font:600 16px var(--font-sans,system-ui)}.ev .manieres{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.ev .maniere{display:flex;flex-direction:column;gap:5px;text-align:left;border:1.5px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:13px;padding:12px;cursor:pointer;font:inherit}.ev .maniere b{font-size:14.5px}.ev .maniere span{font-size:12.5px;color:var(--e-encre2)}.ev .maniere em{font-style:normal;font:600 11.5px ui-monospace,monospace;color:var(--e-encre3)}.ev .maniere.sel{border-color:var(--accent);background:var(--e-doux)}.ev .essais-l{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.ev .essais-l input[type=range]{flex:1;min-width:160px;accent-color:var(--accent)}.ev .issue{border-radius:12px;padding:12px 14px;font:600 14px/1.45 var(--font-sans,system-ui)}.ev .issue.bien{background:var(--e-okd);color:var(--e-ok)}.ev .issue.rien{background:var(--e-ald);color:var(--e-al)}.ev .issue .lien{display:inline-block;margin-top:6px;font-weight:600;text-decoration:underline;cursor:pointer}.ev .hist{display:flex;flex-direction:column;gap:6px}.ev .hist .l{display:grid;grid-template-columns:110px 1fr auto;gap:10px;padding:8px 10px;border:1px solid var(--e-filet);border-radius:11px;font-size:13px;align-items:center}.ev details.tech summary{cursor:pointer;font:600 13px var(--font-sans,system-ui);color:var(--e-encre2)}.ev .prevu{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:11px 14px;border:1px dashed var(--e-filet);border-radius:12px;font-size:13px;color:var(--e-encre2)}.ev .prevu a{font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer}.ev .sois{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.ev .sois button{border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:9px;padding:7px 4px;font:600 12.5px ui-monospace,monospace}.ev .sois button.on{background:var(--accent);color:var(--on-accent);border-color:transparent}.ev .sois button[disabled]{opacity:.6}";
 
   // ce que chaque geste dit AVANT d'agir (le miroir du manifeste du module)
   const GESTES = {
@@ -736,6 +736,73 @@
           ["Chaîne d'empreintes unique", "non", "une rupture arrête tout", 1], ["Désaccord entre agents pour l'irréversible", "non", "vérificateur d'une autre famille de modèle", 0], ["Créer des modules à partir de ce qui manque", "non", "brouillons en ombre", 0], ["Échange entre instances", "non", "variantes signées, rejouées chez le receveur", 0]]
           .map((r) => "<tr><td>" + r[0] + '</td><td class="non">' + r[1] + '</td><td class="cons">' + r[2] + "</td><td>" + (r[3] ? puce("construit", "ok") : NB) + "</td></tr>").join("") + "</table></div></div>";
     }
+    // ═══ LES FONCTIONS : une liste qui se cherche, une fiche en mots simples, une recherche d'amélioration qui rend compte de ce qu'elle a fait ═══
+    const MANIERES = [["deterministe", "Sans modèle", "Des recettes toutes faites, sur ton serveur. Rapide, ça ne coûte rien.", "0 jeton"], ["modele", "Avec un modèle", "Un modèle écrit des versions à essayer. Il trouve des idées que les recettes n’ont pas.", "des milliers de jetons par essai"], ["les_deux", "Les deux, gratuit d’abord", "Les recettes d’abord ; le modèle ne sert que si elles ne trouvent rien.", "0 jeton si ça suffit"]];
+    const fmt = (n) => Number(n || 0).toLocaleString("fr-FR");
+    const dur = (ms) => (ms == null ? "—" : (ms < 1 ? ms.toFixed(3) : ms.toFixed(ms < 10 ? 2 : 1)).replace(".", ",") + " ms");
+    const gagner = (ms) => (ms == null ? "—" : ms >= 1000 ? fmt(Math.round(ms / 1000)) + " s" : Math.round(ms) + " ms");
+    function listeFonctions() {
+      const q = (S.fq || "").trim().toLowerCase(), tout = S.etat.cibles || [], ok = (c) => !q || c.point.toLowerCase().indexOf(q) >= 0;
+      const mes = tout.filter((c) => !c.muet && ok(c)), mu = tout.filter((c) => c.muet && ok(c));
+      const vmax = Math.max.apply(null, [1].concat(tout.map((c) => c.valeur_ms || 0)));
+      const ligne = (c) => { const t = (S.etat.tombes || {})[c.point] || 0;
+        return '<button class="fn' + (c.muet ? " muet" : "") + (S.sel === c.point ? " sel" : "") + '" data-cible="' + esc(c.point) + '"><span class="n">' + esc(c.point) + "</span>" + (t ? '<span class="puce al">' + t + " écartée" + (t > 1 ? "s" : "") + "</span>" : "<span></span>") +
+          '<span class="m">' + (c.muet ? "jamais appelée" : fmt(c.appels) + " appels · " + dur(c.duree_moyenne_ms) + '<span class="bar"><i style="width:' + Math.max(3, Math.round(100 * (c.valeur_ms || 0) / vmax)) + '%"></i></span>') + "</span></button>"; };
+      const montre = q || S.tous ? mes : mes.slice(0, 10);
+      return '<input class="recherche" id="ev-fq" type="text" placeholder="Chercher une fonction (ex. planifie, dns…)" value="' + esc(S.fq || "") + '">' +
+        '<div class="lib">Où il y a le plus à gagner · ' + mes.length + "</div><div class=\"defile\">" + (montre.map(ligne).join("") || '<div class="note" style="padding:8px">Aucune fonction mesurée ne correspond.</div>') +
+        (!q && !S.tous && mes.length > 10 ? '<button class="plus" data-tous="1">Voir les ' + (mes.length - 10) + " autres fonctions mesurées</button>" : "") +
+        (mu.length ? '<details class="repli"' + (S.ouvertMuets || q ? " open" : "") + "><summary>" + mu.length + " fonctions pas encore mesurées (jamais appelées)</summary>" + mu.map(ligne).join("") + "</details>" : "") + "</div>";
+    }
+    function ficheFonction() {
+      const c = cible(S.sel);
+      if (!c.point) return '<div class="verre fiche"><div class="note">Choisis une fonction dans la liste.</div></div>';
+      const p = point(c.point) || {}, co = p.corpus || {}, v = vivante(c.point), m = M0().d || {};
+      const phrase = c.muet ? "Cette fonction n’a jamais été appelée : il n’y a rien à mesurer, donc rien à améliorer pour l’instant." : v ? "Une amélioration est " + ((ETATS[v.etat] || [v.etat])[0]) + " : elle tourne à côté de l’originale tant que les preuves tiennent." : "Aucune amélioration pour l’instant. Cassandra utilise la version d’origine.";
+      const tombes = (S.etat.tombes || {})[c.point] || 0, maniere = S.choixMoteur || "deterministe", essais = S.choixBudget || 3;
+      let h = '<div class="verre fiche"><div class="etat-f"><h2 class="mono" style="font-size:17px;text-transform:none;letter-spacing:0">' + esc(c.point) + "</h2>" + (v ? puce((ETATS[v.etat] || [v.etat])[0], "al") : c.muet ? puce("pas mesurée", "mu") : puce("version d’origine", "ok")) + (tombes ? puce(tombes + " version" + (tombes > 1 ? "s" : "") + " écartée" + (tombes > 1 ? "s" : ""), "al") : "") + "</div>" +
+        '<div class="phrase">' + esc(phrase) + "</div>" +
+        '<div class="chiffres"><div><span class="lib">Temps moyen</span><span class="v">' + dur(c.duree_moyenne_ms) + '</span><span class="note">par appel</span></div><div><span class="lib">Appelée</span><span class="v">' + fmt(c.appels) + '</span><span class="note">fois, vraiment</span></div><div><span class="lib">À gagner</span><span class="v">' + gagner(c.valeur_ms) + '</span><span class="note">de temps cumulé, au mieux</span></div><div><span class="lib">Exemples gardés</span><span class="v">' + fmt(c.corpus) + '</span><span class="note">pour vérifier une version</span></div></div>';
+      if (v) {
+        const part = PARTS[v.etat] || 0;
+        h += '<div class="bloc"><h3>Sa mise en service</h3><div class="note">' + (part ? part + " % des appels passent par l’amélioration, le reste par l’originale. La montée se fait seule, par paliers, tant que les preuves tiennent." : "Elle calcule à côté de l’originale, sans que personne reçoive son résultat. Elle prendra une part du trafic après " + ((S.etat.seuils || {}).ombre_appels || "?") + " appels sans écart.") + '</div><div class="sois">' + [0, 10, 50, 100].map((x) => '<button class="' + (x === part ? "on" : "") + '" disabled>' + x + " %</button>").join("") + "</div>" + confirmations() +
+          '<div class="lg"><button class="btn dng" data-geste="retour"' + (S.occupe ? " disabled" : "") + ">Retirer l’amélioration</button></div></div>";
+      }
+      h += '<div class="bloc"><h3>Chercher une amélioration</h3><div class="note">Cassandra essaie d’écrire une version plus rapide de cette fonction. Elle ne la garde que si elle rend exactement le même résultat sur les ' + fmt(c.corpus) + " exemples réels gardés, et qu’elle est vraiment plus rapide. Sinon, rien n’est changé.</div>" +
+        '<div class="manieres">' + MANIERES.map((q) => '<button class="maniere' + (maniere === q[0] ? " sel" : "") + '" data-maniere="' + q[0] + '"><b>' + q[1] + "</b><span>" + q[2] + "</span><em>" + q[3] + "</em></button>").join("") + "</div>" +
+        '<div class="essais-l"><span>Combien de versions essayer ?</span><input type="range" id="ev-budget" min="1" max="10" value="' + essais + '"><b class="mono" id="ev-essv">' + essais + "</b></div>" +
+        '<div class="lg"><button class="btn prim" data-geste="proposer-ok"' + (S.occupe || c.muet ? " disabled" : "") + ">" + (S.occupe ? "Recherche en cours…" : "Chercher une amélioration") + "</button>" + (c.muet ? '<span class="note">Impossible : cette fonction n’a jamais servi.</span>' : S.occupe ? '<span class="note">' + esc(S.attente || "Avec un modèle, compte une à deux minutes par version.") + "</span>" : "") + "</div>" + resultatF() + "</div>";
+      const lg = pieces(c.point).slice().reverse(), ong = S.fonglet || "essaye";
+      let corps;
+      if (ong === "exemples") corps = '<div class="note">Cassandra rejoue chaque version sur de vrais appels gardés du journal. Un cinquième est mis de côté : le juge seul le voit, jamais celui qui écrit.</div><div class="chiffres"><div><span class="lib">Vus par le chercheur</span><span class="v">' + fmt(co.visible) + '</span></div><div><span class="lib">Mis de côté</span><span class="v">' + fmt(co.reserve) + '</span></div><div><span class="lib">Exemples « d’or »</span><span class="v">' + fmt(co.dores) + '</span><span class="note">cas difficiles toujours rejoués</span></div></div>';
+      else corps = (lg.length ? '<div class="hist">' + lg.map((q) => { const e = ETATS[q.etat] || [q.etat, ""]; return '<div class="l"><span class="note">' + date(q.cree) + "</span><span>Version " + q.num + '</span><span>' + puce(e[0], e[1]) + " " + (q.gain_annonce != null ? '<span class="mono gain">' + pct(q.gain_annonce) + "</span>" : "") + "</span></div>"; }).join("") + "</div>" : '<div class="note">Aucune version n’a été gardée pour cette fonction.</div>') + (tombes ? '<div class="note">' + tombes + " version" + (tombes > 1 ? "s ont été écartées" : " a été écartée") + " (résultat différent ou pas plus rapide) : Cassandra en garde l’empreinte et ne la reproposera jamais.</div>" : "");
+      const aff = (m.affectations || {})[c.point] || "auto", etg = m.etages || {};
+      h += '<div class="bloc"><div class="onglets">' + [["essaye", "Ce qui a été essayé"], ["exemples", "Exemples de vérification"]].map((o) => '<button class="' + (ong === o[0] ? "on" : "") + '" data-fonglet="' + o[0] + '">' + o[1] + "</button>").join("") + "</div>" + corps +
+        '<details class="tech"><summary>Détails techniques</summary><dl class="cle" style="margin-top:8px"><dt>Module</dt><dd class="mono">' + esc(module(c.point)) + " " + esc(S.versions[module(c.point)] || "?") + "</dd><dt>Contrat</dt><dd class=\"mono\">" + esc(p.contrat || "?") + " (" + esc(p.runtime || "python") + ")</dd><dt>Isolation</dt><dd>" + esc(p.isolation || "?") + (p.bac && p.bac !== "aucun" ? " · bac " + esc(p.bac) : " · sans bac") + "</dd><dt>Exemples</dt><dd>" + fmt(co.visible) + " vus · " + fmt(co.reserve) + " réservés · " + fmt(co.dores) + " dorés</dd>" +
+        (m.etages ? '<dt>Qui cherche ici</dt><dd><select data-aff="' + esc(c.point) + '"><option value="auto"' + (aff === "auto" ? " selected" : "") + ">tous, dans l’ordre des réglages</option>" + Object.keys(etg).map((k) => '<option value="' + esc(k) + '"' + (aff === k ? " selected" : "") + ">" + esc(etg[k].nom) + "</option>").join("") + "</select></dd>" : "") + "</dl></details></div>";
+      h += '<div class="prevu"><span>Ce qui n’est pas encore construit (désaccord entre agents, modules créés à partir des demandes, échange entre instances…) est dans <a data-vers="capot.vision">Ce qui est prévu</a>.</span></div></div>';
+      return h;
+    }
+    function resultatF() {
+      const r = S.resultat;
+      if (!r) return "";
+      if (r.erreur || r.visites || r.retraits) return resultat();
+      const jet = (r.etages || []).reduce((a, e) => a + (e.jetons || 0), 0), l = r.essais || [];
+      let h = '<div class="issue ' + (r.ok ? "bien" : "rien") + '">' + (r.ok ? "Une amélioration a été trouvée (" + esc(r.piece.ec) + ", " + pct(r.piece.gain_annonce_pct) + " de temps), avec exactement le même résultat sur tous les exemples. Elle tourne à l’essai, à côté de l’originale." + ' <br><a class="lien" data-vers="amelio.essai">La voir dans Améliorations →</a>' : "Aucune version n’est à la fois identique à l’originale et plus rapide. Rien n’a été changé." + '<br><small style="font-weight:500">' + esc(r.raison || "") + ". Ce n’est pas une panne : certaines fonctions sont déjà assez rapides. Tu peux essayer une autre manière, ou plus de versions.</small>") + "</div>";
+      if (l.length) h += '<div class="tw"><table><thead><tr><th>Version</th><th>Résultat</th><th class="num">Gain</th></tr></thead><tbody>' + l.map((e, i) => "<tr><td>" + (i + 1) + "</td><td>" + esc(e.verdict) + '</td><td class="num">' + pct(e.gain_pct) + "</td></tr>").join("") + "</tbody></table></div>";
+      const pj = (M0().d || {}).propositions_jour;
+      h += '<div class="note">Coût de cette recherche : ' + fmt(jet) + " jeton" + (jet > 1 ? "s" : "") + (S.dureeS != null ? " · " + S.dureeS + " s" : "") + (pj ? " · recherches du jour : " + pj.fait + " sur " + pj.plafond : "") + ".</div>";
+      return h;
+    }
+    function fonctions() {
+      const cs = S.etat.cibles || [], mes = cs.filter((c) => !c.muet).length, d = M0().d || {}, pj = d.propositions_jour;
+      const enSv = (S.etat.pieces || []).filter((p) => VIVANTES.indexOf(p.etat) >= 0).length, ecart = Object.keys(S.etat.tombes || {}).reduce((a, k) => a + (S.etat.tombes[k] || 0), 0);
+      return '<div class="stats4"><div class="verre"><span class="lib">Fonctions suivies</span><span class="gros">' + cs.length + '</span><span class="note">' + mes + " mesurées, " + (cs.length - mes) + " jamais appelées</span></div>" +
+        '<div class="verre"><span class="lib">Améliorations en service</span><span class="gros">' + enSv + '</span><span class="note">' + (enSv ? "à l’essai ou en service" : "la version d’origine sert partout") + "</span></div>" +
+        '<div class="verre"><span class="lib">Recherches aujourd’hui</span><span class="gros">' + (pj ? pj.fait + ' <span style="font-size:15px;color:var(--e-encre3)">/ ' + pj.plafond + "</span>" : "—") + '</span><span class="note">lancées depuis minuit</span></div>' +
+        '<div class="verre"><span class="lib">Versions écartées</span><span class="gros">' + ecart + '</span><span class="note">jamais reproposées</span></div></div>' +
+        '<div class="deux"><div class="liste-f verre">' + listeFonctions() + "</div>" + ficheFonction() + "</div>";
+    }
     function atelier() {
       return bandeau() + '<div class="trois">' + rail() + centre() + analyse() + "</div>" + atelierBas();
     }
@@ -754,12 +821,12 @@
     // ═══ LA NAVIGATION : le menu de gauche porte les pages (Aujourd'hui, Améliorations et ses états, Réglages, Consignes, Sous le capot et ses pages) ═══
     const TITRES = { aujourdhui: "Aujourd’hui", amelio: "Les améliorations", reglages: "Réglages", consignes: "Consignes et seuils", capot: "Sous le capot" };
     const SOUS_TITRES = { aujourdhui: "Ce que Cassandra améliore, ce qui mérite ton regard, et de quoi lui demander mieux.", amelio: "Ce qui a été essayé, ce qui sert, ce qui a été retiré.", reglages: "Qui cherche, dans quel ordre, et pour combien.", consignes: "Les consignes d’agent et les seuils qu’elle peut améliorer, et comment on les juge.",
-      "capot.chercheurs": "Les moteurs qui cherchent des améliorations.", "capot.points": "Les fonctions que Cassandra peut améliorer, leurs pièces et leurs preuves.", "capot.comparer": "Faire courir les chercheurs les uns contre les autres.", "capot.install": "Ajouter ou retirer un chercheur du catalogue scellé.", "capot.securite": "La cage, les preuves et ce qui protège.", "capot.carnet": "Tout ce qui s’est passé, chaîné et scellé.", "capot.ecartees": "Les versions retirées, et ce qu’il en reste.", "capot.vision": "Ce qui existe, et ce qui n’est pas encore construit.", "capot.vocab": "Les mots employés dans cet écran." };
+      "capot.chercheurs": "Les moteurs qui cherchent des améliorations.", "capot.points": "Les fonctions de Cassandra qu’elle peut rendre plus rapides, et ce qu’on a déjà essayé dessus.", "capot.comparer": "Faire courir les chercheurs les uns contre les autres.", "capot.install": "Ajouter ou retirer un chercheur du catalogue scellé.", "capot.securite": "La cage, les preuves et ce qui protège.", "capot.carnet": "Tout ce qui s’est passé, chaîné et scellé.", "capot.ecartees": "Les versions retirées, et ce qu’il en reste.", "capot.vision": "Ce qui existe, et ce qui n’est pas encore construit.", "capot.vocab": "Les mots employés dans cet écran." };
     const TCAPOT = { "capot.chercheurs": "Les chercheurs", "capot.points": "Les fonctions", "capot.comparer": "Les comparer", "capot.install": "Installer un chercheur", "capot.securite": "Filet de sécurité", "capot.carnet": "Carnet", "capot.ecartees": "Versions écartées", "capot.vision": "Ce qui est prévu", "capot.vocab": "Vocabulaire" };
     Object.keys(TCAPOT).forEach((k) => { TITRES[k] = TCAPOT[k]; });
     ["amelio.toutes", "amelio.essai", "amelio.service", "amelio.retiree"].forEach((k) => { TITRES[k] = TITRES.amelio; SOUS_TITRES[k] = SOUS_TITRES.amelio; });
     const norme = (v) => (v === "capot" ? "capot.chercheurs" : v === "amelio" ? "amelio.toutes" : (TITRES[v] ? v : "aujourdhui"));
-    const MVUE = { aujourdhui: [], reglages: ["aff", "budget"], consignes: ["juges"], "capot.chercheurs": ["aff", "moteurs"], "capot.points": [], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
+    const MVUE = { aujourdhui: [], reglages: ["aff", "budget"], consignes: ["juges"], "capot.chercheurs": ["aff", "moteurs"], "capot.points": ["aff"], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
     const avecMoteurs = () => !!MVUE[S.vue];
     function suivre() { try { if (typeof window.evSuivre === "function") window.evSuivre(S.vue); } catch (e) { /* le menu se remettra à jour au prochain geste */ } }
     async function aller(vue) {
@@ -877,7 +944,7 @@
       if (v === "aujourdhui") return aujourdhui();
       if (v === "reglages") { const m0 = M0(); if (!m0.d) { if (!m0.charge) { m0.charge = true; chargerM().then(() => { m0.charge = false; dessiner(); }); } return '<div class="verdict mu">Chargement…</div>'; } return reglages(); }
       if (v.indexOf("amelio") === 0) return amelio();
-      if (v === "capot.points") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return atelier() + (mp.d ? mAff("points") : ""); }
+      if (v === "capot.points") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return fonctions(); }
       if (v === "capot.vocab") return vocab();
       if (v === "capot.ecartees") return ecartees();
       if (v === "capot.vision") return cockpit();
@@ -905,6 +972,13 @@
       racine.querySelectorAll("[data-vue]").forEach((b) => b.addEventListener("click", () => aller(b.dataset.vue)));
       if (avecMoteurs()) lierMoteurs();
       const vq = racine.querySelector("#ev-vq"); if (vq) vq.addEventListener("input", () => { S.vq = vq.value; dessiner(); const n = racine.querySelector("#ev-vq"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
+      const fq = racine.querySelector("#ev-fq"); if (fq) fq.addEventListener("input", () => { S.fq = fq.value; dessiner(); const n = racine.querySelector("#ev-fq"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
+      racine.querySelectorAll("[data-tous]").forEach((b) => b.addEventListener("click", () => { S.tous = true; dessiner(); }));
+      racine.querySelectorAll("[data-maniere]").forEach((b) => b.addEventListener("click", () => { S.choixMoteur = b.dataset.maniere; const e = racine.querySelector("#ev-budget"); if (e) S.choixBudget = parseInt(e.value, 10) || 3; dessiner(); }));
+      const bg = racine.querySelector("#ev-budget"); if (bg && racine.querySelector("#ev-essv")) bg.addEventListener("input", () => { S.choixBudget = parseInt(bg.value, 10) || 3; racine.querySelector("#ev-essv").textContent = bg.value; });
+      racine.querySelectorAll("[data-fonglet]").forEach((b) => b.addEventListener("click", () => { S.fonglet = b.dataset.fonglet; dessiner(); }));
+      racine.querySelectorAll("[data-vers]").forEach((b) => b.addEventListener("click", () => aller(b.dataset.vers)));
+      const rp = racine.querySelector("details.repli"); if (rp) rp.addEventListener("toggle", () => { S.ouvertMuets = rp.open; });
       racine.querySelectorAll("[data-role]").forEach((sl) => sl.addEventListener("change", async () => {
         const m = M0(); if (m.occupe || !sl.value) return; m.occupe = "role"; m.msg = null; dessiner();
         try { await CASS.agir("modeles.role_lier", { role: sl.dataset.role, modele_id: sl.value === "__aucun" ? "" : sl.value }); m.msg = { ok: true, t: sl.value === "__aucun" ? "Le stratège est maintenant le même modèle que l’exécutant." : "Modèle lié au rôle « " + sl.dataset.role + " »." }; }
@@ -939,7 +1013,7 @@
       if (nom === "annuler") { S.confirmer = null; return dessiner(); }
       if (nom === "proposer" || nom === "retour" || nom === "visiter") { const em = racine.querySelector("#ev-moteur"), eb = racine.querySelector("#ev-budget"); if (em) S.choixMoteur = em.value; if (eb) S.choixBudget = parseInt(eb.value, 10) || 3; S.confirmer = nom; S.vue = "capot.points"; suivre(); return dessiner(); }
       const moteur = (racine.querySelector("#ev-moteur") || {}).value || S.choixMoteur || "deterministe", budget = parseInt((racine.querySelector("#ev-budget") || {}).value, 10) || S.choixBudget || 3;
-      S.confirmer = null; S.occupe = true; S.resultat = null; S.attente = null; dessiner();
+      S.confirmer = null; S.occupe = true; S.resultat = null; S.attente = null; S.dureeS = null; const t0 = Date.now(); dessiner();
       try {
         if (nom === "proposer-ok") {
           const fait0 = async () => { try { return (((await CASS.agir("evolution.moteurs", {})) || {}).propositions_jour || {}).fait || 0; } catch (e) { return -1; } };
@@ -961,7 +1035,9 @@
         else if (nom === "visiter-ok") S.resultat = await CASS.agir("evolution.visiter", {});
       } catch (e) { S.resultat = { erreur: e.message || String(e) }; }
       S.occupe = false;
+      S.dureeS = Math.round((Date.now() - t0) / 1000);
       await charger();
+      try { await chargerM(); } catch (e) { /* le compteur du jour se relira à l'actualisation */ }
       dessiner();
     }
 
