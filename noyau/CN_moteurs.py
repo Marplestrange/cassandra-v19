@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #72f18c
+# VERSION CN : 0.1.0  #f0ca9f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=72f18c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f0ca9f ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -402,7 +402,7 @@ class Registre:
             raise ValueError("option inconnue : %s (%s)" % (", ".join(inconnues), ", ".join(OPTIONS_DEFAUT)))
         with self._verrou:
             d = self._lire()
-            d["options"] = dict(OPTIONS_DEFAUT, **(d.get("options") or {}), **{k: bool(v) for k, v in opts.items()})
+            d["options"] = {**OPTIONS_DEFAUT, **(d.get("options") or {}), **{k: bool(v) for k, v in opts.items()}}          # fusion à plat : la même règle changée deux fois ne se heurte plus à elle-même
             self._ecrire(d)
             return d["options"]
 

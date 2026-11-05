@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8cba1e
+# VERSION CN : 0.1.0  #d96016
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 1 de la maquette d'Évolution : le moteur dans son processus, le relais de modèles plafonné, le registre et l'attribution des pièces.
 # MÉTHODE    : un vrai processus de moteur (aucune doublure du protocole) ; le modèle est une fonction de banc ; le module Évolution est branché dans un vrai noyau comme au banc du module.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8cba1e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d96016 ▼▼▼
 """Bancs des moteurs de recherche : le protocole de processus, le relais, le registre."""
 import json
 import sys
@@ -112,6 +112,15 @@ class Registre(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.r = MO.Registre(Path(self.tmp.name) / "d" / "moteurs.json")
+
+    def test_une_regle_de_la_cascade_se_change_plusieurs_fois(self):
+        self.r.regler_options(course_si_deux=True)
+        self.assertTrue(self.r.options()["course_si_deux"])
+        self.r.regler_options(course_si_deux=False)                      # la même règle, une seconde fois : elle ne plante pas
+        self.assertFalse(self.r.options()["course_si_deux"])
+        self.r.regler_options(arret_premiere=False, course_si_deux=True)
+        o = self.r.options()
+        self.assertEqual((o["arret_premiere"], o["course_si_deux"], o["modele_si_chaud"]), (False, True, True))
 
     def test_declarer_compter_attribuer(self):
         self.r.declarer("orfan", "Orfan", genre="natif", etat="actif")
