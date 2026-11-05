@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ef9c1e
+# VERSION CN : 0.1.0  #0b72d5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ef9c1e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0b72d5 ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -49,7 +49,7 @@ FOURNISSEURS = {
     "openrouter": {"nom": "OpenRouter", "base_url": "https://openrouter.ai/api/v1", "defaut": "google/gemini-2.5-flash", "raisonneur": True, "cle": "requise"},
     "omniroute": {"nom": "OmniRoute (passerelle)", "base_url": "", "defaut": "", "raisonneur": False, "cle": "requise"},
     "openai": {"nom": "OpenAI", "base_url": "https://api.openai.com/v1", "defaut": "gpt-4o-mini", "raisonneur": False, "cle": "requise"},
-    "google": {"nom": "Google", "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "defaut": "gemini-2.5-flash", "raisonneur": True, "cle": "requise"},
+    "google": {"nom": "Google", "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "defaut": "gemini-3.8-flash", "raisonneur": True, "cle": "requise"},
     "groq": {"nom": "Groq", "base_url": "https://api.groq.com/openai/v1", "defaut": "llama-3.3-70b-versatile", "raisonneur": False, "cle": "requise"},
     "anthropic": {"nom": "Anthropic (Claude)", "base_url": "https://api.anthropic.com/v1/", "defaut": "claude-sonnet-5-5", "raisonneur": False, "cle": "requise"},
     "mistral": {"nom": "Mistral", "base_url": "https://api.mistral.ai/v1", "defaut": "mistral-small-latest", "raisonneur": False, "cle": "requise"},

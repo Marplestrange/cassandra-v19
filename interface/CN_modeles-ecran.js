@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #b9483c
+// VERSION CN : 0.2.0  #9934d2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=b9483c ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=9934d2 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -26,7 +26,7 @@
     deepseek: ["deepseek-chat", "deepseek-reasoner"],
     openrouter: ["google/gemini-2.5-flash", "anthropic/claude-sonnet-4.5", "openai/gpt-4o-mini", "meta-llama/llama-3.3-70b-instruct", "deepseek/deepseek-chat"],
     openai: ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1"],
-    google: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"],
+    google: ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-3.1-pro"],
     groq: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "qwen/qwen3-32b"],
     anthropic: ["claude-sonnet-5-5", "claude-haiku-5-5", "claude-opus-5-5"],
     mistral: ["mistral-small-latest", "mistral-large-latest", "codestral-latest"],
