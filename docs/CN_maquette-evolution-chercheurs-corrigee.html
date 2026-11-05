@@ -13,6 +13,7 @@
    2. l'ordre, l'interrupteur et ce que chaque étage a rapporté sont sur la MÊME ligne (avant : trois endroits, et deux façons d'éteindre) ;
    3. un tableau « Ce que chacun a rapporté » : essais, améliorations trouvées, jetons, jetons par amélioration, plafond du jour posé sur place ;
    4. le parcours d'une recherche est dit en une phrase, avec son coût mesuré ;
+   5b. prêt pour les chercheurs externes : sélecteur qui devient liste au-delà de 4, pastille « externe », provenance et empreinte, retrait avec confirmation, état « refusé », coût par chercheur (boutons de démonstration en haut) ;
    5. « Installation » et « Relais de modèles » ne sont plus des onglets ici : deux boutons en haut à droite (Choisir les modèles, + Ajouter un chercheur) ;
    6. le détail technique devient une FICHE par chercheur, avec un sélecteur (Orfan, Frugal 2, Évolutif) : identité, chiffres, ses méthodes, ses vérifications, ses derniers appels ;
    7. vocabulaire simple : « étage », « cascade », « relais », « adaptateur », « EC » disparaissent.
@@ -27,7 +28,7 @@
 html,body{margin:0;min-height:100%;height:auto!important;overflow:auto!important;position:static!important}
 body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2);color:var(--txt,#1d2b2a)}
 .mq-bandeau{position:sticky;top:0;z-index:50;background:#17413f;color:#e9f5f3;font:12.5px/1.4 system-ui,sans-serif;padding:7px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-.mq-bandeau b{color:#fff}
+.mq-bandeau b{color:#fff}.mq-bandeau button{font:inherit;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:6px;padding:2px 9px;cursor:pointer}
 .mq-cadre{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;padding:18px;align-items:start}
 .mq-menu{position:sticky;top:52px;border-radius:14px;padding:10px;background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.08);backdrop-filter:blur(10px);font-size:13.5px}
 .mq-menu .t{padding:8px 10px;border-radius:9px;display:flex;gap:9px;align-items:center;color:inherit}
@@ -83,11 +84,11 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
 .ev .preuves-m{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .ev .appels{display:flex;flex-direction:column;gap:4px;margin-top:8px;font:12px ui-monospace,Menlo,Consolas,monospace}
 .ev .appels div{display:grid;grid-template-columns:70px 1fr auto;gap:10px;padding:5px 8px;border-radius:8px;background:var(--e-doux)}
-.ev .msg{font-size:13px;color:var(--e-ok);min-height:18px}.ev .segs{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--e-doux);flex-wrap:wrap}.ev .seg{border:0;background:transparent;border-radius:9px;padding:7px 14px;font:600 13px var(--font-sans,system-ui);color:var(--e-encre2);cursor:pointer}.ev .seg.on{background:var(--accent);color:var(--on-accent)}.ev .fiche-t{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}.ev .fiche-t .act{display:flex;gap:6px;flex-wrap:wrap}.ev .chiffres4{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}.ev .chiffres4>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px 12px;background:var(--e-verre);display:flex;flex-direction:column;gap:2px}.ev .chiffres4 .v{font:600 20px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .meth{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--e-filet);border-radius:11px;background:var(--e-verre);font-size:13.5px}.ev .meth .rg{font:700 13px ui-monospace,monospace;color:var(--accent);width:18px}
+.ev .msg{font-size:13px;color:var(--e-ok);min-height:18px}.ev .etage.refus{border-color:var(--e-dg);border-style:dashed}.ev .alerte{border-radius:12px;padding:11px 14px;background:var(--e-dgd);color:var(--e-dg);font-size:13.5px;line-height:1.5}.ev select[data-fichesel]{font:600 13px var(--font-sans,system-ui);padding:7px 10px;border-radius:10px}.ev .segs{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--e-doux);flex-wrap:wrap}.ev .seg{border:0;background:transparent;border-radius:9px;padding:7px 14px;font:600 13px var(--font-sans,system-ui);color:var(--e-encre2);cursor:pointer}.ev .seg.on{background:var(--accent);color:var(--on-accent)}.ev .fiche-t{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}.ev .fiche-t .act{display:flex;gap:6px;flex-wrap:wrap}.ev .chiffres4{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}.ev .chiffres4>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px 12px;background:var(--e-verre);display:flex;flex-direction:column;gap:2px}.ev .chiffres4 .v{font:600 20px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .meth{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--e-filet);border-radius:11px;background:var(--e-verre);font-size:13.5px}.ev .meth .rg{font:700 13px ui-monospace,monospace;color:var(--accent);width:18px}
 </style>
 </head>
 <body>
-<div class="mq-bandeau"><b>Maquette · « Les chercheurs » proposée</b><span>Chiffres réels d'Argos du 05-11 · à comparer avec la page actuelle · rien n'est envoyé nulle part</span></div>
+<div class="mq-bandeau"><b>Maquette · « Les chercheurs » proposée</b><span>Chiffres réels d'Argos du 05-11 · rien n'est envoyé nulle part</span><span style="margin-left:auto">Démonstration (hors de la vraie page) :</span><button id="d-add">Ajouter un chercheur externe</button><button id="d-ref">Ajouter un externe refusé</button><button id="d-raz">Remettre</button></div>
 <div class="mq-cadre">
   <nav class="mq-menu" id="mq-menu" aria-label="Menu d'Évolution"></nav>
   <main class="mq-corps"><div class="ev" id="ev"></div></main>
@@ -117,10 +118,16 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
   ];
   const BUDGET = { mois: 2000000, depense: 189000 }, PROP = { fait: 36, plafond: 60 };
   const APPELS = [["orfan", "il y a 3 min", "gemini-2.5-flash", "5 330"], ["orfan", "il y a 9 min", "gemini-2.5-flash", "5 285"], ["evolutif", "hier", "gemini-2.5-flash", "2 280"], ["evolutif", "hier", "gemini-2.5-flash", "2 285"], ["orfan", "il y a 21 min", "gemini-2.5-flash", "7 855"]];
-  const S = { msg: "", fiche: "orfan" };
+  const S = { msg: "", fiche: "orfan", retrait: "" };
+  const SNAP = JSON.stringify({ M: M, E: ETAGES });
+  const ids = () => Object.keys(M);
+  const tot = (k) => ids().reduce((a, i) => a + (M[i][k] || 0), 0);
+  const refuse = (id) => M[id] && M[id].statut === "refuse";
+  const coutParEssai = (id) => (M[id].essais ? Math.round(M[id].jetons / M[id].essais / 100) * 100 : null);
+  const tipAjout = () => { const ex = ids().filter((i) => M[i].externe).length; return ids().length - ex + " livrés avec Cassandra, " + ex + " installé" + (ex > 1 ? "s" : ""); };
   const racine = document.getElementById("ev");
 
-  const actifs = () => ETAGES.filter((e) => e.on);
+  const actifs = () => ETAGES.filter((e) => e.on && !refuse(e.m));
   const nomsMoteursActifs = () => { const set = {}; actifs().forEach((e) => { set[e.m] = 1; }); return Object.keys(set).length; };
   const coutEssai = () => Math.round(M.orfan.jetons / Math.max(1, M.orfan.essais) / 100) * 100;
 
@@ -137,8 +144,8 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
   }
   function sousEtat() {
     const n = actifs().length; if (!n) return "Active au moins un chercheur pour que Cassandra cherche des améliorations.";
-    const nm = nomsMoteursActifs(), tr = M.orfan.trouvees + M.frugal.trouvees + M.evolutif.trouvees, es = M.orfan.essais + M.frugal.essais + M.evolutif.essais;
-    return n + " méthode" + (n > 1 ? "s" : "") + " de recherche (" + nm + " chercheur" + (nm > 1 ? "s" : "") + ") · " + tr + " amélioration trouvée en " + es + " essais";
+    const nm = nomsMoteursActifs(), tr = tot("trouvees"), es = tot("essais"), rf = ids().filter(refuse).length;
+    return n + " méthode" + (n > 1 ? "s" : "") + " de recherche (" + nm + " chercheur" + (nm > 1 ? "s" : "") + ") · " + tr + " amélioration" + (tr > 1 ? "s" : "") + " trouvée" + (tr > 1 ? "s" : "") + " en " + es + " essais" + (rf ? " · " + rf + " chercheur refusé" + (rf > 1 ? "s" : "") : "");
   }
   function anneau(pct, centre, sous, lib) {
     const R = 26, C = 2 * Math.PI * R, d = Math.max(0, Math.min(100, pct)) / 100 * C;
@@ -149,62 +156,79 @@ body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2
     if (!l.length) return "Rien ne cherche : active au moins un chercheur.";
     const reg = (id) => REGLES.find((r) => r.id === id).on;
     const pas = l.map((e, i) => (i ? " puis " : "") + '<span class="fl2">' + esc(e.nom) + "</span>").join("");
-    const cher = l.some((e) => e.cc !== "ok");
+    const chers = [], vus = {}; l.forEach((e) => { if (e.cc !== "ok" && !vus[e.m]) { vus[e.m] = 1; chers.push(e.m); } });
+    const couts = chers.map((id) => { const c = coutParEssai(id); return esc(M[id].nom) + " " + (c == null ? "<i>coût pas encore mesuré</i>" : "≈ <b>" + fmt(c) + " jetons</b> par essai"); }).join(" ; ");
     return "Pour une fonction, la recherche passe par : " + pas + ". " + (reg("arret") ? "Elle s’arrête à la première version prouvée." : "Tous essaient, même après un succès.") +
-      (cher ? " Coût mesuré : gratuit si les recettes suffisent, sinon environ <b>" + fmt(coutEssai()) + " jetons</b> par essai de modèle." : " Coût : aucun jeton.") + (reg("chaud") && cher ? " Le modèle ne sert que sur les fonctions chaudes." : "");
+      (chers.length ? " Coût mesuré : gratuit si les premières méthodes suffisent, sinon " + couts + "." : " Coût : aucun jeton.") + (reg("chaud") && chers.length ? " Le modèle ne sert que sur les fonctions chaudes." : "");
   }
   function ligneStat(e) {
     const m = M[e.m];
+    if (refuse(e.m)) return '<span class="puce dg">refusé : ' + esc(m.raison) + "</span>";
     if (!m.actif) return '<span class="puce mu">éteint</span>';
+    if (!m.essais) return "pas encore couru · coût inconnu";
     return "a fait " + m.essais + " essai" + (m.essais > 1 ? "s" : "") + " · " + (m.trouvees ? "<b>" + m.trouvees + " amélioration trouvée</b>" : "aucune amélioration trouvée") + (m.jetons ? " · " + kj(m.jetons) + " jetons" : " · 0 jeton");
   }
   function dessiner() {
     const partM = Math.round(100 * BUDGET.depense / BUDGET.mois), partJ = Math.round(100 * PROP.fait / PROP.plafond);
     racine.innerHTML =
-      '<div class="entete"><div><h1>Les chercheurs</h1><div class="note" style="font-size:13.5px">Ceux qui cherchent comment rendre Cassandra plus rapide : dans quel ordre, combien ça coûte, ce que chacun a rapporté.</div></div><div class="d"><button class="btn" data-vers="Réglages › Quels modèles" title="Choisir l’exécutant et le stratège">Choisir les modèles</button><button class="btn prim" data-vers="Installer un chercheur" title="Aujourd’hui : 3 livrés avec Cassandra, 0 installé">+ Ajouter un chercheur</button></div></div>' +
+      '<div class="entete"><div><h1>Les chercheurs</h1><div class="note" style="font-size:13.5px">Ceux qui cherchent comment rendre Cassandra plus rapide : dans quel ordre, combien ça coûte, ce que chacun a rapporté.</div></div><div class="d"><button class="btn" data-vers="Réglages › Quels modèles" title="Choisir l’exécutant et le stratège">Choisir les modèles</button><button class="btn prim" data-vers="Installer un chercheur" title="' + esc(tipAjout()) + '">+ Ajouter un chercheur</button></div></div>' +
       '<div class="verre etat"><div class="etat-t"><div class="etat-l"><span class="pt-e ' + (actifs().length ? (partM >= 80 ? "al" : "ok") : "dg") + '"></span><div><div class="etat-h">' + esc(titreEtat()) + '</div><div class="etat-s">' + esc(sousEtat()) + '</div></div></div>' +
       '<div class="anneaux">' + anneau(partJ, PROP.fait, "sur " + PROP.plafond, "Recherches aujourd’hui") + anneau(partM, partM + " %", kj(BUDGET.depense) + " sur " + kj(BUDGET.mois), "Budget du mois") + "</div></div></div>" +
       '<div class="deuxc"><div class="col">' + blocOrdre() + blocRegles() + '</div><div class="col">' + blocRapport() + blocTech() + "</div></div>";
     lier();
   }
   function blocOrdre() {
-    return '<div class="verre bloc"><h3>Dans quel ordre ils essaient</h3><div class="note">Le gratuit d’abord. Glisse l’ordre avec les flèches, éteins avec l’interrupteur : un chercheur éteint saute son tour sans rien perdre de ce qu’il avait en cours.</div>' +
-      ETAGES.map((e, i) => '<div class="etage' + (e.on ? "" : " off") + '"><span class="rg">' + (i + 1) + '</span><div class="nom"><b>' + esc(e.nom) + "</b><span>" + esc(e.ce) + '</span></div><div class="act"><button class="fl" data-h="' + i + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Monter">↑</button><button class="fl" data-b="' + i + '"' + (i === ETAGES.length - 1 ? " disabled" : "") + ' aria-label="Descendre">↓</button><button class="inter2' + (e.on ? " on" : "") + '" data-i="' + i + '" role="switch" aria-checked="' + e.on + '" aria-label="' + esc(e.nom) + '"></button></div>' +
-        '<div class="ligne2"><span class="puce ' + e.cc + '">' + e.cout + "</span><span>" + ligneStat(e) + "</span></div></div>").join("") +
+    return '<div class="verre bloc"><h3>Dans quel ordre ils essaient</h3><div class="note">Le gratuit d’abord. Change l’ordre avec les flèches, éteins avec l’interrupteur : un chercheur éteint saute son tour sans rien perdre de ce qu’il avait en cours.</div>' +
+      ETAGES.map((e, i) => { const rf = refuse(e.m); return '<div class="etage' + (e.on && !rf ? "" : " off") + (rf ? " refus" : "") + '"><span class="rg">' + (i + 1) + '</span><div class="nom"><b>' + esc(e.nom) + "</b><span>" + esc(e.ce) + '</span></div><div class="act"><button class="fl" data-h="' + i + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Monter">↑</button><button class="fl" data-b="' + i + '"' + (i === ETAGES.length - 1 ? " disabled" : "") + ' aria-label="Descendre">↓</button><button class="inter2' + (e.on && !rf ? " on" : "") + '" data-i="' + i + '"' + (rf ? " disabled" : "") + ' role="switch" aria-checked="' + (e.on && !rf) + '" aria-label="' + esc(e.nom) + '"></button></div>' +
+        '<div class="ligne2"><span class="puce ' + e.cc + '">' + e.cout + "</span>" + (M[e.m].externe ? '<span class="puce al">externe</span>' : "") + "<span>" + ligneStat(e) + "</span></div></div>"; }).join("") +
       '<div class="parcours">' + parcours() + "</div></div>";
   }
   function blocRegles() {
     return '<div class="verre bloc"><h3>Règles de la recherche</h3>' + REGLES.map((r, i) => '<div class="regle"><div class="t"><b>' + esc(r.t) + "</b><span>" + esc(r.s) + '</span></div><button class="inter2' + (r.on ? " on" : "") + '" data-r="' + i + '" role="switch" aria-checked="' + r.on + '" aria-label="' + esc(r.t) + '"></button></div>').join("") + "</div>";
   }
   function blocRapport() {
-    const ids = ["orfan", "frugal", "evolutif"];
     return '<div class="verre bloc"><h3>Ce que chacun a rapporté</h3><div class="tw2"><table class="rapport"><thead><tr><th>Chercheur</th><th>Essais</th><th>Trouvées</th><th>Jetons</th><th>Par amélioration</th><th>Plafond / jour</th></tr></thead><tbody>' +
-      ids.map((id) => { const m = M[id]; return '<tr><td>' + esc(m.nom) + "<small>" + (m.actif ? "actif" : "éteint") + " · " + (m.jour.essais ? m.jour.essais + " essais aujourd’hui (" + kj(m.jour.jetons) + " jetons)" : "rien aujourd’hui") + "</small></td><td>" + m.essais + "</td><td>" + m.trouvees + "</td><td>" + (m.jetons ? kj(m.jetons) : "0") + "</td><td>" + (m.trouvees ? kj(Math.round(m.jetons / m.trouvees)) : "—") + '</td><td><input type="number" min="0" data-p="' + id + '" value="' + (m.plafond || "") + '" placeholder="aucun"></td></tr>'; }).join("") + "</tbody></table></div>" +
+      ids().map((id) => { const m = M[id], rf = refuse(id); return '<tr><td>' + esc(m.nom) + (m.externe ? ' <span class="puce al">externe</span>' : "") + "<small>" + (rf ? "refusé · " + esc(m.raison) : (m.actif ? "actif" : "éteint") + " · " + (m.jour.essais ? m.jour.essais + " essais aujourd’hui (" + kj(m.jour.jetons) + " jetons)" : "rien aujourd’hui")) + "</small></td><td>" + (rf ? "—" : m.essais) + "</td><td>" + (rf ? "—" : m.trouvees) + "</td><td>" + (rf ? "—" : m.jetons ? kj(m.jetons) : "0") + "</td><td>" + (m.trouvees ? kj(Math.round(m.jetons / m.trouvees)) : "—") + '</td><td><input type="number" min="0" data-p="' + id + '" value="' + (m.plafond || "") + '" placeholder="aucun"' + (rf ? " disabled" : "") + "></td></tr>"; }).join("") + "</tbody></table></div>" +
       '<div class="note">« Par amélioration » = jetons dépensés pour chaque amélioration trouvée : plus c’est bas, mieux ça rend. Un plafond vide veut dire « aucun ». <span class="msg" id="msg">' + esc(S.msg) + "</span></div></div>";
   }
-  function blocLiens() {
-    return '<div class="liens"><button class="lien-c" data-vers="Quels modèles écrivent"><b>Quel modèle écrit les versions ?</b><span>Choisis l’exécutant et le stratège dans Réglages › Quels modèles.</span></button><button class="lien-c" data-vers="Installer un chercheur"><b>Ajouter un autre chercheur</b><span>Aujourd’hui : 3 livrés avec Cassandra, 0 installé. L’installation se fait dans Sous le capot › Installer un chercheur.</span></button></div>';
-  }
   function blocTech() {
-    const id = S.fiche, m = M[id], ok = m.verifs.filter(Boolean).length, mes = ETAGES.map((e, i) => ({ e, i })).filter((x) => x.e.m === id), ap = APPELS.filter((x) => x[0] === id);
-    const selecteur = ["orfan", "frugal", "evolutif"].map((k) => '<button class="seg' + (S.fiche === k ? " on" : "") + '" data-fiche="' + k + '">' + esc(M[k].nom) + "</button>").join("");
-    return '<div class="verre bloc"><div class="tete"><h3>Fiche d’un chercheur</h3><div class="segs" role="tablist">' + selecteur + "</div></div>" +
-      '<div class="fiche-t"><div><b style="font-size:19px">' + esc(m.nom) + "</b><div class=\"note\">" + esc(m.genre) + " · " + esc(m.source) + '</div></div><div class="act"><span class="puce ' + (m.actif ? "ok" : "mu") + '">' + (m.actif ? "actif" : "éteint") + '</span><span class="puce ' + (ok === 6 ? "ok" : "al") + '">' + ok + " vérifications sur 6</span></div></div>" +
+    if (!M[S.fiche]) S.fiche = ids()[0];
+    const id = S.fiche, m = M[id], ok = m.verifs.filter(Boolean).length, rf = refuse(id), mes = ETAGES.map((e, i) => ({ e, i })).filter((x) => x.e.m === id), ap = APPELS.filter((x) => x[0] === id);
+    const selecteur = ids().length > 4 ? '<select data-fichesel aria-label="Choisir un chercheur">' + ids().map((k) => '<option value="' + k + '"' + (S.fiche === k ? " selected" : "") + ">" + esc(M[k].nom) + (M[k].externe ? " (externe)" : "") + "</option>").join("") + "</select>" : '<div class="segs" role="tablist">' + ids().map((k) => '<button class="seg' + (S.fiche === k ? " on" : "") + '" data-fiche="' + k + '">' + esc(M[k].nom) + "</button>").join("") + "</div>";
+    return '<div class="verre bloc"><div class="tete"><h3>Fiche d’un chercheur</h3>' + selecteur + "</div>" +
+      '<div class="fiche-t"><div><b style="font-size:19px">' + esc(m.nom) + "</b><div class=\"note\">" + (m.externe ? "externe · " : "livré · ") + esc(m.source) + '</div></div><div class="act">' + (m.externe ? '<span class="puce al">externe</span>' : '<span class="puce">livré avec Cassandra</span>') + (rf ? '<span class="puce dg">refusé</span>' : '<span class="puce ' + (m.actif ? "ok" : "mu") + '">' + (m.actif ? "actif" : "éteint") + "</span>") + '<span class="puce ' + (ok === 6 ? "ok" : "al") + '">' + ok + " vérifications sur 6</span></div></div>" +
+      (rf ? '<div class="alerte"><b>Ce chercheur est refusé.</b> ' + esc(m.raison) + ' Il ne cherche pas tant que la vérification échoue. <div class="lg" style="margin-top:8px"><button class="btn" data-vers="Vérifier de nouveau">Vérifier de nouveau</button></div></div>' : "") +
+      (m.externe ? '<dl class="cle"><dt>Provenance</dt><dd>' + esc(m.origine) + "</dd><dt>Empreinte</dt><dd class=\"mono\">" + esc(m.empreinte) + (rf ? " · ne correspond pas au catalogue" : " · correspond au catalogue scellé") + "</dd></dl>" : "") +
       '<div class="chiffres4"><div><span class="lib">Essais</span><span class="v">' + m.essais + '</span></div><div><span class="lib">Trouvées</span><span class="v">' + m.trouvees + '</span></div><div><span class="lib">Jetons</span><span class="v">' + (m.jetons ? kj(m.jetons) : "0") + '</span></div><div><span class="lib">Appels de modèle</span><span class="v">' + m.appels + '</span></div></div>' +
-      '<div class="lib">Ses méthodes dans l’ordre de recherche</div>' + (mes.length ? mes.map((x) => '<div class="meth"><span class="rg">' + (x.i + 1) + "</span><span>" + esc(x.e.nom) + '</span><span class="puce ' + x.e.cc + '">' + x.e.cout + "</span>" + (x.e.on ? "" : '<span class="puce mu">éteinte</span>') + "</div>").join("") : '<div class="note">Aucune méthode dans l’ordre de recherche.</div>') +
+      '<div class="lib">Ses méthodes dans l’ordre de recherche</div>' + (mes.length ? mes.map((x) => '<div class="meth"><span class="rg">' + (x.i + 1) + "</span><span>" + esc(x.e.nom) + '</span><span class="puce ' + x.e.cc + '">' + x.e.cout + "</span>" + (x.e.on && !rf ? "" : '<span class="puce mu">éteinte</span>') + "</div>").join("") : '<div class="note">Aucune méthode dans l’ordre de recherche.</div>') +
       '<dl class="cle"><dt>Exécution</dt><dd>' + esc(m.proc) + "</dd><dt>Aujourd’hui</dt><dd>" + (m.jour.essais ? m.jour.essais + " essais · " + kj(m.jour.jetons) + " jetons" : "rien") + "</dd><dt>Plafond du jour</dt><dd>" + (m.plafond ? fmt(m.plafond) + " jetons" : "aucun") + "</dd>" + (m.refus ? "<dt>Refus</dt><dd>" + m.refus + " appel(s) refusé(s) au plafond</dd>" : "") + "</dl>" +
       '<div class="lib">Ses vérifications</div><div class="preuves-m">' + m.verifs.map((v, i) => '<div class="preuve ' + (v ? "" : "mu") + '"><span class="k">' + (v ? "✓" : "·") + "</span><div>" + esc(VERIFS[i]) + "</div></div>").join("") + "</div>" +
-      '<div class="lib">Ses derniers appels de modèle</div>' + (ap.length ? '<div class="appels">' + ap.map((a) => "<div><span>" + esc(a[1]) + "</span><span>" + esc(a[2]) + "</span><span>" + a[3] + " jetons</span></div>").join("") + "</div>" : '<div class="note">Aucun appel de modèle : ce chercheur n’en a jamais eu besoin.</div>') + "</div>";
+      '<div class="lib">Ses derniers appels de modèle</div>' + (ap.length ? '<div class="appels">' + ap.map((a) => "<div><span>" + esc(a[1]) + "</span><span>" + esc(a[2]) + "</span><span>" + a[3] + " jetons</span></div>").join("") + "</div>" : '<div class="note">Aucun appel de modèle' + (m.essais ? " : ce chercheur n’en a jamais eu besoin." : " pour l’instant.") + "</div>") +
+      (m.externe ? (S.retrait === id ? '<div class="alerte"><b>Retirer « ' + esc(m.nom) + ' » ?</b> Ses méthodes sortent de l’ordre de recherche. Ce qu’il a déjà trouvé et mis à l’essai reste en place.<div class="lg" style="margin-top:8px"><button class="btn dng" data-retirer-ok="' + id + '">Oui, retirer ce chercheur</button><button class="btn" data-annuler>Annuler</button></div></div>' : '<div class="lg"><button class="btn dng" data-retirer="' + id + '">Retirer ce chercheur</button><span class="note">Il peut être réinstallé depuis le catalogue.</span></div>') : '<div class="note">Un chercheur livré avec Cassandra ne se retire pas : on l’éteint avec l’interrupteur de l’ordre de recherche.</div>') + "</div>";
   }
   function lier() {
     racine.querySelectorAll("[data-h]").forEach((b) => b.addEventListener("click", () => { const i = +b.dataset.h; [ETAGES[i - 1], ETAGES[i]] = [ETAGES[i], ETAGES[i - 1]]; dessiner(); }));
     racine.querySelectorAll("[data-b]").forEach((b) => b.addEventListener("click", () => { const i = +b.dataset.b; [ETAGES[i + 1], ETAGES[i]] = [ETAGES[i], ETAGES[i + 1]]; dessiner(); }));
-    racine.querySelectorAll("[data-i]").forEach((b) => b.addEventListener("click", () => { const e = ETAGES[+b.dataset.i]; e.on = !e.on; M[e.m].actif = ETAGES.some((x) => x.m === e.m && x.on); dessiner(); }));
+    racine.querySelectorAll("[data-i]").forEach((b) => b.addEventListener("click", () => { const e = ETAGES[+b.dataset.i]; if (refuse(e.m)) return; e.on = !e.on; M[e.m].actif = ETAGES.some((x) => x.m === e.m && x.on); dessiner(); }));
     racine.querySelectorAll("[data-r]").forEach((b) => b.addEventListener("click", () => { REGLES[+b.dataset.r].on = !REGLES[+b.dataset.r].on; dessiner(); }));
     racine.querySelectorAll("[data-p]").forEach((i) => i.addEventListener("change", () => { M[i.dataset.p].plafond = +i.value || 0; S.msg = M[i.dataset.p].nom + " : " + (+i.value ? "plafond de " + fmt(+i.value) + " jetons par jour posé." : "plus de plafond."); dessiner(); }));
-    racine.querySelectorAll("[data-fiche]").forEach((b) => b.addEventListener("click", () => { S.fiche = b.dataset.fiche; dessiner(); }));
+    racine.querySelectorAll("[data-fiche]").forEach((b) => b.addEventListener("click", () => { S.fiche = b.dataset.fiche; S.retrait = ""; dessiner(); }));
+    racine.querySelectorAll("[data-fichesel]").forEach((x) => x.addEventListener("change", () => { S.fiche = x.value; S.retrait = ""; dessiner(); }));
+    racine.querySelectorAll("[data-retirer]").forEach((b) => b.addEventListener("click", () => { S.retrait = b.dataset.retirer; dessiner(); }));
+    racine.querySelectorAll("[data-annuler]").forEach((b) => b.addEventListener("click", () => { S.retrait = ""; dessiner(); }));
+    racine.querySelectorAll("[data-retirer-ok]").forEach((b) => b.addEventListener("click", () => { const id = b.dataset.retirerOk; const nom = M[id].nom; delete M[id]; ETAGES = ETAGES.filter((e) => e.m !== id); S.retrait = ""; S.msg = nom + " retiré."; dessiner(); }));
     racine.querySelectorAll("[data-vers]").forEach((b) => b.addEventListener("click", () => alert("Maquette : ici, on ouvrirait « " + b.dataset.vers + " » dans l’application.")));
   }
+  let nExt = 0;
+  function ajouterExterne(ref) {
+    nExt++; const id = "ext" + nExt, nom = ref ? "Mutagène (externe)" : "Sculpteur (externe)";
+    M[id] = { nom: nom, externe: true, origine: "catalogue des chercheurs · paquet épinglé par empreinte", empreinte: ref ? "sha256:4be1…c902" : "sha256:9f3c…a71d", statut: ref ? "refuse" : "ok", raison: ref ? "L’empreinte du paquet ne correspond pas à celle du catalogue scellé." : "", essais: 0, trouvees: 0, jetons: 0, appels: 0, jour: { jetons: 0, essais: 0 }, refus: 0, plafond: 0, actif: !ref, source: ref ? "paquet « mutagene » · version 0.3" : "paquet « sculpteur » · version 1.2", genre: "externe", proc: "processus à part, dans la cage", verifs: ref ? [1, 1, 0, 0, 0, 0] : [1, 1, 0, 1, 0, 0] };
+    ETAGES.push({ id: id, m: id, nom: nom, ce: "Chercheur installé depuis le catalogue scellé. Il cherche à son tour, après les autres.", cout: "Coût pas encore mesuré", cc: "al", on: !ref });
+    S.fiche = id; S.retrait = ""; dessiner();
+  }
+  document.getElementById("d-add").addEventListener("click", () => ajouterExterne(false));
+  document.getElementById("d-ref").addEventListener("click", () => ajouterExterne(true));
+  document.getElementById("d-raz").addEventListener("click", () => { const o = JSON.parse(SNAP); Object.keys(M).forEach((k) => delete M[k]); Object.assign(M, o.M); ETAGES = o.E; S.fiche = "orfan"; S.retrait = ""; S.msg = ""; dessiner(); });
   const MENU = [["Évolution", 0, "⚘"], ["Aujourd’hui", 1, "☼"], ["Améliorations", 1, "↗"], ["Réglages", 1, "◈"], ["Consignes et seuils", 1, "✎"], ["Sous le capot", 1, "⚙"], ["Les chercheurs", 2, "⊙"], ["Les fonctions", 2, "ƒ"], ["Les comparer", 2, "⇄"], ["Installer un chercheur", 2, "⤓"], ["Filet de sécurité", 2, "⛨"], ["Carnet", 2, "▤"], ["Versions écartées", 2, "⊘"], ["Ce qui est prévu", 2, "✦"], ["Vocabulaire", 2, "Aa"]];
   document.getElementById("mq-menu").innerHTML = MENU.map((m) => '<div class="t s' + m[1] + (m[0] === "Les chercheurs" ? " on" : "") + '"><span class="g">' + m[2] + "</span>" + m[0] + "</div>").join("");
   dessiner();
