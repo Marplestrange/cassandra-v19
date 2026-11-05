@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #988f33
+// VERSION CN : 0.2.0  #39f520
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=988f33 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=39f520 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -166,8 +166,6 @@
     const tousVivants = () => (S.etat.pieces || []).filter((p) => VIVANTES.indexOf(p.etat) >= 0);
 
     // ═══ MOTEURS (lots 1 à 4 de la maquette, branchés sur evolution.moteurs, evolution.cage et les gestes du module) ══════════════════════════
-    const MV = [["moteurs", "Moteurs"], ["course", "Course"], ["aff", "Affectations"], ["budget", "Budget et relais"], ["pieces", "Pièces en vol"], ["juges", "Juges"], ["install", "Installation"], ["cage", "Cage et preuves"], ["journal", "Journal"]];
-    const MO_ONGLETS = [["carte", "Carte"], ["protocole", "Protocole"], ["relais", "Relais de modèles"], ["install", "Installation"], ["hist", "Historique"]];
     const FICHES = {
       orfan: ["Le moteur de Cassandra : les règles déterministes d'abord (zéro jeton), puis un modèle guidé par le profil de l'appel. Un étage « règles » et un étage « modèle ».", "livré avec Cassandra · orfan/CN_orfan.py"],
       frugal: ["Le chercheur économe. Il essaie d'abord les recettes gratuites. Sinon, un modèle fort imagine deux ou trois idées en mots (sans code), un modèle économe écrit chaque idée, et Frugal vérifie lui-même chaque version : même résultat et plus rapide. Une version ratée est renvoyée au modèle économe avec la raison, pour qu'il la corrige, un nombre de fois limité. Sans partie qui travaille beaucoup, il ne dépense rien.", "livré avec Cassandra · orfan/CN_frugal.py"],
@@ -216,84 +214,7 @@
     const mMsg = () => { const m = M0(); return m.msg ? '<div class="verdict ' + (m.msg.ok ? "" : "dg") + '" role="status">' + esc(m.msg.t) + "</div>" : ""; };
     const fiche = (id) => FICHES[id] || ["Un moteur externe du catalogue.", "catalogue scellé"];
     const mot = (id) => ((M0().d || {}).moteurs || []).find((x) => x.id === id) || {};
-    const etatM = (x) => x.etat === "actif" ? puce("actif", "ok") : x.etat === "installe" ? puce("installé · désactivé") : puce("prévu", "mu");
-
-    function mEntete() {
-      return '<nav class="verre vues" aria-label="Vues des moteurs">' + MV.map((v) => '<button data-mv="' + v[0] + '" class="' + (M0().vue === v[0] ? "on" : "") + '">' + v[1] + "</button>").join("") + "</nav>";
-    }
-    function mBandeau() {
-      const d = M0().d || {}, ms = d.moteurs || [];
-      const es = ms.reduce((a, x) => a + (x.essais || 0), 0), pc = ms.reduce((a, x) => a + (x.pieces || 0), 0), jt = ms.reduce((a, x) => a + (x.jetons || 0), 0);
-      const b = d.budget || {}, pj = d.propositions_jour || {};
-      const pg = (S.etat.pieces || []).map((p) => evalDe(p).pieges).filter((x) => x && x.score != null);
-      const part = b.jetons_mois ? Math.min(100, Math.round(100 * (d.depense_mois || 0) / b.jetons_mois)) : 0;
-      return '<div class="verre bandeau">' +
-        '<div><span class="lib">Moteurs</span><span class="v">' + ms.filter((x) => x.etat === "actif").length + " / " + ms.length + '</span><span class="note">' + ms.filter((x) => x.genre === "natif").length + " natifs · " + ms.filter((x) => x.genre === "externe").length + " externe(s)</span></div>" +
-        '<div><span class="lib">Essais · cumul</span><span class="v">' + es + '</span><span class="note">' + pc + " pièce(s) attribuée(s) à un moteur</span></div>" +
-        '<div><span class="lib">Jetons · 30 jours</span><span class="v">' + kj(d.depense_mois || 0) + '</span><div class="barre"><i style="width:' + part + '%"></i></div><span class="note">' + part + " % du budget du mois (" + kj(b.jetons_mois || 0) + ")</span></div>" +
-        '<div><span class="lib">Propositions · aujourd\'hui</span><span class="v">' + (pj.fait || 0) + " / " + (pj.plafond || "?") + '</span><span class="note">tous moteurs confondus</span></div>' +
-        '<div><span class="lib">Évaluateur évalué</span><span class="v">' + (pg.length ? Math.round(100 * Math.min.apply(null, pg.map((x) => x.score))) + " %" : "—") + '</span><span class="note">' + (pg.length ? "variantes fausses attrapées, la plus faible" : "pas encore de pièce évaluée") + "</span></div>" +
-        '<div><span class="lib">Relais de modèles</span><span class="v mono">' + ((d.relais || []).length) + '</span><span class="note">appels récents ; ' + (d.isoles ? "moteurs dans leur processus" : "moteurs dans le serveur") + "</span></div></div>";
-    }
-
-    // 1 · Moteurs
-    function mMoteurs() {
-      const m = M0(), d = m.d || {}, x = mot(m.sel);
-      const rail = '<div class="verre rail"><div class="lib" style="padding:2px 4px 6px">Moteurs — du natif aux externes</div>' + (d.moteurs || []).map((y) =>
-        '<button class="cap' + (y.id === m.sel ? " sel" : "") + '" data-mm="' + esc(y.id) + '"><span class="n"><i class="coul" style="background:' + (COUL[y.id] || "var(--e-encre3)") + ';margin-right:6px"></i>' + esc(y.nom) + '</span><span class="s">' + etatM(y) + "<span>" + (y.essais || 0) + ' essais</span></span>' +
-        (y.essais ? '<span class="s"><b class="mono">' + kj(y.jetons) + "</b> jetons · " + (y.pieces || 0) + " pièce(s)</span>" : "") + "</button>").join("") +
-        '<div class="note" style="padding:6px 4px 0">Un moteur sans mesure n\'est pas « à zéro » : il n\'a pas encore cherché.</div></div>';
-      const f = fiche(m.sel);
-      const cad = x.essais ? '<div class="cadran"><div><span class="lib">Essais</span><span class="v">' + x.essais + '</span><span class="note">' + (x.pieces || 0) + ' pièce(s) adoptée(s)</span></div><div><span class="lib">Jetons</span><span class="v">' + kj(x.jetons) + '</span><span class="note">' + (x.appels_modele || 0) + ' appels de modèle</span></div><div><span class="lib">Aujourd\'hui</span><span class="v">' + kj((x.aujourdhui || {}).jetons || 0) + '</span><span class="note">' + ((x.aujourdhui || {}).essais || 0) + ' essais</span></div><div><span class="lib">Refus du relais</span><span class="v">' + (x.refus || 0) + '</span><span class="note">au plafond</span></div></div>' : '<div class="note">Ce moteur n\'a encore rien cherché.</div>';
-      const centre = '<div class="verre centre"><div class="tete"><div><h3 class="mono" style="font-size:15px">' + esc(x.nom || m.sel) + '</h3><div class="note">' + esc(x.genre || "") + " · " + esc(f[1]) + '</div></div><div class="lg">' + etatM(x) + (x.version ? puce("v" + x.version) : "") + "</div></div>" + cad +
-        '<div class="onglets">' + MO_ONGLETS.map((t) => '<button data-mo="' + t[0] + '" class="' + (t[0] === m.onglet ? "on" : "") + '">' + t[1] + "</button>").join("") + '</div><div class="zone">' + mOnglet(x) + "</div></div>";
-      return '<div class="trois">' + rail + centre + mAnalyse(x) + "</div>";
-    }
-    function mOnglet(x) {
-      const m = M0(), d = m.d || {}, f = fiche(m.sel);
-      if (m.onglet === "carte") return "<p style=\"margin:0\">" + esc(f[0]) + '</p><dl class="cle"><dt>Genre</dt><dd>' + esc(x.genre || "") + "</dd><dt>Exécution</dt><dd>" + (d.isoles ? "processus à part, dans la cage" : "dans le serveur (Orfan en ligne : il n'écrit que du texte)") + "</dd><dt>Interpréteur</dt><dd class=\"mono\">" + esc(x.python || "celui de Cassandra") + "</dd><dt>Source</dt><dd>" + esc(f[1]) + "</dd><dt>Plafond du jour</dt><dd>" + esc(plafondTexte(x)) + "</dd></dl>";
-      if (m.onglet === "protocole") return '<div class="note">Le moteur est un <b>processus à part</b> qui parle par lignes JSON, comme le travailleur des EC. Il ne voit que la partition visible du corpus ; ses demandes de modèle passent par le relais.</div>' +
-        '<div class="flux"><div><span class="lib">Cassandra</span><b class="mono" style="font-size:12px">noyau d\'évolution</b><span class="note">contexte, budget, délai</span></div><div class="frontiere"><span class="lib">Protocole</span><b class="mono" style="font-size:12px">lignes JSON</b><span class="note">stdin / stdout</span></div><div><span class="lib">Moteur</span><b class="mono" style="font-size:12px">' + esc(x.nom || "") + '</b><span class="note">dans sa cage</span></div><div><span class="lib">Relais</span><b class="mono" style="font-size:12px">modèles</b><span class="note">rôle, plafond, journal</span></div></div>' +
-        '<div class="code"><span class="c">// Cassandra → moteur</span>\n{<span class="s">"op"</span>:<span class="s">"proposer"</span>, <span class="s">"contexte"</span>:{<span class="s">"point"</span>:…, <span class="s">"source_reference"</span>:…, <span class="s">"entrees"</span>:[…<span class="c">partition VISIBLE</span>], <span class="s">"tombes"</span>:[…], <span class="s">"budget"</span>:3}}\n\n<span class="c">// moteur → Cassandra (autant de demandes de modèle que nécessaire)</span>\n{<span class="s">"op"</span>:<span class="s">"modele"</span>, <span class="s">"prompt"</span>:…, <span class="s">"role"</span>:<span class="s">"executant"</span>}   →   {<span class="s">"ok"</span>:true, <span class="s">"texte"</span>:…}\n\n<span class="c">// puis la fin</span>\n{<span class="s">"op"</span>:<span class="s">"resultat"</span>, <span class="s">"candidats"</span>:[{<span class="s">"texte"</span>:…, <span class="s">"hypothese"</span>:…}]}</div>' +
-        '<div class="tw"><table><thead><tr><th>Message</th><th>Sens</th><th>Garde</th></tr></thead><tbody><tr><td class="mono">proposer</td><td>Cassandra → moteur</td><td>délai et plafonds du relais</td></tr><tr><td class="mono">modele</td><td>moteur → Cassandra</td><td>compté, plafonné, refusé au plafond</td></tr><tr><td class="mono">resultat</td><td>moteur → Cassandra</td><td>du texte, jamais écrit avant d\'être jugé</td></tr><tr><td class="mono">erreur</td><td>moteur → Cassandra</td><td>dite, jamais avalée</td></tr></tbody></table></div>';
-      if (m.onglet === "relais") {
-        const lig = (d.relais || []).filter((r) => r.moteur === m.sel || (mot(m.sel).id && r.moteur.indexOf(m.sel) === 0));
-        return '<div class="note">Un moteur n\'a ni clé ni réseau : il demande « un modèle » et le serveur choisit le rôle, compte les jetons et refuse au plafond. Les moteurs externes parlent à un serveur de type OpenAI sur la boucle locale de leur cage, qui aboutit au même relais.</div>' +
-          '<div class="tw"><table><thead><tr><th>Quand</th><th>Étage</th><th>Rôle</th><th>Modèle</th><th class="num">Jetons ↑</th><th class="num">Jetons ↓</th><th>Résultat</th></tr></thead><tbody>' + (lig.length ? lig.map((r) => "<tr><td>" + ago(r.ts) + '</td><td class="mono">' + esc(r.moteur) + '</td><td class="mono">' + esc(r.role) + '</td><td class="mono">' + esc(r.modele || "—") + '</td><td class="num">' + nb(r.jetons_haut) + '</td><td class="num">' + nb(r.jetons_bas) + "</td><td>" + (r.resultat === "servi" ? puce("servi", "ok") : puce(r.resultat, "dg")) + "</td></tr>").join("") : '<tr><td colspan="7" class="vide">Aucun appel : ce moteur n\'a rien demandé au relais.</td></tr>') + "</tbody></table></div>";
-      }
-      if (m.onglet === "install") return mInstallFiche(x);
-      const j = (d.journal || []).filter((e) => e.texte.indexOf(m.sel) >= 0 || e.texte.toLowerCase().indexOf((x.nom || "").toLowerCase()) >= 0);
-      return j.length ? '<div class="chrono">' + j.map((e) => "<div><time>" + ago(e.ts) + "</time><b>" + esc(e.genre) + "</b> · " + esc(e.texte) + "</div>").join("") + "</div>" : '<div class="vide">Rien dans le journal pour ce moteur.</div>';
-    }
     const plafondTexte = (x) => { const p = x.plafond || {}; return (p.jetons_jour ? kj(p.jetons_jour) + " jetons/jour" : "aucun") + (p.essais_jour ? " · " + p.essais_jour + " essais/jour" : ""); };
-    function mInstallFiche(x) {
-      const d = M0().d || {};
-      if (x.genre === "natif") return '<div class="note">' + esc(x.nom) + ' est livré avec Cassandra : il se met à jour avec elle, sans environnement, sans fichier verrouillé, sans installateur.</div><dl class="cle"><dt>Retrait</dt><dd>impossible : il fait partie de Cassandra ; on l\'éteint seulement</dd></dl>';
-      const dispo = (d.catalogue || []).find((c) => c.id === x.id);
-      return '<dl class="cle"><dt>Installé</dt><dd class="mono">' + (x.etat === "prevu" ? "non" : "v" + esc(x.version || "?")) + "</dd><dt>Adaptateur</dt><dd class=\"mono\">" + esc(x.adaptateur || "—") + "</dd><dt>Interpréteur</dt><dd class=\"mono\">" + esc(x.python || "—") + "</dd><dt>Installé le</dt><dd>" + (x.installe_le ? date(x.installe_le) : "—") + "</dd></dl>" +
-        '<div class="lg">' + (x.etat === "prevu" && dispo ? '<button class="btn prim" data-ma="installer" data-id="' + esc(x.id) + '">Installer</button>' : "") + (x.etat !== "prevu" ? '<button class="btn dng" data-ma="desinstaller" data-id="' + esc(x.id) + '">Désinstaller</button>' : "") + "</div>";
-    }
-    function mAnalyse(x) {
-      const m = M0(), d = m.d || {}, natif = x.genre === "natif";
-      const dansCourse = (d.courses || []).some((c) => (c.resultats || []).some((r) => r.moteur === x.id && !r.saute));
-      const aRelais = (d.relais || []).some((r) => r.moteur.indexOf(x.id) === 0);
-      const pr = [
-        ["Contrat d'adaptateur", natif ? "répond à proposer(contexte) par des textes" : x.adaptateur ? "adaptateur : " + x.adaptateur : "aucun adaptateur", natif || x.adaptateur ? 1 : -1],
-        ["Processus à part", d.isoles || x.id !== "orfan" ? "dans la cage : environnement vidé, plafonds, délai" : "Orfan tourne dans le serveur (réglage moteurs_isoles)", d.isoles || x.id !== "orfan" ? 1 : 0],
-        ["Relais de modèles", aRelais ? "a déjà appelé un modèle par le relais" : "aucune clé, aucun réseau ; n'a pas encore appelé de modèle", aRelais ? 1 : 0],
-        ["Installation vérifiée", natif ? "livré avec Cassandra" : x.etat === "prevu" ? "non installé" : "catalogue scellé, paquets épinglés par empreinte", natif || x.etat !== "prevu" ? 1 : -1],
-        ["Course d'essai", dansCourse ? "a couru contre d'autres étages" : "n'a jamais couru", dansCourse ? 1 : 0],
-        ["Plafond", plafondTexte(x) === "aucun" ? "aucun plafond de jour posé" : plafondTexte(x), plafondTexte(x) === "aucun" ? 0 : 1]];
-      const cas = (d.cascade || []).filter((e) => (d.etages[e.id] || {}).moteur === x.id);
-      const roleBtn = natif || x.etat !== "prevu";
-      return '<div class="verre analyse"><div class="tete"><h2>Preuves du moteur</h2>' + puce(x.nom || "") + '</div><div style="display:flex;flex-direction:column;gap:9px">' +
-        pr.map((q, i) => '<div class="preuve ' + (q[2] === 1 ? "" : q[2] === 0 ? "al" : "mu") + '"><span class="k">' + (q[2] === 1 ? "✓" : q[2] === 0 ? "!" : "·") + "</span><div>" + (i + 1) + ". " + esc(q[0]) + "<small>" + esc(q[1]) + "</small></div></div>").join("") + "</div>" +
-        '<div class="verdict ' + (x.etat === "actif" ? "" : "mu") + '">' + (x.etat === "actif" ? "Actif : ses étages peuvent chercher." : x.etat === "installe" ? "Installé, pas actif : aucun de ses étages ne cherche." : "Prévu : rien à brancher tant qu'il n'est pas installé.") + "</div>" +
-        '<div><span class="lib">État du moteur</span><div class="routage" style="margin-top:6px">' + ["prevu", "installe", "actif"].map((e) => '<button ' + (x.etat === e ? 'class="on" ' : "") + (e === "prevu" && natif ? "disabled " : "") + (!roleBtn ? "disabled " : "") + 'data-ma="etat" data-id="' + esc(x.id) + '" data-v="' + e + '">' + (e === "prevu" ? "Prévu" : e === "installe" ? "Éteint" : "Actif") + "</button>").join("") + "</div>" +
-        '<div class="note" style="margin-top:6px">' + (cas.length ? "Ses étages dans la cascade : " + cas.map((e) => esc(e.nom) + (e.on ? "" : " (éteint)")).join(", ") + "." : "Aucun étage dans la cascade.") + "</div></div>" + mMsg() + "</div>";
-    }
-
-    // 2 · Course
     function mCourse() {
       const m = M0(), d = m.d || {}, c = m.course, der = m.derniere;
       const etages = (d.cascade || []);
@@ -315,27 +236,6 @@
     }
 
     // 3 · Affectations
-    function mAffTout() {
-      const m = M0(), d = m.d || {}, casc = d.cascade || [], opt = d.options || {}, aff = d.affectations || {}, points = d.points || [];
-      const lignes = casc.map((e, i) => '<div class="ordre"><span class="rg">' + (i + 1) + '</span><label style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><input type="checkbox" data-cas="' + esc(e.id) + '" ' + (e.on ? "checked" : "") + ' style="accent-color:var(--accent)"><span style="display:flex;flex-direction:column"><b class="mono" style="font-size:12.5px">' + esc(e.nom) + '</b><span class="note">' + esc(e.cout) + (e.actif ? "" : " · moteur non actif : l'étage est sauté") + '</span></span></label><button class="btn" data-mon="' + i + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Monter">↑</button><button class="btn" data-desc="' + i + '"' + (i === casc.length - 1 ? " disabled" : "") + ' aria-label="Descendre">↓</button></div>').join("");
-      const cnt = {}; points.forEach((p) => { const k = aff[p] || "auto"; cnt[k] = (cnt[k] || 0) + 1; });
-      const opts = (v) => '<option value="auto"' + (v === "auto" ? " selected" : "") + ">cascade</option>" + Object.keys(d.etages || {}).map((k) => "<option value=\"" + esc(k) + '"' + (v === k ? " selected" : "") + ">" + esc(d.etages[k].nom) + "</option>").join("");
-      const O = [["arret_premiere", "S'arrêter à la première variante prouvée", "sinon tous les étages sont essayés dans la limite du budget"], ["modele_si_chaud", "Ne passer au modèle que si le profil montre un point chaud", "une ligne qui porte au moins 40 % du travail, exécutée au moins 50 fois"], ["course_si_deux", "Courir deux étages quand le premier a réussi", "le suivant est essayé ; la meilleure des deux variantes (rendement) prend la place"]];
-      return '<div class="tete"><div><h3 class="mono" style="font-size:15px">Affectations</h3><div class="note">Quel étage cherche pour quel point. Par défaut une cascade : le gratuit d\'abord, le coûteux seulement quand le profil montre un point chaud.</div></div></div>' +
-        '<section class="cgrid"><div class="verre carte"><h2>La cascade</h2><div class="liste">' + lignes + '</div><div class="liste">' + O.map((o) => '<label class="inter"><input type="checkbox" data-opt="' + o[0] + '" ' + (opt[o[0]] ? "checked" : "") + '><span class="t"><b class="mono" style="font-size:12.5px">' + esc(o[1]) + '</b><span class="note">' + esc(o[2]) + "</span></span></label>").join("") + "</div>" + mMsg() + "</div>" +
-        '<div class="verre carte"><h2>Répartition</h2><div class="liste">' + (Object.keys(cnt).map((k) => '<div><div style="display:flex;justify-content:space-between"><span class="mono">' + esc(k === "auto" ? "cascade" : ((d.etages || {})[k] || {}).nom || k) + '</span><span class="mono">' + cnt[k] + ' point(s)</span></div><div class="barre"><i style="width:' + Math.round(100 * cnt[k] / Math.max(1, points.length)) + '%"></i></div></div>').join("") || '<div class="vide">Aucun point déclaré.</div>') + '</div><div class="note">Un étage forcé sur un point ignore la cascade. Un moteur éteint renvoie ses points à la cascade sans perdre les pièces en vol.</div></div></section>' +
-        '<div class="verre carte"><h2>Par point d\'évolution</h2><div class="tw"><table><thead><tr><th>Point</th><th>Étage</th><th>Mode</th></tr></thead><tbody>' + points.map((p) => '<tr><td class="mono">' + esc(p) + '</td><td><select data-aff="' + esc(p) + '">' + opts(aff[p] || "auto") + "</select></td><td>" + (aff[p] ? puce("forcé", "ok") : puce("cascade")) + "</td></tr>").join("") + "</tbody></table></div></div>";
-    }
-
-    const MARQUE_PTS = '<div class="verre carte"><h2>Par point d\'évolution</h2>';
-    function mAff(mode) {
-      const t = mAffTout(), i = t.indexOf(MARQUE_PTS);
-      if (mode === "points") return i >= 0 ? t.slice(i) : "";
-      const tete = t.indexOf("<section");
-      return (i >= 0 ? t.slice(tete, i) : t.slice(tete)).replace("<h2>La cascade</h2>", "<h2>Dans quel ordre ils cherchent</h2><div class=\"note\">Le gratuit passe toujours d’abord : c’est l’ordre de cette liste.</div>");
-    }
-
-    // 4 · Budget et relais
     function mBudget() {
       const m = M0(), d = m.d || {}, b = d.budget || {}, pj = d.propositions_jour || {}, mo = (d.moteurs || []).filter((x) => x.essais > 0 || (x.plafond || {}).jetons_jour != null), tot = mo.reduce((a, x) => a + (x.jetons || 0), 0);
       const part = b.jetons_mois ? Math.min(100, Math.round(100 * (d.depense_mois || 0) / b.jetons_mois)) : 0;
@@ -417,13 +317,6 @@
       return '<div class="tete"><div><h3 class="mono" style="font-size:15px">Journal</h3><div class="note">Ce que les moteurs ont fait, et la chaîne scellée des événements des pièces.</div></div></div>' +
         '<section class="cgrid"><div class="verre carte"><h2>Registre des moteurs</h2>' + ((d.journal || []).length ? '<div class="chrono">' + d.journal.map((e) => "<div><time>" + ago(e.ts) + "</time><b>" + esc(e.genre) + "</b> · " + esc(e.texte) + "</div>").join("") + "</div>" : '<div class="vide">Rien encore.</div>') + "</div>" +
         '<div class="verre carte"><h2>Chaîne des pièces</h2>' + (ch.length ? '<div class="chrono">' + ch.map((e) => "<div><time>" + date(e.ts) + "</time><b>" + esc(e.gid || "") + "</b> · " + esc(e.genre || e.type || "") + " " + esc(JSON.stringify(e.donnees || e.data || {}).slice(0, 120)) + "</div>").join("") + "</div>" : '<div class="vide">Aucun événement.</div>') + "</div></section>";
-    }
-
-    function moteurs() {
-      const m = M0();
-      if (!m.d) return '<div class="verdict mu">Chargement des moteurs…</div>';
-      const corps = { moteurs: mMoteurs, course: mCourse, aff: mAff, budget: mBudget, pieces: mPieces, juges: mJuges, install: mInstall, cage: mCage, journal: mJournal }[m.vue];
-      return mEntete() + (m.vue === "moteurs" ? mBandeau() : "") + corps();
     }
 
     function lierMoteurs() {
@@ -673,7 +566,7 @@
     Object.keys(TCAPOT).forEach((k) => { TITRES[k] = TCAPOT[k]; });
     ["amelio.toutes", "amelio.essai", "amelio.service", "amelio.retiree"].forEach((k) => { TITRES[k] = TITRES.amelio; SOUS_TITRES[k] = SOUS_TITRES.amelio; });
     const norme = (v) => (v === "capot" ? "capot.chercheurs" : v === "amelio" ? "amelio.toutes" : (TITRES[v] ? v : "aujourdhui"));
-    const MVUE = { aujourdhui: [], reglages: ["aff", "budget"], consignes: ["juges"], "capot.chercheurs": ["aff", "moteurs"], "capot.points": ["aff"], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
+    const MVUE = { aujourdhui: [], reglages: ["budget"], consignes: ["juges"], "capot.chercheurs": [], "capot.points": [], "capot.comparer": ["course"], "capot.install": ["install"], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
     const avecMoteurs = () => !!MVUE[S.vue];
     function suivre() { try { if (typeof window.evSuivre === "function") window.evSuivre(S.vue); } catch (e) { /* le menu se remettra à jour au prochain geste */ } }
     async function aller(vue) {
@@ -1030,7 +923,7 @@
       }
       const vs = MVUE[v] || ["moteurs"];
       if (v === "consignes") return consignes() + mMsg();
-      return vs.map((k) => { m.vue = k; return (k === "moteurs" ? mBandeau() : "") + { moteurs: mMoteurs, course: mCourse, aff: mAff, budget: mBudget, juges: mJuges, install: mInstall, cage: mCage, journal: mJournal }[k](); }).join("") + mMsg();
+      return vs.map((k) => { m.vue = k; return { course: mCourse, budget: mBudget, juges: mJuges, install: mInstall, cage: mCage, journal: mJournal }[k](); }).join("") + mMsg();
     }
 
     function dessiner() {
