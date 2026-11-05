@@ -1,19 +1,19 @@
 # ══════════════════════════════════════════════
-# TITRE      : Bancs de Frugal 2
+# TITRE      : Bancs de Frugal
 # LICENCE    : AGPL-3.0
 # AUTEUR     : Atek Drisse
 # GIT        : github.com/Marplestrange
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d6fb83
+# VERSION CN : 0.1.0  #c431bd
 # VERSION EC : néant
 # EC LIÉES   : néant
-# RÔLE       : Prouve que Frugal 2 ne dépense rien quand il n'y a rien à gagner, plafonne ses appels, affine sur la raison d'un échec et ne rend jamais une version non équivalente.
+# RÔLE       : Prouve que Frugal ne dépense rien quand il n'y a rien à gagner, plafonne ses appels, affine sur la raison d'un échec et ne rend jamais une version non équivalente.
 # MÉTHODE    : un modèle de banc scripté (aucune clé) derrière le vrai relais de la cage ; le moteur tourne dans son vrai processus.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d6fb83 ▼▼▼
-"""Bancs de Frugal 2 (orfan/CN_frugal.py)."""
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c431bd ▼▼▼
+"""Bancs de Frugal (orfan/CN_frugal.py)."""
 import sys
 import tempfile
 import time
@@ -52,7 +52,7 @@ class Banc:
         return self.reponses(role, prompt, len(self.appels))
 
 
-class Frugal2(unittest.TestCase):
+class Frugal(unittest.TestCase):
     def moteur(self, modele, **kw):
         return MO.MoteurProcessus("frugal", appeler_modele=modele, delai_s=kw.pop("delai_s", 90), **kw)
 
@@ -295,7 +295,7 @@ class Memoire(unittest.TestCase):
 
     def test_apres_six_echecs_de_suite_le_fort_doit_changer_de_famille(self):
         import importlib.util
-        spec = importlib.util.spec_from_file_location("frugal2", str(RACINE / "orfan" / "CN_frugal.py"))
+        spec = importlib.util.spec_from_file_location("frugal", str(RACINE / "orfan" / "CN_frugal.py"))
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         fiches = [{"famille": "f%d" % i, "issue": "fausse", "detail": "", "rapport": 0} for i in range(6)]
@@ -339,5 +339,5 @@ if __name__ == "__main__":
 # ▲▲▲ FIN BORNE CN ▲▲▲
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════
 # EC : néant.
-# CN : un banc par promesse de Frugal 2 : zéro dépense sans gain possible, plafonds tenus, affinage sur raison, rien de faux rendu.
+# CN : un banc par promesse de Frugal : zéro dépense sans gain possible, plafonds tenus, affinage sur raison, rien de faux rendu.
 # LIEN : orfan/CN_frugal.py, noyau/CN_moteurs.py, docs/CN_FRUGALEVO.md.

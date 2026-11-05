@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3b10b9
+# VERSION CN : 0.1.0  #e05dd1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La liste des chercheurs qu'on peut installer depuis l'écran (ce qu'ils font, ce qu'ils coûtent, d'où ils viennent, quel adaptateur les porte) ; le catalogue scellé, lui, ne contient que ce qui a été épinglé.
 # MÉTHODE    : une donnée, aucune exécution ; un chercheur est proposé ici AVANT d'être épinglé : « préparer » résout son paquet et calcule ses empreintes, puis l'installateur n'installe que ce qui est épinglé.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3b10b9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e05dd1 ▼▼▼
 """Le répertoire : ce qui est PROPOSÉ. Le catalogue (noyau/CN_installateur.py) : ce qui est ÉPINGLÉ et scellé. On passe de l'un à l'autre en « préparant » un chercheur.
 
 Un chercheur du répertoire a :
@@ -55,7 +55,7 @@ REPERTOIRE = [
 LIVRES = [
     {"id": "orfan", "nom": "Orfan", "qui": "Cassandra", "cible": "code", "cout": "sobre", "desc": "Le moteur de la maison : des recettes gratuites d'abord, puis un modèle guidé par la façon dont la fonction est appelée.",
      "force": ["Gratuit tant que les recettes suffisent", "Le plus testé : il tourne déjà"]},
-    {"id": "frugal", "nom": "Frugal 2", "qui": "Cassandra", "cible": "code", "cout": "sobre", "desc": "Le chercheur économe : recettes d'abord ; sinon un modèle fort propose des idées, un modèle économe écrit le code.",
+    {"id": "frugal", "nom": "Frugal", "qui": "Cassandra", "cible": "code", "cout": "sobre", "desc": "Le chercheur économe : recettes d'abord ; sinon un modèle fort propose des idées, un modèle économe écrit le code.",
      "force": ["Dépense peu de jetons", "Ne s'active que sur les fonctions chaudes"]},
     {"id": "evolutif", "nom": "Évolutif", "qui": "Cassandra", "cible": "code", "cout": "gourmand", "desc": "Des générations de versions qui se croisent et mutent, avec une archive par taille de code.",
      "force": ["Explore largement", "Garde une archive de niches"]},

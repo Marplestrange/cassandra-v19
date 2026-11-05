@@ -122,13 +122,13 @@ memoire.json_extraire|1|0.631|26|7|19|26|0.6|0`.split("\n").map((l) => l.split("
     isoles: true,
     cascade: [
       { id: "orfan/deterministe", on: true, actif: true, nom: "Orfan · règles déterministes", cout: "gratuit : zéro jeton" },
-      { id: "frugal", on: true, actif: true, nom: "Frugal 2 · règles, puis idées du modèle fort, code du modèle économe", cout: "peu de jetons : un modèle seulement sur un point chaud" },
+      { id: "frugal", on: true, actif: true, nom: "Frugal · règles, puis idées du modèle fort, code du modèle économe", cout: "peu de jetons : un modèle seulement sur un point chaud" },
       { id: "orfan/modele", on: true, actif: true, nom: "Orfan · modèle guidé par le profil", cout: "jetons : un modèle écrit les variantes" },
       { id: "evolutif", on: true, actif: true, nom: "Évolutif · populations et mutations", cout: "jetons : plusieurs générations" }],
     options: { arret_premiere: true, modele_si_chaud: true, course_si_deux: false }, affectations: {},
     budget: { jetons_mois: 2000000, alerte_pct: 80, gratuits_d_abord: true, couper_au_plafond: true }, depense_mois: 189000, propositions_jour: { fait: 36, plafond: 60 },
     objectifs: { poids: { latence: 1, memoire: 0, taille: 0 }, tolerance_pct: 25 },
-    etages: { "orfan/deterministe": { moteur: "orfan", nom: "Orfan · règles déterministes", cout: "gratuit : zéro jeton" }, frugal: { moteur: "frugal", nom: "Frugal 2 · règles, puis idées du modèle fort, code du modèle économe", cout: "peu de jetons : un modèle seulement sur un point chaud" }, "orfan/modele": { moteur: "orfan", nom: "Orfan · modèle guidé par le profil", cout: "jetons : un modèle écrit les variantes" }, evolutif: { moteur: "evolutif", nom: "Évolutif · populations et mutations", cout: "jetons : plusieurs générations" } },
+    etages: { "orfan/deterministe": { moteur: "orfan", nom: "Orfan · règles déterministes", cout: "gratuit : zéro jeton" }, frugal: { moteur: "frugal", nom: "Frugal · règles, puis idées du modèle fort, code du modèle économe", cout: "peu de jetons : un modèle seulement sur un point chaud" }, "orfan/modele": { moteur: "orfan", nom: "Orfan · modèle guidé par le profil", cout: "jetons : un modèle écrit les variantes" }, evolutif: { moteur: "evolutif", nom: "Évolutif · populations et mutations", cout: "jetons : plusieurs générations" } },
     catalogue: [], catalogue_erreur: "catalogue des moteurs absent ou sans sceau : /var/cassandra/donnees/moteurs-catalogue.json",
     relais: [1,2,3,4,5,6,7,8,9,10,11,12,13].map((i) => ({ jetons_bas: 2300 + i * 40, jetons_haut: 4386, modele: "google-gemini-2-5-flash-c604", moteur: i % 3 ? "orfan/modele" : "evolutif", resultat: "servi", role: "executant", ts: 1793835574 - i * 60 })), courses: [], journal: [], points: etat.cibles.map((c) => c.point) };
   const cage = { os: "linux", isolation: "processus", bac_mode: "auto", bac: "aucun", memoire_mo: 1024, chaine: { ok: true, mailles: 0 }, epreuves: [],

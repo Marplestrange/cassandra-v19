@@ -12,7 +12,7 @@
 <!-- RÔLE       : Propositions concrètes pour mettre le sens (multilingual-e5-large) au service du moteur Évolutif, éprouvées par des mesures réelles, classées, avec un plan en étapes. -->
 <!-- MÉTHODE    : on part de ce que fait déjà OpenEvolve (docs/CN_OPENEVOLVE-LECTURE.md) et de ce que fait déjà notre code ; chaque idée dit ce qui est mesuré et ce qui reste une hypothèse. -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=58633e ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ecd253 ▼▼▼ -->
 # Évolutif et le sens : propositions à débattre
 
 Statut : 04-11-2026, après mesures. **Rien n'est construit dans le dépôt.** Ce document propose, Drisse tranche. Il s'appuie sur `docs/CN_OPENEVOLVE-LECTURE.md` et sur la lecture de notre code : `orfan/CN_evolutif.py`, `orfan/CN_orfan.py`, `orfan/CN_moteur_hote.py`, `noyau/CN_moteurs.py`, `noyau/CN_evolution.py`, `noyau/CN_evaluateur.py`, `noyau/CN_encodage.py`, `modules/bibliotheque/CN_module.py`, `docs/CN_FRUGALEVO.md`.
@@ -163,7 +163,7 @@ Pour chacune : (a) quoi · (b) où dans le code · (c) comment e5 sert · (d) ga
 ### P1 — Entonnoir de l'idée avant le code, **limité au même point**  ·  *e5 sur des phrases*  ·  **à tenter après P0**
 
 (a) Avant que le modèle économe n'écrive du code, on compare l'**idée en prose** aux idées déjà tentées ou mortes **sur ce point** ; une idée qui reformule une idée déjà tentée (cosinus au-dessus d'un seuil étroit) ne passe pas à l'écriture.
-(b) Pour Frugal 2 : entre « le modèle fort propose 2-3 plans » et « le modèle économe les implémente » (`orfan/CN_frugal.py`). Pour Évolutif : il faudrait ajouter une étape de stratégie (aujourd'hui l'hypothèse arrive avec le code), sinon le filtre n'économise que le temps de `comparer_local`.
+(b) Pour Frugal : entre « le modèle fort propose 2-3 plans » et « le modèle économe les implémente » (`orfan/CN_frugal.py`). Pour Évolutif : il faudrait ajouter une étape de stratégie (aujourd'hui l'hypothèse arrive avec le code), sinon le filtre n'économise que le temps de `comparer_local`.
 (c) e5 reconnaît la reformulation d'une même idée sur la même fonction (mesuré : 0,89–0,98 contre ≤ 0,91 pour des idées différentes ; seuil 0,915 : 7 sur 10 reconnues, 0 fausse fusion sur 56 paires de contrôle). Il ne reconnaît **pas** des idées du même genre entre fonctions différentes (E2) : on compare donc **dans le point**, jamais d'un point à l'autre.
 (d) Gain : jetons de l'exécutant non dépensés sur des répétitions. **Hypothèse chiffrée par la mesure E5** : dans 3 cas sur 4, 2 échantillons sur 3 étaient des répétitions de l'idée du premier ; un filtre parfait aurait épargné 2 appels sur 3. Mesure à faire : calibrer le seuil sur ≥ 100 paires d'idées **étiquetées à la main**, avec les journaux de P0 ; exiger ≥ 95 % de précision avant de rejeter quoi que ce soit.
 (e) Coût : 1 à 5 phrases par recherche, 0,27 s chacune ; le modèle est déjà résident (décision de Drisse).
@@ -260,7 +260,7 @@ Le modèle de sens ne vaut que sur des **phrases décrivant une idée**, dans **
 - **Étape 0 — sans e5** (petit) : P0 + P0b, semer les tombes dans `vus`, P6, P7. Résultat déjà obtenu (E7) : quand on lui nomme l'idée déjà prise, le modèle change d'idée (8 sur 8, petit échantillon). Porte de sortie restante : que ces idées nouvelles passent le juge au moins aussi souvent que les répétitions (à mesurer sur les vrais points avec leur corpus).
 - **Étape 1 — journal** : pendant quelques semaines, écrire texte et hypothèse de chaque variante (jugée ou non). Sans cela, aucune calibration sérieuse.
 - **Étape 2 — calibrer P1** sur ≥ 100 paires d'idées réelles étiquetées à la main (aire ROC et précision à 0,90 / 0,915 / 0,93). **Porte de sortie** : précision < 95 % → on n'ouvre pas le guichet.
-- **Étape 3 — le guichet d'idées** (§ 2) et P1 dans Frugal 2 / Évolutif, avec plafond et repli.
+- **Étape 3 — le guichet d'idées** (§ 2) et P1 dans Frugal / Évolutif, avec plafond et repli.
 - **Étape 4 — P2 par détecteurs** et le manuel d'astuces ; **P5** à comparer aux niches de taille.
 - **Étape 5 — P3**, quand le journal montre trois gains de la même famille.
 

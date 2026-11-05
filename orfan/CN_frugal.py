@@ -1,19 +1,19 @@
 # ══════════════════════════════════════════════
-# TITRE      : Frugal 2, le moteur économe d'Orfan
+# TITRE      : Frugal, le moteur économe d'Orfan
 # LICENCE    : AGPL-3.0
 # AUTEUR     : Atek Drisse
 # GIT        : github.com/Marplestrange
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a200d9
+# VERSION CN : 0.1.0  #7a56f1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le moins de jetons possible : les règles gratuites d'abord ; sinon un modèle fort propose 2-3 stratégies en texte, un modèle économe les écrit en code, chaque version est vérifiée ici et affinée sur sa raison d'échec.
 # MÉTHODE    : règles, puis stratégies (rôle strategie) → code (rôle executant) → vérification locale → affinage borné ; s'arrête dès qu'une variante prouvée existe ; sans point chaud, aucune dépense.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a200d9 ▼▼▼
-"""Frugal 2 : notre version de l'idée de FrugalEvo (docs/CN_FRUGALEVO.md).
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7a56f1 ▼▼▼
+"""Frugal : notre version de l'idée de FrugalEvo (docs/CN_FRUGALEVO.md).
 
   étage 1 · règles déterministes : zéro jeton ; si l'une est prouvée plus rapide, on la rend et on s'arrête ;
   étage 2 · seulement si le profil montre un point chaud (>= 40 % du travail sur une ligne) : le modèle FORT (rôle « strategie ») propose 2-3 stratégies en texte, sans code ;
