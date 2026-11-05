@@ -242,6 +242,17 @@ paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra"]
 
 [[capacites]]
+id = "moteur_controler"
+libelle = "Contrôler l'intégrité d'un moteur de recherche : son programme, son isolation, sa réponse à un ping dans son processus, son modèle, son plafond ; la défaillance trouvée est dite, avec ce qu'on peut faire"
+risque = "faible"
+droit = "agir"
+perimetre = ["un processus d'épreuve, aussitôt arrêté", "un appel d'essai d'un mot au modèle, si le moteur en dépense un", "le dernier contrôle noté au registre des moteurs"]
+preuve = "le registre garde le dernier contrôle du moteur"
+retour = "aucun : un contrôle n'écrit que son propre rapport"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
 id = "proposer"
 libelle = "Proposer une variante d'un point : le moteur de recherche (Orfan, un modèle, ou les deux) rend du texte ; le noyau le juge sur le corpus de rejeu (équivalence par paliers, gain qui tient sur le jeu réservé, au-dessus du bruit de mesure, corpus assez fort) puis, seulement alors, l'écrit et le met en ombre"
 risque = "moyen"

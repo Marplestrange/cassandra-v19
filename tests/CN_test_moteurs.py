@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #57ed37
+# VERSION CN : 0.1.0  #8cba1e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 1 de la maquette d'Évolution : le moteur dans son processus, le relais de modèles plafonné, le registre et l'attribution des pièces.
 # MÉTHODE    : un vrai processus de moteur (aucune doublure du protocole) ; le modèle est une fonction de banc ; le module Évolution est branché dans un vrai noyau comme au banc du module.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=57ed37 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8cba1e ▼▼▼
 """Bancs des moteurs de recherche : le protocole de processus, le relais, le registre."""
 import json
 import sys
@@ -228,6 +228,156 @@ class InstallationDansLeModule(TM.Banc):
     def test_un_compte_ordinaire_ne_peut_ni_installer_ni_activer(self):
         self.assertEqual(self.ex("moteur_installer", {"moteur": "x-y"}, compte=TM.SIMPLE)["statut"], "refuse")
         self.assertEqual(self.ex("moteur_etat", {"moteur": "orfan", "etat": "actif"}, compte=TM.SIMPLE)["statut"], "refuse")
+
+
+class Controle(unittest.TestCase):
+    """Le contrôle d'intégrité d'un moteur : le ping du vrai processus, puis chaque étape et la défaillance dite."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.reg = MO.Registre(Path(self.tmp.name) / "d" / "moteurs.json")
+        self.reg.declarer("orfan", "Orfan", genre="natif", etat="actif")
+
+    def moteur_ok(self):
+        class M:
+            def ping(self, delai_s):
+                return {"ok": True, "duree_s": 0.1}
+        return M()
+
+    def moteur_muet(self):
+        class M:
+            def ping(self, delai_s):
+                return {"ok": False, "erreur": "DelaiEC : délai de 20 s dépassé"}
+        return M()
+
+    def test_le_vrai_processus_repond_au_ping_sans_modele(self):
+        appels = []
+        m = MO.MoteurProcessus("deterministe", appeler_modele=lambda p, role: appels.append(p) or "", delai_s=60)
+        r = m.ping(60)
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(appels, [])                                    # un ping ne demande rien au modèle
+
+    def test_un_moteur_qui_ne_demarre_pas_est_une_reponse_negative_pas_une_exception(self):
+        m = MO.MoteurProcessus("deterministe", orfan=str(Path(self.tmp.name) / "absent.py"), delai_s=60)
+        r = m.ping(10)
+        self.assertFalse(r["ok"], r)
+        self.assertTrue(r["erreur"])
+
+    def test_tout_va_bien_les_cinq_etapes_passent_et_la_defaillance_est_levee(self):
+        self.reg.defaillance("orfan", "ancienne faute")
+        r = MO.controler("orfan", self.reg, creer_moteur=self.moteur_ok, appeler_modele=lambda p, role: "ok", programme=lambda: (True, "intact"), a_modele=True)
+        self.assertTrue(r["ok"], r)
+        self.assertIsNone(r["panne"])
+        self.assertEqual([e["ok"] for e in r["etapes"]], [True] * 5)
+        m = self.reg.liste()[0]
+        self.assertNotIn("defaillance", m)
+        self.assertTrue(m["controle"]["ok"])
+
+    def test_un_moteur_sans_modele_ne_depense_aucun_jeton_au_controle(self):
+        appels = []
+        r = MO.controler("orfan", self.reg, creer_moteur=self.moteur_ok, appeler_modele=lambda p, role: appels.append(p) or "ok", programme=lambda: (True, ""), a_modele=False)
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(appels, [])
+
+    def test_un_moteur_muet_est_une_defaillance_a_relancer_et_les_etapes_suivantes_ne_sont_pas_faites(self):
+        r = MO.controler("orfan", self.reg, creer_moteur=self.moteur_muet, programme=lambda: (True, ""))
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["panne"]["titre"], "il ne répond plus")
+        self.assertTrue(r["panne"]["relance"])
+        self.assertEqual([e["ok"] for e in r["etapes"]], [True, True, False, None, None])
+        self.assertIn("defaillance", self.reg.liste()[0])
+
+    def test_un_modele_muet_est_une_defaillance_dite(self):
+        def muet(prompt, role):
+            raise RuntimeError("le modèle n'a pas répondu")
+        r = MO.controler("orfan", self.reg, creer_moteur=self.moteur_ok, appeler_modele=muet, programme=lambda: (True, ""), a_modele=True)
+        self.assertEqual(r["panne"]["titre"], "son modèle ne répond pas")
+        self.assertTrue(r["panne"]["relance"])
+        self.assertEqual([e["ok"] for e in r["etapes"]], [True, True, True, False, None])
+
+    def test_un_programme_invalide_est_refuse_et_rien_d_autre_n_est_essaye(self):
+        lance = []
+        r = MO.controler("orfan", self.reg, creer_moteur=lambda: lance.append(1) or self.moteur_ok(), programme=lambda: (False, "le sceau du catalogue ne correspond pas"))
+        self.assertEqual(r["panne"]["titre"], "programme modifié ou invalide")
+        self.assertTrue(r["panne"]["refuse"])
+        self.assertFalse(r["panne"]["relance"])
+        self.assertEqual(lance, [])                                     # un programme douteux n'est jamais lancé
+        self.assertTrue(self.reg.liste()[0]["controle"]["refuse"])
+
+    def test_l_isolation_desactivee_est_dite(self):
+        r = MO.controler("orfan", self.reg, creer_moteur=self.moteur_ok, isoles=False, programme=lambda: (True, ""))
+        self.assertEqual(r["panne"]["titre"], "isolation désactivée")
+
+    def test_un_plafond_atteint_n_est_pas_une_defaillance(self):
+        self.reg.plafonner("orfan", jetons_jour=100)
+        self.reg.compter("orfan", {"jetons": 150}, essais=1)
+        self.reg.defaillance("orfan", "vieille faute")
+        r = MO.controler("orfan", self.reg, creer_moteur=self.moteur_ok, programme=lambda: (True, ""))
+        self.assertEqual(r["panne"]["titre"], "plafond atteint")
+        self.assertEqual([e["ok"] for e in r["etapes"]], [True, True, True, True, False])
+        self.assertNotIn("defaillance", self.reg.liste()[0])            # le plafond est une limite, pas une panne : la défaillance ancienne est levée
+
+    def test_une_exception_du_programme_est_une_defaillance_pas_un_crash(self):
+        def casse():
+            raise OSError("disque illisible")
+        r = MO.controler("orfan", self.reg, creer_moteur=self.moteur_ok, programme=casse)
+        self.assertFalse(r["ok"])
+        self.assertIn("disque illisible", r["panne"]["raison"])
+
+    def test_defaillance_retenue_et_levee(self):
+        self.reg.defaillance("orfan", "Erreur : boom")
+        self.assertEqual(self.reg.liste()[0]["defaillance"]["raison"], "Erreur : boom")
+        self.reg.retablir("orfan")
+        self.assertNotIn("defaillance", self.reg.liste()[0])
+        self.reg.defaillance("inconnu", "x")                            # un moteur inconnu est ignoré, sans erreur
+        self.reg.retablir("inconnu")
+
+    def test_la_course_retient_la_faute_d_un_moteur_et_la_leve_quand_il_va_au_bout(self):
+        from noyau import CN_course as C
+        reg = self.reg
+
+        class Evo:
+            class points:
+                @staticmethod
+                def reference(m, p):
+                    raise AssertionError("non utilisé")
+
+            def __init__(self, r):
+                self.r = r
+
+            def proposer(self, module, point, moteur, budget):
+                if isinstance(self.r, Exception):
+                    raise self.r
+                return self.r
+
+            essayer = proposer
+
+        o = C.Orchestrateur(Evo(RuntimeError("le moteur a planté")), reg)
+        o._moteur = lambda etage, budget_type="jetons", limite=None: type("X", (), {"stats": {}})()
+        o._lancer("orfan/deterministe", "a", "b", 1, ecrire=True)
+        self.assertIn("planté", reg.liste()[0]["defaillance"]["raison"])
+        o.evo = Evo({"ok": False, "essais": [], "retenus": [], "meilleur": None, "raison": "rien de prouvé", "piece": None})
+        o._lancer("orfan/deterministe", "a", "b", 1, ecrire=True)
+        self.assertNotIn("defaillance", reg.liste()[0])                 # chercher sans rien trouver n'est pas une faute
+
+
+class ControleDansLeModule(TM.Banc):
+    def test_le_controle_d_orfan_dit_tout_et_note_son_dernier_controle(self):
+        r = self.ex("moteur_controler", {"moteur": "orfan"})
+        self.assertEqual(r["statut"], "faite", r)
+        res = r["resultat"]
+        self.assertEqual([e["id"] for e in res["etapes"]], list(MO.ETAPES_CONTROLE))
+        self.assertTrue(res["etapes"][0]["ok"], res)                    # le fichier d'Orfan est là et valide
+        self.assertTrue(res["etapes"][2]["ok"], res)                    # son vrai processus répond au ping
+        m = {x["id"]: x for x in self.ex("moteurs")["resultat"]["moteurs"]}["orfan"]
+        self.assertIn("controle", m)
+
+    def test_un_moteur_inconnu_est_une_erreur_dite(self):
+        self.assertNotEqual(self.ex("moteur_controler", {"moteur": "absent"})["statut"], "faite")
+
+    def test_un_compte_ordinaire_ne_peut_pas_controler(self):
+        self.assertEqual(self.ex("moteur_controler", {"moteur": "orfan"}, compte=TM.SIMPLE)["statut"], "refuse")
 
 
 if __name__ == "__main__":

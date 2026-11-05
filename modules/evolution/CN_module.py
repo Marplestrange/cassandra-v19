@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #0b1f97
+# VERSION CN : 0.5.0  #4e40bf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=0b1f97 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=4e40bf ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -20,6 +20,7 @@ Ce module ne fait que donner à ces gestes leurs droits, leur preuve et leur ret
 """
 from __future__ import annotations
 
+import ast
 import importlib
 import importlib.util
 import json
@@ -431,6 +432,56 @@ def brancher(ctx):
         if res.get("ok"):
             installateur().desinstaller(res["moteur"])
 
+    def verifier_programme(ident):
+        """Le code d'un moteur est là et intact : un moteur natif, son fichier lisible et compilable ; un moteur externe, son environnement installé et le catalogue scellé qui le décrit."""
+        reg = registre()
+        fiche = next((m for m in reg.liste() if m["id"] == ident), None)
+        if fiche is None:
+            return False, "moteur inconnu : « %s »" % ident
+        if fiche.get("genre") == "externe":
+            try:
+                catalogue = installateur().disponibles()
+            except Exception as e:
+                return False, str(e)[:200]
+            entree = next((x for x in catalogue if x["id"] == ident), None)
+            if entree is None:
+                return False, "il n'est plus dans le catalogue scellé"
+            if not entree.get("installe"):
+                return False, "son environnement n'est plus installé"
+            return True, "son environnement est installé et le catalogue scellé le décrit"
+        nom = str(reglage("moteur_orfan", "orfan.CN_orfan"))
+        if not _MOTEUR_PERMIS.match(nom):
+            return False, "moteur de recherche refusé : « %s »" % nom
+        spec = importlib.util.find_spec(nom)
+        if spec is None or not spec.origin:
+            return False, "le fichier du moteur est introuvable"
+        fichier = {"orfan": spec.origin, "frugal": os.path.join(os.path.dirname(spec.origin), "CN_frugal.py"), "evolutif": os.path.join(os.path.dirname(spec.origin), "CN_evolutif.py")}.get(ident, spec.origin)
+        try:
+            with open(fichier, "r", encoding="utf-8") as f:
+                ast.parse(f.read())
+        except (OSError, SyntaxError, ValueError) as e:
+            return False, "son fichier est illisible ou invalide : %s" % str(e)[:120]
+        return True, "livré avec Cassandra, lisible et valide"
+
+    def moteur_controler(c, moteur=""):
+        """Le contrôle d'intégrité d'un moteur : programme, isolation, réponse à un ping dans son processus, modèle, plafond. Dit la défaillance trouvée et ce qu'on peut faire."""
+        ident = str(moteur or "").strip()
+        reg = registre()
+        if not any(m["id"] == ident for m in reg.liste()):
+            raise ValueError("moteur inconnu : « %s » (voir evolution.moteurs)" % ident)
+        mot = importlib.import_module("noyau.CN_moteurs")
+        etages = [(e, v) for e, v in reg.etages().items() if v[0] == ident]
+        a_modele = any(not str(v[3]).startswith("gratuit") for _e, v in etages)
+        creer = None
+        if etages and isoles():
+            orch = orchestre()
+            creer = lambda: orch._moteur(etages[0][0])
+        return mot.controler(ident, reg, creer_moteur=creer, appeler_modele=appeler_modele, isoles=isoles(), programme=lambda: verifier_programme(ident), a_modele=a_modele)
+
+    def prouver_controle(c, res):
+        m = next((x for x in registre().liste() if x["id"] == res.get("moteur")), None)
+        return bool(m) and "controle" in m
+
     def moteur_etat(c, moteur="", etat=""):
         reg = registre()
         avant = next((m["etat"] for m in reg.liste() if m["id"] == moteur), None)
@@ -555,6 +606,7 @@ def brancher(ctx):
     ctx.implementer("moteur_desinstaller", moteur_desinstaller, prouver_desinstallation, sans_retour)
     ctx.implementer("moteur_installer", moteur_installer, prouver_installation, defaire_installation)
     ctx.implementer("moteur_etat", moteur_etat, prouver_etat, defaire_etat)
+    ctx.implementer("moteur_controler", moteur_controler, prouver_controle, sans_retour)
     ctx.implementer("proposer", proposer, prouver_proposition, defaire_proposition)
     ctx.implementer("retour", retour, prouver_retour, sans_retour)
     ctx.implementer("visiter", visiter, prouver_visite, sans_retour)

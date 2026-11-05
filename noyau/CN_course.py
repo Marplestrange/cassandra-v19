@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e7952f
+# VERSION CN : 0.1.0  #92c7e7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Décide quel moteur cherche pour quel point : la cascade (le gratuit d'abord), l'affectation forcée, la course entre moteurs, les plafonds par moteur ; rien n'est mis en service par une course.
 # MÉTHODE    : un moteur à la fois dans son processus, jugé par le même juge sur le même corpus ; chaque étage compte ses jetons ; un plafond atteint saute l'étage et le dit.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e7952f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=92c7e7 ▼▼▼
 """Lots 3 de la maquette d'Évolution : course, cascade, affectations, budget par moteur.
 
 La CASCADE : les étages actifs, dans l'ordre (le gratuit d'abord). `arret_premiere` : on s'arrête à la première variante prouvée. `modele_si_chaud` : un étage qui dépense un modèle
@@ -122,6 +122,13 @@ class Orchestrateur:
         sortie["r"] = r
         essais = r.get("essais") or []
         self.reg.compter(ident, sortie["stats"], essais=max(1, len(essais)))
+        try:
+            if r.get("erreur"):                                         # le moteur a échoué lui-même (exception, délai) : on le retient pour l'écran
+                self.reg.defaillance(ident, str(r.get("erreur")))
+            else:
+                self.reg.retablir(ident)
+        except Exception:
+            pass                                                        # le registre est un livre de comptes : sa panne ne défait pas une recherche
         return sortie
 
     # ── la cascade ───────────────────────────────────────────────────────

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #de1685
+# VERSION CN : 0.1.0  #72f18c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=de1685 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=72f18c ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -135,6 +135,22 @@ class MoteurProcessus:
                 self.on_relais({"moteur": self.nom, "role": role, "modele": modele, "jetons_haut": haut, "jetons_bas": bas, "resultat": resultat})
             except Exception:
                 pass                                              # un journal qui échoue ne coupe jamais la recherche
+
+    def ping(self, delai_s: float = 20.0) -> dict:
+        """Le moteur répond-il ? Son processus est lancé comme pour une recherche (même bac, même interpréteur), reçoit « ping » et doit répondre « pong ». Aucun modèle, aucun jeton."""
+        debut = time.monotonic()
+        lecture = self._lecture() if self.python else ()
+        t = _Travailleur(self.memoire_mo, self.bac, script=self.hote, arguments=(self.orfan, self.choix), executable=self.python, lecture=lecture)
+        try:
+            t.envoyer({"op": "ping"})
+            msg = t.recevoir(float(delai_s))
+            if msg.get("op") != "pong":
+                raise ErreurEC("réponse inattendue : %r" % (msg.get("op"),))
+            return {"ok": True, "duree_s": round(time.monotonic() - debut, 3)}
+        except Exception as e:
+            return {"ok": False, "erreur": "%s : %s" % (type(e).__name__, str(e)[:200]), "duree_s": round(time.monotonic() - debut, 3)}
+        finally:
+            t.tuer()
 
     def proposer(self, contexte: dict) -> list:
         debut = time.monotonic()
@@ -547,6 +563,113 @@ class Registre:
 
     def moteurs_actifs(self) -> list:
         return [m["id"] for m in self.liste() if m.get("etat") == "actif"]
+
+    # ── la défaillance : ce qu'un moteur a de cassé, et le dernier contrôle ──
+    def defaillance(self, ident: str, raison: str) -> None:
+        """Une recherche a échoué par la faute du moteur (une exception, un délai), pas parce qu'elle n'a rien trouvé : on le garde, l'écran le dit."""
+        with self._verrou:
+            d = self._lire()
+            m = d["moteurs"].get(ident)
+            if m is None:
+                return
+            m["defaillance"] = {"ts": self._horloge(), "raison": str(raison)[:300]}
+            self._ecrire(d)
+
+    def retablir(self, ident: str) -> None:
+        """Une recherche a tourné jusqu'au bout, ou un contrôle a tout passé : la défaillance retenue est levée."""
+        with self._verrou:
+            d = self._lire()
+            m = d["moteurs"].get(ident)
+            if m is None or "defaillance" not in m:
+                return
+            del m["defaillance"]
+            self._ecrire(d)
+
+    def noter_controle(self, ident: str, rapport: dict) -> None:
+        """Le dernier contrôle d'intégrité d'un moteur ; une panne des étapes de fond (programme, isolation, réponse, modèle) vaut défaillance, un plafond atteint n'en est pas une."""
+        with self._verrou:
+            d = self._lire()
+            m = d["moteurs"].get(ident)
+            if m is None:
+                return
+            panne = rapport.get("panne") or {}
+            m["controle"] = {"ts": self._horloge(), "ok": bool(rapport.get("ok")), "titre": panne.get("titre", ""), "raison": panne.get("raison", ""), "refuse": bool(panne.get("refuse"))}
+            if panne and panne.get("defaillance", True):
+                m["defaillance"] = {"ts": self._horloge(), "raison": "%s : %s" % (panne.get("titre", ""), panne.get("raison", ""))[:300]}
+            else:
+                m.pop("defaillance", None)
+            self._ecrire(d)
+
+
+ETAPES_CONTROLE = ("programme", "isolation", "reponse", "modele", "plafond")
+
+
+def controler(ident: str, registre, creer_moteur=None, appeler_modele=None, isoles: bool = True, programme=None, a_modele: bool = False, delai_s: float = 20.0) -> dict:
+    """Le contrôle d'intégrité d'un moteur, étape par étape ; il s'arrête à la première défaillance et la dit avec ce qu'on peut faire.
+
+      programme()          -> (ok, détail)   le code du moteur est là et intact (un moteur externe : son environnement et le catalogue scellé)
+      isoles               le moteur tourne-t-il dans son processus à part (réglage moteurs_isoles) ?
+      creer_moteur()       -> MoteurProcessus, dont on teste `ping()` (le processus démarre dans le bac et répond ; aucun jeton)
+      appeler_modele       un appel d'essai d'un mot, seulement si le moteur dépense un modèle (`a_modele`)
+      registre.depasse()   un plafond du jour ou du mois le bloque-t-il ?
+
+    Rend {moteur, ok, etapes:[{id, ok (True / False / None si non faite), detail}], panne: None | {titre, raison, relance, refuse, defaillance}}. Écrit le dernier contrôle au registre."""
+    etapes = [{"id": i, "ok": None, "detail": ""} for i in ETAPES_CONTROLE]
+    panne = None
+
+    def fin(k, ok, detail, titre="", raison="", relance=False, refuse=False, defaillance=True):
+        nonlocal panne
+        etapes[k]["ok"], etapes[k]["detail"] = bool(ok), str(detail)
+        if not ok:
+            panne = {"titre": titre, "raison": raison or str(detail), "relance": relance, "refuse": refuse, "defaillance": defaillance}
+        return ok
+
+    def etape_programme():
+        try:
+            ok, detail = programme() if programme else (True, "")
+        except Exception as e:
+            ok, detail = False, str(e)[:200]
+        return fin(0, ok, detail, "programme modifié ou invalide", detail, refuse=True)
+
+    def etape_isolation():
+        return fin(1, isoles, "il tourne dans un processus à part, sans accès au serveur" if isoles else "le réglage « moteurs_isoles » est désactivé : le moteur tourne dans le serveur",
+                   "isolation désactivée", "Le moteur tourne dans le serveur au lieu de son processus à part (réglage « moteurs_isoles »).")
+
+    def etape_reponse():
+        if creer_moteur is None:
+            etapes[2]["ok"], etapes[2]["detail"] = None, "non testée ici"
+            return True
+        try:
+            r = creer_moteur().ping(delai_s)
+        except Exception as e:
+            r = {"ok": False, "erreur": "%s : %s" % (type(e).__name__, str(e)[:200])}
+        return fin(2, r.get("ok"), ("il a répondu en %s s" % r.get("duree_s")) if r.get("ok") else r.get("erreur", "pas de réponse"), "il ne répond plus", r.get("erreur", "pas de réponse"), relance=True)
+
+    def etape_modele():
+        if not a_modele or appeler_modele is None:
+            etapes[3]["ok"], etapes[3]["detail"] = True, "il n'a pas besoin de modèle"
+            return True
+        try:
+            texte = str(appeler_modele("Réponds seulement par le mot : ok", "executant") or "").strip()
+            ok, detail = bool(texte), "le modèle a répondu à un appel d'essai" if texte else "réponse vide"
+        except Exception as e:
+            ok, detail = False, str(e)[:200]
+        return fin(3, ok, detail, "son modèle ne répond pas", detail, relance=True)
+
+    def etape_plafond():
+        raison = registre.depasse(ident)
+        return fin(4, not raison, raison or "aucun plafond ne le bloque", "plafond atteint", raison, defaillance=False)
+
+    for faire in (etape_programme, etape_isolation, etape_reponse, etape_modele, etape_plafond):
+        if not faire():
+            break
+    rapport = {"moteur": ident, "ok": panne is None, "etapes": etapes, "panne": panne}
+    try:
+        registre.noter_controle(ident, rapport)
+        registre.journaliser("controle", "%s : %s" % (ident, "tout est en ordre" if panne is None else "%s (%s)" % (panne["titre"], panne["raison"][:120])))
+    except Exception:
+        pass                                                      # un registre qui échoue ne cache pas le rapport
+    return rapport
 # ▲▲▲ FIN BORNE CN ▲▲▲
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════
 # EC : néant (la frontière entre Cassandra et ses moteurs ne s'évolue pas : c'est elle qui garde).
