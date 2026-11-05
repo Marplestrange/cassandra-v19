@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #12d8c5
+# VERSION CN : 0.5.0  #cbad3a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=12d8c5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=cbad3a ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -558,6 +558,9 @@ def brancher(ctx):
         if not prepare:
             _entree, faites = preparer(rep, progres, inst)
         res = inst.installer(rep["id"], progres=lambda etapes: progres(faites + etapes, ""))
+        if not res.get("ok") and prepare and any(e["nom"] == "paquets épinglés par empreinte" and not e["ok"] for e in res["etapes"]):
+            _entree, faites = preparer(rep, progres, inst)                         # une entrée déjà au catalogue mais inutilisable (gel incomplet d'avant) : on épingle de nouveau, une fois
+            res = inst.installer(rep["id"], progres=lambda etapes: progres(faites + etapes, ""))
         res["etapes"] = faites + res["etapes"]
         registre().journaliser("installation", "%s : %s" % (rep["id"], "installé" if res.get("ok") else "échec"))
         return res
