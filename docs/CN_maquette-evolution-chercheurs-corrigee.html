@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette · Évolution · Les chercheurs (version proposée)</title>
+<!--
+  VERSION PROPOSÉE de « Les chercheurs », à comparer avec CN_maquette-evolution-chercheurs-actuelle.html (la page d'aujourd'hui, à l'identique).
+  Chiffres réels d'Argos du 05-11 : Orfan 28 essais, 1 amélioration, 176 k jetons ; Frugal 2 : 6 essais, 0 jeton ; Évolutif : 1 essai, 13 k jetons ;
+  budget 189 k sur 2 000 k ; 36 recherches sur 60 aujourd'hui.
+  Ce qui change, point par point :
+   1. UNE phrase d'état en tête (qui cherche, ce que ça coûte), au lieu de sept cartes de statistiques ;
+   2. l'ordre, l'interrupteur et ce que chaque étage a rapporté sont sur la MÊME ligne (avant : trois endroits, et deux façons d'éteindre) ;
+   3. un tableau « Ce que chacun a rapporté » : essais, améliorations trouvées, jetons, jetons par amélioration, plafond du jour posé sur place ;
+   4. le parcours d'une recherche est dit en une phrase, avec son coût mesuré ;
+   5. « Installation » et « Relais de modèles » ne sont plus des onglets ici : un lien vers Installer un chercheur et vers Réglages › Quels modèles ;
+   6. le détail technique (genre, exécution, source, 6 vérifications, derniers appels de modèle) reste, replié ;
+   7. vocabulaire simple : « étage », « cascade », « relais », « adaptateur », « EC » disparaissent.
+  Les boutons sont vivants. Rien n'est envoyé nulle part.
+-->
+<link rel="stylesheet" href="../interface/CN_style.css">
+<link rel="stylesheet" href="../interface/CN_shell.css">
+<link rel="stylesheet" href="../interface/CN_disposition.css">
+<link rel="stylesheet" href="../interface/CN_habillage.css">
+<style>
+.ev{--e-verre:var(--surface);--e-filet:var(--line);--e-encre:var(--txt-strong);--e-encre2:var(--txt-soft);--e-encre3:var(--txt-muted);--e-doux:var(--ov-06);--e-ok:var(--ok);--e-al:var(--warn);--e-dg:var(--danger);--e-okd:rgba(4,120,87,.11);--e-ald:rgba(180,83,9,.12);--e-dgd:var(--danger-soft,rgba(190,18,60,.1));display:flex;flex-direction:column;gap:14px;color:var(--txt);font-size:13.5px;line-height:1.5}.ev *{box-sizing:border-box}.ev h1,.ev h2,.ev h3{margin:0;font-weight:600}.ev h1{font:600 19px/1.2 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev h2{font:600 12px/1.3 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre2)}.ev .verre{background:var(--e-verre);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--e-filet);border-radius:16px;box-shadow:var(--shadow-glass)}.ev .mono{font-family:ui-monospace,Menlo,Consolas,monospace}.ev .lib{font:600 10.5px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--e-encre3)}.ev .note{font-size:11.5px;color:var(--e-encre3);line-height:1.5}.ev .btn{border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt);border-radius:10px;padding:7px 12px;font:600 12px ui-monospace,Menlo,Consolas,monospace;cursor:pointer}.ev .btn:hover:not([disabled]){border-color:var(--accent)}.ev .btn.prim{background:var(--accent);color:var(--on-accent);border-color:transparent}.ev .btn.dng{color:var(--e-dg);border-color:var(--e-dg)}.ev .btn[disabled]{opacity:.45;cursor:not-allowed}.ev .puce{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 9px;font:600 10.5px ui-monospace,Menlo,Consolas,monospace;background:var(--e-doux);color:var(--accent);white-space:nowrap}.ev .puce.ok{background:var(--e-okd);color:var(--e-ok)}.ev .puce.al{background:var(--e-ald);color:var(--e-al)}.ev .puce.dg{background:var(--e-dgd);color:var(--e-dg)}.ev .puce.mu{background:var(--e-doux);color:var(--e-encre3)}.ev .nb{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.07em;text-transform:uppercase;border:1px dashed var(--e-filet);border-radius:99px;padding:2px 8px;color:var(--e-encre3);white-space:nowrap}.ev .entete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.ev .entete .d{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ev .vues{display:flex;gap:4px;padding:4px;border-radius:12px;width:max-content;max-width:100%}.ev .vues button{border:0;background:transparent;border-radius:9px;padding:7px 16px;font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre2);cursor:pointer}.ev .vues button.on{background:var(--accent);color:var(--on-accent)}.ev .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--e-filet);overflow:hidden}.ev .hero>div{background:var(--e-verre);padding:18px 18px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}.ev .hero .big{font:600 38px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:-.02em;color:var(--accent)}.ev .hero .big.ok{color:var(--e-ok)}.ev .hero .big.mu{color:var(--e-encre3)}.ev .carte{padding:14px;display:flex;flex-direction:column;gap:9px;min-width:0}.ev .large{grid-column:1/-1}.ev .idee{font:600 10px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}.ev .cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:14px}.ev .tete{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.ev .intention{display:flex;gap:8px;flex-wrap:wrap}.ev .intention input{flex:1;min-width:220px;font:13.5px inherit;padding:10px 12px;border-radius:11px;border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt)}.ev .sugg-t{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--e-encre3)}.ev .sugg-t i{width:7px;height:7px;border-radius:50%;background:var(--e-ok);animation:evbat 2s infinite}@keyframes evbat{0%{box-shadow:0 0 0 0 var(--e-ok)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}.ev .pastilles{display:flex;gap:8px;flex-wrap:wrap}.ev .pas{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:14px;padding:8px 12px;max-width:340px;cursor:pointer;animation:event .45s ease both}.ev .pas:hover{border-color:var(--accent)}.ev .pas b{font:600 12.5px inherit}.ev .pas small{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3)}.ev .pas .ty{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}@keyframes event{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}.ev .compile{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.ev .compile>div,.ev .tuile{border:1px solid var(--e-filet);border-radius:12px;padding:10px;background:var(--e-verre);display:flex;flex-direction:column;gap:4px;font-size:12.5px;min-width:0}.ev .piste{display:grid;grid-template-columns:150px 1fr 120px;gap:10px;align-items:center;font:600 11.5px ui-monospace,Menlo,Consolas,monospace}.ev .piste .t{height:22px;border-radius:7px;background:var(--e-filet);position:relative;overflow:hidden}.ev .piste .t i{position:absolute;inset:0 auto 0 0;background:var(--e-doux);border-right:2px solid var(--accent)}.ev .piste .t i.r{background:var(--e-okd);border-color:var(--e-ok);opacity:.7}.ev .chrono{display:flex;flex-direction:column;border-left:2px solid var(--e-filet);margin-left:7px}.ev .chrono>div{position:relative;padding:5px 0 9px 16px;font-size:12.5px}.ev .chrono>div:before{content:'';position:absolute;left:-7px;top:9px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}.ev .chrono .rouge:before{background:var(--e-dg)}.ev .chrono .vert:before{background:var(--e-ok)}.ev .chrono time{font:600 11px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3);margin-right:8px}.ev .mat{display:grid;grid-template-columns:150px repeat(3,1fr);gap:6px;font-size:12px;align-items:center}.ev .mat .c{border-radius:9px;padding:6px 8px;text-align:center;font:600 11.5px ui-monospace,Menlo,Consolas,monospace;background:var(--e-doux);color:var(--accent)}.ev .mat .c.b{background:var(--e-okd);color:var(--e-ok)}.ev .genomes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.ev .genomes>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px;background:var(--e-verre);display:flex;flex-direction:column;gap:4px;font-size:12.5px}.ev .bandeau{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--e-filet);overflow:hidden}.ev .bandeau>div{background:var(--e-verre);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}.ev .bandeau .v{font:600 17px/1.1 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .barre{height:6px;border-radius:99px;background:var(--e-filet);overflow:hidden}.ev .barre i{display:block;height:100%;background:var(--accent)}.ev .trois{display:grid;grid-template-columns:270px minmax(0,1fr) 330px;gap:14px;align-items:start}@media(max-width:1100px){.ev .trois{grid-template-columns:1fr}}.ev .rail{padding:12px;display:flex;flex-direction:column;gap:6px}.ev .cap{border:1px solid transparent;border-radius:12px;padding:9px 10px;text-align:left;background:transparent;color:inherit;display:flex;flex-direction:column;gap:4px;width:100%;cursor:pointer;font:inherit}.ev .cap:hover{background:var(--e-doux)}.ev .cap.sel{background:var(--e-verre);border-color:var(--accent)}.ev .cap .n{font:600 12px ui-monospace,Menlo,Consolas,monospace;word-break:break-all}.ev .cap .s{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--e-encre2)}.ev .centre{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}.ev .onglets{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--e-filet);padding-bottom:8px}.ev .onglets button{border:0;background:transparent;border-radius:9px;padding:6px 11px;font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre2);cursor:pointer}.ev .onglets button.on{background:var(--e-doux);color:var(--accent)}.ev .zone{overflow-x:auto}.ev .cadran{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.ev .cadran>div{border:1px solid var(--e-filet);border-radius:12px;padding:9px;background:var(--e-verre);display:flex;flex-direction:column;gap:3px}.ev .cadran .v{font:600 16px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .gain{color:var(--e-ok)}.ev .analyse{padding:14px;display:flex;flex-direction:column;gap:11px}.ev .preuve{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:12.5px}.ev .preuve .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px ui-monospace,Menlo,Consolas,monospace;background:var(--e-okd);color:var(--e-ok)}.ev .preuve.al .k{background:var(--e-ald);color:var(--e-al)}.ev .preuve.mu .k{background:var(--e-doux);color:var(--e-encre3)}.ev .preuve small{display:block;color:var(--e-encre3);font-size:11.5px}.ev .verdict{border-radius:12px;padding:10px 12px;font:600 12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--e-okd);color:var(--e-ok)}.ev .verdict.al{background:var(--e-ald);color:var(--e-al)}.ev .verdict.dg{background:var(--e-dgd);color:var(--e-dg)}.ev .verdict.mu{background:var(--e-doux);color:var(--e-encre2)}.ev .routage{display:flex;gap:4px;flex-wrap:wrap}.ev .routage button{flex:1;min-width:46px;border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:8px;padding:6px 4px;font:600 11.5px ui-monospace,Menlo,Consolas,monospace;cursor:pointer}.ev .routage button.on{background:var(--accent);color:var(--on-accent);border-color:transparent}.ev .routage button[disabled]{opacity:.45;cursor:not-allowed}.ev .bas{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.ev .ligne{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--e-filet);font-size:12.5px}.ev .ligne:first-of-type{border-top:0}.ev .ligne .g{color:var(--e-encre3);font-size:11.5px}.ev table{border-collapse:collapse;width:100%;font-size:12.5px}.ev th,.ev td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--e-filet);vertical-align:top}.ev th{font:600 10.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre3)}.ev .oui{color:var(--e-ok);font-weight:600}.ev .non{color:var(--e-encre3)}.ev .cons{color:var(--accent);font-weight:600}.ev .preu{border-left:2px solid var(--line-strong);padding-left:10px;font-size:12px;color:var(--e-encre2);line-height:1.5}.ev select,.ev input[type=number],.ev input[type=text]{border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt);border-radius:9px;padding:6px 9px;font:12.5px ui-monospace,Menlo,Consolas,monospace}.ev .lg{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ev .tiroir{position:fixed;inset:0;background:rgba(16,24,40,.38);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;overflow:auto;z-index:50}.ev .tiroir.on{display:flex}.ev .tiroir .verre{background:var(--surface-solid,var(--surface));max-width:980px;width:100%;padding:18px;display:flex;flex-direction:column;gap:12px}.ev .choix{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.ev .opt{border:1.5px solid var(--e-filet);border-radius:12px;padding:11px;background:transparent;color:inherit;text-align:left;display:flex;flex-direction:column;gap:5px;font:inherit}.ev .opt.on{border-color:var(--accent);background:var(--e-doux)}.ev svg text{font-family:ui-monospace,Menlo,Consolas,monospace;fill:var(--e-encre2);font-size:10.5px}
+html,body{margin:0;min-height:100%;height:auto!important;overflow:auto!important;position:static!important}
+body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2);color:var(--txt,#1d2b2a)}
+.mq-bandeau{position:sticky;top:0;z-index:50;background:#17413f;color:#e9f5f3;font:12.5px/1.4 system-ui,sans-serif;padding:7px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.mq-bandeau b{color:#fff}
+.mq-cadre{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;padding:18px;align-items:start}
+.mq-menu{position:sticky;top:52px;border-radius:14px;padding:10px;background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.08);backdrop-filter:blur(10px);font-size:13.5px}
+.mq-menu .t{padding:8px 10px;border-radius:9px;display:flex;gap:9px;align-items:center;color:inherit}
+.mq-menu .t.on{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.1);font-weight:600}
+.mq-menu .t.s1{padding-left:26px}.mq-menu .t.s2{padding-left:44px;font-size:12.5px}
+.mq-menu .g{opacity:.65;width:14px;text-align:center}
+.mq-corps{min-width:0}
+@media(max-width:900px){.mq-cadre{grid-template-columns:1fr}.mq-menu{position:static}}
+/* la page proposée */
+.ev{font-size:14.5px;max-width:none;width:100%;margin:0}
+.ev h1{font-size:24px}
+.ev .etat{padding:16px 20px;display:flex;flex-direction:column;gap:10px}
+.ev .phrase{font:600 17px/1.45 var(--font-sans,system-ui);color:var(--e-encre)}
+.ev .jauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.ev .jauge{display:flex;flex-direction:column;gap:5px;font-size:13px}
+.ev .jauge .h{display:flex;justify-content:space-between;gap:8px}
+.ev .jauge .h b{font:600 13px ui-monospace,Menlo,Consolas,monospace}
+.ev .deuxc{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:14px;align-items:start}
+@media(max-width:1500px){.ev .deuxc{grid-template-columns:1fr}}
+.ev .col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.ev .bloc{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.ev .bloc h3{font:600 16px var(--font-sans,system-ui)}
+.ev .etage{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:6px 12px;align-items:center;border:1.5px solid var(--e-filet);border-radius:14px;padding:11px 12px;background:var(--e-verre);transition:.2s}
+.ev .etage.off{opacity:.55;background:transparent}
+.ev .etage .rg{font:700 15px ui-monospace,Menlo,Consolas,monospace;color:var(--accent);text-align:center}
+.ev .etage .nom{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ev .etage .nom b{font-size:15px}
+.ev .etage .nom span{font-size:12.5px;color:var(--e-encre2)}
+.ev .etage .act{display:flex;gap:6px;align-items:center}
+.ev .etage .ligne2{grid-column:2/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--e-encre2)}
+.ev .fl{border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt);border-radius:9px;width:32px;height:32px;cursor:pointer;font:600 14px ui-monospace,monospace}
+.ev .fl[disabled]{opacity:.35;cursor:not-allowed}
+.ev .inter2{position:relative;width:46px;height:26px;border-radius:99px;border:0;background:var(--e-filet);cursor:pointer;flex:none}
+.ev .inter2:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:.2s}
+.ev .inter2.on{background:var(--accent)}.ev .inter2.on:after{left:23px}
+.ev .regle{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:10px 0;border-top:1px solid var(--e-filet)}
+.ev .regle:first-of-type{border-top:0}
+.ev .regle .t{display:flex;flex-direction:column;gap:2px}.ev .regle .t b{font-size:14px}.ev .regle .t span{font-size:12.5px;color:var(--e-encre2)}
+.ev .parcours{border:1px dashed var(--accent);border-radius:12px;padding:11px 14px;font-size:13.5px;line-height:1.55;background:var(--e-doux)}
+.ev .parcours .fl2{display:inline-block;padding:1px 9px;border-radius:99px;background:var(--e-verre);border:1px solid var(--e-filet);font:600 12.5px ui-monospace,monospace;margin:1px 0}
+.ev .rapport{width:100%;border-collapse:collapse}
+.ev .rapport th{font:600 10.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre3);padding:6px 8px;text-align:right}
+.ev .rapport th:first-child,.ev .rapport td:first-child{text-align:left}
+.ev .rapport td{padding:11px 8px;border-top:1px solid var(--e-filet);text-align:right;font:600 14px ui-monospace,Menlo,Consolas,monospace;vertical-align:middle}
+.ev .rapport td:first-child{font:600 14.5px var(--font-sans,system-ui)}
+.ev .rapport td small{display:block;font:500 11.5px var(--font-sans,system-ui);color:var(--e-encre3)}
+.ev .rapport input{width:92px;text-align:right}
+.ev .tw2{overflow-x:auto}
+.ev .liens{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.ev .lien-c{display:flex;flex-direction:column;gap:4px;border:1px solid var(--e-filet);border-radius:13px;padding:12px 14px;background:var(--e-verre);cursor:pointer;text-align:left;color:inherit;font:inherit}
+.ev .lien-c:hover{border-color:var(--accent)}.ev .lien-c b{font-size:14px}.ev .lien-c span{font-size:12.5px;color:var(--e-encre2)}
+.ev details.tech summary{cursor:pointer;font:600 13.5px var(--font-sans,system-ui);color:var(--e-encre2);padding:2px 0}
+.ev .preuves-m{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ev .appels{display:flex;flex-direction:column;gap:4px;margin-top:8px;font:12px ui-monospace,Menlo,Consolas,monospace}
+.ev .appels div{display:grid;grid-template-columns:70px 1fr auto;gap:10px;padding:5px 8px;border-radius:8px;background:var(--e-doux)}
+.ev .msg{font-size:13px;color:var(--e-ok);min-height:18px}
+</style>
+</head>
+<body>
+<div class="mq-bandeau"><b>Maquette · « Les chercheurs » proposée</b><span>Chiffres réels d'Argos du 05-11 · à comparer avec la page actuelle · rien n'est envoyé nulle part</span></div>
+<div class="mq-cadre">
+  <nav class="mq-menu" id="mq-menu" aria-label="Menu d'Évolution"></nav>
+  <main class="mq-corps"><div class="ev" id="ev"></div></main>
+</div>
+<script>
+(function () {
+  const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = (n) => Number(n || 0).toLocaleString("fr-FR");
+  const kj = (v) => v >= 10000 ? Math.round(v / 1000) + " k" : v >= 1000 ? (v / 1000).toFixed(1).replace(".", ",") + " k" : String(v);
+  // les chercheurs (le moteur) : chiffres réels d'Argos
+  const M = {
+    orfan: { nom: "Orfan", essais: 28, trouvees: 1, jetons: 176000, appels: 42, jour: { jetons: 87000, essais: 16 }, refus: 2, plafond: 0, actif: true, source: "livré avec Cassandra · orfan/CN_orfan.py", genre: "natif", proc: "processus à part, dans la cage", verifs: [1, 1, 1, 1, 1, 0] },
+    frugal: { nom: "Frugal 2", essais: 6, trouvees: 0, jetons: 0, appels: 0, jour: { jetons: 0, essais: 0 }, refus: 0, plafond: 0, actif: true, source: "livré avec Cassandra · orfan/CN_frugal.py", genre: "natif", proc: "processus à part, dans la cage", verifs: [1, 1, 0, 1, 1, 0] },
+    evolutif: { nom: "Évolutif", essais: 1, trouvees: 0, jetons: 13337, appels: 2, jour: { jetons: 0, essais: 0 }, refus: 0, plafond: 0, actif: true, source: "livré avec Cassandra · orfan/CN_evolutif.py", genre: "natif", proc: "processus à part, dans la cage", verifs: [1, 1, 1, 1, 0, 0] },
+  };
+  const VERIFS = ["Il répond au contrat des chercheurs", "Il tourne dans un processus à part", "Il a déjà appelé un modèle", "Son installation est vérifiée", "Il a déjà couru contre un autre", "Un plafond du jour est posé"];
+  let ETAGES = [
+    { id: "orfan/deterministe", m: "orfan", nom: "Recettes toutes faites", ce: "Mémoïser, sortir un calcul d’une boucle, remplacer une liste par un ensemble… Des réécritures classiques, sans modèle.", cout: "Gratuit", cc: "ok", on: true },
+    { id: "frugal", m: "frugal", nom: "Frugal 2", ce: "Cherche d’abord avec des recettes. Si rien ne marche et que la fonction est vraiment chaude, un modèle fort donne des idées et un modèle économe écrit le code.", cout: "Peu de jetons", cc: "ok", on: true },
+    { id: "orfan/modele", m: "orfan", nom: "Orfan avec modèle", ce: "Un modèle écrit des versions à essayer, guidé par la façon dont la fonction est vraiment appelée.", cout: "Des jetons", cc: "al", on: true },
+    { id: "evolutif", m: "evolutif", nom: "Évolutif", ce: "Plusieurs générations de versions qui se croisent et mutent, comme une sélection naturelle. Le plus lent et le plus cher.", cout: "Beaucoup de jetons", cc: "dg", on: true },
+  ];
+  const REGLES = [
+    { id: "arret", t: "S’arrêter dès qu’une amélioration est prouvée", s: "Sinon tous les chercheurs essaient, tant que le budget le permet.", on: true },
+    { id: "chaud", t: "Ne payer un modèle que sur les fonctions qui prennent du temps", s: "Une fonction qui porte au moins 40 % du travail et tourne au moins 50 fois.", on: true },
+    { id: "course", t: "Faire courir deux chercheurs quand le premier a réussi", s: "Le suivant essaie aussi : la meilleure des deux versions est gardée.", on: false },
+  ];
+  const BUDGET = { mois: 2000000, depense: 189000 }, PROP = { fait: 36, plafond: 60 };
+  const APPELS = [["orfan", "gemini-2.5-flash", "5 330"], ["orfan", "gemini-2.5-flash", "5 285"], ["evolutif", "gemini-2.5-flash", "2 280"], ["evolutif", "gemini-2.5-flash", "2 285"], ["orfan", "gemini-2.5-flash", "7 855"]];
+  const S = { msg: "" };
+  const racine = document.getElementById("ev");
+
+  const actifs = () => ETAGES.filter((e) => e.on);
+  const nomsMoteursActifs = () => { const set = {}; actifs().forEach((e) => { set[e.m] = 1; }); return Object.keys(set).length; };
+  const coutEssai = () => Math.round(M.orfan.jetons / Math.max(1, M.orfan.essais) / 100) * 100;
+
+  function phrase() {
+    const n = actifs().length, partM = Math.round(100 * BUDGET.depense / BUDGET.mois);
+    if (!n) return "Aucun chercheur n’est actif : Cassandra ne cherche plus d’améliorations.";
+    const nm = nomsMoteursActifs(); return n + " méthode" + (n > 1 ? "s" : "") + " de recherche active" + (n > 1 ? "s" : "") + " sur " + ETAGES.length + ", portée" + (n > 1 ? "s" : "") + " par " + nm + " chercheur" + (nm > 1 ? "s" : "") + ". Ils ont trouvé " + (M.orfan.trouvees + M.frugal.trouvees + M.evolutif.trouvees) + " amélioration en " + (M.orfan.essais + M.frugal.essais + M.evolutif.essais) + " essais, pour " + kj(BUDGET.depense) + " jetons ce mois-ci (" + partM + " % du budget).";
+  }
+  function parcours() {
+    const l = actifs();
+    if (!l.length) return "Rien ne cherche : active au moins un chercheur.";
+    const reg = (id) => REGLES.find((r) => r.id === id).on;
+    const pas = l.map((e, i) => (i ? " puis " : "") + '<span class="fl2">' + esc(e.nom) + "</span>").join("");
+    const cher = l.some((e) => e.cc !== "ok");
+    return "Pour une fonction, la recherche passe par : " + pas + ". " + (reg("arret") ? "Elle s’arrête à la première version prouvée." : "Tous essaient, même après un succès.") +
+      (cher ? " Coût mesuré : gratuit si les recettes suffisent, sinon environ <b>" + fmt(coutEssai()) + " jetons</b> par essai de modèle." : " Coût : aucun jeton.") + (reg("chaud") && cher ? " Le modèle ne sert que sur les fonctions chaudes." : "");
+  }
+  function ligneStat(e) {
+    const m = M[e.m];
+    if (!m.actif) return '<span class="puce mu">éteint</span>';
+    return "a fait " + m.essais + " essai" + (m.essais > 1 ? "s" : "") + " · " + (m.trouvees ? "<b>" + m.trouvees + " amélioration trouvée</b>" : "aucune amélioration trouvée") + (m.jetons ? " · " + kj(m.jetons) + " jetons" : " · 0 jeton");
+  }
+  function dessiner() {
+    const partM = Math.round(100 * BUDGET.depense / BUDGET.mois), partJ = Math.round(100 * PROP.fait / PROP.plafond);
+    racine.innerHTML =
+      '<div class="entete"><div><h1>Les chercheurs</h1><div class="note" style="font-size:13.5px">Ceux qui cherchent comment rendre Cassandra plus rapide : dans quel ordre, combien ça coûte, ce que chacun a rapporté.</div></div></div>' +
+      '<div class="verre etat"><div class="phrase">' + esc(phrase()) + '</div><div class="jauges"><div class="jauge"><div class="h"><span>Recherches aujourd’hui</span><b>' + PROP.fait + " / " + PROP.plafond + '</b></div><div class="barre"><i style="width:' + partJ + '%"></i></div></div><div class="jauge"><div class="h"><span>Jetons ce mois-ci</span><b>' + kj(BUDGET.depense) + " / " + kj(BUDGET.mois) + '</b></div><div class="barre"><i style="width:' + partM + '%"></i></div></div></div></div>' +
+      '<div class="deuxc"><div class="col">' + blocOrdre() + blocRegles() + '</div><div class="col">' + blocRapport() + blocLiens() + blocTech() + "</div></div>";
+    lier();
+  }
+  function blocOrdre() {
+    return '<div class="verre bloc"><h3>Dans quel ordre ils essaient</h3><div class="note">Le gratuit d’abord. Glisse l’ordre avec les flèches, éteins avec l’interrupteur : un chercheur éteint saute son tour sans rien perdre de ce qu’il avait en cours.</div>' +
+      ETAGES.map((e, i) => '<div class="etage' + (e.on ? "" : " off") + '"><span class="rg">' + (i + 1) + '</span><div class="nom"><b>' + esc(e.nom) + "</b><span>" + esc(e.ce) + '</span></div><div class="act"><button class="fl" data-h="' + i + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Monter">↑</button><button class="fl" data-b="' + i + '"' + (i === ETAGES.length - 1 ? " disabled" : "") + ' aria-label="Descendre">↓</button><button class="inter2' + (e.on ? " on" : "") + '" data-i="' + i + '" role="switch" aria-checked="' + e.on + '" aria-label="' + esc(e.nom) + '"></button></div>' +
+        '<div class="ligne2"><span class="puce ' + e.cc + '">' + e.cout + "</span><span>" + ligneStat(e) + "</span></div></div>").join("") +
+      '<div class="parcours">' + parcours() + "</div></div>";
+  }
+  function blocRegles() {
+    return '<div class="verre bloc"><h3>Règles de la recherche</h3>' + REGLES.map((r, i) => '<div class="regle"><div class="t"><b>' + esc(r.t) + "</b><span>" + esc(r.s) + '</span></div><button class="inter2' + (r.on ? " on" : "") + '" data-r="' + i + '" role="switch" aria-checked="' + r.on + '" aria-label="' + esc(r.t) + '"></button></div>').join("") + "</div>";
+  }
+  function blocRapport() {
+    const ids = ["orfan", "frugal", "evolutif"];
+    return '<div class="verre bloc"><h3>Ce que chacun a rapporté</h3><div class="tw2"><table class="rapport"><thead><tr><th>Chercheur</th><th>Essais</th><th>Trouvées</th><th>Jetons</th><th>Par amélioration</th><th>Plafond / jour</th></tr></thead><tbody>' +
+      ids.map((id) => { const m = M[id]; return '<tr><td>' + esc(m.nom) + "<small>" + (m.actif ? "actif" : "éteint") + " · " + (m.jour.essais ? m.jour.essais + " essais aujourd’hui (" + kj(m.jour.jetons) + " jetons)" : "rien aujourd’hui") + "</small></td><td>" + m.essais + "</td><td>" + m.trouvees + "</td><td>" + (m.jetons ? kj(m.jetons) : "0") + "</td><td>" + (m.trouvees ? kj(Math.round(m.jetons / m.trouvees)) : "—") + '</td><td><input type="number" min="0" data-p="' + id + '" value="' + (m.plafond || "") + '" placeholder="aucun"></td></tr>'; }).join("") + "</tbody></table></div>" +
+      '<div class="note">« Par amélioration » = jetons dépensés pour chaque amélioration trouvée : plus c’est bas, mieux ça rend. Un plafond vide veut dire « aucun ». <span class="msg" id="msg">' + esc(S.msg) + "</span></div></div>";
+  }
+  function blocLiens() {
+    return '<div class="liens"><button class="lien-c" data-vers="Quels modèles écrivent"><b>Quel modèle écrit les versions ?</b><span>Choisis l’exécutant et le stratège dans Réglages › Quels modèles.</span></button><button class="lien-c" data-vers="Installer un chercheur"><b>Ajouter un autre chercheur</b><span>Aujourd’hui : 3 livrés avec Cassandra, 0 installé. L’installation se fait dans Sous le capot › Installer un chercheur.</span></button></div>';
+  }
+  function blocTech() {
+    return '<div class="verre bloc"><details class="tech"><summary>Détails techniques de chaque chercheur</summary>' + ["orfan", "frugal", "evolutif"].map((id) => { const m = M[id], ok = m.verifs.filter(Boolean).length;
+      return '<div style="margin-top:12px"><b>' + esc(m.nom) + '</b> <span class="puce ' + (ok === 6 ? "ok" : "al") + '">' + ok + " vérifications sur 6</span><dl class=\"cle\" style=\"margin-top:6px\"><dt>Origine</dt><dd>" + esc(m.genre) + " · " + esc(m.source) + "</dd><dt>Exécution</dt><dd>" + esc(m.proc) + "</dd>" + (m.appels ? "<dt>Modèle</dt><dd>" + m.appels + " appel" + (m.appels > 1 ? "s" : "") + " depuis le début" + (m.refus ? " · " + m.refus + " refusé(s) au plafond" : "") + "</dd>" : "") + '</dl><div class="preuves-m">' + m.verifs.map((v, i) => '<div class="preuve ' + (v ? "" : "mu") + '"><span class="k">' + (v ? "✓" : "·") + "</span><div>" + esc(VERIFS[i]) + "</div></div>").join("") + "</div></div>"; }).join("") +
+      '<div class="lib" style="margin-top:14px">Derniers appels de modèle</div><div class="appels">' + APPELS.map((a) => "<div><span>" + esc(a[0]) + "</span><span>" + esc(a[1]) + "</span><span>" + a[2] + " jetons</span></div>").join("") + "</div></details></div>";
+  }
+  function lier() {
+    racine.querySelectorAll("[data-h]").forEach((b) => b.addEventListener("click", () => { const i = +b.dataset.h; [ETAGES[i - 1], ETAGES[i]] = [ETAGES[i], ETAGES[i - 1]]; dessiner(); }));
+    racine.querySelectorAll("[data-b]").forEach((b) => b.addEventListener("click", () => { const i = +b.dataset.b; [ETAGES[i + 1], ETAGES[i]] = [ETAGES[i], ETAGES[i + 1]]; dessiner(); }));
+    racine.querySelectorAll("[data-i]").forEach((b) => b.addEventListener("click", () => { const e = ETAGES[+b.dataset.i]; e.on = !e.on; M[e.m].actif = ETAGES.some((x) => x.m === e.m && x.on); dessiner(); }));
+    racine.querySelectorAll("[data-r]").forEach((b) => b.addEventListener("click", () => { REGLES[+b.dataset.r].on = !REGLES[+b.dataset.r].on; dessiner(); }));
+    racine.querySelectorAll("[data-p]").forEach((i) => i.addEventListener("change", () => { M[i.dataset.p].plafond = +i.value || 0; S.msg = M[i.dataset.p].nom + " : " + (+i.value ? "plafond de " + fmt(+i.value) + " jetons par jour posé." : "plus de plafond."); dessiner(); }));
+    racine.querySelectorAll("[data-vers]").forEach((b) => b.addEventListener("click", () => alert("Maquette : ici, on ouvrirait « " + b.dataset.vers + " » dans l’application.")));
+  }
+  const MENU = [["Évolution", 0, "⚘"], ["Aujourd’hui", 1, "☼"], ["Améliorations", 1, "↗"], ["Réglages", 1, "◈"], ["Consignes et seuils", 1, "✎"], ["Sous le capot", 1, "⚙"], ["Les chercheurs", 2, "⊙"], ["Les fonctions", 2, "ƒ"], ["Les comparer", 2, "⇄"], ["Installer un chercheur", 2, "⤓"], ["Filet de sécurité", 2, "⛨"], ["Carnet", 2, "▤"], ["Versions écartées", 2, "⊘"], ["Ce qui est prévu", 2, "✦"], ["Vocabulaire", 2, "Aa"]];
+  document.getElementById("mq-menu").innerHTML = MENU.map((m) => '<div class="t s' + m[1] + (m[0] === "Les chercheurs" ? " on" : "") + '"><span class="g">' + m[2] + "</span>" + m[0] + "</div>").join("");
+  dessiner();
+})();
+</script>
+</body>
+</html>
