@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #aa3741
+# VERSION CN : 0.1.0  #217ccf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le registre des modèles de langage : un modèle se déclare une fois (fournisseur, nom, adresse, clé chiffrée), les rôles de la maison et les comptes y puisent. La clé ne sort jamais du module : tout passe par `completer` (OpenAI-compatible ou Ollama natif, réflexion des modèles raisonneurs bornée, jetons comptés). Un compte n'utilise que SES modèles, jamais la clé du serveur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=aa3741 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=217ccf ▼▼▼
 [module]
 id = "modeles"
 nom = "Modèles"
@@ -79,6 +79,12 @@ risque = "lecture"
 id = "lister"
 libelle = "Les modèles que je peux voir : les miens et ceux de l'instance (jamais une clé), les rôles liés, le choix de mon compte, les modèles locaux installés"
 risque = "lecture"
+
+[[capacites]]
+id = "decouvrir"
+libelle = "Les modèles qu'un fournisseur propose vraiment aujourd'hui (sa liste en ligne, avec la clé tapée pour cet appel seul, jamais gardée)"
+risque = "lecture"
+masque = ["cle"]
 
 [[capacites]]
 id = "locaux"

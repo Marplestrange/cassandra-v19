@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0b72d5
+# VERSION CN : 0.1.0  #9757e0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0b72d5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9757e0 ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -204,17 +204,8 @@ def brancher(ctx):
         return {"repond": repond, "raison": raison, "modeles": modeles, "telechargements": pulls}
 
     # ------------------------------------------------------------------ déclarer
-    def valider(prov, nom, base, cle):
-        prov = str(prov or "").strip()
-        if prov not in FOURNISSEURS:
-            raise ValueError("fournisseur inconnu")
-        nom = str(nom or "").strip().rstrip(PONCTUATION).strip()
-        if not nom:
-            raise ValueError("nom de modèle requis")
-        if re.match(r"https?://", nom, re.I):
-            raise ValueError("le modèle est un nom, pas une adresse")
-        if not RE_NOM.fullmatch(nom) or nom.endswith(":"):
-            raise ValueError("nom de modèle invalide : « %s »" % nom[:80])
+    def base_saisie(prov, base):
+        """L'adresse à garder pour ce fournisseur : saisie pour un serveur personnalisé ou une passerelle, sinon vide (elle vient de la table des fournisseurs, une seule fois)."""
         base = str(base or "").strip()
         if prov in ("personnalise", "omniroute"):
             if not base:
@@ -227,7 +218,46 @@ def brancher(ctx):
             if not RE_BASE.fullmatch(base):
                 raise ValueError("adresse du serveur invalide")
         else:
-            base = ""                                   # l'adresse vient de la table des fournisseurs, une seule fois
+            base = ""
+        return base
+
+    def decouvrir(c, fournisseur="", cle="", base_url=""):
+        """Les modèles que ce fournisseur propose VRAIMENT aujourd'hui (GET /models), pour ne plus proposer un nom que le fournisseur a retiré. La clé tapée sert à cet appel seul : jamais gardée, jamais journalisée."""
+        prov = str(fournisseur or "").strip()
+        if prov not in FOURNISSEURS:
+            raise ValueError("fournisseur inconnu")
+        cle = str(cle or "").strip()
+        if FOURNISSEURS[prov]["cle"] == "requise" and not cle:
+            raise ValueError("clé manquante")
+        saisie = base_saisie(prov, base_url)
+        base = saisie or (hote_ollama() + "/v1" if prov == "ollama" else FOURNISSEURS[prov]["base_url"])
+        req = urllib.request.Request(base.rstrip("/") + "/models", headers={"Authorization": "Bearer " + cle} if cle else {})
+
+        def sans_cle(texte):
+            return str(texte).replace(cle, "***") if cle else str(texte)
+        try:
+            with urllib.request.urlopen(req, timeout=20.0) as r:
+                corps = json.loads(r.read(2_000_000).decode("utf-8", "replace"))
+        except urllib.error.HTTPError as e:
+            return {"ok": False, "erreur": sans_cle("HTTP %s — %s" % (e.code, e.read(300).decode("utf-8", "replace")))[:300]}
+        except Exception as e:
+            return {"ok": False, "erreur": sans_cle("liste indisponible chez ce fournisseur : %s" % e)[:300]}
+        brut = corps.get("data", corps.get("models", [])) if isinstance(corps, dict) else corps
+        ids = sorted({str(x.get("id") or x.get("name") or "").replace("models/", "", 1) for x in brut if isinstance(x, dict)} - {""}) if isinstance(brut, list) else []
+        return {"ok": True, "modeles": ids[:400], "total": len(ids)}
+
+    def valider(prov, nom, base, cle):
+        prov = str(prov or "").strip()
+        if prov not in FOURNISSEURS:
+            raise ValueError("fournisseur inconnu")
+        nom = str(nom or "").strip().rstrip(PONCTUATION).strip()
+        if not nom:
+            raise ValueError("nom de modèle requis")
+        if re.match(r"https?://", nom, re.I):
+            raise ValueError("le modèle est un nom, pas une adresse")
+        if not RE_NOM.fullmatch(nom) or nom.endswith(":"):
+            raise ValueError("nom de modèle invalide : « %s »" % nom[:80])
+        base = base_saisie(prov, base)
         cle = str(cle or "").strip()
         if FOURNISSEURS[prov]["cle"] == "requise" and not cle:
             raise ValueError("clé manquante")
@@ -715,7 +745,7 @@ def brancher(ctx):
     # ------------------------------------------------------------------ inscription
     c = ctx
     c.moteur("pulls", moteur_pulls)
-    for cid, f in (("fournisseurs", fournisseurs), ("lister", lister), ("locaux", locaux), ("usage", usage), ("depense_roles", depense_roles), ("completer", completer), ("moteurs", moteurs), ("question_libre", question_libre)):
+    for cid, f in (("fournisseurs", fournisseurs), ("lister", lister), ("locaux", locaux), ("usage", usage), ("depense_roles", depense_roles), ("completer", completer), ("moteurs", moteurs), ("question_libre", question_libre), ("decouvrir", decouvrir)):
         c.implementer(cid, f)
     c.implementer("ajouter", ajouter, prouver_ajoute, defaire_ajoute, simuler=lambda x, nom="", **_: "déclarerait le modèle « %s »" % nom)
     c.implementer("instance_ajouter", instance_ajouter, prouver_ajoute, defaire_ajoute, simuler=lambda x, nom="", **_: "déclarerait le modèle d'instance « %s »" % nom)

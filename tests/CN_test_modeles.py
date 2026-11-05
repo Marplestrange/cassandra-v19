@@ -39,6 +39,7 @@ class Faux:
     def __init__(self):
         self.reponses, self.requetes, self.pull = [], [], []
         self.tags = {"models": [{"name": "qwen2.5:3b", "size": 1}]}
+        self.liste = {"data": [{"id": "models/m-b"}, {"id": "m-a"}, {"id": "m-a"}]}
         faux = self
 
         class H(BaseHTTPRequestHandler):
@@ -57,6 +58,9 @@ class Faux:
 
             def do_GET(self):
                 self._lire()
+                if self.path in ("/models", "/v1/models"):
+                    self._rendre(200, faux.liste)
+                    return
                 self._rendre(200, faux.tags) if self.path == "/api/tags" else self._rendre(404, {})
 
             def do_DELETE(self):
@@ -209,6 +213,21 @@ class Registre(Monde):
         self.assertEqual(self.db.lire("SELECT base_url FROM modeles WHERE id=?", (mid,))[0]["base_url"], "http://hote:20128/v1")
         mid2 = self.ok("ajouter", fournisseur="omniroute", nom="un/autre", cle=CLE, base_url="https://passerelle.exemple.fr/v1", compte=BEA)["id"]
         self.assertEqual(self.db.lire("SELECT base_url FROM modeles WHERE id=?", (mid2,))[0]["base_url"], "https://passerelle.exemple.fr/v1")
+
+    def test_decouvrir_liste_les_modeles_du_fournisseur_sans_garder_la_cle(self):
+        r = self.ok("decouvrir", fournisseur="omniroute", cle=CLE, base_url=self.faux.url)
+        self.assertEqual((r["ok"], r["modeles"], r["total"]), (True, ["m-a", "m-b"], 2))
+        q = self.faux.requetes[-1]
+        self.assertEqual((q["chemin"], q["auth"]), ("/v1/models", "Bearer " + CLE))
+        self.assertEqual(self.db.lire("SELECT COUNT(*) AS n FROM modeles")[0]["n"], 0)
+        self.assertNotIn(CLE, self.tout_le_journal())
+
+    def test_decouvrir_exige_la_cle_et_rend_une_panne_lisible(self):
+        self.assertIn("clé", self.echec("decouvrir", fournisseur="google", cle=""))
+        self.assertIn("fournisseur", self.echec("decouvrir", fournisseur="inconnu", cle="x"))
+        r = self.ok("decouvrir", fournisseur="personnalise", cle=CLE, base_url="http://127.0.0.1:1/v1")
+        self.assertFalse(r["ok"])
+        self.assertNotIn(CLE, r["erreur"])
 
     def test_aucune_cle_n_est_refusee_pour_son_prefixe(self):
         for cle in ("AIzaSyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q", "gsk_abcdef123456", "pplx-abcdef", "github_pat_11ABC_xyz", "xai-abc", "x"):

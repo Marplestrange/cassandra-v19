@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #9934d2
+// VERSION CN : 0.2.0  #95e522
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=9934d2 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=95e522 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -90,7 +90,7 @@
     const st = document.createElement("style"); st.id = "md-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "md"; corps.appendChild(racine);
 
-    const S = { l: null, f: [], loc: null, mo: null, us: null, eq: [], cv: null, ep: [], occupe: false, erreur: "", prov: "", retirer: "", suppr: "", essais: {}, form: { nom: "", base: "" }, mini: "", cat: { onglet: "local", q: "", filtre: "tous" }, fiche: null, cmp: { a: "", b: "", q: "Pourquoi le disque de cette machine a-t-il autant d’espace libre ?", ra: "", rb: "" } };
+    const S = { l: null, f: [], loc: null, mo: null, us: null, eq: [], cv: null, ep: [], occupe: false, erreur: "", prov: "", retirer: "", suppr: "", essais: {}, dispo: {}, form: { nom: "", base: "" }, mini: "", cat: { onglet: "local", q: "", filtre: "tous" }, fiche: null, cmp: { a: "", b: "", q: "Pourquoi le disque de cette machine a-t-il autant d’espace libre ?", ra: "", rb: "" } };
     let minuterie = null;
     const vivant = () => document.body.contains(racine);
 
@@ -122,6 +122,7 @@
     const droit = (e) => /droit|autoris/i.test((e && e.message) || "");
     const ajouterModele = async (a) => { try { return await agir("modeles.instance_ajouter", a); } catch (e) { if (droit(e)) return agir("modeles.ajouter", a); throw e; } };
     const essayer = async (id) => { try { return await agir("modeles.instance_essayer", { id }); } catch (e) { if (droit(e)) return agir("modeles.essayer", { id }); throw e; } };
+    const decouvrir = (a) => agir("modeles.decouvrir", a);
     const retirerModele = async (id) => { try { return await agir("modeles.instance_retirer", { id }); } catch (e) { if (droit(e)) return agir("modeles.retirer", { id }); throw e; } };
     // Un choix par agent : le moteur ne connaît que des rôles, on crée donc le rôle de cet agent et on le lie.
     async function choisirPourAgent(agent, champ, modeleId) {
@@ -208,12 +209,12 @@
       return '<div class="carte"><h2>Modèles en ligne</h2>' + (l.length ? l.map(ligneModele).join("") : '<p class="note">Aucun modèle en ligne déclaré. Ajoute-en un ci-dessous : fournisseur, nom du modèle, clé d’API.</p>') + "</div>";
     }
     function carteAjout() {
-      const p = prov(), sug = SUGGEST[S.prov] || [], besoin = p.cle !== "aucune", perso = S.prov === "personnalise" || S.prov === "omniroute";
+      const p = prov(), sug = S.dispo[S.prov] || SUGGEST[S.prov] || [], besoin = p.cle !== "aucune", perso = S.prov === "personnalise" || S.prov === "omniroute";
       return '<div class="carte" id="md-ajout"><h2>Ajouter un modèle</h2><p class="note">La clé est chiffrée dans le coffre du noyau dès l’envoi ; elle n’est jamais relue ni réaffichée, ni écrite dans le journal.</p>' +
         '<div class="champs"><label class="ch"><b>Fournisseur</b><select id="md-prov">' + S.f.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === S.prov ? " selected" : "") + ">" + esc(x.nom) + "</option>").join("") + "</select>" +
         (LIENS[S.prov] ? '<span class="note">Créer une clé : ' + esc(LIENS[S.prov]) + "</span>" : "") + "</label>" +
-        '<label class="ch"><b>Nom du modèle</b><input type="text" id="md-nom" list="md-sug" value="' + esc(S.form.nom) + '" placeholder="' + esc(p.defaut || "nom du modèle") + '" autocomplete="off" spellcheck="false"><datalist id="md-sug">' + sug.map((x) => '<option value="' + esc(x) + '">').join("") + "</datalist><span class=\"note\">Vide : " + esc(p.defaut || "à saisir") + "</span></label>" +
-        (besoin ? '<label class="ch"><b>Clé d’API' + (p.cle === "optionnelle" ? " (facultative)" : "") + '</b><input type="password" id="md-cle" value="" placeholder="' + esc(EX_CLE[S.prov] || "clé d’API") + '" autocomplete="off" spellcheck="false"></label>' : "") +
+        '<label class="ch"><b>Nom du modèle</b><input type="text" id="md-nom" list="md-sug" value="' + esc(S.form.nom) + '" placeholder="' + esc(p.defaut || "nom du modèle") + '" autocomplete="off" spellcheck="false"><datalist id="md-sug">' + sug.map((x) => '<option value="' + esc(x) + '">').join("") + "</datalist><span class=\"note\">Vide : " + esc(p.defaut || "à saisir") + (S.dispo[S.prov] ? " · " + S.dispo[S.prov].length + " modèles listés par le fournisseur" : "") + '</span><button type="button" class="btn mini" data-a="decouvrir"' + (S.occupe ? " disabled" : "") + '>Lister ceux du fournisseur</button></label>' +
+        (besoin ? '<label class="ch"><b>Clé d’API' + (p.cle === "optionnelle" ? " (facultative)" : "") + '</b><input type="password" id="md-cle" value="' + esc(S.form.cle || "") + '" placeholder="' + esc(EX_CLE[S.prov] || "clé d’API") + '" autocomplete="off" spellcheck="false"></label>' : "") +
         (perso ? '<label class="ch"><b>Adresse de l’API</b><input type="text" id="md-base" value="' + esc(S.form.base) + '" placeholder="' + (S.prov === "omniroute" ? "http://adresse-ou-ip:20128 ou https://passerelle.exemple.fr" : "https://… ou http://127.0.0.1:8000/v1") + '" autocomplete="off" spellcheck="false"></label>' : "") + "</div>" +
         '<div class="acts"><button class="btn pri" data-a="ajouter"' + (S.occupe ? " disabled" : "") + ">" + (S.occupe ? "Un instant…" : "Ajouter et essayer") + "</button></div></div>";
     }
@@ -372,6 +373,7 @@
       const p = racine.querySelector("#md-prov"); if (p) p.addEventListener("change", () => { S.prov = p.value; S.form = { nom: "", base: "" }; dessiner(); });
       const n = racine.querySelector("#md-nom"); if (n) n.addEventListener("input", () => { S.form.nom = n.value; });
       const b = racine.querySelector("#md-base"); if (b) b.addEventListener("input", () => { S.form.base = b.value; });
+      const kk = racine.querySelector("#md-cle"); if (kk) kk.addEventListener("input", () => { S.form.cle = kk.value; });   // en mémoire de la page seulement, le temps de lister puis d’ajouter
       const m = racine.querySelector("#md-pull"); if (m) m.addEventListener("input", () => { S.mini = m.value; });
       const cq = racine.querySelector("#md-cat-q"); if (cq) cq.addEventListener("input", () => { S.cat.q = cq.value; dessiner(); });
       const q = racine.querySelector("#md-cq"); if (q) q.addEventListener("input", () => { S.cmp.q = q.value; });
@@ -418,6 +420,17 @@
         S.mini = ""; return faire(() => agir("modeles.ollama_telecharger", { nom: n }), "Téléchargement demandé : " + n);
       }
       if (a === "comparer") return comparer();
+      if (a === "decouvrir") {
+        const cle = String((racine.querySelector("#md-cle") || {}).value || "").trim();
+        const base = String((racine.querySelector("#md-base") || {}).value || "").trim();
+        if (prov().cle === "requise" && !cle) { dire("Tape d’abord la clé d’API : le fournisseur ne liste ses modèles qu’à qui en a une.", "err"); return; }
+        return faire(async () => {
+          const r = await decouvrir({ fournisseur: S.prov, cle, base_url: base });
+          if (!r.ok) throw new Error(r.erreur || "liste indisponible");
+          S.dispo[S.prov] = r.modeles;
+          return r;
+        }, (r) => r.total + " modèles listés par ce fournisseur : choisis dans le champ « Nom du modèle ».");
+      }
       if (a === "ajouter") {
         const nom = String((racine.querySelector("#md-nom") || {}).value || "").trim() || prov().defaut || "";
         const cle = String((racine.querySelector("#md-cle") || {}).value || "").trim();
