@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #59eb2b
+// VERSION CN : 0.2.0  #d493a7
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=59eb2b ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=d493a7 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -677,6 +677,7 @@
     const avecMoteurs = () => !!MVUE[S.vue];
     function suivre() { try { if (typeof window.evSuivre === "function") window.evSuivre(S.vue); } catch (e) { /* le menu se remettra à jour au prochain geste */ } }
     async function aller(vue) {
+      if (!S.etat) { try { await charger(); } catch (e) { /* l'écran dira l'erreur au premier dessin */ } }          // un clic de menu arrivé avant la première lecture ne dessine pas dans le vide
       S.vue = norme(vue); S.resultat = null; S.confirmer = null;
       { const m0 = M0(); if (m0) m0.msg = null; }
       if (MVUE[S.vue] && !M0().d) { dessiner(); await chargerM(); }
