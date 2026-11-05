@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #52bec5
+# VERSION CN : 0.1.0  #53a981
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Quand aucun adaptateur n'est écrit à la main pour un chercheur, en génère un d'après l'interface réelle du paquet installé, le vérifie sans l'exécuter, l'éprouve dans la cage avec un faux modèle et l'épingle par son empreinte ; il reste « à relire » : le chercheur ne s'active pas avant l'accord de l'admin.
 # MÉTHODE    : introspection du paquet dans SON environnement ; un modèle écrit ; l'arbre syntaxique refuse les imports dangereux ; un essai à blanc dans le bac, sans réseau ni clé ; le fichier va dans l'environnement du moteur (jamais dans le code de Cassandra) et un adaptateur écrit à la main passe toujours devant.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=52bec5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=53a981 ▼▼▼
 """L'adaptateur généré n'est qu'un pont : il traduit le contexte de Cassandra pour le paquet du chercheur et rend du TEXTE (des variantes). Le juge du noyau décide de tout ensuite,
 comme pour n'importe quel moteur ; le moteur tourne dans la cage (sans clé, sans réseau, sans écriture), et ses appels de modèle passent par le relais, compté et plafonné.
 
@@ -107,6 +107,8 @@ def sonder(python, importer: list, executer, delai_s: float = 120.0) -> list:
     if not importer:
         return []
     import tempfile
+    if getattr(executer, "__name__", "") == "_executer":                           # l'exécuteur de l'installateur ne garde que la fin de la sortie : la sonde (plusieurs Ko de JSON) se lit en entier
+        from noyau.CN_epinglage import _executer_plein as executer
     with tempfile.TemporaryDirectory(prefix="cn_sonde_") as vide:                  # certains paquets écrivent (./logs/) en s'important : on les laisse dans un dossier jetable
         code, sortie = executer([str(python), "-I", "-c", _SONDE, *importer], delai_s, vide)
     try:
