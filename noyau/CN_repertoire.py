@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bd9e7c
+# VERSION CN : 0.1.0  #92d23f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La liste des chercheurs qu'on peut installer depuis l'écran (ce qu'ils font, ce qu'ils coûtent, d'où ils viennent, quel adaptateur les porte) ; le catalogue scellé, lui, ne contient que ce qui a été épinglé.
 # MÉTHODE    : une donnée, aucune exécution ; un chercheur est proposé ici AVANT d'être épinglé : « préparer » résout son paquet et calcule ses empreintes, puis l'installateur n'installe que ce qui est épinglé.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bd9e7c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=92d23f ▼▼▼
 """Le répertoire : ce qui est PROPOSÉ. Le catalogue (noyau/CN_installateur.py) : ce qui est ÉPINGLÉ et scellé. On passe de l'un à l'autre en « préparant » un chercheur.
 
 Un chercheur du répertoire a :
@@ -35,10 +35,10 @@ REPERTOIRE = [
     {"id": "gepa", "nom": "GEPA", "qui": "Projet open source", "cible": "texte", "cout": "sobre", "paquet": "gepa", "adaptateur": "CN_adaptateur_gepa",
      "desc": "Améliore des consignes et des politiques d'agents : il joue le candidat, lit ce qui a échoué, demande une réécriture, garde la frontière de Pareto.",
      "force": ["Pour les textes, pas le code", "Apprend des traces d'échec"], "lien": "https://github.com/gepa-ai/gepa"},
-    {"id": "llm4ad", "nom": "LLM4AD", "qui": "Plateforme de recherche", "cible": "code", "cout": "inconnu", "paquet": "llm4ad", "adaptateur": None, "importer": ["llm4ad"],
+    {"id": "llm4ad", "nom": "LLM4AD", "qui": "Plateforme de recherche", "cible": "code", "cout": "inconnu", "paquet": "llm4ad", "memoire_mo": 4096, "reimplemente": "recherche d'heuristiques par grand modèle : plusieurs stratégies de réécriture, une réponse structurée, des variantes comparées entre elles", "adaptateur": None, "importer": ["llm4ad"],
      "desc": "Plateforme de conception d'algorithmes par grands modèles de langage (citée dans l'article de ShinkaEvolve).",
      "force": ["Pensée pour découvrir des algorithmes", "Plusieurs méthodes de recherche réunies"], "lien": "https://pypi.org/project/llm4ad/"},
-    {"id": "openelm", "nom": "OpenELM", "qui": "CarperAI", "cible": "code", "cout": "inconnu", "paquet": "openelm", "adaptateur": None, "importer": ["openelm"],
+    {"id": "openelm", "nom": "OpenELM", "qui": "CarperAI", "cible": "code", "cout": "inconnu", "paquet": "openelm", "memoire_mo": 4096, "reimplemente": "opérateur de mutation écrit par un modèle (ELM) : on mute la fonction de référence de plusieurs façons distinctes, en gardant des variantes de tailles de code différentes pour la diversité (idée de MAP-Elites)", "adaptateur": None, "importer": ["openelm"],
      "desc": "Boîte à outils d'évolution par grands modèles de langage : des opérateurs de mutation écrits par un modèle.",
      "force": ["Mutations écrites par un modèle", "Boîte à outils modulaire"], "lien": "https://pypi.org/project/openelm/"},
     {"id": "dspy", "nom": "DSPy", "qui": "Stanford", "cible": "texte", "cout": "sobre", "paquet": "dspy", "adaptateur": None, "importer": ["dspy"],

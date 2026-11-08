@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f3d202
+# VERSION CN : 0.1.0  #ab1bf8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Installe un moteur externe d'Évolution depuis un catalogue scellé : environnement à part, paquets épinglés par empreinte, banc d'import, retour arrière complet au moindre échec.
 # MÉTHODE    : catalogue JSON scellé par HMAC (la clé de l'instance) ; un venv par moteur ; `pip --require-hashes` ; chaque étape est journalisée ; un échec défait tout ce qui précède.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f3d202 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ab1bf8 ▼▼▼
 """Lot 2 de la maquette d'Évolution : installer un moteur autre qu'Orfan sans lui faire confiance.
 
 Rien ne s'installe qui ne soit dans le CATALOGUE, et le catalogue n'est cru que scellé (HMAC de la clé de l'instance) : un catalogue modifié ou sans sceau est refusé.
@@ -29,6 +29,7 @@ import json
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import time
@@ -80,6 +81,66 @@ def verifier_entree(e: dict) -> dict:
         if not emps or not all(_EMPREINTE.match(str(h)) for h in emps):
             raise InstallationRefusee("paquet sans empreinte (sha256 exigée) : %s" % p["requis"])
     return e
+
+
+_PT_NOTE, _PT_GNU_STACK = 4, 0x6474E551
+
+
+def pile_non_executable(chemin) -> str:
+    """Donne à un binaire ELF 64 bits le marqueur « pile NON exécutable » (PT_GNU_STACK, lecture et écriture seules). Rend « deja », « corrige », « impossible » ou « pas_elf ».
+
+    Pourquoi : un binaire qui n'a PAS ce marqueur est lu par glibc comme demandant une pile exécutable, et glibc rend alors exécutable la pile de chaque fil qu'il crée.
+    Sous `MemoryDenyWriteExecute` (le durcissement du service) cela est refusé : le moteur ne peut plus démarrer un seul fil. Le Python téléchargé par uv (python-build-standalone)
+    est dans ce cas. Ce n'est pas un assouplissement du service : au contraire, on retire une exécutabilité inutile au binaire. Le marqueur prend la place de l'en-tête PT_NOTE
+    (une note de construction que l'exécution n'utilise pas)."""
+    try:
+        with open(chemin, "r+b") as f:
+            tete = f.read(64)
+            if len(tete) < 64 or tete[:4] != b"ELF" or tete[4] != 2 or tete[5] != 1:
+                return "pas_elf"
+            phoff = struct.unpack_from("<Q", tete, 32)[0]
+            phentsize, phnum = struct.unpack_from("<HH", tete, 54)
+            if phentsize < 56 or not 0 < phnum <= 64:
+                return "impossible"
+            f.seek(phoff)
+            table = f.read(phentsize * phnum)
+            if len(table) < phentsize * phnum:
+                return "impossible"
+            note = None
+            for i in range(phnum):
+                o = i * phentsize
+                t, fl = struct.unpack_from("<II", table, o)
+                if t == _PT_GNU_STACK:
+                    if fl & 1:
+                        f.seek(phoff + o + 4)
+                        f.write(struct.pack("<I", fl & ~1))
+                        return "corrige"
+                    return "deja"
+                if t == _PT_NOTE and note is None:
+                    note = i
+            if note is None:
+                return "impossible"
+            f.seek(phoff + note * phentsize)
+            f.write(struct.pack("<IIQQQQQQ", _PT_GNU_STACK, 6, 0, 0, 0, 0, 0, 16))
+            return "corrige"
+    except OSError:
+        return "impossible"
+
+
+def durcir_python_pose(racine) -> dict:
+    """Passe `pile_non_executable` sur chaque binaire ELF (programmes et bibliothèques) d'un Python posé. Rend {corriges, impossibles}."""
+    corriges, impossibles = 0, []
+    for dossier, _sous, fichiers in os.walk(str(racine)):
+        for nom in fichiers:
+            chemin = os.path.join(dossier, nom)
+            if os.path.islink(chemin) or not (nom.endswith(".so") or ".so." in nom or os.access(chemin, os.X_OK)):
+                continue
+            etat = pile_non_executable(chemin)
+            if etat == "corrige":
+                corriges += 1
+            elif etat == "impossible":
+                impossibles.append(chemin)
+    return {"corriges": corriges, "impossibles": impossibles}
 
 
 def _executer(commande: list, delai_s: float, cwd=None) -> tuple:
@@ -151,6 +212,11 @@ class Installateur:
         chemin = (sortie.strip().splitlines() or [""])[-1].strip()
         if code != 0 or not os.path.isfile(chemin):
             raise InstallationRefusee("Python %s posé mais introuvable : %s" % (version, sortie[-200:]))
+        if os.path.realpath(chemin).startswith(os.path.realpath(str(pythons)) + os.sep):          # seulement un Python que NOUS avons posé, jamais celui du système
+            durcir_python_pose(Path(os.path.realpath(chemin)).parent.parent)             # sa pile redevient non exécutable : le durcissement du service le laisse alors démarrer des fils
+        code, sortie = self._exec([chemin, "-I", "-c", "import threading; t = threading.Thread(target=lambda: None); t.start(); t.join()"], 60.0, None)
+        if code != 0:                                                                  # un Python téléchargé peut ne pas démarrer de fil sous le durcissement du service (MemoryDenyWriteExecute) : pip planterait plus loin, sans explication
+            raise InstallationRefusee("Python %s est posé mais ne peut pas démarrer de fil d'exécution sous la protection du service (MemoryDenyWriteExecute) : ce chercheur ne peut pas s'installer sur ce serveur sans assouplir ce durcissement. %s" % (version, sortie[-160:]))
         return chemin
 
     def installer(self, ident: str, progres=None, racine_nom: str = "", declarer: bool = True) -> dict:
@@ -160,8 +226,8 @@ class Installateur:
 
         def etape(nom, ok, detail=""):
             texte = str(detail)
-            if len(texte) > 300:
-                texte = texte[:300] if ok else "…" + texte[-299:]                              # l'erreur d'un échec est en BAS de la sortie : on garde la fin
+            if len(texte) > (300 if ok else 800):
+                texte = texte[:300] if ok else "…" + texte[-799:]                              # l'erreur d'un échec est en BAS de la sortie : on garde la fin
             etapes.append({"nom": nom, "ok": bool(ok), "detail": texte})
             if progres is not None:
                 try:

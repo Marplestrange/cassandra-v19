@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette · Évolution · Les comparer (version proposée)</title>
+<!--
+  VERSION PROPOSÉE de « Les comparer », à confronter à CN_maquette-evolution-comparer-actuelle.html (la page d'aujourd'hui, qui charge le vrai écran).
+
+  Ce que la page actuelle fait mal (constaté sur Argos, 05-11) :
+   - pour choisir la fonction, une liste déroulante de 104 identifiants techniques, sans recherche et sans dire lesquelles valent la peine ;
+   - des cases à cocher « étages » aux noms à rallonge, sans repère de coût, qui s'appellent « moteurs » ailleurs ;
+   - un budget à régler soi-même (jetons / essais / temps, une limite en chiffres) et un critère « rendement (gain par jeton) » que personne ne comprend ;
+   - aucune idée de ce que la course va coûter avant de la lancer ;
+   - une course qui dure des minutes sans rien montrer ; un résultat en tableau de neuf colonnes (« Pt / 1k jetons », « Tient hors du vu »…) ;
+   - aucune phrase qui dise qui a gagné et pourquoi ; aucune trace des courses d'avant, sauf la dernière.
+
+  Ce que la page proposée change :
+   1. UNE FONCTION CHOISIE par recherche, les plus utiles en premier (le temps que ses appels font perdre), avec ce qu'elle fait en mots ;
+   2. DES CHERCHEURS en tuiles, avec leur coût en mots (gratuit, sobre, gourmand), des raccourcis, et ceux qui ne sont pas actifs grisés avec le chemin pour les activer ;
+   3. UN BUDGET EN TROIS TAILLES (petit, moyen, large) et un critère en mots (le meilleur gain, le plus économe, le plus rapide) ; les réglages fins restent, repliés ;
+   4. UN RÉSUMÉ QUI LANCE : ce que ça coûtera au plus (jetons, part du budget du mois, durée) AVANT de cliquer ;
+   5. LA COURSE EN DIRECT : une piste par chercheur, qui avance à son tour ;
+   6. UN RÉSULTAT QUI SE LIT : une phrase (qui gagne, de combien, pour quel prix), puis un classement en barres, un détail à la demande ; changer le critère reclasse sans relancer ;
+   7. LES GESTES APRÈS : adopter (avec sa confirmation : rejugée, mise à l'ombre, rien n'est servi), épingler, refaire avec plus de budget ; l'historique des courses d'avant, épinglable.
+
+  Pas dans la page actuelle, donc à construire si tu valides : le suivi en direct (le serveur lancera la course en tâche de fond, comme l'installation), l'estimation avant lancement (le coût par chercheur est déjà connu), l'historique (le serveur garde déjà les courses : « Garder pour comparaison »).
+  Tout est simulé : aucune course réelle. Les fonctions et leurs chiffres sont ceux d'Argos du 05-11 ; les phrases qui disent ce qu'elles font sont des exemples.
+-->
+<link rel="stylesheet" href="../interface/CN_style.css">
+<link rel="stylesheet" href="../interface/CN_shell.css">
+<link rel="stylesheet" href="../interface/CN_disposition.css">
+<link rel="stylesheet" href="../interface/CN_habillage.css">
+<style>
+.ev{--e-verre:var(--surface);--e-filet:var(--line);--e-encre:var(--txt-strong);--e-encre2:var(--txt-soft);--e-encre3:var(--txt-muted);--e-doux:var(--ov-06);--e-ok:var(--ok);--e-al:var(--warn);--e-dg:var(--danger);--e-okd:rgba(4,120,87,.11);--e-ald:rgba(180,83,9,.12);--e-dgd:var(--danger-soft,rgba(190,18,60,.1));display:flex;flex-direction:column;gap:14px;color:var(--txt);font-size:13.5px;line-height:1.5}.ev *{box-sizing:border-box}.ev h1,.ev h2,.ev h3{margin:0;font-weight:600}.ev h1{font:600 19px/1.2 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev h2{font:600 12px/1.3 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre2)}.ev .verre{background:var(--e-verre);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--e-filet);border-radius:16px;box-shadow:var(--shadow-glass)}.ev .mono{font-family:ui-monospace,Menlo,Consolas,monospace}.ev .lib{font:600 10.5px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--e-encre3)}.ev .note{font-size:11.5px;color:var(--e-encre3);line-height:1.5}.ev .btn{border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt);border-radius:10px;padding:7px 12px;font:600 12px ui-monospace,Menlo,Consolas,monospace;cursor:pointer}.ev .btn:hover:not([disabled]){border-color:var(--accent)}.ev .btn.prim{background:var(--accent);color:var(--on-accent);border-color:transparent}.ev .btn.dng{color:var(--e-dg);border-color:var(--e-dg)}.ev .btn[disabled]{opacity:.45;cursor:not-allowed}.ev .puce{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 9px;font:600 10.5px ui-monospace,Menlo,Consolas,monospace;background:var(--e-doux);color:var(--accent);white-space:nowrap}.ev .puce.ok{background:var(--e-okd);color:var(--e-ok)}.ev .puce.al{background:var(--e-ald);color:var(--e-al)}.ev .puce.dg{background:var(--e-dgd);color:var(--e-dg)}.ev .puce.mu{background:var(--e-doux);color:var(--e-encre3)}.ev .nb{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.07em;text-transform:uppercase;border:1px dashed var(--e-filet);border-radius:99px;padding:2px 8px;color:var(--e-encre3);white-space:nowrap}.ev .entete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.ev .entete .d{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ev .vues{display:flex;gap:4px;padding:4px;border-radius:12px;width:max-content;max-width:100%}.ev .vues button{border:0;background:transparent;border-radius:9px;padding:7px 16px;font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre2);cursor:pointer}.ev .vues button.on{background:var(--accent);color:var(--on-accent)}.ev .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--e-filet);overflow:hidden}.ev .hero>div{background:var(--e-verre);padding:18px 18px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}.ev .hero .big{font:600 38px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:-.02em;color:var(--accent)}.ev .hero .big.ok{color:var(--e-ok)}.ev .hero .big.mu{color:var(--e-encre3)}.ev .carte{padding:14px;display:flex;flex-direction:column;gap:9px;min-width:0}.ev .large{grid-column:1/-1}.ev .idee{font:600 10px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}.ev .cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:14px}.ev .tete{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.ev .intention{display:flex;gap:8px;flex-wrap:wrap}.ev .intention input{flex:1;min-width:220px;font:13.5px inherit;padding:10px 12px;border-radius:11px;border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt)}.ev .sugg-t{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--e-encre3)}.ev .sugg-t i{width:7px;height:7px;border-radius:50%;background:var(--e-ok);animation:evbat 2s infinite}@keyframes evbat{0%{box-shadow:0 0 0 0 var(--e-ok)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}.ev .pastilles{display:flex;gap:8px;flex-wrap:wrap}.ev .pas{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:14px;padding:8px 12px;max-width:340px;cursor:pointer;animation:event .45s ease both}.ev .pas:hover{border-color:var(--accent)}.ev .pas b{font:600 12.5px inherit}.ev .pas small{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3)}.ev .pas .ty{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}@keyframes event{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}.ev .compile{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.ev .compile>div,.ev .tuile{border:1px solid var(--e-filet);border-radius:12px;padding:10px;background:var(--e-verre);display:flex;flex-direction:column;gap:4px;font-size:12.5px;min-width:0}.ev .piste{display:grid;grid-template-columns:150px 1fr 120px;gap:10px;align-items:center;font:600 11.5px ui-monospace,Menlo,Consolas,monospace}.ev .piste .t{height:22px;border-radius:7px;background:var(--e-filet);position:relative;overflow:hidden}.ev .piste .t i{position:absolute;inset:0 auto 0 0;background:var(--e-doux);border-right:2px solid var(--accent)}.ev .piste .t i.r{background:var(--e-okd);border-color:var(--e-ok);opacity:.7}.ev .chrono{display:flex;flex-direction:column;border-left:2px solid var(--e-filet);margin-left:7px}.ev .chrono>div{position:relative;padding:5px 0 9px 16px;font-size:12.5px}.ev .chrono>div:before{content:'';position:absolute;left:-7px;top:9px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}.ev .chrono .rouge:before{background:var(--e-dg)}.ev .chrono .vert:before{background:var(--e-ok)}.ev .chrono time{font:600 11px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3);margin-right:8px}.ev .mat{display:grid;grid-template-columns:150px repeat(3,1fr);gap:6px;font-size:12px;align-items:center}.ev .mat .c{border-radius:9px;padding:6px 8px;text-align:center;font:600 11.5px ui-monospace,Menlo,Consolas,monospace;background:var(--e-doux);color:var(--accent)}.ev .mat .c.b{background:var(--e-okd);color:var(--e-ok)}.ev .genomes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.ev .genomes>div{border:1px solid var(--e-filet);border-radius:12px;padding:10px;background:var(--e-verre);display:flex;flex-direction:column;gap:4px;font-size:12.5px}.ev .bandeau{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--e-filet);overflow:hidden}.ev .bandeau>div{background:var(--e-verre);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}.ev .bandeau .v{font:600 17px/1.1 ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .barre{height:6px;border-radius:99px;background:var(--e-filet);overflow:hidden}.ev .barre i{display:block;height:100%;background:var(--accent)}.ev .trois{display:grid;grid-template-columns:270px minmax(0,1fr) 330px;gap:14px;align-items:start}@media(max-width:1100px){.ev .trois{grid-template-columns:1fr}}.ev .rail{padding:12px;display:flex;flex-direction:column;gap:6px}.ev .cap{border:1px solid transparent;border-radius:12px;padding:9px 10px;text-align:left;background:transparent;color:inherit;display:flex;flex-direction:column;gap:4px;width:100%;cursor:pointer;font:inherit}.ev .cap:hover{background:var(--e-doux)}.ev .cap.sel{background:var(--e-verre);border-color:var(--accent)}.ev .cap .n{font:600 12px ui-monospace,Menlo,Consolas,monospace;word-break:break-all}.ev .cap .s{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--e-encre2)}.ev .centre{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}.ev .onglets{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--e-filet);padding-bottom:8px}.ev .onglets button{border:0;background:transparent;border-radius:9px;padding:6px 11px;font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre2);cursor:pointer}.ev .onglets button.on{background:var(--e-doux);color:var(--accent)}.ev .zone{overflow-x:auto}.ev .cadran{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.ev .cadran>div{border:1px solid var(--e-filet);border-radius:12px;padding:9px;background:var(--e-verre);display:flex;flex-direction:column;gap:3px}.ev .cadran .v{font:600 16px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}.ev .gain{color:var(--e-ok)}.ev .analyse{padding:14px;display:flex;flex-direction:column;gap:11px}.ev .preuve{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:12.5px}.ev .preuve .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px ui-monospace,Menlo,Consolas,monospace;background:var(--e-okd);color:var(--e-ok)}.ev .preuve.al .k{background:var(--e-ald);color:var(--e-al)}.ev .preuve.mu .k{background:var(--e-doux);color:var(--e-encre3)}.ev .preuve small{display:block;color:var(--e-encre3);font-size:11.5px}.ev .verdict{border-radius:12px;padding:10px 12px;font:600 12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--e-okd);color:var(--e-ok)}.ev .verdict.al{background:var(--e-ald);color:var(--e-al)}.ev .verdict.dg{background:var(--e-dgd);color:var(--e-dg)}.ev .verdict.mu{background:var(--e-doux);color:var(--e-encre2)}.ev .routage{display:flex;gap:4px;flex-wrap:wrap}.ev .routage button{flex:1;min-width:46px;border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:8px;padding:6px 4px;font:600 11.5px ui-monospace,Menlo,Consolas,monospace;cursor:pointer}.ev .routage button.on{background:var(--accent);color:var(--on-accent);border-color:transparent}.ev .routage button[disabled]{opacity:.45;cursor:not-allowed}.ev .bas{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.ev .ligne{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--e-filet);font-size:12.5px}.ev .ligne:first-of-type{border-top:0}.ev .ligne .g{color:var(--e-encre3);font-size:11.5px}.ev table{border-collapse:collapse;width:100%;font-size:12.5px}.ev th,.ev td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--e-filet);vertical-align:top}.ev th{font:600 10.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-encre3)}.ev .oui{color:var(--e-ok);font-weight:600}.ev .non{color:var(--e-encre3)}.ev .cons{color:var(--accent);font-weight:600}.ev .preu{border-left:2px solid var(--line-strong);padding-left:10px;font-size:12px;color:var(--e-encre2);line-height:1.5}.ev select,.ev input[type=number],.ev input[type=text]{border:1px solid var(--line-strong);background:var(--e-verre);color:var(--txt);border-radius:9px;padding:6px 9px;font:12.5px ui-monospace,Menlo,Consolas,monospace}.ev .lg{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ev .tiroir{position:fixed;inset:0;background:rgba(16,24,40,.38);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;overflow:auto;z-index:50}.ev .tiroir.on{display:flex}.ev .tiroir .verre{background:var(--surface-solid,var(--surface));max-width:980px;width:100%;padding:18px;display:flex;flex-direction:column;gap:12px}.ev .choix{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.ev .opt{border:1.5px solid var(--e-filet);border-radius:12px;padding:11px;background:transparent;color:inherit;text-align:left;display:flex;flex-direction:column;gap:5px;font:inherit}.ev .opt.on{border-color:var(--accent);background:var(--e-doux)}.ev svg text{font-family:ui-monospace,Menlo,Consolas,monospace;fill:var(--e-encre2);font-size:10.5px}
+html,body{margin:0;min-height:100%;height:auto!important;overflow:auto!important;position:static!important}
+body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg,#eef3f2);color:var(--txt,#1d2b2a)}
+.mq-bandeau{position:sticky;top:0;z-index:50;background:#17413f;color:#e9f5f3;font:12.5px/1.4 system-ui,sans-serif;padding:7px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.mq-bandeau b{color:#fff}
+.mq-bandeau button{font:inherit;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:6px;padding:2px 9px;cursor:pointer}
+.mq-cadre{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;padding:18px;align-items:start}
+.mq-menu{position:sticky;top:52px;border-radius:14px;padding:10px;background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.08);backdrop-filter:blur(10px);font-size:13.5px}
+.mq-menu .t{padding:8px 10px;border-radius:9px;display:flex;gap:9px;align-items:center;color:inherit}
+.mq-menu .t.on{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.1);font-weight:600}
+.mq-menu .t.s1{padding-left:26px}.mq-menu .t.s2{padding-left:44px;font-size:12.5px}
+.mq-menu .g{opacity:.65;width:14px;text-align:center}
+.mq-corps{min-width:0}
+@media(max-width:900px){.mq-cadre{grid-template-columns:1fr}.mq-menu{position:static}}
+/* la page proposée : tout est préfixé « in- » pour ne rien heurter dans l'application */
+.ev{font-size:14.5px;max-width:none;width:100%;margin:0}
+.ev .puce{font-weight:600;letter-spacing:0}
+.ev .puce.dg{background:color-mix(in srgb,var(--danger,#be123c) 11%,transparent)!important;color:color-mix(in srgb,var(--danger,#be123c) 72%,var(--txt-strong,#1d2b2a))!important}
+.ev .puce.al{background:color-mix(in srgb,var(--warn,#b45309) 12%,transparent)!important;color:color-mix(in srgb,var(--warn,#b45309) 78%,var(--txt-strong,#1d2b2a))!important}
+.ev .puce.ok{background:color-mix(in srgb,var(--ok,#047857) 12%,transparent)!important;color:color-mix(in srgb,var(--ok,#047857) 80%,var(--txt-strong,#1d2b2a))!important}
+/* la page proposée : tout est préfixé « cp- » pour ne rien heurter dans l'application */
+.ev{font-size:14.5px;max-width:none;width:100%;margin:0}
+.ev .cp-ligne{display:grid;gap:14px;align-items:stretch}
+.ev .cp-ligne>*{min-width:0}
+.ev .cp-ligne.a{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+.ev .cp-ligne.b{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.ev .cp-ligne.c{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+@media(max-width:1060px){.ev .cp-ligne.a,.ev .cp-ligne.b,.ev .cp-ligne.c{grid-template-columns:1fr}}
+.ev .cp-bloc{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.ev .cp-tete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ev .cp-num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--on-accent);font:700 12px var(--font-sans,system-ui);margin-right:9px}
+.ev .cp-tete h3{font:600 16px var(--font-sans,system-ui);display:flex;align-items:center}
+.ev .cp-aide{font-size:12.5px;color:var(--e-encre3);line-height:1.45}
+.ev .cp-rech{width:100%;font:14px var(--font-sans,system-ui)!important;padding:9px 12px!important;border-radius:11px!important}
+.ev .cp-fns{display:flex;flex-direction:column;gap:6px}
+.ev .cp-fn{display:flex;flex-direction:column;gap:3px;align-items:stretch;text-align:left;border:1.5px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:13px;padding:10px 13px;cursor:pointer;font:inherit}
+.ev .cp-fn:hover{border-color:var(--accent)}
+.ev .cp-fn.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--e-verre));box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
+.ev .cp-fn b{font:600 13px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}
+.ev .cp-fn small{font-size:12.5px;color:var(--e-encre2)}
+.ev .cp-fn .d{display:flex;gap:2px 12px;flex-wrap:wrap;align-items:baseline;font-size:11.5px;color:var(--e-encre3)}
+.ev .cp-fn .d i{font-style:normal;font-weight:700;color:var(--accent)}
+.ev .cp-tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ev .cp-ch{position:relative;display:flex;flex-direction:column;gap:7px;text-align:left;border:1.5px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:14px;padding:12px 14px;cursor:pointer;font:inherit}
+.ev .cp-ch:hover:not(.off){border-color:var(--accent)}
+.ev .cp-ch.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--e-verre))}
+.ev .cp-ch.off{opacity:.55;cursor:not-allowed}
+.ev .cp-ch .nom{font:600 15px var(--font-sans,system-ui);color:var(--e-encre);display:flex;gap:8px;align-items:center}
+.ev .cp-ch .coche{margin-left:auto;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-strong);display:grid;place-items:center;font:700 12px ui-monospace,monospace;color:transparent}
+.ev .cp-ch.on .coche{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.ev .cp-ch .sous{font-size:12.5px;color:var(--e-encre2)}
+.ev .cp-ch .tags{display:flex;gap:5px;flex-wrap:wrap}
+.ev .cp-pre{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ev .cp-chip{border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:99px;padding:6px 14px;font:600 13px var(--font-sans,system-ui);cursor:pointer}
+.ev .cp-chip.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.ev .cp-chip small{opacity:.75;font-weight:500;margin-left:5px}
+.ev .cp-seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ev .cp-opt{display:flex;flex-direction:column;gap:3px;text-align:left;border:1.5px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:13px;padding:10px 13px;cursor:pointer;font:inherit}
+.ev .cp-opt.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--e-verre))}
+.ev .cp-opt b{font:600 14px var(--font-sans,system-ui);color:var(--e-encre)}
+.ev .cp-opt small{font-size:12px;color:var(--e-encre3)}
+.ev details.cp-fin summary{cursor:pointer;font:600 13.5px var(--font-sans,system-ui);color:var(--e-encre2)}
+.ev .cp-fin .champs{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+.ev .cp-fin label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--e-encre3)}
+.ev .cp-resume{padding:16px 18px;display:flex;flex-direction:column;gap:12px;justify-content:space-between}
+.ev .cp-resume h3{font:600 15px var(--font-sans,system-ui)}
+.ev .cp-lig{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:6px 0;border-top:1px solid var(--e-filet)}
+.ev .cp-lig:first-of-type{border-top:0}
+.ev .cp-lig span:first-child{color:var(--e-encre3)}
+.ev .cp-lig b{text-align:right;color:var(--e-encre);font-weight:600}
+.ev .cp-jauge{height:8px;border-radius:99px;background:var(--e-filet);overflow:hidden}
+.ev .cp-jauge i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.ev .cp-go{width:100%;padding:12px 14px!important;font-size:14.5px!important;border-radius:12px!important}
+.ev .cp-direct{display:flex;flex-direction:column;gap:9px}
+.ev .cp-piste{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:12px;align-items:center;font-size:13.5px}
+.ev .cp-piste .nm{display:flex;flex-direction:column;line-height:1.25}
+.ev .cp-piste .nm b{font:600 14px var(--font-sans,system-ui);color:var(--e-encre)}
+.ev .cp-piste .nm small{font-size:11.5px;color:var(--e-encre3)}
+.ev .cp-barre{height:12px;border-radius:99px;background:var(--e-filet);overflow:hidden;position:relative}
+.ev .cp-barre i{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--e-doux);border-right:2px solid var(--accent);transition:width .5s}
+.ev .cp-barre.ok i{background:color-mix(in srgb,var(--ok,#047857) 22%,transparent);border-color:var(--ok,#047857)}
+.ev .cp-barre.chauffe i{background:color-mix(in srgb,var(--accent) 22%,transparent);animation:cpvague 1.1s ease-in-out infinite alternate}
+@keyframes cpvague{from{opacity:.55}to{opacity:1}}
+.ev .cp-piste .etat{font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3);white-space:nowrap;min-width:92px;text-align:right}
+.ev .cp-verdict{border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.5;background:color-mix(in srgb,var(--ok,#047857) 11%,transparent);color:color-mix(in srgb,var(--ok,#047857) 80%,var(--txt-strong,#1d2b2a))}
+.ev .cp-verdict.rien{background:var(--e-doux);color:var(--e-encre2)}
+.ev .cp-verdict b{font-weight:700}
+.ev .cp-rang{display:flex;flex-direction:column;gap:8px}
+.ev .cp-lg{border:1.5px solid var(--e-filet);background:var(--e-verre);border-radius:14px;padding:11px 14px;display:flex;flex-direction:column;gap:8px;cursor:pointer}
+.ev .cp-lg:hover{border-color:var(--accent)}
+.ev .cp-lg.gagne{border-color:var(--ok,#047857);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok,#047857) 13%,transparent)}
+.ev .cp-lg .haut{display:grid;grid-template-columns:34px minmax(110px,200px) 1fr auto;gap:12px;align-items:center}
+.ev .cp-lg .rg{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;line-height:1;background:var(--e-doux);font:700 13px/1 ui-monospace,monospace;color:var(--e-encre2);box-sizing:border-box;text-align:center}
+.ev .cp-lg.gagne .rg{background:var(--ok,#047857);color:#fff}
+.ev .cp-lg .nm{display:flex;flex-direction:column;line-height:1.25}
+.ev .cp-lg .nm b{font:600 15px var(--font-sans,system-ui);color:var(--e-encre)}
+.ev .cp-lg .nm small{font-size:12px;color:var(--e-encre3)}
+.ev .cp-lg .gain{font:700 18px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre);text-align:right;min-width:78px}
+.ev .cp-lg .gain.nul{color:var(--e-encre3);font-size:13px;font-weight:600}
+.ev .cp-lg .bas{display:flex;gap:6px;flex-wrap:wrap;margin-left:46px}
+.ev .cp-det{margin-left:46px;border-top:1px dashed var(--e-filet);padding-top:9px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;font-size:12.5px;color:var(--e-encre2)}
+.ev .cp-det b{display:block;font:600 10.5px var(--font-sans,system-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--e-encre3)}
+@media(max-width:700px){.ev .cp-lg .haut{grid-template-columns:30px 1fr auto}.ev .cp-lg .haut .cp-barre{grid-column:1/-1;order:5}.ev .cp-lg .bas,.ev .cp-det{margin-left:0}.ev .cp-piste{grid-template-columns:1fr auto}.ev .cp-piste .cp-barre{grid-column:1/-1}}
+.ev .cp-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ev .cp-alerte{border:1.5px solid var(--accent);border-radius:13px;padding:12px 14px;font-size:13.5px;display:flex;flex-direction:column;gap:9px;background:color-mix(in srgb,var(--accent) 6%,var(--e-verre))}
+.ev .cp-ok{border-radius:12px;padding:11px 14px;font-size:13.5px;background:color-mix(in srgb,var(--ok,#047857) 11%,transparent);color:color-mix(in srgb,var(--ok,#047857) 82%,var(--txt-strong,#1d2b2a))}
+.ev .cp-hist{display:flex;flex-direction:column}
+.ev .cp-h{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--e-filet);font-size:13px}
+.ev .cp-h:first-child{border-top:0}
+.ev .cp-h b{font:600 12.5px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}
+.ev .cp-h small{display:block;color:var(--e-encre3);font-size:12px}
+.ev details.cp-sur summary{cursor:pointer;font:600 14px var(--font-sans,system-ui);color:var(--e-encre2)}
+.ev .cp-sur ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--e-encre2)}
+</style>
+</head>
+<body>
+<div class="mq-bandeau"><b>Maquette · « Les comparer » proposée</b><span>Tout est simulé : aucune course réelle, les chiffres sont des exemples (ceux d'Argos pour les fonctions)</span><span style="margin-left:auto">Démonstration :</span><button id="d-raz">Remettre à zéro</button></div>
+<div class="mq-cadre">
+  <nav class="mq-menu" id="mq-menu" aria-label="Menu d'Évolution"></nav>
+  <main class="mq-corps"><div class="ev" id="ev"></div></main>
+</div>
+<script>
+(function () {
+  const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const k = (v) => (v >= 1000000 ? (v / 1000000).toFixed(v % 1000000 ? 1 : 0).replace(".", ",") + " M" : v >= 10000 ? Math.round(v / 1000) + " k" : v >= 1000 ? (v / 1000).toFixed(1).replace(".", ",") + " k" : String(v));
+  const racine = document.getElementById("ev");
+
+  // les fonctions : les plus utiles à améliorer d'abord (valeur espérée = temps que les appels réels font perdre). Données d'Argos du 05-11 ; les phrases sont des exemples.
+  const FN = [
+    { id: "planifie.decrire", dit: "décrit une tâche planifiée en une phrase", appels: 46849, ms: 0.316, valeur: 14804, essais: 2 },
+    { id: "affichage.disposition", dit: "calcule la disposition de l'écran", appels: 4488, ms: 2.75, valeur: 12342, essais: 5 },
+    { id: "planifie.suivante", dit: "trouve la prochaine occurrence d'une tâche", appels: 5718, ms: 0.501, valeur: 2865, essais: 0 },
+    { id: "fastpanel.lecture", dit: "lit l'état de FastPanel", appels: 4557, ms: 0.463, valeur: 2110, essais: 0 },
+    { id: "jour.tuiles", dit: "prépare les tuiles de la page Aujourd'hui", appels: 6316, ms: 0.297, valeur: 1876, essais: 1 },
+    { id: "securite.sans_options_cible", dit: "retire les options d'une cible d'analyse", appels: 5411, ms: 0.263, valeur: 1423, essais: 0 },
+    { id: "planifie.derive", dit: "mesure la dérive d'une tâche", appels: 5726, ms: 0.224, valeur: 1283, essais: 0 },
+    { id: "flotte.duree", dit: "met en forme une durée", appels: 3867, ms: 0.254, valeur: 982, essais: 0 },
+    { id: "dns.analyser", dit: "analyse un nom de domaine", appels: 1970, ms: 0.366, valeur: 721, essais: 0 },
+    { id: "affichage.idees", dit: "propose des idées d'écran", appels: 1579, ms: 0.408, valeur: 644, essais: 3 }];
+  const NB_FONCTIONS = 104, NB_MUETTES = 56;
+
+  // les chercheurs d'Argos aujourd'hui : un coût en mots, et s'ils peuvent courir (actifs)
+  const CH = [
+    { id: "orfan/deterministe", nom: "Orfan · règles", sous: "des règles sûres, sans modèle", cout: "gratuit", actif: true },
+    { id: "frugal", nom: "Frugal", sous: "des règles, puis les idées d'un modèle fort", cout: "sobre", actif: true },
+    { id: "orfan/modele", nom: "Orfan · modèle", sous: "un modèle guidé par le profil de l'appel", cout: "gourmand", actif: true },
+    { id: "sedal", nom: "Sedal", sous: "des générations de variantes qui se croisent", cout: "gourmand", actif: true },
+    { id: "gepa", nom: "GEPA", sous: "réfléchit sur ses échecs (externe)", cout: "sobre", actif: true },
+    { id: "textgrad", nom: "TextGrad", sous: "améliore par retours en langage naturel (externe)", cout: "sobre", actif: true },
+    { id: "codeevolve", nom: "CodeEvolve", sous: "îlots de populations (externe)", cout: "gourmand", actif: false },
+    { id: "dspy", nom: "DSPy", sous: "optimise des consignes (externe)", cout: "sobre", actif: false }];
+  const COUT = { gratuit: ["Gratuit : 0 jeton", "ok"], sobre: ["Sobre en jetons", "ok"], gourmand: ["Gourmand en jetons", "fort"] };
+  const BUDGETS = { petit: [5000, "Petit", "≈ 5 k jetons par chercheur : un premier coup d'œil"], moyen: [20000, "Moyen", "≈ 20 k jetons : le bon compromis"], large: [60000, "Large", "≈ 60 k jetons : on cherche à fond"] };
+  const CRITERES = { gain: ["Le meilleur gain", "le plus de temps gagné"], econome: ["Le plus économe", "le plus de gain pour le moins de jetons"], rapide: ["Le plus rapide à trouver", "celui qui répond le plus vite"] };
+  const MOIS = { budget: 2000000, depense: 101545 };
+
+  // le résultat d'exemple d'une course (pour la fonction choisie) : un chercheur peut ne rien trouver, ou être sauté
+  const RES = [
+    { id: "orfan/deterministe", variantes: 3, equivalentes: 2, gain: 34.2, tient: true, jetons: 0, duree: 2.1, memoire: 3 },
+    { id: "frugal", variantes: 4, equivalentes: 2, gain: 34.2, tient: true, jetons: 6200, duree: 41.7, memoire: 3 },
+    { id: "orfan/modele", variantes: 3, equivalentes: 1, gain: 28.9, tient: false, jetons: 11400, duree: 38.9, memoire: -2 },
+    { id: "sedal", variantes: 9, equivalentes: 4, gain: 44.8, tient: true, jetons: 21300, duree: 94.3, memoire: 6 },
+    { id: "gepa", variantes: 2, equivalentes: 0, gain: 0, tient: false, jetons: 8100, duree: 52.0, memoire: null },
+    { id: "textgrad", variantes: 0, equivalentes: 0, gain: 0, tient: false, jetons: 0, duree: 3.2, memoire: null, saute: "il ne lui reste plus de jetons aujourd'hui (son plafond du jour est atteint)" }];
+
+  const HISTO0 = [
+    { fn: "affichage.disposition", quand: "hier, 17:42", qui: "Sedal", gain: 21.5, epingle: true },
+    { fn: "affichage.idees", quand: "lundi, 09:10", qui: "personne", gain: 0, epingle: false },
+    { fn: "jour.tuiles", quand: "le 02/11", qui: "Orfan (règles)", gain: 12.0, epingle: false }];
+
+  const init = () => ({ fn: "planifie.decrire", q: "", tout: false, sel: { "orfan/deterministe": true, frugal: true, "orfan/modele": true, sedal: true, gepa: true, textgrad: true }, budget: "moyen", crit: "gain", mode: "jetons", lim: 20000,
+                        phase: "prepare", lanes: [], res: null, ouvert: "", confirm: false, adopte: false, epingle: false, histo: JSON.parse(JSON.stringify(HISTO0)), msg: "" });
+  let S = init();
+  const ch = (id) => CH.find((c) => c.id === id);
+  const fn = () => FN.find((f) => f.id === S.fn) || { id: S.fn, dit: "", appels: 0, ms: 0, valeur: 0, essais: 0 };
+  const choisis = () => CH.filter((c) => c.actif && S.sel[c.id]);
+  const coutMax = (c) => ({ gratuit: 0, sobre: 0.4, gourmand: 1 })[c.cout] * BUDGETS[S.budget][0];
+  const estim = () => { const l = choisis(); return { jetons: Math.round(l.reduce((a, c) => a + coutMax(c), 0)), duree: Math.round(l.reduce((a, c) => a + (c.cout === "gratuit" ? 4 : c.cout === "sobre" ? 40 : 75), 0)) }; };
+  const duree = (s) => (s < 90 ? Math.round(s) + " s" : Math.round(s / 60) + " min");
+
+  /* ─── 1 · la fonction ─── */
+  function etapeFonction() {
+    const q = S.q.trim().toLowerCase(), tous = FN.filter((f) => !q || (f.id + " " + f.dit).toLowerCase().indexOf(q) >= 0), vis = (S.tout || q) ? tous : tous.slice(0, 5);
+    const ligne = (f) => '<button class="cp-fn' + (f.id === S.fn ? " on" : "") + '" data-fn="' + esc(f.id) + '"><b>' + esc(f.id) + "</b><small>" + esc(f.dit) + '</small><span class="d"><i>' + (f.valeur >= 1000 ? "≈ " + k(f.valeur) + " ms perdues" : "≈ " + Math.round(f.valeur) + " ms perdues") + "</i><span>" + k(f.appels) + " appels" + (f.essais ? " · essayée " + f.essais + " fois" : " · jamais essayée") + "</span></span></button>";
+    return '<div class="verre cp-bloc"><div class="cp-tete"><h3><span class="cp-num">1</span>Sur quelle fonction ?</h3><span class="cp-aide">Les plus utiles à améliorer d’abord : celles dont les appels font perdre le plus de temps.</span></div>' +
+      '<input class="cp-rech" id="cp-q" type="text" placeholder="Chercher une fonction (nom ou ce qu’elle fait)…" value="' + esc(S.q) + '"><div class="cp-fns">' + (vis.map(ligne).join("") || '<div class="cp-aide">Aucune fonction ne correspond.</div>') + "</div>" +
+      (!q ? '<div class="cp-actions"><button class="btn" data-tout="' + (S.tout ? "non" : "oui") + '">' + (S.tout ? "Voir moins" : "Voir les " + FN.length + " premières (sur " + NB_FONCTIONS + ")") + '</button><span class="cp-aide">' + NB_MUETTES + " fonctions n’ont jamais été appelées : on ne peut pas encore les comparer.</span></div>" : "") + "</div>";
+  }
+  /* ─── 2 · les chercheurs ─── */
+  function etapeChercheurs() {
+    const tuile = (c) => {
+      const on = c.actif && S.sel[c.id], p = COUT[c.cout];
+      return '<button class="cp-ch' + (on ? " on" : "") + (c.actif ? "" : " off") + '" data-ch="' + esc(c.id) + '"' + (c.actif ? "" : ' title="Il n’est pas actif : on l’active dans « Les chercheurs »"') + '><span class="nom">' + esc(c.nom) + '<span class="coche">✓</span></span><span class="sous">' + esc(c.sous) + '</span><span class="tags"><span class="puce ' + p[1] + '">' + p[0] + "</span>" + (c.actif ? "" : '<span class="puce mu">pas actif</span>') + "</span></button>";
+    };
+    const n = choisis().length;
+    return '<div class="verre cp-bloc"><div class="cp-tete"><h3><span class="cp-num">2</span>Qui court ?</h3><span class="cp-aide">' + n + " chercheur" + (n > 1 ? "s" : "") + " au départ</span></div>" +
+      '<div class="cp-pre"><span class="cp-aide">Raccourcis :</span><button class="cp-chip" data-pre="gratuits">Les gratuits et les sobres</button><button class="cp-chip" data-pre="tous">Tous les actifs</button><button class="cp-chip" data-pre="aucun">Aucun</button></div>' +
+      '<div class="cp-tuiles">' + CH.map(tuile).join("") + '</div><div class="cp-aide">Les chercheurs qui ne sont pas actifs ne peuvent pas courir. <a href="#" data-vers="1">Les activer dans « Les chercheurs »</a>.</div></div>';
+  }
+  /* ─── 3 · jusqu'où ─── */
+  function etapeBudget() {
+      const budgets = Object.keys(BUDGETS).map((v) => '<button class="cp-opt' + (S.budget === v ? " on" : "") + '" data-budget="' + v + '"><b>' + BUDGETS[v][1] + "</b><small>" + BUDGETS[v][2] + "</small></button>").join("");
+    const crits = Object.keys(CRITERES).map((v) => '<button class="cp-opt' + (S.crit === v ? " on" : "") + '" data-crit="' + v + '"><b>' + CRITERES[v][0] + "</b><small>" + CRITERES[v][1] + "</small></button>").join("");
+    return '<div class="verre cp-bloc"><div class="cp-tete"><h3><span class="cp-num">3</span>Combien, et qu’est-ce qui compte ?</h3></div>' +
+      '<div class="cp-aide">Chaque chercheur dépense au plus cette somme de jetons (les gratuits ne dépensent rien).</div><div class="cp-seg">' + budgets + "</div>" +
+      '<div class="cp-aide" style="margin-top:4px">Pour désigner le gagnant, on regarde :</div><div class="cp-seg">' + crits + "</div>" +
+      '<details class="cp-fin"><summary>Réglages fins (pour ceux qui veulent compter autrement)</summary><div class="champs"><label>Compter le budget en<select data-fin="mode"><option value="jetons"' + (S.mode === "jetons" ? " selected" : "") + '>jetons</option><option value="essais"' + (S.mode === "essais" ? " selected" : "") + '>essais</option><option value="temps"' + (S.mode === "temps" ? " selected" : "") + '>secondes</option></select></label><label>Limite exacte<input type="number" min="1" value="' + BUDGETS[S.budget][0] + '" data-fin="lim"></label></div></details></div>';
+  }
+  /* ─── le résumé qui lance ─── */
+  function resume() {
+    const e = estim(), f = fn(), l = choisis(), pct = Math.max(0.1, 100 * e.jetons / MOIS.budget), enCours = S.phase === "course";
+    const pret = l.length >= 2 && f.appels > 0;
+    return '<div class="verre cp-resume"><h3>Prêt à courir ?</h3><div><div class="cp-lig"><span>Fonction</span><b class="mono" style="font-size:12px">' + esc(f.id) + '</b></div><div class="cp-lig"><span>Chercheurs</span><b>' + l.length + ' au départ</b></div><div class="cp-lig"><span>Budget</span><b>' + BUDGETS[S.budget][1] + " · " + k(BUDGETS[S.budget][0]) + ' chacun</b></div>' +
+      '<div class="cp-lig"><span>Jetons dépensés</span><b>au plus ≈ ' + k(e.jetons) + '</b></div><div class="cp-lig"><span>Durée</span><b>≈ ' + duree(e.duree) + '</b></div></div><div><div class="cp-jauge"><i style="width:' + Math.min(100, pct * 8) + '%"></i></div><div class="cp-aide" style="margin-top:5px">Soit au plus ' + (pct < 1 ? "moins de 1" : pct.toFixed(1).replace(".", ",")) + " % du budget du mois (" + k(MOIS.budget) + " jetons, déjà " + k(MOIS.depense) + " dépensés).</div></div>" +
+      '<button class="btn prim cp-go" data-go' + (pret && !enCours ? "" : " disabled") + ">" + (enCours ? "Course en cours…" : "Lancer la course") + "</button>" + (pret ? "" : '<div class="cp-aide">' + (l.length < 2 ? "Choisis au moins deux chercheurs pour qu’il y ait une course." : "Cette fonction n’a jamais été appelée : rien à comparer.") + "</div>") +
+      '<div class="cp-aide">Une course ne met rien en service : la variante gagnante n’est adoptée que sur ton geste.</div></div>';
+  }
+  /* ─── la course en direct ─── */
+  function direct() {
+    if (S.phase !== "course") return "";
+    const total = S.lanes.reduce((a, l) => a + l.jet, 0);
+    return '<div class="verre cp-bloc"><div class="cp-tete"><h3>La course est lancée</h3><span class="puce al">en cours · ' + k(total) + " jetons dépensés</span></div><div class=\"cp-direct\">" + S.lanes.map((l) => {
+      const c = ch(l.id);
+      return '<div class="cp-piste"><span class="nm"><b>' + esc(c.nom) + "</b><small>" + esc(c.sous) + '</small></span><span class="cp-barre ' + (l.fini ? "ok" : l.run ? "chauffe" : "") + '"><i style="width:' + l.pct + '%"></i></span><span class="etat">' + (l.saute ? "sauté" : l.fini ? "terminé" : l.run ? "cherche…" : "attend son tour") + "</span></div>";
+    }).join("") + '</div><div class="cp-aide">Chaque chercheur cherche à son tour, sur les mêmes cas ; le même juge évalue tout à la fin.</div></div>';
+  }
+  /* ─── le résultat ─── */
+  function classer() {
+    const l = RES.filter((r) => S.sel[r.id] && ch(r.id).actif).map((r) => Object.assign({}, r, { c: ch(r.id) }));
+    const ok = (r) => !r.saute && r.gain > 0 && r.tient;
+    const score = { gain: (r) => (ok(r) ? r.gain : -1), econome: (r) => (ok(r) ? r.gain / (1 + r.jetons / 1000) : -1), rapide: (r) => (ok(r) ? 1000 - r.duree : -1) }[S.crit];
+    l.sort((a, b) => score(b) - score(a) || b.gain - a.gain);
+    return { l: l, gagnant: l.length && ok(l[0]) ? l[0] : null };
+  }
+  function resultat() {
+    if (S.phase !== "fini") return "";
+    const { l, gagnant } = classer(), f = fn(), max = Math.max(50, ...l.map((r) => r.gain));
+    const phrase = gagnant
+      ? "<b>" + esc(gagnant.c.nom) + "</b> gagne : sa variante rend <b>exactement le même résultat</b> et gagne <b>" + gagnant.gain.toFixed(1).replace(".", ",") + " % de temps</b> sur <span class=\"mono\">" + esc(f.id) + "</span>, " + (gagnant.jetons ? "pour " + k(gagnant.jetons) + " jetons" : "sans dépenser un seul jeton") + ", confirmée sur des cas jamais montrés au chercheur."
+      : "<b>Aucun chercheur n’a trouvé de variante à la fois identique, plus rapide et confirmée.</b> Rien n’est à adopter. Tu peux refaire la course avec un budget plus large ou d’autres chercheurs.";
+    const ligne = (r, i) => {
+      const gagne = gagnant && r.id === gagnant.id, nul = r.saute || r.gain === 0, ouvert = S.ouvert === r.id;
+      return '<div class="cp-lg' + (gagne ? " gagne" : "") + '" data-lg="' + esc(r.id) + '"><div class="haut"><span class="rg">' + (gagne ? "★" : i + 1) + '</span><span class="nm"><b>' + esc(r.c.nom) + "</b><small>" + esc(r.c.sous) + '</small></span><span class="cp-barre' + (r.tient && r.gain ? " ok" : "") + '"><i style="width:' + (nul ? 0 : Math.round(100 * r.gain / max)) + '%"></i></span><span class="gain' + (nul ? " nul" : "") + '">' + (r.saute ? "sauté" : r.gain ? "−" + r.gain.toFixed(1).replace(".", ",") + " %" : "rien") + "</span></div>" +
+        '<div class="bas">' + (r.saute ? '<span class="puce al">sauté</span>' : r.gain ? (r.tient ? '<span class="puce ok">confirmé sur des cas gardés de côté</span>' : '<span class="puce al">à confirmer : pas tenu sur les cas gardés de côté</span>') : '<span class="puce mu">aucune variante sûre</span>') + '<span class="puce">' + (r.jetons ? k(r.jetons) + " jetons" : "0 jeton") + '</span><span class="puce">' + duree(r.duree) + "</span>" + (r.memoire != null && !nul ? '<span class="puce ' + (r.memoire >= 0 ? "ok" : "al") + '">mémoire ' + (r.memoire > 0 ? "−" : "+") + Math.abs(r.memoire) + " %</span>" : "") + "</div>" +
+        (ouvert ? '<div class="cp-det"><span><b>Ce qu’il a trouvé</b>' + (r.saute ? esc(r.saute) : r.variantes + " variante" + (r.variantes > 1 ? "s" : "") + " proposée" + (r.variantes > 1 ? "s" : "") + ", dont " + r.equivalentes + " rendant exactement le même résultat") + "</span><span><b>Ce que ça coûte</b>" + (r.jetons ? k(r.jetons) + " jetons (≈ " + (100 * r.jetons / MOIS.budget).toFixed(2).replace(".", ",") + " % du mois)" : "rien") + "</span><span><b>Pourquoi « confirmé »</b>la variante est aussi essayée sur des cas que le chercheur n’a jamais vus</span></div>" : "") + "</div>";
+    };
+    const act = gagnant ? (S.adopte ? '<div class="cp-ok"><b>' + esc(gagnant.c.nom) + " est adopté en ombre pour " + esc(f.id) + ".</b> Il tourne à côté de l’originale, sans rien servir à personne. Tu le suis dans « Améliorations ».</div>"
+      : S.confirm ? '<div class="cp-alerte"><b>Adopter la variante de ' + esc(gagnant.c.nom) + " pour " + esc(f.id) + " ?</b><span>Elle est d’abord <b>rejugée</b>, puis mise <b>à l’ombre</b> : elle tourne à côté de l’originale, ses résultats sont comparés, et rien n’est servi à personne tant que tu ne l’as pas mise en service.</span><div class=\"cp-actions\"><button class=\"btn prim\" data-adopter-ok>Oui, l’adopter à l’ombre</button><button class=\"btn\" data-adopter-non>Annuler</button></div></div>"
+      : '<div class="cp-actions"><button class="btn prim" data-adopter>Adopter ' + esc(gagnant.c.nom) + " pour cette fonction</button>" + '<button class="btn" data-epingle>' + (S.epingle ? "✓ Épinglée" : "Épingler cette course") + '</button><button class="btn" data-refaire>Refaire avec un budget plus large</button></div>')
+      : '<div class="cp-actions"><button class="btn" data-epingle>' + (S.epingle ? "✓ Épinglée" : "Épingler cette course") + '</button><button class="btn prim" data-refaire>Refaire avec un budget plus large</button></div>';
+    return '<div class="verre cp-bloc" id="cp-res"><div class="cp-tete"><h3>Le résultat</h3><span class="cp-aide">classé par : ' + CRITERES[S.crit][0].toLowerCase() + ' <a href="#" data-vers="3">(changer)</a></span></div><div class="cp-verdict' + (gagnant ? "" : " rien") + '">' + phrase + '</div><div class="cp-rang">' + l.map(ligne).join("") + "</div>" + act + '<div class="cp-aide">Clique sur une ligne pour voir le détail. Même cas, même juge, même budget pour tous : la comparaison est équitable.</div></div>';
+  }
+  function histo() {
+    return '<div class="verre cp-bloc"><details class="cp-sur" data-det="histo"' + (S.histoOuvert ? " open" : "") + '><summary>Les courses précédentes (' + S.histo.length + ') <span class="cp-aide">· pour comparer d’une fois sur l’autre</span></summary><div class="cp-hist" style="margin-top:8px">' + S.histo.map((h, i) => '<div class="cp-h"><span><b>' + esc(h.fn) + "</b><small>" + esc(h.quand) + " · " + (h.gain ? esc(h.qui) + " a gagné " + h.gain.toFixed(1).replace(".", ",") + " %" : "aucun gagnant") + '</small></span><button class="btn" data-hepingle="' + i + '" title="Épingler pour la garder">' + (h.epingle ? "✓ Épinglée" : "Épingler") + '</button><button class="btn" data-hrouvrir="' + i + '">Rouvrir</button></div>').join("") + "</div></details></div>";
+  }
+  const sur = () => '<div class="verre cp-bloc"><details class="cp-sur" data-det="sur"' + (S.surOuvert ? " open" : "") + '><summary>Pourquoi cette comparaison est équitable</summary><ul><li>Tous les chercheurs reçoivent <b>la même fonction, les mêmes cas, le même budget</b>.</li><li>Ils ne voient qu’une partie des cas ; <b>le reste est gardé de côté</b> et ne sert qu’au juge : c’est ce qui permet d’écrire « confirmé ».</li><li>Chacun tourne <b>dans son processus, sans réseau</b> ; ses appels de modèle passent par le relais, qui compte les jetons de la même façon pour tous.</li><li>Un chercheur qui a atteint son <b>plafond du jour</b> est sauté, et on le dit.</li><li>Une course <b>ne met rien en service</b> : adopter est un geste à part, la variante est rejugée d’abord.</li></ul></details></div>';
+
+  function dessiner() {
+    racine.innerHTML = (S.msg ? '<div class="cp-ok">' + esc(S.msg) + "</div>" : "") + '<div class="cp-ligne a">' + etapeFonction() + etapeChercheurs() + '</div><div class="cp-ligne b">' + etapeBudget() + resume() + "</div>" + direct() + resultat() + '<div class="cp-ligne c">' + histo() + sur() + "</div>";
+    lier();
+  }
+  function lancer() {
+    const l = choisis(); if (l.length < 2 || S.phase === "course") return;
+    S.phase = "course"; S.res = null; S.ouvert = ""; S.confirm = false; S.adopte = false; S.epingle = false; S.msg = "";
+    S.lanes = l.map((c) => { const r = RES.find((x) => x.id === c.id) || {}; return { id: c.id, pct: 0, run: false, fini: false, saute: !!r.saute, jet: 0, cible: r.jetons || 0 }; });
+    dessiner();
+    let i = 0;
+    const suite = () => {
+      if (i >= S.lanes.length) { S.phase = "fini"; dessiner(); const e = document.getElementById("cp-res"); if (e) e.scrollIntoView({ block: "start", behavior: "smooth" }); return; }
+      const L = S.lanes[i]; L.run = true; dessiner();
+      if (L.saute) { L.run = false; L.fini = true; L.pct = 0; i++; return setTimeout(suite, 350); }
+      let t = 0; const pas = setInterval(() => { t++; L.pct = Math.min(100, t * 14); L.jet = Math.round(L.cible * L.pct / 100); const z = racine.querySelectorAll(".cp-piste .cp-barre i")[i]; if (z) z.style.width = L.pct + "%"; if (L.pct >= 100) { clearInterval(pas); L.run = false; L.fini = true; i++; setTimeout(suite, 200); dessiner(); } }, 160);
+    };
+    setTimeout(suite, 300);
+  }
+  function lier() {
+    const q = (s) => racine.querySelectorAll(s);
+    const r = racine.querySelector("#cp-q"); if (r) r.addEventListener("input", () => { S.q = r.value; dessiner(); const n = racine.querySelector("#cp-q"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
+    q("[data-fn]").forEach((b) => b.addEventListener("click", () => { S.fn = b.dataset.fn; S.phase = "prepare"; S.res = null; dessiner(); }));
+    q("[data-tout]").forEach((b) => b.addEventListener("click", () => { S.tout = b.dataset.tout === "oui"; dessiner(); }));
+    q("[data-ch]").forEach((b) => b.addEventListener("click", () => { const c = ch(b.dataset.ch); if (!c.actif) return; S.sel[c.id] = !S.sel[c.id]; dessiner(); }));
+    q("[data-pre]").forEach((b) => b.addEventListener("click", () => { const p = b.dataset.pre; CH.forEach((c) => { S.sel[c.id] = c.actif && (p === "tous" || (p === "gratuits" && c.cout !== "gourmand")); }); dessiner(); }));
+    q("[data-budget]").forEach((b) => b.addEventListener("click", () => { S.budget = b.dataset.budget; dessiner(); }));
+    q("[data-crit]").forEach((b) => b.addEventListener("click", () => { S.crit = b.dataset.crit; dessiner(); }));
+    q("[data-go]").forEach((b) => b.addEventListener("click", lancer));
+    q("[data-lg]").forEach((b) => b.addEventListener("click", () => { S.ouvert = S.ouvert === b.dataset.lg ? "" : b.dataset.lg; dessiner(); }));
+    q("[data-adopter]").forEach((b) => b.addEventListener("click", () => { S.confirm = true; dessiner(); }));
+    q("[data-adopter-non]").forEach((b) => b.addEventListener("click", () => { S.confirm = false; dessiner(); }));
+    q("[data-adopter-ok]").forEach((b) => b.addEventListener("click", () => { S.confirm = false; S.adopte = true; dessiner(); }));
+    q("[data-epingle]").forEach((b) => b.addEventListener("click", () => { S.epingle = !S.epingle; dessiner(); }));
+    q("[data-refaire]").forEach((b) => b.addEventListener("click", () => { S.budget = "large"; S.phase = "prepare"; S.msg = "Budget passé à « Large » : relance la course quand tu veux."; dessiner(); window.scrollTo({ top: 0, behavior: "smooth" }); }));
+    q("[data-hepingle]").forEach((b) => b.addEventListener("click", () => { const h = S.histo[+b.dataset.hepingle]; h.epingle = !h.epingle; dessiner(); }));
+    q("[data-hrouvrir]").forEach((b) => b.addEventListener("click", () => { const h = S.histo[+b.dataset.hrouvrir]; S.fn = FN.some((f) => f.id === h.fn) ? h.fn : S.fn; S.phase = "fini"; S.msg = "Course du " + h.quand + " rouverte (la maquette montre le même exemple de résultat)."; dessiner(); }));
+    q("details[data-det]").forEach((d) => d.addEventListener("toggle", () => { S[d.dataset.det + "Ouvert"] = d.open; }));
+    q("[data-vers]").forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); alert(b.dataset.vers === "1" ? "Maquette : ici, on ouvrirait « Les chercheurs »." : "Maquette : on remonte au choix « Ce qui compte »."); }));
+  }
+  document.getElementById("d-raz").addEventListener("click", () => { S = init(); dessiner(); });
+  const MENU = [["Évolution", 0, "⚘"], ["Aujourd’hui", 1, "☼"], ["Améliorations", 1, "↗"], ["Réglages", 1, "◈"], ["Consignes et seuils", 1, "✎"], ["Sous le capot", 1, "⚙"], ["Les chercheurs", 2, "⊙"], ["Les fonctions", 2, "ƒ"], ["Les comparer", 2, "⇄"], ["Installer un chercheur", 2, "⤓"], ["Filet de sécurité", 2, "⛨"], ["Carnet", 2, "▤"], ["Versions écartées", 2, "⊘"], ["Ce qui est prévu", 2, "✦"], ["Vocabulaire", 2, "Aa"]];
+  document.getElementById("mq-menu").innerHTML = MENU.map((m) => '<div class="t s' + m[1] + (m[0] === "Les comparer" ? " on" : "") + '"><span class="g">' + m[2] + "</span>" + m[0] + "</div>").join("");
+  dessiner();
+})();
+</script>
+</body>
+</html>

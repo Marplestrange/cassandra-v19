@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #50517a
+# VERSION CN : 0.1.0  #303f64
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : « Préparer » un chercheur : résoudre son paquet dans un environnement jetable, épingler chaque dépendance par son empreinte sha256, écrire l'entrée dans le catalogue et le sceller de la clé de l'instance (ce que faisait l'outil en ligne de commande).
 # MÉTHODE    : un venv jetable ; `pip install` pour résoudre, `pip freeze` pour figer, `pip download --no-deps` paquet par paquet pour empreinter ; un commit GitHub est résolu en archive épinglée ; un catalogue déjà là mais dont le sceau ne tient pas n'est jamais réécrit.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=50517a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=303f64 ▼▼▼
 """L'épinglage, en bibliothèque : la même démarche que `outils/CN_moteurs_epingler.py`, avec un rapport d'avancement et un `executer` injectable (les bancs).
 
 Seul ce qui est ÉPINGLÉ ici s'installera : l'installateur (noyau/CN_installateur.py) n'installe que ce que le catalogue scellé écrit, par empreinte.
@@ -109,8 +109,8 @@ def epingler(rep: dict, interpreteur: str = "", progres=None, executer=None, del
         code, sortie = ex([py, "-m", "pip", "install", "--disable-pip-version-check", "--no-input", spec], delai_s, None)
         if code:
             raise InstallationRefusee("le paquet ne se résout pas : %s" % sortie[-300:])
-        code, gel_txt = plein([py, "-m", "pip", "freeze", "--disable-pip-version-check"], delai_s, None)
-        gel = [l.strip() for l in gel_txt.splitlines() if "==" in l and not l.startswith("-e")]
+        code, gel_txt = plein([py, "-m", "pip", "freeze", "--all", "--disable-pip-version-check"], delai_s, None)       # --all : sans lui pip cache setuptools et wheel, que des paquets (torch) exigent pourtant
+        gel = [l.strip() for l in gel_txt.splitlines() if "==" in l and not l.startswith("-e") and not l.lower().startswith("pip==")]
         if " @ " in spec:                                                                      # une archive : pip freeze la montre en fichier local, on garde l'adresse DONNÉE
             nom_archive = spec.split(" @ ", 1)[0].strip().lower().replace("_", "-")
             gel = [spec] + [l for l in gel if l.split("==")[0].strip().lower().replace("_", "-") != nom_archive]

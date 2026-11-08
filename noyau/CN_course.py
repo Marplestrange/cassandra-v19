@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #afca07
+# VERSION CN : 0.1.0  #788415
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Décide quel moteur cherche pour quel point : la cascade (le gratuit d'abord), l'affectation forcée, la course entre moteurs, les plafonds par moteur ; rien n'est mis en service par une course.
 # MÉTHODE    : un moteur à la fois dans son processus, jugé par le même juge sur le même corpus ; chaque étage compte ses jetons ; un plafond atteint saute l'étage et le dit.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=afca07 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=788415 ▼▼▼
 """Lots 3 de la maquette d'Évolution : course, cascade, affectations, budget par moteur.
 
 La CASCADE : les étages actifs, dans l'ordre (le gratuit d'abord). `arret_premiere` : on s'arrête à la première variante prouvée. `modele_si_chaud` : un étage qui dépense un modèle
@@ -81,6 +81,12 @@ class Orchestrateur:
         if choix.startswith("adaptateur:"):
             m = next((x for x in self.reg.liste() if x["id"] == ident), {})
             kw["python"] = m.get("python", "")
+            try:
+                lourd = (importlib.import_module("noyau.CN_repertoire").trouver(ident) or {}).get("memoire_mo")                 # un chercheur lourd (torch) a son propre plafond de mémoire
+            except Exception:
+                lourd = None
+            if lourd:
+                kw["memoire_mo"] = int(lourd)
         kw["carnet"] = self.reg
         if callable(self.options_moteur):
             kw["options"] = self.options_moteur(choix)
@@ -186,7 +192,7 @@ class Orchestrateur:
         return res
 
     # ── la course ────────────────────────────────────────────────────────
-    def course(self, module: str, point: str, etages: list, budget_type: str = "jetons", limite: int = 20000, critere: str = "rendement") -> dict:
+    def course(self, module: str, point: str, etages: list, budget_type: str = "jetons", limite: int = 20000, critere: str = "rendement", suivi=None) -> dict:
         if critere not in CRITERES:
             raise ValueError("critère inconnu : « %s » (%s)" % (critere, ", ".join(CRITERES)))
         if budget_type not in BUDGETS:
@@ -203,6 +209,8 @@ class Orchestrateur:
         budget = min(limite, 10) if budget_type == "essais" else 3
         lignes = []
         for etage in etages:
+            if suivi is not None:
+                suivi({"etage": etage, "etat": "cherche"})                                  # une course en tâche de fond se suit : on dit qui cherche, puis ce qu'il a rendu
             lance = self._lancer(etage, module, point, budget, ecrire=False, budget_type=budget_type, limite=limite)
             r = lance["r"] or {}
             meilleur = r.get("meilleur")
@@ -215,6 +223,8 @@ class Orchestrateur:
                            "variantes": len(essais), "equivalentes": len(equiv), "gain": round(max(gain, 0.0), 1), "tient": bool(meilleur and meilleur["eval"].get("gain_tient")),
                            "jetons": jetons, "rendement": rendement(gain if meilleur else 0.0, jetons), "memoire": (meilleur or {}).get("objectifs", {}).get("memoire"),
                            "duree_s": lance["duree_s"], "texte": (meilleur or {}).get("texte", ""), "hypothese": (meilleur or {}).get("hypothese", "")})
+            if suivi is not None:
+                suivi({"etage": etage, "etat": "fini", "ligne": {k: v for k, v in lignes[-1].items() if k != "texte"}})
         cle = {"rendement": lambda x: x["rendement"], "brut": lambda x: x["gain"], "duree": lambda x: -x["duree_s"]}[critere]
         lignes.sort(key=lambda x: (bool(x["texte"]), cle(x)), reverse=True)
         num = self.reg.noter_course({"point": "%s.%s" % (module, point), "critere": critere, "budget": budget_type, "limite": limite, "resultats": lignes,

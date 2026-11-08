@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #205d2e
+# VERSION CN : 0.5.0  #21e4fa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=205d2e ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=21e4fa ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -173,9 +173,12 @@ def brancher(ctx):
                 "tombes": {gid: len(evo.tombes(gid)) for gid in evo.points.points()}}
 
     # ── les gestes ───────────────────────────────────────────────────────
+    def plafond_du_jour():
+        evo.seuils["propositions_par_jour"] = max(1, int(reglage("propositions_par_jour", evo.seuils.get("propositions_par_jour", 20))))      # le réglage de l'admin l'emporte sur la valeur du fichier : pour une proposition comme pour une course
+
     def proposer(c, point="", moteur="", budget=0):
         m, p = decouper(point)
-        evo.seuils["propositions_par_jour"] = max(1, int(reglage("propositions_par_jour", evo.seuils.get("propositions_par_jour", 20))))      # le réglage de l'admin l'emporte sur la valeur du fichier
+        plafond_du_jour()
         choix = str(moteur or reglage("moteur_defaut", "cascade"))
         reg0 = registre()
         etages = reg0.etages()
@@ -230,7 +233,7 @@ def brancher(ctx):
             erreur_catalogue = ""
         except Exception as e:
             catalogue, erreur_catalogue = [], str(e)
-        return {"moteurs": liste, "isoles": isoles(), "cascade": reg.cascade(), "options": reg.options(), "affectations": reg.affectations(), "budget": reg.budget(),
+        return {"moteurs": liste, "isoles": isoles(), "cascade": [dict(e, classe=classe_etage(e)) for e in reg.cascade()], "options": reg.options(), "affectations": reg.affectations(), "budget": reg.budget(),
                 "depense_mois": reg.depense_mois(), "propositions_jour": {"fait": evo.tentatives_depuis(), "plafond": max(1, int(reglage("propositions_par_jour", evo.seuils.get("propositions_par_jour", 20))))},
                 "relais": reg.relais(30), "courses": reg.courses(20), "journal": reg.journal(60), "objectifs": reg.objectifs(),
                 "etages": {k: {"moteur": v[0], "nom": v[2], "cout": v[3]} for k, v in reg.etages().items()}, "catalogue": catalogue, "catalogue_erreur": erreur_catalogue,
@@ -317,10 +320,50 @@ def brancher(ctx):
     def course(c, point="", etages=None, budget="jetons", limite=20000, critere="rendement"):
         m, p = decouper(point)
         registre()
+        plafond_du_jour()
         return orchestre().course(m, p, list(etages or []), str(budget), int(limite), str(critere))
 
     def prouver_course(c, res):
         return registre().course(res["id"]) is not None
+
+    def classe_etage(e):
+        """Le coût d'un chercheur en un mot : « gratuit », « sobre » ou « gourmand » (ce que l'écran dit avant de lancer une course)."""
+        t = str(e.get("cout") or "").lower()
+        if "gratuit" in t:
+            return "gratuit"
+        if "peu de jetons" in t:
+            return "sobre"
+        if t.startswith("jetons") or e["id"] in ("orfan/modele", "sedal"):
+            return "gourmand"
+        rep = depot().trouver(e["id"]) or {}
+        return "sobre" if rep.get("cout") == "sobre" else "gourmand"                          # un coût inconnu se compte comme gourmand : on préfère surestimer
+
+    def course_tache(c, point="", etages=None, budget="jetons", limite=20000, critere="rendement"):
+        """Lance une course EN FOND (plusieurs minutes avec des modèles) : rend l'identifiant de la tâche, à relire par `moteur_tache`. Les erreurs de forme se disent tout de suite."""
+        m, p = decouper(point)
+        etages = [str(e) for e in (etages or [])]
+        if len(etages) < 2:
+            raise ValueError("une course oppose au moins deux chercheurs")
+        connus = registre().etages()
+        if any(e not in connus for e in etages) or len(set(etages)) != len(etages):
+            raise ValueError("chercheurs inconnus ou en double (%s)" % ", ".join(sorted(connus)))
+        if taches().actif("course"):
+            raise ValueError("une course est déjà en cours : attends sa fin")
+
+        def travail(progres):
+            faites = []
+
+            def suivi(e):
+                if e["etat"] == "cherche":
+                    progres(faites, e["etage"])
+                else:
+                    l = e["ligne"]
+                    faites.append({"nom": e["etage"], "ok": not l.get("saute"), "detail": l.get("raison") or "", "ligne": l})
+                    progres(faites, "")
+            plafond_du_jour()
+            res = orchestre().course(m, p, etages, str(budget), int(limite), str(critere), suivi=suivi)
+            return {"ok": True, "course": res}
+        return {"tache": taches().lancer("course", "course", travail, etages), "point": "%s.%s" % (m, p), "plan": etages}
 
     def course_adopter(c, course=0, etage=""):
         registre()
@@ -796,6 +839,7 @@ def brancher(ctx):
     ctx.implementer("moteur_plafonner", moteur_plafonner, prouver_plafond, defaire_plafond)
     ctx.implementer("objectifs_regler", objectifs_regler, prouver_objectifs, defaire_objectifs)
     ctx.implementer("course", course, prouver_course, sans_retour)
+    ctx.implementer("course_tache", course_tache, prouver_tache, sans_retour)
     ctx.implementer("course_adopter", course_adopter, prouver_proposition, defaire_proposition)
     ctx.implementer("course_garder", course_garder, prouver_gardee, sans_retour)
     ctx.implementer("juger_prompt", juger_prompt, prouver_jugement, sans_retour)

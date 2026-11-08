@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c1954f
+# VERSION CN : 0.1.0  #a52322
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c1954f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a52322 ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -241,6 +241,57 @@ class Registre:
         self._horloge = horloge
         self._verrou = threading.RLock()
 
+    NOMS_RENOMMES = {"evolutif": "Évolutif"}         # l'ancien libellé affiché, pour les résultats déjà gardés
+    RENOMMES = {"evolutif": "sedal"}               # un moteur renommé : l'ancienne fiche, son historique et ses références passent sous le nouveau nom
+
+    @classmethod
+    def _migrer(cls, d: dict) -> bool:
+        """Applique les renommages à un registre lu. Rend vrai s'il a changé. Idempotent."""
+        changed = False
+        for vieux, neuf in cls.RENOMMES.items():
+            ms = d.get("moteurs", {})
+            if vieux in ms:
+                ancien = ms.pop(vieux)
+                cible = ms.get(neuf)
+                if cible is None:
+                    ms[neuf] = ancien
+                else:
+                    for k, v in ancien.items():
+                        if isinstance(v, (int, float)) and not isinstance(v, bool) and isinstance(cible.get(k), (int, float)):
+                            cible[k] = cible[k] + v          # les compteurs s'additionnent ; le reste (état, nom, plafond) reste celui du moteur vivant
+                        elif k not in cible:
+                            cible[k] = v
+                if ms[neuf].get("genre") == "natif":
+                    ms[neuf]["nom"] = NATIFS.get(neuf, ms[neuf].get("nom"))
+                changed = True
+
+            def corps(x):
+                nonlocal changed
+                if isinstance(x, dict):
+                    sortie = {}
+                    for k, v in x.items():
+                        k2 = neuf if k == vieux else k
+                        if k2 != k:
+                            changed = True
+                        sortie[k2] = corps(v)
+                    return sortie
+                if isinstance(x, list):
+                    return [corps(v) for v in x]
+                if x == vieux:
+                    changed = True
+                    return neuf
+                if isinstance(x, str) and x.startswith(vieux + "/"):
+                    changed = True
+                    return neuf + x[len(vieux):]
+                if isinstance(x, str) and x.startswith(cls.NOMS_RENOMMES.get(vieux, "\0") + " ·"):       # le libellé gardé avec un résultat de course : « Évolutif · populations… »
+                    changed = True
+                    return neuf.capitalize() + x[len(cls.NOMS_RENOMMES[vieux]):]
+                return x
+            for cle in list(d):
+                if cle != "journal":                         # le journal est l'histoire telle qu'elle a été dite : on n'y réécrit rien
+                    d[cle] = corps(d[cle])
+        return changed
+
     def _lire(self) -> dict:
         try:
             d = json.loads(self.chemin.read_text(encoding="utf-8"))
@@ -250,6 +301,11 @@ class Registre:
             raise ValueError("le registre des moteurs est illisible (%s) : rien n'est écrasé, à réparer à la main" % e)
         d.setdefault("moteurs", {})
         d.setdefault("attribution", {})
+        if self._migrer(d):
+            try:
+                self._ecrire(d)
+            except OSError:
+                pass                                         # en lecture seule : la lecture reste migrée en mémoire
         return d
 
     def _ecrire(self, d: dict) -> None:

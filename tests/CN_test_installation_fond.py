@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #348497
+# VERSION CN : 0.1.0  #7f2410
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prouve que tout chercheur du répertoire peut être préparé, installé et mis à jour depuis l'écran : l'épinglage, Python posé, le repli de l'adaptateur généré (vérifié sans être exécuté), la mise à jour qui bascule ou qui revient, les tâches de fond.
 # MÉTHODE    : aucun réseau, aucun vrai pip : un exécuteur de banc écrit des faux environnements ; le modèle est une fonction de banc.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=348497 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7f2410 ▼▼▼
 """Bancs de l'installation depuis l'écran."""
 import json
 import os
@@ -30,11 +30,12 @@ from noyau import CN_epinglage as E  # noqa: E402
 from noyau import CN_installateur as I  # noqa: E402
 from noyau import CN_moteurs as MO  # noqa: E402
 from noyau import CN_repertoire as R  # noqa: E402
+ESSAI_REEL = G.essai_a_blanc                       # d'autres bancs remplacent G.essai_a_blanc : on garde le vrai pour juger sa règle
 from noyau import CN_taches as T  # noqa: E402
 
 CLE = b"cle-de-banc-" * 3
-CODE_BON = ('IMPORTER = ["monpaquet"]\n\n\ndef proposer(contexte, modele):\n    import monpaquet  # noqa\n    sortie = modele("réécris " + contexte["source_reference"], "executant")\n'
-            '    return [{"texte": sortie, "hypothese": "banc"}][: int(contexte.get("budget", 1))]\n')
+CODE_BON = ('IMPORTER = ["monpaquet"]\n\n\ndef produire(contexte, modele):\n    import monpaquet  # noqa\n    monpaquet.Optimiseur(1)\n    sortie = modele("réécris " + contexte["source_reference"], "executant")\n'
+            '    return [{"texte": sortie, "hypothese": "banc"}]\n')
 
 
 class Faux:
@@ -269,18 +270,18 @@ class AdaptateurGenere(Banc):
         self.assertTrue(r["ok"], r)
         fichiers = list((self.base / "moteurs" / "banc" / "venv").glob("lib/python*/site-packages/CN_adaptateur_banc.py"))
         self.assertEqual(len(fichiers), 1)
-        self.assertEqual(fichiers[0].read_text(encoding="utf-8"), CODE_BON)
+        self.assertEqual(fichiers[0].read_text(encoding="utf-8"), G.assembler(CODE_BON))
         fiche = [m for m in self.registre.liste() if m["id"] == "banc"][0]
         self.assertFalse(fiche["adaptateur_genere"]["relu"])                       # à relire : rien n'est approuvé d'office
         self.assertEqual(len(fiche["adaptateur_genere"]["empreinte"]), 64)
         self.assertIn("adaptateur généré", [e["nom"] for e in r["etapes"]])
 
-    def test_le_prompt_donne_le_contrat_l_interface_du_paquet_et_un_exemple(self):
+    def test_le_prompt_donne_le_contrat_de_l_operateur_et_l_interface_du_paquet(self):
         self.entree_generee()
         gen = self.generateur()
         self.inst(generateur=gen).installer("banc")
         p = gen.prompts[0]
-        for morceau in ("proposer(contexte, modele)", "IMPORTER", "AUCUN réseau", "INTERFACE RÉELLE", "EXEMPLE"):
+        for morceau in ("produire(contexte, modele)", "NE DÉFINIS PAS proposer", "N'attrape PAS les exceptions", "IMPORTER", "AUCUN réseau", "INTERFACE RÉELLE"):
             self.assertIn(morceau, p)
 
     def test_sans_generateur_un_adaptateur_a_generer_est_refuse_et_rien_ne_reste(self):
@@ -298,7 +299,7 @@ class AdaptateurGenere(Banc):
                         'def proposer(contexte, modele):\n    return []\n',
                         'IMPORTER = []\n\ndef autre(contexte):\n    return []\n'):
             self.assertTrue(G.verifier_code(mauvais), mauvais)
-        self.assertEqual(G.verifier_code(CODE_BON), "")
+        self.assertEqual(G.verifier_code(G.assembler(CODE_BON)), "")
 
     def test_un_adaptateur_qui_echoue_a_l_essai_a_blanc_est_rejete_puis_corrige(self):
         self.entree_generee()
@@ -314,6 +315,7 @@ class AdaptateurGenere(Banc):
         self.assertTrue(r["ok"], r)
         self.assertEqual(len(appels), 2)
         self.assertIn("TA VERSION PRÉCÉDENTE A ÉCHOUÉ", appels[1])                # l'erreur est redonnée au modèle
+        self.assertIn("def produire", appels[1])                                  # avec son code précédent, pour qu'il corrige CETTE erreur-là
 
     def test_un_modele_muet_est_une_raison_dite(self):
         self.entree_generee()
@@ -455,6 +457,199 @@ class Taches(unittest.TestCase):
         with self.assertRaises(ValueError):
             t.lire(nums[0])
         self.assertTrue(t.lire(nums[-1]))
+
+
+class OperateurEtGabarit(unittest.TestCase):
+    REP = {"importer": ["monpaquet"]}
+
+    def test_un_bon_operateur_passe(self):
+        self.assertEqual(G.verifier_operateur(CODE_BON, self.REP), "")
+
+    def test_definir_proposer_est_refuse(self):
+        code = CODE_BON + "\n\ndef proposer(contexte, modele):\n    return []\n"
+        self.assertIn("ne définis pas proposer", G.verifier_operateur(code, self.REP))
+
+    def test_une_panne_avalee_est_refusee(self):
+        for avale in ("    except Exception:\n        return []\n", "    except Exception:\n        pass\n", "    except Exception:\n        return None\n"):
+            code = 'IMPORTER = ["monpaquet"]\n\n\ndef produire(contexte, modele):\n    import monpaquet\n    try:\n        return [modele("x", "executant")]\n' + avale
+            self.assertIn("n'avale pas", G.verifier_operateur(code, self.REP), avale)
+
+    def test_un_except_qui_fait_autre_chose_passe(self):
+        code = 'IMPORTER = ["monpaquet"]\n\n\ndef produire(contexte, modele):\n    import monpaquet\n    monpaquet.Optimiseur(1)\n    for _ in range(2):\n        try:\n            return [modele("x", "executant")]\n        except ValueError:\n            continue\n    return []\n'
+        self.assertEqual(G.verifier_operateur(code, self.REP), "")
+
+    def test_ne_pas_utiliser_le_paquet_est_refuse_sauf_methode_reimplementee(self):
+        code = 'IMPORTER = ["monpaquet"]\n\n\ndef produire(contexte, modele):\n    return [modele("x", "executant")]\n'
+        self.assertIn("n'utilise pas le paquet", G.verifier_operateur(code, self.REP))
+        self.assertEqual(G.verifier_operateur(code, {"importer": ["monpaquet"], "reimplemente": "une méthode"}), "")
+        self.assertEqual(G.verifier_operateur(code.replace('["monpaquet"]', "[]"), {"importer": [], "methode": "une méthode"}), "")
+
+    def test_importer_le_paquet_sans_rien_en_appeler_est_refuse(self):
+        decore = 'IMPORTER = ["monpaquet"]\n\n\ndef produire(contexte, modele):\n    import monpaquet\n\n    class Lm(monpaquet.Base):\n        pass\n    return [modele("x", "executant")]\n'
+        self.assertIn("n'en APPELLE rien", G.verifier_operateur(decore, self.REP))
+        vrai = decore.replace("    return [modele", "    monpaquet.Optimiseur(1)\n    return [modele")
+        self.assertEqual(G.verifier_operateur(vrai, self.REP), "")
+        depuis = 'IMPORTER = ["monpaquet"]\n\n\ndef produire(contexte, modele):\n    from monpaquet import Optimiseur as O\n    O()\n    return []\n'
+        self.assertEqual(G.verifier_operateur(depuis, self.REP), "")
+
+    def test_sans_produire_c_est_refuse(self):
+        self.assertIn("manque la fonction produire", G.verifier_operateur('IMPORTER = []\n', {}))
+
+    def _gabarit(self):
+        sys.path.insert(0, str(RACINE / "orfan" / "adaptateurs"))
+        try:
+            import CN_gabarit_adaptateur as GAB
+        finally:
+            sys.path.pop(0)
+        return GAB
+
+    CTX = {"source_reference": "def f(x):\n    return sorted(x)[0]\n", "fonction": "f", "entrees": [[3, 1, 2], [9, 4]], "budget": 2, "tombes": []}
+
+    def test_le_gabarit_garde_une_variante_equivalente_et_ecarte_le_reste(self):
+        GAB = self._gabarit()
+        bonnes = ["```python\ndef f(x):\n    return min(x)\n```", "def f(x):\n    return sorted(x)[0]\n", "def f(x):\n    return max(x)\n", "pas du code", {"texte": "def f(x):\n    return min(x) + 0\n", "hypothese": "ajout neutre"}]
+        r = GAB.executer(dict(self.CTX), None, lambda c, m: bonnes, "essai")
+        self.assertEqual([v["texte"].strip().splitlines()[1].strip() for v in r], ["return min(x)", "return min(x) + 0"])          # la référence, la fausse (max) et le texte sans code sont écartés
+        self.assertEqual(r[1]["hypothese"], "ajout neutre")
+
+    def test_le_gabarit_ecarte_une_variante_deja_refusee_et_respecte_le_budget(self):
+        GAB = self._gabarit()
+        ctx = dict(self.CTX, tombes=["def f(x):\n    return min(x)\n"], budget=1)
+        r = GAB.executer(ctx, None, lambda c, m: ["def f(x):\n    return min(x)\n", "def f(x):\n    return min(x) + 0\n", "def f(x):\n    return min(x) + 0 + 0\n"], "essai")
+        self.assertEqual(len(r), 1)
+        self.assertIn("+ 0", r[0]["texte"])
+
+    def test_le_gabarit_ne_cache_jamais_une_panne_de_l_operateur(self):
+        GAB = self._gabarit()
+
+        def casse(c, m):
+            raise KeyError("config")
+        with self.assertRaises(GAB.OperateurEnEchec) as cm:
+            GAB.executer(dict(self.CTX), None, casse, "mon_chercheur")
+        self.assertIn("mon_chercheur", str(cm.exception))
+        self.assertIn("KeyError", str(cm.exception))                                 # le modèle recevra ceci pour corriger son opérateur
+
+    def test_a_l_essai_a_blanc_un_rien_s_explique_et_en_production_il_reste_une_liste_vide(self):
+        GAB = self._gabarit()
+        faux = lambda c, m: ["def f(x):\n    return max(x)\n", "pas de code du tout"]
+        self.assertEqual(GAB.executer(dict(self.CTX), None, faux, "x"), [])                       # une vraie recherche sans résultat n'est pas une panne
+        with self.assertRaises(GAB.OperateurEnEchec) as cm:
+            GAB.executer(dict(self.CTX, controle=True), None, faux, "x")
+        self.assertIn("pas équivalente", str(cm.exception))                                    # le modèle saura POURQUOI
+        self.assertIn("sans code", str(cm.exception))
+
+    def test_le_gabarit_refuse_un_resultat_qui_n_est_pas_une_liste(self):
+        GAB = self._gabarit()
+        with self.assertRaises(GAB.OperateurEnEchec):
+            GAB.executer(dict(self.CTX), None, lambda c, m: 42, "x")
+
+
+class EssaiABlancExigeUneVariante(unittest.TestCase):
+    def _mot(self, rendu):
+        class Faux:
+            class MoteurProcessus:
+                def __init__(s, *a, **k):
+                    pass
+
+                def proposer(s, contexte):
+                    if isinstance(rendu, Exception):
+                        raise rendu
+                    return rendu
+        return Faux
+
+    def test_une_liste_vide_est_un_echec_dit(self):
+        raison = ESSAI_REEL({}, "python", "CN_adaptateur_x", "auto", self._mot([]))
+        self.assertIn("aucune variante", raison)
+
+    def test_une_variante_rendue_passe(self):
+        self.assertEqual(ESSAI_REEL({}, "python", "CN_adaptateur_x", "auto", self._mot([{"texte": "def f(x):\n    return min(x)\n", "hypothese": "h"}])), "")
+
+    def test_un_resultat_qui_n_est_pas_une_liste_est_refuse(self):
+        self.assertIn("pas rendu une liste", ESSAI_REEL({}, "python", "CN_adaptateur_x", "auto", self._mot({"a": 1})))
+
+    def test_une_exception_est_dite(self):
+        self.assertIn("a échoué", ESSAI_REEL({}, "python", "CN_adaptateur_x", "auto", self._mot(RuntimeError("boum"))))
+
+
+class SondeEtAvertissements(unittest.TestCase):
+    def test_la_ligne_de_json_se_lit_meme_entouree_d_avertissements_du_paquet(self):
+        sortie = "[transformers] avant\n" + json.dumps([{"module": "x", "version": "1", "membres": []}]) + "\n[transformers] PyTorch was not found.\n"
+        r = G.sonder("python", ["x"], lambda cmd, delai, cwd: (0, sortie))
+        self.assertEqual(r[0]["module"], "x")
+        self.assertNotIn("erreur", r[0])
+
+    def test_une_sonde_sans_json_dit_ce_qu_elle_a_vu(self):
+        r = G.sonder("python", ["x"], lambda cmd, delai, cwd: (1, "Traceback : boum"))
+        self.assertIn("boum", r[0]["erreur"])
+
+
+def _elf(types_flags):
+    """Un ELF 64 bits minimal : l'en-tête et une table d'en-têtes de programme (type, drapeaux)."""
+    import struct
+    n = len(types_flags)
+    entete = b"\x7fELF" + bytes([2, 1, 1, 0]) + b"\0" * 8 + struct.pack("<HHIQQQIHHHHHH", 3, 62, 1, 0, 64, 0, 0, 64, 56, n, 0, 0, 0)
+    table = b"".join(struct.pack("<IIQQQQQQ", t, fl, 0, 0, 0, 0, 0, 8) for t, fl in types_flags)
+    return entete + table
+
+
+class PileNonExecutable(unittest.TestCase):
+    def _etat(self, types_flags):
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "bin"
+            p.write_bytes(_elf(types_flags))
+            r = I.pile_non_executable(p)
+            return r, p.read_bytes()
+
+    def test_un_binaire_sans_marqueur_en_recoit_un_a_la_place_de_la_note(self):
+        import struct
+        r, octets = self._etat([(1, 5), (4, 4), (1, 6)])
+        self.assertEqual(r, "corrige")
+        t, fl = struct.unpack_from("<II", octets, 64 + 56)
+        self.assertEqual((t, fl), (0x6474E551, 6))                                    # lecture et écriture, jamais d'exécution
+
+    def test_un_marqueur_executable_perd_son_drapeau_d_execution(self):
+        import struct
+        r, octets = self._etat([(1, 5), (0x6474E551, 7)])
+        self.assertEqual(r, "corrige")
+        self.assertEqual(struct.unpack_from("<I", octets, 64 + 56 + 4)[0], 6)
+
+    def test_un_binaire_deja_en_ordre_n_est_pas_touche(self):
+        r, octets = self._etat([(1, 5), (0x6474E551, 6)])
+        self.assertEqual(r, "deja")
+        self.assertEqual(octets, _elf([(1, 5), (0x6474E551, 6)]))
+
+    def test_sans_note_a_remplacer_il_le_dit_et_ne_touche_a_rien(self):
+        r, octets = self._etat([(1, 5), (1, 6)])
+        self.assertEqual(r, "impossible")
+        self.assertEqual(octets, _elf([(1, 5), (1, 6)]))
+
+    def test_un_fichier_qui_n_est_pas_un_elf_est_ignore(self):
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "x.so"
+            p.write_text("pas un binaire", encoding="utf-8")
+            self.assertEqual(I.pile_non_executable(p), "pas_elf")
+
+
+class MoteurRenomme(unittest.TestCase):
+    def test_l_ancienne_fiche_passe_sous_le_nouveau_nom_sans_perdre_son_historique(self):
+        from noyau import CN_moteurs as M
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "moteurs.json"
+            p.write_text(json.dumps({"moteurs": {"evolutif": {"nom": "Évolutif", "genre": "natif", "etat": "actif", "jetons": 100, "essais": 2},
+                                                  "sedal": {"nom": "Sedal", "genre": "natif", "etat": "actif", "jetons": 5, "essais": 1}},
+                                     "cascade": [{"id": "evolutif", "on": True}], "courses": [{"etage": "evolutif", "gain": 3, "libelle": "Évolutif · populations et mutations"}],
+                                     "journal": [{"texte": "ordre orfan, evolutif"}]}), encoding="utf-8")
+            r = M.Registre(p)
+            d = r._lire()
+            self.assertNotIn("evolutif", d["moteurs"])
+            self.assertEqual(d["moteurs"]["sedal"]["jetons"], 105)                  # les compteurs s'additionnent
+            self.assertEqual(d["moteurs"]["sedal"]["nom"], "Sedal")
+            self.assertEqual(d["cascade"][0]["id"], "sedal")
+            self.assertEqual(d["courses"][0]["etage"], "sedal")
+            self.assertEqual(d["courses"][0]["libelle"], "Sedal · populations et mutations")      # le libellé gardé avec un résultat suit
+            self.assertIn("evolutif", d["journal"][0]["texte"])                     # l'histoire dite n'est pas réécrite
+            self.assertNotIn("evolutif", json.loads(p.read_text(encoding="utf-8"))["moteurs"])   # et la migration est écrite
+            self.assertEqual(r._lire()["moteurs"]["sedal"]["jetons"], 105)          # idempotent
 
 
 if __name__ == "__main__":

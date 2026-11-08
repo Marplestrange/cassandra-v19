@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #35c007
+// VERSION CN : 0.2.0  #3a5c74
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=35c007 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=3a5c74 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat, evolution.moteurs ou evolution.cage ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ».
    La vue « Moteurs » (docs/CN_maquette-evolution-moteurs.html) est branchée : moteurs, course, affectations, budget et relais, pièces, juges, installation, cage, journal. */
@@ -75,6 +75,98 @@
     ".ev .tiroir{position:fixed;inset:0;background:rgba(16,24,40,.38);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;overflow:auto;z-index:50}.ev .tiroir.on{display:flex}.ev .tiroir .verre{background:var(--surface-solid,var(--surface));max-width:980px;width:100%;padding:18px;display:flex;flex-direction:column;gap:12px}" +
     ".ev .choix{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.ev .opt{border:1.5px solid var(--e-filet);border-radius:12px;padding:11px;background:transparent;color:inherit;text-align:left;display:flex;flex-direction:column;gap:5px;font:inherit}.ev .opt.on{border-color:var(--accent);background:var(--e-doux)}" +
     ".ev .vues{flex-wrap:wrap}" +
+    ".ev .cp-ligne{display:grid;gap:14px;align-items:stretch}" +
+    ".ev .cp-ligne>*{min-width:0}" +
+    ".ev .cp-ligne.a{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}" +
+    ".ev .cp-ligne.b{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}" +
+    ".ev .cp-ligne.c{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}" +
+    "@media(max-width:1060px){.ev .cp-ligne.a,.ev .cp-ligne.b,.ev .cp-ligne.c{grid-template-columns:1fr}}" +
+    ".ev .cp-bloc{padding:16px 18px;display:flex;flex-direction:column;gap:12px}" +
+    ".ev .cp-tete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}" +
+    ".ev .cp-num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--on-accent);font:700 12px var(--font-sans,system-ui);margin-right:9px}" +
+    ".ev .cp-tete h3{font:600 16px var(--font-sans,system-ui);display:flex;align-items:center}" +
+    ".ev .cp-aide{font-size:12.5px;color:var(--e-encre3);line-height:1.45}" +
+    ".ev .cp-rech{width:100%;font:14px var(--font-sans,system-ui)!important;padding:9px 12px!important;border-radius:11px!important}" +
+    ".ev .cp-fns{display:flex;flex-direction:column;gap:6px}" +
+    ".ev .cp-fn{display:flex;flex-direction:column;gap:3px;align-items:stretch;text-align:left;border:1.5px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:13px;padding:10px 13px;cursor:pointer;font:inherit}" +
+    ".ev .cp-fn:hover{border-color:var(--accent)}" +
+    ".ev .cp-fn.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--e-verre));box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}" +
+    ".ev .cp-fn b{font:600 13px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}" +
+    ".ev .cp-fn small{font-size:12.5px;color:var(--e-encre2)}" +
+    ".ev .cp-fn .d{display:flex;gap:2px 12px;flex-wrap:wrap;align-items:baseline;font-size:11.5px;color:var(--e-encre3)}" +
+    ".ev .cp-fn .d i{font-style:normal;font-weight:700;color:var(--accent)}" +
+    ".ev .cp-tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}" +
+    ".ev .cp-ch{position:relative;display:flex;flex-direction:column;gap:7px;text-align:left;border:1.5px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:14px;padding:12px 14px;cursor:pointer;font:inherit}" +
+    ".ev .cp-ch:hover:not(.off){border-color:var(--accent)}" +
+    ".ev .cp-ch.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--e-verre))}" +
+    ".ev .cp-ch.off{opacity:.55;cursor:not-allowed}" +
+    ".ev .cp-ch .nom{font:600 15px var(--font-sans,system-ui);color:var(--e-encre);display:flex;gap:8px;align-items:center}" +
+    ".ev .cp-ch .coche{margin-left:auto;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-strong);display:grid;place-items:center;font:700 12px ui-monospace,monospace;color:transparent}" +
+    ".ev .cp-ch.on .coche{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}" +
+    ".ev .cp-ch .sous{font-size:12.5px;color:var(--e-encre2)}" +
+    ".ev .cp-ch .tags{display:flex;gap:5px;flex-wrap:wrap}" +
+    ".ev .cp-pre{display:flex;gap:6px;flex-wrap:wrap;align-items:center}" +
+    ".ev .cp-chip{border:1px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:99px;padding:6px 14px;font:600 13px var(--font-sans,system-ui);cursor:pointer}" +
+    ".ev .cp-chip.on{background:var(--accent);color:var(--on-accent);border-color:transparent}" +
+    ".ev .cp-chip small{opacity:.75;font-weight:500;margin-left:5px}" +
+    ".ev .cp-seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}" +
+    ".ev .cp-opt{display:flex;flex-direction:column;gap:3px;text-align:left;border:1.5px solid var(--e-filet);background:var(--e-verre);color:var(--txt);border-radius:13px;padding:10px 13px;cursor:pointer;font:inherit}" +
+    ".ev .cp-opt.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--e-verre))}" +
+    ".ev .cp-opt b{font:600 14px var(--font-sans,system-ui);color:var(--e-encre)}" +
+    ".ev .cp-opt small{font-size:12px;color:var(--e-encre3)}" +
+    ".ev details.cp-fin summary{cursor:pointer;font:600 13.5px var(--font-sans,system-ui);color:var(--e-encre2)}" +
+    ".ev .cp-fin .champs{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}" +
+    ".ev .cp-fin label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--e-encre3)}" +
+    ".ev .cp-resume{padding:16px 18px;display:flex;flex-direction:column;gap:12px;justify-content:space-between}" +
+    ".ev .cp-resume h3{font:600 15px var(--font-sans,system-ui)}" +
+    ".ev .cp-lig{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:6px 0;border-top:1px solid var(--e-filet)}" +
+    ".ev .cp-lig:first-of-type{border-top:0}" +
+    ".ev .cp-lig span:first-child{color:var(--e-encre3)}" +
+    ".ev .cp-lig b{text-align:right;color:var(--e-encre);font-weight:600}" +
+    ".ev .cp-jauge{height:8px;border-radius:99px;background:var(--e-filet);overflow:hidden}" +
+    ".ev .cp-jauge i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}" +
+    ".ev .cp-go{width:100%;padding:12px 14px!important;font-size:14.5px!important;border-radius:12px!important}" +
+    ".ev .cp-direct{display:flex;flex-direction:column;gap:9px}" +
+    ".ev .cp-piste{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:12px;align-items:center;font-size:13.5px}" +
+    ".ev .cp-piste .nm{display:flex;flex-direction:column;line-height:1.25}" +
+    ".ev .cp-piste .nm b{font:600 14px var(--font-sans,system-ui);color:var(--e-encre)}" +
+    ".ev .cp-piste .nm small{font-size:11.5px;color:var(--e-encre3)}" +
+    ".ev .cp-barre{height:12px;border-radius:99px;background:var(--e-filet);overflow:hidden;position:relative}" +
+    ".ev .cp-barre i{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--e-doux);border-right:2px solid var(--accent);transition:width .5s}" +
+    ".ev .cp-barre.ok i{background:color-mix(in srgb,var(--ok,#047857) 22%,transparent);border-color:var(--ok,#047857)}" +
+    ".ev .cp-barre.chauffe i{background:color-mix(in srgb,var(--accent) 22%,transparent);animation:cpvague 1.1s ease-in-out infinite alternate}" +
+    "@keyframes cpvague{from{opacity:.55}to{opacity:1}}" +
+    ".ev .cp-piste .etat{font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre3);white-space:nowrap;min-width:92px;text-align:right}" +
+    ".ev .cp-verdict{border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.5;background:color-mix(in srgb,var(--ok,#047857) 11%,transparent);color:color-mix(in srgb,var(--ok,#047857) 80%,var(--txt-strong,#1d2b2a))}" +
+    ".ev .cp-verdict.rien{background:var(--e-doux);color:var(--e-encre2)}" +
+    ".ev .cp-verdict b{font-weight:700}" +
+    ".ev .cp-rang{display:flex;flex-direction:column;gap:8px}" +
+    ".ev .cp-lg{border:1.5px solid var(--e-filet);background:var(--e-verre);border-radius:14px;padding:11px 14px;display:flex;flex-direction:column;gap:8px;cursor:pointer}" +
+    ".ev .cp-lg:hover{border-color:var(--accent)}" +
+    ".ev .cp-lg.gagne{border-color:var(--ok,#047857);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok,#047857) 13%,transparent)}" +
+    ".ev .cp-lg .haut{display:grid;grid-template-columns:34px minmax(110px,200px) 1fr auto;gap:12px;align-items:center}" +
+    ".ev .cp-lg .rg{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;line-height:1;background:var(--e-doux);font:700 13px/1 ui-monospace,monospace;color:var(--e-encre2);box-sizing:border-box;text-align:center}" +
+    ".ev .cp-lg.gagne .rg{background:var(--ok,#047857);color:#fff}" +
+    ".ev .cp-lg .nm{display:flex;flex-direction:column;line-height:1.25}" +
+    ".ev .cp-lg .nm b{font:600 15px var(--font-sans,system-ui);color:var(--e-encre)}" +
+    ".ev .cp-lg .nm small{font-size:12px;color:var(--e-encre3)}" +
+    ".ev .cp-lg .gain{font:700 18px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre);text-align:right;min-width:78px}" +
+    ".ev .cp-lg .gain.nul{color:var(--e-encre3);font-size:13px;font-weight:600}" +
+    ".ev .cp-lg .bas{display:flex;gap:6px;flex-wrap:wrap;margin-left:46px}" +
+    ".ev .cp-det{margin-left:46px;border-top:1px dashed var(--e-filet);padding-top:9px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;font-size:12.5px;color:var(--e-encre2)}" +
+    ".ev .cp-det b{display:block;font:600 10.5px var(--font-sans,system-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--e-encre3)}" +
+    "@media(max-width:700px){.ev .cp-lg .haut{grid-template-columns:30px 1fr auto}.ev .cp-lg .haut .cp-barre{grid-column:1/-1;order:5}.ev .cp-lg .bas,.ev .cp-det{margin-left:0}.ev .cp-piste{grid-template-columns:1fr auto}.ev .cp-piste .cp-barre{grid-column:1/-1}}" +
+    ".ev .cp-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}" +
+    ".ev .cp-alerte{border:1.5px solid var(--accent);border-radius:13px;padding:12px 14px;font-size:13.5px;display:flex;flex-direction:column;gap:9px;background:color-mix(in srgb,var(--accent) 6%,var(--e-verre))}" +
+    ".ev .cp-ok{border-radius:12px;padding:11px 14px;font-size:13.5px;background:color-mix(in srgb,var(--ok,#047857) 11%,transparent);color:color-mix(in srgb,var(--ok,#047857) 82%,var(--txt-strong,#1d2b2a))}" +
+    ".ev .cp-hist{display:flex;flex-direction:column}" +
+    ".ev .cp-h{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--e-filet);font-size:13px}" +
+    ".ev .cp-h:first-child{border-top:0}" +
+    ".ev .cp-h b{font:600 12.5px ui-monospace,Menlo,Consolas,monospace;color:var(--e-encre)}" +
+    ".ev .cp-h small{display:block;color:var(--e-encre3);font-size:12px}" +
+    ".ev details.cp-sur summary{cursor:pointer;font:600 14px var(--font-sans,system-ui);color:var(--e-encre2)}" +
+    ".ev .cp-sur ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--e-encre2)}" +
+    ".ev .cp-ok.dg{background:color-mix(in srgb,var(--danger,#be123c) 10%,transparent);color:color-mix(in srgb,var(--danger,#be123c) 70%,var(--txt-strong,#1d2b2a))}" +
     ".ev .in-bloc{padding:16px 18px;display:flex;flex-direction:column;gap:12px}" +
     ".ev .in-tete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}" +
     ".ev .in-tete h3{font:600 16px var(--font-sans,system-ui)}" +
@@ -276,24 +368,169 @@
     const fiche = (id) => FICHES[id] || ["Un moteur externe du catalogue.", "catalogue scellé"];
     const mot = (id) => ((M0().d || {}).moteurs || []).find((x) => x.id === id) || {};
     const plafondTexte = (x) => { const p = x.plafond || {}; return (p.jetons_jour ? kj(p.jetons_jour) + " jetons/jour" : "aucun") + (p.essais_jour ? " · " + p.essais_jour + " essais/jour" : ""); };
-    function mCourse() {
-      const m = M0(), d = m.d || {}, c = m.course, der = m.derniere;
-      const etages = (d.cascade || []);
-      const cases = etages.map((e) => '<label class="inter"><input type="checkbox" data-mc="' + esc(e.id) + '" ' + (c.actifs[e.id] ? "checked" : "") + (e.actif ? "" : " disabled") + '><span class="t"><b class="mono" style="font-size:12.5px">' + esc(e.nom) + '</b><span class="note">' + esc(e.cout) + (e.actif ? "" : " · moteur non actif") + "</span></span></label>").join("");
-      let res = "";
-      if (der) {
-        res = '<div class="tw"><table><thead><tr><th>Étage</th><th class="num">Variantes</th><th class="num">Équivalentes</th><th class="num">Meilleur gain</th><th class="num">Tient hors du vu</th><th class="num">Jetons</th><th class="num">Pt / 1k jetons</th><th class="num">Mémoire</th><th class="num">Durée</th></tr></thead><tbody>' +
-          der.resultats.map((r, i) => '<tr><td><b class="mono"><i class="coul" style="background:' + (COUL[r.moteur] || "var(--e-encre3)") + ';margin-right:6px"></i>' + esc(r.nom) + "</b>" + (r.etage === der.vainqueur ? " " + puce("gagne · " + ({ rendement: "rendement", brut: "gain brut", duree: "durée" })[der.critere], "ok") : "") + (r.saute ? " " + puce("sauté : " + r.raison, "al") : "") + '</td><td class="num">' + r.variantes + '</td><td class="num">' + r.equivalentes + '</td><td class="num">' + (r.gain ? "−" + num1(r.gain) + " %" : "—") + '</td><td class="num">' + (r.tient ? "oui" : "non") + '</td><td class="num">' + kj(r.jetons) + '</td><td class="num"><b>' + num1(r.rendement) + '</b></td><td class="num">' + (r.memoire == null ? "—" : (r.memoire > 0 ? "−" : "+") + Math.abs(r.memoire).toFixed(0) + " %") + '</td><td class="num">' + num1(r.duree_s) + " s</td></tr>").join("") + "</tbody></table></div>" +
-          '<div class="tete"><span class="note">Même corpus, même partition réservée, même budget par moteur. Rien n\'est mis en service par une course : adopter est un geste à part, la variante est rejugée d\'abord.</span><div class="lg"><button class="btn" data-ma="garder" data-id="' + der.id + '">Garder pour comparaison</button>' +
-          (der.vainqueur ? '<button class="btn prim" data-ma="adopter" data-course="' + der.id + '" data-etage="' + esc(der.vainqueur) + '">Adopter ' + esc((der.resultats.find((r) => r.etage === der.vainqueur) || {}).nom || "") + " pour ce point</button>" : '<span class="note">Aucune variante prouvée à adopter.</span>') + "</div></div>";
+    // « Les comparer » : une fonction, des chercheurs, un budget, une course suivie en direct, un résultat qui se lit (maquette validée le 05-11)
+    const CP = () => (S.cp = S.cp || { fn: "", q: "", tout: false, taille: "moyen", crit: "gain", mode: "jetons", lim: null, phase: "prepare", tache: null, suit: false, res: null, ouvert: "", confirm: false, msg: null, histoOuvert: false, surOuvert: false });
+    const CP_TAILLES = { petit: [5000, "Petit", "≈ 5 k jetons par chercheur : un premier coup d’œil"], moyen: [20000, "Moyen", "≈ 20 k jetons : le bon compromis"], large: [60000, "Large", "≈ 60 k jetons : on cherche à fond"] };
+    const CP_CRITERES = { gain: ["Le meilleur gain", "le plus de temps gagné", "brut"], econome: ["Le plus économe", "le plus de gain pour le moins de jetons", "rendement"], rapide: ["Le plus rapide à trouver", "celui qui répond le plus vite", "duree"] };
+    const CP_COUT = { gratuit: ["Gratuit : 0 jeton", "ok"], sobre: ["Sobre en jetons", "ok"], gourmand: ["Gourmand en jetons", "fort"] };
+    const CP_NOMS = { "orfan/deterministe": ["Orfan · règles", "des règles sûres, sans modèle"], frugal: ["Frugal", "des règles, puis les idées d’un modèle fort"], "orfan/modele": ["Orfan · modèle", "un modèle guidé par le profil de l’appel"], sedal: ["Sedal", "des générations de variantes qui se croisent"] };
+    const kM = (v) => (v >= 1000000 ? (v / 1000000).toFixed(v % 1000000 ? 1 : 0).replace(".", ",") + " M" : kj(v));
+    const cpNom = (id) => (CP_NOMS[id] || [((((M0().d || {}).cascade || []).find((e) => e.id === id) || {}).nom || id), ""])[0];
+    const cpSous = (id) => { const e = ((M0().d || {}).cascade || []).find((x) => x.id === id) || {}; return (CP_NOMS[id] || [0, ("chercheur externe" + (e.cout ? " · " + String(e.cout).replace(/^moteur externe : ?/, "") : ""))])[1]; };
+    const cpDuree = (s) => (s < 1 ? "< 1 s" : s < 90 ? Math.round(s) + " s" : Math.round(s / 60) + " min");
+    const cpCascade = () => ((M0().d || {}).cascade || []);
+    const cpFonctions = () => (S.etat.cibles || []).filter((c) => !c.muet).sort((a, b) => (b.valeur_ms || 0) - (a.valeur_ms || 0));
+    const cpFn = () => { const c = CP(), l = cpFonctions(); if (!c.fn || !l.some((f) => f.point === c.fn)) c.fn = (l[0] || {}).point || ""; return cible(c.fn); };
+    const cpEssais = (pt) => (S.etat.pieces || []).filter((p) => p.gid === pt).length + ((S.etat.tombes || {})[pt] || 0);
+    const cpSel = () => cpCascade().filter((e) => e.actif && M0().course.actifs[e.id]);
+    const cpLimite = () => { const c = CP(); return c.lim != null ? c.lim : CP_TAILLES[c.taille][0]; };
+    const cpCoutMax = (e) => ({ gratuit: 0, sobre: 0.4, gourmand: 1 })[e.classe || "gourmand"] * cpLimite();
+    function cpEstim() {
+      const c = CP(), l = cpSel();
+      if (c.mode !== "jetons") return { jetons: null, duree: l.reduce((a, e) => a + (e.classe === "gratuit" ? 4 : e.classe === "sobre" ? 40 : 75), 0) };
+      return { jetons: Math.round(l.reduce((a, e) => a + cpCoutMax(e), 0)), duree: l.reduce((a, e) => a + (e.classe === "gratuit" ? 4 : e.classe === "sobre" ? 40 : 75), 0) };
+    }
+
+    function cpEtapeFonction() {
+      const c = CP(), q = c.q.trim().toLowerCase(), tous = cpFonctions().filter((f) => !q || f.point.toLowerCase().indexOf(q) >= 0), vis = (c.tout || q) ? tous : tous.slice(0, 5);
+      const nbMuettes = (S.etat.cibles || []).filter((f) => f.muet).length, f0 = cpFn();
+      const ligne = (f) => { const ess = cpEssais(f.point); return '<button class="cp-fn' + (f.point === f0.point ? " on" : "") + '" data-cp-fn="' + esc(f.point) + '"><b>' + esc(f.point) + '</b><span class="d"><i>≈ ' + gagner(f.valeur_ms) + " à gagner</i><span>" + fmt(f.appels) + " appels · " + dur(f.duree_moyenne_ms) + (ess ? " · essayée " + ess + " fois" : " · jamais essayée") + "</span></span></button>"; };
+      return '<div class="verre cp-bloc"><div class="cp-tete"><h3><span class="cp-num">1</span>Sur quelle fonction ?</h3><span class="cp-aide">Les plus utiles à améliorer d’abord : celles dont les appels font perdre le plus de temps.</span></div>' +
+        '<input class="cp-rech" id="cp-q" type="text" placeholder="Chercher une fonction…" value="' + esc(c.q) + '"><div class="cp-fns">' + (vis.map(ligne).join("") || '<div class="cp-aide">Aucune fonction mesurée ne correspond.</div>') + "</div>" +
+        (!q && tous.length > 5 ? '<div class="cp-actions"><button class="btn" data-cp-tout="' + (c.tout ? "non" : "oui") + '">' + (c.tout ? "Voir moins" : "Voir les " + tous.length + " fonctions mesurées") + "</button></div>" : "") +
+        '<div class="cp-aide">' + nbMuettes + " fonction" + (nbMuettes > 1 ? "s n’ont" : " n’a") + " jamais été appelée" + (nbMuettes > 1 ? "s" : "") + " : on ne peut pas encore " + (nbMuettes > 1 ? "les" : "la") + " comparer.</div></div>";
+    }
+    function cpEtapeChercheurs() {
+      const tuile = (e) => {
+        const on = e.actif && M0().course.actifs[e.id], p = CP_COUT[e.classe] || CP_COUT.gourmand;
+        return '<button class="cp-ch' + (on ? " on" : "") + (e.actif ? "" : " off") + '" data-cp-ch="' + esc(e.id) + '"' + (e.actif ? "" : ' title="Il n’est pas actif : on l’active dans « Les chercheurs »"') + '><span class="nom">' + esc(cpNom(e.id)) + '<span class="coche">✓</span></span><span class="sous">' + esc(cpSous(e.id)) + '</span><span class="tags"><span class="puce ' + p[1] + '">' + p[0] + "</span>" + (e.actif ? "" : '<span class="puce mu">pas actif</span>') + "</span></button>";
+      };
+      const n = cpSel().length;
+      return '<div class="verre cp-bloc"><div class="cp-tete"><h3><span class="cp-num">2</span>Qui court ?</h3><span class="cp-aide">' + n + " chercheur" + (n > 1 ? "s" : "") + " au départ</span></div>" +
+        '<div class="cp-pre"><span class="cp-aide">Raccourcis :</span><button class="cp-chip" data-cp-pre="gratuits">Les gratuits et les sobres</button><button class="cp-chip" data-cp-pre="tous">Tous les actifs</button><button class="cp-chip" data-cp-pre="aucun">Aucun</button></div>' +
+        '<div class="cp-tuiles">' + cpCascade().map(tuile).join("") + '</div><div class="cp-aide">Les chercheurs qui ne sont pas actifs ne peuvent pas courir. <a href="#" data-vers="capot.chercheurs">Les activer dans « Les chercheurs »</a>.</div></div>';
+    }
+    function cpEtapeBudget() {
+      const c = CP();
+      const tailles = Object.keys(CP_TAILLES).map((v) => '<button class="cp-opt' + (c.lim == null && c.taille === v ? " on" : "") + '" data-cp-taille="' + v + '"><b>' + CP_TAILLES[v][1] + "</b><small>" + CP_TAILLES[v][2] + "</small></button>").join("");
+      const crits = Object.keys(CP_CRITERES).map((v) => '<button class="cp-opt' + (c.crit === v ? " on" : "") + '" data-cp-crit="' + v + '"><b>' + CP_CRITERES[v][0] + "</b><small>" + CP_CRITERES[v][1] + "</small></button>").join("");
+      return '<div class="verre cp-bloc"><div class="cp-tete"><h3><span class="cp-num">3</span>Combien, et qu’est-ce qui compte ?</h3></div><div class="cp-aide">Chaque chercheur dépense au plus cette somme de jetons (les gratuits ne dépensent rien).</div><div class="cp-seg">' + tailles + "</div>" +
+        '<div class="cp-aide" style="margin-top:4px">Pour désigner le gagnant, on regarde :</div><div class="cp-seg">' + crits + "</div>" +
+        '<details class="cp-fin"' + (c.lim != null ? " open" : "") + '><summary>Réglages fins (pour ceux qui veulent compter autrement)</summary><div class="champs"><label>Compter le budget en<select data-cp-fin="mode"><option value="jetons"' + (c.mode === "jetons" ? " selected" : "") + '>jetons</option><option value="essais"' + (c.mode === "essais" ? " selected" : "") + '>essais</option><option value="temps"' + (c.mode === "temps" ? " selected" : "") + '>secondes</option></select></label><label>Limite exacte<input type="number" min="1" value="' + cpLimite() + '" data-cp-fin="lim"></label></div></details></div>';
+    }
+    function cpResume() {
+      const c = CP(), d = M0().d || {}, e = cpEstim(), f = cpFn(), l = cpSel(), mois = (d.budget || {}).jetons_mois || 0, depense = d.depense_mois || 0, enCours = c.phase === "course" || M0().occupe;
+      const pct = e.jetons != null && mois ? Math.max(0.1, 100 * e.jetons / mois) : null, pret = l.length >= 2 && f.point && f.appels > 0;
+      return '<div class="verre cp-resume"><h3>Prêt à courir ?</h3><div><div class="cp-lig"><span>Fonction</span><b class="mono" style="font-size:12px">' + esc(f.point || "—") + '</b></div><div class="cp-lig"><span>Chercheurs</span><b>' + l.length + ' au départ</b></div><div class="cp-lig"><span>Budget</span><b>' + (c.lim != null ? fmt(c.lim) + " " + ({ jetons: "jetons", essais: "essais", temps: "s" })[c.mode] : CP_TAILLES[c.taille][1] + " · " + kM(CP_TAILLES[c.taille][0])) + " chacun</b></div>" +
+        '<div class="cp-lig"><span>Jetons dépensés</span><b>' + (e.jetons != null ? "au plus ≈ " + kM(e.jetons) : "selon tes réglages") + '</b></div><div class="cp-lig"><span>Durée</span><b>≈ ' + cpDuree(e.duree) + "</b></div></div>" +
+        (pct != null ? '<div><div class="cp-jauge"><i style="width:' + Math.min(100, pct * 8) + '%"></i></div><div class="cp-aide" style="margin-top:5px">Soit au plus ' + (pct < 1 ? "moins de 1" : pct.toFixed(1).replace(".", ",")) + " % du budget du mois (" + kM(mois) + " jetons, déjà " + kM(depense) + " dépensés).</div></div>" : "") +
+        '<button class="btn prim cp-go" data-cp-go' + (pret && !enCours ? "" : " disabled") + ">" + (enCours ? "Course en cours…" : "Lancer la course") + "</button>" + (pret ? "" : '<div class="cp-aide">' + (l.length < 2 ? "Choisis au moins deux chercheurs pour qu’il y ait une course." : "Cette fonction n’a jamais été appelée : rien à comparer.") + "</div>") +
+        '<div class="cp-aide">Une course ne met rien en service : la variante gagnante n’est adoptée que sur ton geste.</div></div>';
+    }
+    function cpDirect() {
+      const c = CP(), t = c.tache;
+      if (c.phase !== "course" || !t) return "";
+      const faites = t.etapes || [], total = faites.reduce((a, e) => a + (((e.ligne || {}).jetons) || 0), 0);
+      return '<div class="verre cp-bloc"><div class="cp-tete"><h3>La course est lancée</h3><span class="puce al">en cours · ' + kM(total) + " jetons dépensés</span></div><div class=\"cp-direct\">" + (t.plan || []).map((id) => {
+        const f = faites.find((e) => e.nom === id), cherche = !f && t.en_cours === id, l = (f || {}).ligne || {};
+        return '<div class="cp-piste"><span class="nm"><b>' + esc(cpNom(id)) + "</b><small>" + esc(cpSous(id)) + '</small></span><span class="cp-barre ' + (f ? "ok" : cherche ? "chauffe" : "") + '"><i style="width:' + (f ? (l.saute ? 0 : 100) : cherche ? 55 : 0) + '%"></i></span><span class="etat">' + (f ? (l.saute ? "sauté" : "terminé") : cherche ? "cherche…" : "attend son tour") + "</span></div>";
+      }).join("") + '</div><div class="cp-aide">Chaque chercheur cherche à son tour, sur les mêmes cas ; le même juge évalue tout à la fin. Avec un modèle, compte une à deux minutes par chercheur.</div></div>';
+    }
+    const cpBloque = (r) => !r.saute && !r.variantes && !!r.raison;                                      // refusé avant d'avoir cherché (plafond du jour, chercheur muet…) : ce n'est pas « rien trouvé »
+    function cpClasser(res) {
+      const l = (res.resultats || []).map((r) => Object.assign({}, r));
+      const ok = (r) => !r.saute && !cpBloque(r) && r.gain > 0 && r.tient;
+      const score = { gain: (r) => (ok(r) ? r.gain : -1), econome: (r) => (ok(r) ? r.gain / (1 + (r.jetons || 0) / 1000) : -1), rapide: (r) => (ok(r) ? 1000 - r.duree_s : -1) }[CP().crit];
+      l.sort((a, b) => score(b) - score(a) || b.gain - a.gain);
+      return { l: l, gagnant: l.length && ok(l[0]) ? l[0] : null };
+    }
+    function cpResultat() {
+      const c = CP();
+      if (c.phase !== "fini" || !c.res) return "";
+      const { l, gagnant } = cpClasser(c.res), pt = c.res.point, personne = l.length > 0 && l.every((r) => r.saute || cpBloque(r)), hist = ((M0().d || {}).courses || []).find((h) => h.id === c.res.id) || {}, max = Math.max(50, ...l.map((r) => r.gain || 0));
+      const phrase = gagnant ? "<b>" + esc(cpNom(gagnant.etage)) + '</b> gagne : sa variante rend <b>exactement le même résultat</b> et gagne <b>' + String(gagnant.gain).replace(".", ",") + ' % de temps</b> sur <span class="mono">' + esc(pt) + "</span>, " + (gagnant.jetons ? "pour " + kM(gagnant.jetons) + " jetons" : "sans dépenser un seul jeton") + ", confirmée sur des cas jamais montrés au chercheur."
+        : personne ? "<b>Personne n’a pu chercher.</b> " + esc(((l.find((r) => r.saute || cpBloque(r)) || {}).raison) || "Tous les chercheurs ont été sautés.") + " Rien n’a été dépensé : relance la course quand c’est réglé."
+        : "<b>Aucun chercheur n’a trouvé de variante à la fois identique, plus rapide et confirmée.</b> Rien n’est à adopter. Tu peux refaire la course avec un budget plus large ou d’autres chercheurs.";
+      const ligne = (r, i) => {
+        const gagne = gagnant && r.etage === gagnant.etage, bloque = cpBloque(r), nul = r.saute || bloque || !r.gain, ouvert = c.ouvert === r.etage;
+        return '<div class="cp-lg' + (gagne ? " gagne" : "") + '" data-cp-lg="' + esc(r.etage) + '"><div class="haut"><span class="rg">' + (gagne ? "★" : i + 1) + '</span><span class="nm"><b>' + esc(cpNom(r.etage)) + "</b><small>" + esc(cpSous(r.etage)) + '</small></span><span class="cp-barre' + (r.tient && r.gain ? " ok" : "") + '"><i style="width:' + (nul ? 0 : Math.round(100 * r.gain / max)) + '%"></i></span><span class="gain' + (nul ? " nul" : "") + '">' + (r.saute ? "sauté" : bloque ? "pas lancé" : r.gain ? "−" + String(r.gain).replace(".", ",") + " %" : "rien") + "</span></div>" +
+          '<div class="bas">' + (r.saute ? '<span class="puce al">sauté</span>' : bloque ? '<span class="puce al" title="' + esc(r.raison) + '">pas lancé : ' + esc(r.raison.length > 70 ? r.raison.slice(0, 70) + "…" : r.raison) + "</span>" : r.gain ? (r.tient ? '<span class="puce ok">confirmé sur des cas gardés de côté</span>' : '<span class="puce al">à confirmer : pas tenu sur les cas gardés de côté</span>') : '<span class="puce mu">aucune variante sûre</span>') + '<span class="puce">' + (r.jetons ? kM(r.jetons) + " jetons" : "0 jeton") + '</span><span class="puce">' + cpDuree(r.duree_s || 0) + "</span>" + (r.memoire != null && !nul ? '<span class="puce ' + (r.memoire >= 0 ? "ok" : "al") + '">mémoire ' + (r.memoire > 0 ? "−" : "+") + Math.abs(Math.round(r.memoire)) + " %</span>" : "") + "</div>" +
+          (ouvert ? '<div class="cp-det"><span><b>Ce qu’il a trouvé</b>' + (r.saute ? esc(r.raison || "il a été sauté") : r.variantes + " variante" + (r.variantes > 1 ? "s" : "") + " proposée" + (r.variantes > 1 ? "s" : "") + ", dont " + r.equivalentes + " rendant exactement le même résultat" + (r.raison ? " (" + esc(r.raison) + ")" : "")) + "</span><span><b>Ce que ça coûte</b>" + (r.jetons ? fmt(r.jetons) + " jetons" + (((M0().d || {}).budget || {}).jetons_mois ? " (≈ " + (100 * r.jetons / M0().d.budget.jetons_mois).toFixed(2).replace(".", ",") + " % du mois)" : "") : "rien") + "</span><span><b>Pourquoi « confirmé »</b>la variante est aussi essayée sur des cas que le chercheur n’a jamais vus</span></div>" : "") + "</div>";
+      };
+      const m = M0(), ep = !!hist.gardee;
+      const gardeBtn = '<button class="btn" data-cp-garder="' + esc(c.res.id) + '"' + (ep || m.occupe ? " disabled" : "") + ">" + (ep ? "✓ Épinglée" : "Épingler cette course") + "</button>";
+      const act = gagnant ? (c.confirm ? '<div class="cp-alerte"><b>Adopter la variante de ' + esc(cpNom(gagnant.etage)) + " pour " + esc(pt) + " ?</b><span>Elle est d’abord <b>rejugée</b>, puis mise <b>à l’ombre</b> : elle tourne à côté de l’originale, ses résultats sont comparés, et rien n’est servi à personne tant que tu ne l’as pas mise en service.</span><div class=\"cp-actions\"><button class=\"btn prim\" data-cp-adopter-ok=\"" + esc(gagnant.etage) + "\"" + (m.occupe ? " disabled" : "") + ">Oui, l’adopter à l’ombre</button><button class=\"btn\" data-cp-adopter-non>Annuler</button></div></div>"
+        : '<div class="cp-actions"><button class="btn prim" data-cp-adopter>Adopter ' + esc(cpNom(gagnant.etage)) + " pour cette fonction</button>" + gardeBtn + '<button class="btn" data-cp-refaire>Refaire avec un budget plus large</button></div>')
+        : '<div class="cp-actions">' + gardeBtn + '<button class="btn prim" data-cp-refaire>Refaire avec un budget plus large</button></div>';
+      return '<div class="verre cp-bloc" id="cp-res"><div class="cp-tete"><h3>Le résultat</h3><span class="cp-aide">classé par : ' + CP_CRITERES[c.crit][0].toLowerCase() + '</span></div><div class="cp-verdict' + (gagnant ? "" : " rien") + '">' + phrase + '</div><div class="cp-rang">' + l.map(ligne).join("") + "</div>" + act + '<div class="cp-aide">Clique sur une ligne pour voir le détail. Change « Ce qui compte » plus haut pour reclasser sans relancer. Même cas, même juge, même budget pour tous : la comparaison est équitable.</div></div>';
+    }
+    function cpHisto() {
+      const c = CP(), cs = (M0().d || {}).courses || [];
+      const quel = (h) => { const g = (h.resultats || []).find((r) => r.etage === h.vainqueur); return g ? cpNom(g.etage) + " a gagné " + String(g.gain).replace(".", ",") + " %" : "aucun gagnant"; };
+      return '<div class="verre cp-bloc"><details class="cp-sur" data-cp-det="histoOuvert"' + (c.histoOuvert ? " open" : "") + "><summary>Les courses précédentes (" + cs.length + ') <span class="cp-aide">· pour comparer d’une fois sur l’autre</span></summary>' +
+        (cs.length ? '<div class="cp-hist" style="margin-top:8px">' + cs.map((h) => '<div class="cp-h"><span><b>' + esc(h.point) + "</b><small>" + ago(h.ts) + " · " + esc(quel(h)) + '</small></span><button class="btn" data-cp-hgarder="' + h.id + '"' + (h.gardee || M0().occupe ? " disabled" : "") + ">" + (h.gardee ? "✓ Épinglée" : "Épingler") + '</button><button class="btn" data-cp-hrouvrir="' + h.id + '">Rouvrir</button></div>').join("") + "</div>" : '<div class="cp-aide" style="margin-top:8px">Aucune course pour l’instant : la première apparaîtra ici.</div>') + "</details></div>";
+    }
+    function cpSur() {
+      return '<div class="verre cp-bloc"><details class="cp-sur" data-cp-det="surOuvert"' + (CP().surOuvert ? " open" : "") + "><summary>Pourquoi cette comparaison est équitable</summary><ul><li>Tous les chercheurs reçoivent <b>la même fonction, les mêmes cas, le même budget</b>.</li><li>Ils ne voient qu’une partie des cas ; <b>le reste est gardé de côté</b> et ne sert qu’au juge : c’est ce qui permet d’écrire « confirmé ».</li><li>Chacun tourne <b>dans son processus, sans réseau</b> ; ses appels de modèle passent par le relais, qui compte les jetons de la même façon pour tous.</li><li>Un chercheur qui a atteint son <b>plafond du jour</b> est sauté, et on le dit.</li><li>Une course <b>ne met rien en service</b> : adopter est un geste à part, la variante est rejugée d’abord.</li></ul></details></div>";
+    }
+    function comparer() {
+      const c = CP(), m = M0();
+      if (!c.suit && !c.tache && (m.d.taches || []).some((t) => t.nature === "course")) { const a = m.d.taches.find((t) => t.nature === "course"); c.tache = { id: a.id, plan: [], etapes: [], en_cours: "", fini: false }; c.phase = "course"; setTimeout(() => suivreCp(a.id), 0); }       // une course commencée avant un rechargement se retrouve
+      return mMsg() + (c.msg ? '<div class="cp-ok' + (c.msg.ok ? "" : " dg") + '" role="status">' + esc(c.msg.t) + "</div>" : "") + '<div class="cp-ligne a">' + cpEtapeFonction() + cpEtapeChercheurs() + '</div><div class="cp-ligne b">' + cpEtapeBudget() + cpResume() + "</div>" + cpDirect() + cpResultat() + '<div class="cp-ligne c">' + cpHisto() + cpSur() + "</div>";
+    }
+    // la course vit sur le serveur : on la relit toutes les 1,5 s, et on ne redessine que le suivi tant qu'elle court
+    async function suivreCp(id) {
+      const c = CP(); if (c.suit) return; c.suit = true;
+      let echecs = 0, t = null;
+      try {
+        for (let n = 0; n < 2400; n++) {
+          if (!document.body.contains(racine)) return;
+          try { t = await CASS.agir("evolution.moteur_tache", { tache: id }); echecs = 0; } catch (e) { echecs++; }
+          if (t && t.id) { c.tache = t; if (S.vue === "capot.comparer") dessiner(); }
+          if (t && t.fini) break;
+          if (echecs >= 8) { c.msg = { ok: false, t: "Le suivi ne répond plus (la course continue peut-être sur le serveur) : recharge la page pour la retrouver." }; c.phase = "prepare"; break; }
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+      } finally { c.suit = false; }
+      if (t && t.fini) {
+        if (t.ok && t.resultat && t.resultat.course) { c.res = t.resultat.course; M0().derniere = c.res; c.phase = "fini"; c.ouvert = ""; c.confirm = false; c.msg = null; }
+        else { c.phase = "prepare"; c.msg = { ok: false, t: "La course n’a pas abouti : " + (t.erreur || "erreur inconnue") }; }
       }
-      return '<div class="tete"><div><h3 class="mono" style="font-size:15px">Course des moteurs</h3><div class="note">Plusieurs étages sur la même capacité, le même rejeu, le même budget : on garde celui qui rend le plus.</div></div></div>' +
-        '<section class="cgrid"><div class="verre carte"><h2>Préparer</h2><label class="champ"><span class="lib">Point d\'évolution</span><select id="mc-point">' + (d.points || []).map((p) => "<option" + (p === c.point ? " selected" : "") + ">" + esc(p) + "</option>").join("") + '</select></label><div class="liste">' + cases + "</div>" +
-        '<div class="champs"><label class="champ"><span class="lib">Budget par moteur</span><select id="mc-bud">' + ["jetons", "essais", "temps"].map((x) => "<option" + (c.budget === x ? " selected" : "") + ">" + x + "</option>").join("") + '</select></label><label class="champ"><span class="lib">Limite (' + (c.budget === "temps" ? "secondes" : c.budget) + ')</span><input type="number" id="mc-lim" min="1" value="' + c.limite + '"></label><label class="champ"><span class="lib">Classer par</span><select id="mc-crit"><option value="rendement"' + (c.crit === "rendement" ? " selected" : "") + '>rendement (gain par jeton)</option><option value="brut"' + (c.crit === "brut" ? " selected" : "") + '>gain brut</option><option value="duree"' + (c.crit === "duree" ? " selected" : "") + ">durée</option></select></label></div>" +
-        '<div class="tete"><span class="note">Chaque étage cherche à son tour dans son processus, puis le même juge évalue tout. Compte quelques dizaines de secondes par étage.</span><button class="btn prim" data-ma="lancer"' + (m.occupe ? " disabled" : "") + ">" + (m.occupe === "course" ? "En cours…" : "Lancer la course") + "</button></div>" + mMsg() + "</div>" +
-        '<div class="verre carte"><h2>Ce qui est garanti</h2><div class="liste">' + ["Les moteurs ne voient que la partition visible ; le réservé ne sert qu'au juge.", "Chaque moteur tourne dans son processus, sans réseau, avec son délai.", "Ses appels de modèle passent par le relais : les jetons sont comptés de la même façon pour tous.", "Aucune EC n'est écrite : une course ne met rien en service (les variantes fausses laissent leur tombe).", "Le plafond du jour de chaque moteur est tenu : un étage au plafond est sauté, et on le dit."].map((t) => '<div class="preuve"><span class="k">✓</span><div>' + esc(t) + "</div></div>").join("") + "</div></div></section>" +
-        (res ? '<div class="verre carte"><h2>Course · ' + esc(der.point) + "</h2>" + res + "</div>" : "") +
-        '<div class="verre carte"><h2>Courses précédentes</h2>' + ((d.courses || []).length ? '<div class="tw"><table><thead><tr><th>Quand</th><th>Point</th><th>Vainqueur</th><th>Critère</th><th></th></tr></thead><tbody>' + d.courses.map((h) => "<tr><td>" + ago(h.ts) + '</td><td class="mono">' + esc(h.point) + "</td><td>" + (h.vainqueur ? esc(((h.resultats || []).find((r) => r.etage === h.vainqueur) || {}).nom || h.vainqueur) : "—") + "</td><td>" + esc(h.critere) + (h.gardee ? " " + puce("gardée") : "") + '</td><td><button class="btn" data-ma="rouvrir" data-id="' + h.id + '">Rouvrir</button></td></tr>').join("") + "</tbody></table></div>" : '<div class="vide">Aucune course jusqu\'ici.</div>') + "</div>";
+      c.tache = null;
+      await chargerM(); try { S.etat = await CASS.agir("evolution.etat", {}); } catch (e) { /* le cockpit se relira */ }
+      dessiner();
+      const e = racine.querySelector("#cp-res"); if (e && e.scrollIntoView) e.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+    async function lancerCp() {
+      const c = CP(), m = M0(), l = cpSel(), f = cpFn(); if (l.length < 2 || !f.point || c.phase === "course") return;
+      c.msg = null; c.res = null; c.confirm = false; c.ouvert = "";
+      let r;
+      try { r = await CASS.agir("evolution.course_tache", { point: f.point, etages: l.map((e) => e.id), budget: c.mode, limite: cpLimite(), critere: CP_CRITERES[c.crit][2] }); }
+      catch (e) { c.msg = { ok: false, t: e.message || String(e) }; return dessiner(); }
+      c.phase = "course"; c.tache = { id: r.tache, plan: r.plan || l.map((e) => e.id), etapes: [], en_cours: "", fini: false };
+      dessiner(); suivreCp(r.tache);
+      const z = racine.querySelector(".cp-direct"); if (z && z.scrollIntoView) z.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+    function lierCp() {
+      const c = CP(), m = M0(), q = (s) => racine.querySelectorAll(s);
+      const r = racine.querySelector("#cp-q"); if (r) r.addEventListener("input", () => { c.q = r.value; dessiner(); const n = racine.querySelector("#cp-q"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
+      q("[data-cp-fn]").forEach((b) => b.addEventListener("click", () => { c.fn = b.dataset.cpFn; if (c.phase === "fini") { c.phase = "prepare"; c.res = null; } dessiner(); }));
+      q("[data-cp-tout]").forEach((b) => b.addEventListener("click", () => { c.tout = b.dataset.cpTout === "oui"; dessiner(); }));
+      q("[data-cp-ch]").forEach((b) => b.addEventListener("click", () => { const e = cpCascade().find((x) => x.id === b.dataset.cpCh); if (!e || !e.actif) return; m.course.actifs[e.id] = !m.course.actifs[e.id]; dessiner(); }));
+      q("[data-cp-pre]").forEach((b) => b.addEventListener("click", () => { const p = b.dataset.cpPre; cpCascade().forEach((e) => { m.course.actifs[e.id] = !!e.actif && (p === "tous" || (p === "gratuits" && e.classe !== "gourmand")); }); dessiner(); }));
+      q("[data-cp-taille]").forEach((b) => b.addEventListener("click", () => { c.taille = b.dataset.cpTaille; c.lim = null; c.mode = "jetons"; dessiner(); }));
+      q("[data-cp-crit]").forEach((b) => b.addEventListener("click", () => { c.crit = b.dataset.cpCrit; dessiner(); }));
+      q("[data-cp-fin]").forEach((i) => i.addEventListener("change", () => { if (i.dataset.cpFin === "mode") { c.mode = i.value; c.lim = ({ jetons: CP_TAILLES[c.taille][0], essais: 5, temps: 120 })[c.mode]; } else c.lim = Math.max(1, parseInt(i.value, 10) || 1); dessiner(); }));
+      q("[data-cp-go]").forEach((b) => b.addEventListener("click", lancerCp));
+      q("[data-cp-lg]").forEach((b) => b.addEventListener("click", () => { c.ouvert = c.ouvert === b.dataset.cpLg ? "" : b.dataset.cpLg; dessiner(); }));
+      q("[data-cp-adopter]").forEach((b) => b.addEventListener("click", () => { c.confirm = true; dessiner(); }));
+      q("[data-cp-adopter-non]").forEach((b) => b.addEventListener("click", () => { c.confirm = false; dessiner(); }));
+      q("[data-cp-adopter-ok]").forEach((b) => b.addEventListener("click", async () => { const et = b.dataset.cpAdopterOk, id = c.res.id; c.confirm = false; await agirM("course_adopter", { course: id, etage: et }, (x) => (x.ok ? cpNom(et) + " est adopté en ombre (" + (((x.piece || {}).ec) || "EC") + ") : il tourne à côté de l’originale, sans rien servir à personne. Tu le suis dans « Améliorations »." : "Refusée par le juge : " + (x.raison || "aucune variante prouvée") + ".")); }));
+      q("[data-cp-garder]").forEach((b) => b.addEventListener("click", () => agirM("course_garder", { course: parseInt(b.dataset.cpGarder, 10) }, "Course épinglée : elle reste dans l’historique.")));
+      q("[data-cp-hgarder]").forEach((b) => b.addEventListener("click", () => agirM("course_garder", { course: parseInt(b.dataset.cpHgarder, 10) }, "Course épinglée : elle reste dans l’historique.")));
+      q("[data-cp-hrouvrir]").forEach((b) => b.addEventListener("click", () => { const h = ((m.d || {}).courses || []).find((x) => String(x.id) === b.dataset.cpHrouvrir); if (!h) return; c.res = h; m.derniere = h; c.phase = "fini"; c.ouvert = ""; c.confirm = false; if (cpFonctions().some((f) => f.point === h.point)) c.fn = h.point; m.msg = null; c.msg = { ok: true, t: "Course du " + date(h.ts) + " rouverte." }; dessiner(); const e = racine.querySelector("#cp-res"); if (e && e.scrollIntoView) e.scrollIntoView({ block: "start", behavior: "smooth" }); }));
+      q("[data-cp-refaire]").forEach((b) => b.addEventListener("click", () => { c.taille = "large"; c.lim = null; c.mode = "jetons"; c.phase = "prepare"; c.msg = { ok: true, t: "Budget passé à « Large » : relance la course quand tu veux." }; dessiner(); try { window.scrollTo(0, 0); } catch (e) { /* sans effet */ } }));
+      q("details[data-cp-det]").forEach((d) => d.addEventListener("toggle", () => { c[d.dataset.cpDet] = d.open; }));
     }
 
     // 3 · Affectations
@@ -361,6 +598,7 @@
     const INCOURS = { "préparation des paquets": "résolution dans un environnement jetable, une empreinte sha256 par paquet", "paquets épinglés par empreinte": "pip refuse tout paquet dont l’empreinte ne correspond pas", "adaptateur généré": "un modèle écrit le code d’après l’interface réelle du paquet, puis il est éprouvé dans la cage, sans réseau ni clé (compte quelques minutes)", "Python posé": "téléchargement de la version de Python exigée" };
     const coutIn = (c) => ({ sobre: ["Sobre en jetons", "ok"], gourmand: ["Gourmand en jetons", "fort"], inconnu: ["Coût inconnu", "mu"] })[c.cout] || ["Coût inconnu", "mu"];
     const installeIn = (c) => c.statut === "installe";
+    const verIn = (v) => esc(/^[0-9]+[.][0-9]/.test(String(v)) ? "v" + v : v);          // « v0.4.1 », mais « 9897ef16b79e » (un commit) ou « méthode » sans préfixe
     const majDe = (c) => ((IN().maj || {})[c.id]) || null;
     function bloquantsIn(c) {
       const s = srvIn(), r = [];
@@ -392,7 +630,7 @@
       const I = IN(), l = repIn().filter((c) => c.statut === "livre" || installeIn(c)), nbExt = l.filter(installeIn).length;
       const nbMaj = Object.keys(I.maj || {}).filter((k) => I.maj[k].maj).length;
       return '<div class="verre in-bloc"><div class="in-tete"><h3>Mes chercheurs</h3><div class="lg">' + (nbExt ? '<button class="btn" data-in-majdispo' + (I.majOccupe || occupeIn() ? " disabled" : "") + ' title="Regarde, pour chaque chercheur installé, si une version plus récente existe">' + (I.majOccupe ? "Recherche en cours…" : "Chercher des mises à jour") + "</button>" : "") + '<button class="btn" data-vers="capot.chercheurs">Les gérer dans « Les chercheurs »</button></div></div><div class="in-mes">' +
-        l.map((c) => { const m = majDe(c); return '<span class="in-mc"><i>' + esc(c.nom.charAt(0)) + "</i>" + esc(c.nom) + "<small>" + (c.statut === "livre" ? "livré" : "installé" + (c.version ? " · v" + esc(c.version) : "")) + "</small>" + (m && m.maj ? '<span class="puce al">mise à jour</span>' : "") + "</span>"; }).join("") + "</div>" +
+        l.map((c) => { const m = majDe(c); return '<span class="in-mc"><i>' + esc(c.nom.charAt(0)) + "</i>" + esc(c.nom) + "<small>" + (c.statut === "livre" ? "livré" : "installé" + (c.version ? " · " + verIn(c.version) : "")) + "</small>" + (m && m.maj ? '<span class="puce al">mise à jour</span>' : "") + "</span>"; }).join("") + "</div>" +
         (I.maj ? '<div class="note">' + (nbMaj ? nbMaj + " chercheur" + (nbMaj > 1 ? "s ont" : " a") + " une version plus récente : ouvre sa fiche pour le mettre à jour." : "Tous les chercheurs installés sont à la dernière version connue.") + (I.majLe ? " Vérifié " + ago(I.majLe) + "." : "") + "</div>" : "") + "</div>";
     }
     function guideIn() {
@@ -411,7 +649,7 @@
       if (c.statut === "livre") { etat = '<span class="puce">livré avec Cassandra</span>'; bouton = '<button class="btn" data-in-fiche="' + esc(c.id) + '">Voir</button>'; }
       else if (installeIn(c)) {
         const arelire = c.adaptateur_genere && !c.relu;
-        etat = '<span class="puce ok">' + (c.actif ? "installé · actif" : "installé · pas encore actif") + "</span>" + (arelire ? '<span class="puce al">adaptateur à relire</span>' : "") + (m && m.maj ? '<span class="puce al">mise à jour : v' + esc(m.installee) + " → v" + esc(m.disponible) + "</span>" : "");
+        etat = '<span class="puce ok">' + (c.actif ? "installé · actif" : "installé · pas encore actif") + "</span>" + (arelire ? '<span class="puce al">adaptateur à relire</span>' : "") + (m && m.maj ? '<span class="puce al">mise à jour : ' + verIn(m.installee) + " → " + verIn(m.disponible) + "</span>" : "");
         bouton = arelire ? '<button class="btn prim" data-in-relire="' + esc(c.id) + '">Relire l’adaptateur</button>' : (m && m.maj ? '<button class="btn prim" data-in-maj="' + esc(c.id) + '"' + (occupeIn() ? " disabled" : "") + ">Mettre à jour</button>" : '<button class="btn prim" data-in-fiche="' + esc(c.id) + '">Contrôler et activer</button>');
       } else {
         etat = c.prepare ? '<span class="puce al">prêt à installer</span>' : '<span class="puce mu">pas encore préparé</span>';
@@ -438,7 +676,7 @@
       if (c.statut === "livre") actions = '<span class="note">Livré avec Cassandra : on l’active ou le désactive dans « Les chercheurs ».</span>';
       else if (ext) {
         actions = (arelire ? '<button class="btn prim" data-in-relire="' + esc(c.id) + '">Relire l’adaptateur</button>' : "") +
-          (m && m.maj ? '<button class="btn prim" data-in-maj="' + esc(c.id) + '"' + (occupeIn() ? " disabled" : "") + ">Mettre à jour (v" + esc(m.installee) + " → v" + esc(m.disponible) + ")</button>" : '<button class="btn" data-in-majdispo' + (I.majOccupe || occupeIn() ? " disabled" : "") + ">" + (I.majOccupe ? "Recherche en cours…" : "Chercher une mise à jour") + "</button>") +
+          (m && m.maj ? '<button class="btn prim" data-in-maj="' + esc(c.id) + '"' + (occupeIn() ? " disabled" : "") + ">Mettre à jour (" + verIn(m.installee) + " → " + verIn(m.disponible) + ")</button>" : '<button class="btn" data-in-majdispo' + (I.majOccupe || occupeIn() ? " disabled" : "") + ">" + (I.majOccupe ? "Recherche en cours…" : "Chercher une mise à jour") + "</button>") +
           '<button class="btn' + (arelire || (m && m.maj) ? "" : " prim") + '" data-in-controle="' + esc(c.id) + '">Contrôler son intégrité</button>' +
           '<button class="btn" data-vers="capot.chercheurs"' + (arelire ? ' disabled title="Relis d’abord l’adaptateur"' : "") + '>L’activer dans « Les chercheurs »</button>' +
           '<button class="btn dng" data-in-retirer="' + esc(c.id) + '"' + (occupeIn() ? " disabled" : "") + ">Désinstaller</button>";
@@ -591,9 +829,6 @@
       q("[data-mv]").forEach((b) => b.addEventListener("click", () => { m.vue = b.dataset.mv; m.msg = null; dessiner(); }));
       q("[data-mm]").forEach((b) => b.addEventListener("click", () => { m.sel = b.dataset.mm; dessiner(); }));
       q("[data-mo]").forEach((b) => b.addEventListener("click", () => { m.onglet = b.dataset.mo; dessiner(); }));
-      q("[data-mc]").forEach((i) => i.addEventListener("change", () => { m.course.actifs[i.dataset.mc] = i.checked; }));
-      const lirePrepa = () => { m.course.point = (un("#mc-point") || {}).value || m.course.point; m.course.budget = (un("#mc-bud") || {}).value || m.course.budget; m.course.limite = parseInt((un("#mc-lim") || {}).value, 10) || m.course.limite; m.course.crit = (un("#mc-crit") || {}).value || m.course.crit; };
-      ["#mc-point", "#mc-bud", "#mc-lim", "#mc-crit"].forEach((s) => { const e = un(s); if (e) e.addEventListener("change", () => { lirePrepa(); dessiner(); }); });
       const ordre = (casc) => casc.map((e) => ({ id: e.id, on: e.on }));
       q("[data-cas]").forEach((i) => i.addEventListener("change", () => { const o = ordre(m.d.cascade); o.find((e) => e.id === i.dataset.cas).on = i.checked; agirM("cascade_regler", { ordre: o }, "Cascade enregistrée."); }));
       q("[data-mon]").forEach((b) => b.addEventListener("click", () => { const o = ordre(m.d.cascade), i = +b.dataset.mon; [o[i - 1], o[i]] = [o[i], o[i - 1]]; agirM("cascade_regler", { ordre: o }, "Ordre enregistré."); }));
@@ -604,12 +839,6 @@
         const a = b.dataset.ma, id = b.dataset.id;
         if (a === "actualiser") { await chargerM(); S.etat = await CASS.agir("evolution.etat", {}); return dessiner(); }
         if (a === "etat") return agirM("moteur_etat", { moteur: id, etat: b.dataset.v }, "État du moteur enregistré.");
-        if (a === "lancer") { lirePrepa(); const et = Object.keys(m.course.actifs).filter((k) => m.course.actifs[k]);
-          const r = await agirM("course", { point: m.course.point, etages: et, budget: m.course.budget, limite: m.course.limite, critere: m.course.crit }, (x) => "Course terminée : " + (x.vainqueur ? "gagnant " + x.vainqueur : "aucune variante prouvée") + ".");
-          if (r) { const c = (M0().d.courses || []).find((h) => h.id === r.id); m.derniere = Object.assign({}, r, { resultats: r.resultats }); } return dessiner(); }
-        if (a === "rouvrir") { const c = (m.d.courses || []).find((h) => String(h.id) === id); if (c) { m.derniere = c; m.course.point = c.point; } return dessiner(); }
-        if (a === "garder") return agirM("course_garder", { course: parseInt(id, 10) }, "Course gardée.");
-        if (a === "adopter") { if (!confirm("Adopter cette variante ? Elle est rejugée, puis mise en ombre : rien n'est servi à personne.")) return; return agirM("course_adopter", { course: parseInt(b.dataset.course, 10), etage: b.dataset.etage }, (x) => (x.ok ? "Adoptée en ombre : EC" + x.piece.num + "." : "Refusée par le juge : " + (x.raison || "aucune variante prouvée") + ".")); }
         if (a === "budget") return agirM("budget_regler", { jetons_mois: parseInt((un("#mb-mois") || {}).value, 10) || 0, alerte_pct: parseInt((un("#mb-alerte") || {}).value, 10) || 80, gratuits_d_abord: !!(un("#mb-grat") || {}).checked, couper_au_plafond: !!(un("#mb-coupe") || {}).checked }, "Budget enregistré.");
         if (a === "plafonner") { const e = un('[data-plaf="' + id + '"]'); return agirM("moteur_plafonner", { moteur: id, jetons_jour: e && e.value !== "" ? parseInt(e.value, 10) : 0 }, "Plafond posé."); }
         if (a === "retour") { if (!confirm("Retirer la pièce de ce point ? Le trafic revient à la référence.")) return; return agirM("retour", { point: id, raison: "retour demandé depuis l'écran des moteurs" }, "Pièce retirée."); }
@@ -826,12 +1055,12 @@
     // ═══ LA NAVIGATION : le menu de gauche porte les pages (Aujourd'hui, Améliorations et ses états, Réglages, Consignes, Sous le capot et ses pages) ═══
     const TITRES = { aujourdhui: "Aujourd’hui", amelio: "Les améliorations", reglages: "Réglages", consignes: "Consignes et seuils", capot: "Sous le capot" };
     const SOUS_TITRES = { aujourdhui: "Ce que Cassandra améliore, ce qui mérite ton regard, et de quoi lui demander mieux.", amelio: "Ce qui a été essayé, ce qui sert, ce qui a été retiré.", reglages: "Qui cherche, dans quel ordre, et pour combien.", consignes: "Les consignes d’agent et les seuils qu’elle peut améliorer, et comment on les juge.",
-      "capot.chercheurs": "Les moteurs qui cherchent des améliorations.", "capot.points": "Les fonctions de Cassandra qu’elle peut rendre plus rapides, et ce qu’on a déjà essayé dessus.", "capot.comparer": "Faire courir les chercheurs les uns contre les autres.", "capot.install": "Choisis un chercheur : Cassandra le prépare, l’installe, le vérifie et le tient à jour, sans que tu touches à un terminal.", "capot.securite": "La cage, les preuves et ce qui protège.", "capot.carnet": "Tout ce qui s’est passé, chaîné et scellé.", "capot.ecartees": "Les versions retirées, et ce qu’il en reste.", "capot.vision": "Ce qui existe, et ce qui n’est pas encore construit.", "capot.vocab": "Les mots employés dans cet écran." };
+      "capot.chercheurs": "Les moteurs qui cherchent des améliorations.", "capot.points": "Les fonctions de Cassandra qu’elle peut rendre plus rapides, et ce qu’on a déjà essayé dessus.", "capot.comparer": "Faire courir les chercheurs sur une même fonction, et savoir lequel trouve le mieux, pour quel prix.", "capot.install": "Choisis un chercheur : Cassandra le prépare, l’installe, le vérifie et le tient à jour, sans que tu touches à un terminal.", "capot.securite": "La cage, les preuves et ce qui protège.", "capot.carnet": "Tout ce qui s’est passé, chaîné et scellé.", "capot.ecartees": "Les versions retirées, et ce qu’il en reste.", "capot.vision": "Ce qui existe, et ce qui n’est pas encore construit.", "capot.vocab": "Les mots employés dans cet écran." };
     const TCAPOT = { "capot.chercheurs": "Les chercheurs", "capot.points": "Les fonctions", "capot.comparer": "Les comparer", "capot.install": "Installer un chercheur", "capot.securite": "Filet de sécurité", "capot.carnet": "Carnet", "capot.ecartees": "Versions écartées", "capot.vision": "Ce qui est prévu", "capot.vocab": "Vocabulaire" };
     Object.keys(TCAPOT).forEach((k) => { TITRES[k] = TCAPOT[k]; });
     ["amelio.toutes", "amelio.essai", "amelio.service", "amelio.retiree"].forEach((k) => { TITRES[k] = TITRES.amelio; SOUS_TITRES[k] = SOUS_TITRES.amelio; });
     const norme = (v) => (v === "capot" ? "capot.chercheurs" : v === "amelio" ? "amelio.toutes" : (TITRES[v] ? v : "aujourdhui"));
-    const MVUE = { aujourdhui: [], reglages: ["budget"], consignes: ["juges"], "capot.chercheurs": [], "capot.points": [], "capot.comparer": ["course"], "capot.install": [], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
+    const MVUE = { aujourdhui: [], reglages: ["budget"], consignes: ["juges"], "capot.chercheurs": [], "capot.points": [], "capot.comparer": [], "capot.install": [], "capot.securite": ["cage"], "capot.carnet": ["journal"] };
     const avecMoteurs = () => !!MVUE[S.vue];
     function suivre() { try { if (typeof window.evSuivre === "function") window.evSuivre(S.vue); } catch (e) { /* le menu se remettra à jour au prochain geste */ } }
     async function aller(vue) {
@@ -1178,6 +1407,7 @@
       if (v.indexOf("amelio") === 0) return amelio();
       if (v === "capot.points") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return fonctions(); }
       if (v === "capot.chercheurs") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return mp.d ? chercheurs() : (mp.msg ? mMsg() : '<div class="verdict mu">Chargement…</div>'); }
+      if (v === "capot.comparer") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return mp.d ? comparer() : (mp.msg ? mMsg() : '<div class="verdict mu">Chargement…</div>'); }
       if (v === "capot.install") { const mp = M0(); if (!mp.d && !mp.charge) { mp.charge = true; chargerM().then(() => { mp.charge = false; dessiner(); }); } return mp.d ? installer() : (mp.msg ? mMsg() : '<div class="verdict mu">Chargement…</div>'); }
       if (v === "capot.vocab") return vocab();
       if (v === "capot.ecartees") return ecartees();
@@ -1189,7 +1419,7 @@
       }
       const vs = MVUE[v] || ["moteurs"];
       if (v === "consignes") return consignes() + mMsg();
-      return vs.map((k) => { m.vue = k; return { course: mCourse, budget: mBudget, juges: mJuges, cage: mCage, journal: mJournal }[k](); }).join("") + mMsg();
+      return vs.map((k) => { m.vue = k; return { budget: mBudget, juges: mJuges, cage: mCage, journal: mJournal }[k](); }).join("") + mMsg();
     }
 
     function dessiner() {
@@ -1207,6 +1437,7 @@
       if (avecMoteurs()) lierMoteurs();
       if (S.vue === "capot.chercheurs" && M0().d) lierChercheurs();
       if (S.vue === "capot.install" && M0().d) lierIn();
+      if (S.vue === "capot.comparer" && M0().d) lierCp();
       const vq = racine.querySelector("#ev-vq"); if (vq) vq.addEventListener("input", () => { S.vq = vq.value; dessiner(); const n = racine.querySelector("#ev-vq"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
       const fq = racine.querySelector("#ev-fq"); if (fq) fq.addEventListener("input", () => { S.fq = fq.value; dessiner(); const n = racine.querySelector("#ev-fq"); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
       racine.querySelectorAll("[data-tous]").forEach((b) => b.addEventListener("click", () => { S.tous = true; dessiner(); }));

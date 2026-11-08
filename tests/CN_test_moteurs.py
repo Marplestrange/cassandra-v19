@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3a8137
+# VERSION CN : 0.1.0  #2a2a63
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 1 de la maquette d'Évolution : le moteur dans son processus, le relais de modèles plafonné, le registre et l'attribution des pièces.
 # MÉTHODE    : un vrai processus de moteur (aucune doublure du protocole) ; le modèle est une fonction de banc ; le module Évolution est branché dans un vrai noyau comme au banc du module.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3a8137 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2a2a63 ▼▼▼
 """Bancs des moteurs de recherche : le protocole de processus, le relais, le registre."""
 import json
 import sys
@@ -435,6 +435,54 @@ class InstallationDepuisLEcran(TM.Banc):
     def test_desactiver_un_adaptateur_genere_non_relu_reste_permis(self):
         self.registre().declarer("banc-gen", "Banc généré", genre="externe", etat="actif", adaptateur_genere={"empreinte": "e" * 64, "relu": False})
         self.assertEqual(self.ex("moteur_etat", {"moteur": "banc-gen", "etat": "installe"})["statut"], "faite")
+
+
+class CourseEnFond(TM.Banc):
+    """« Les comparer » depuis l'écran : une course lancée en fond, suivie chercheur par chercheur, rendue dans l'historique."""
+
+    def attendre(self, num, delai=90):
+        import time
+        fin = time.time() + delai
+        while time.time() < fin:
+            t = self.ex("moteur_tache", {"tache": num})["resultat"]
+            if t["fini"]:
+                return t
+            time.sleep(0.3)
+        self.fail("la course ne se termine pas")
+
+    def test_une_course_se_suit_chercheur_par_chercheur_et_entre_dans_l_historique(self):
+        r = self.ex("course_tache", {"point": "labo.somme_min", "etages": ["orfan/deterministe", "frugal"], "budget": "essais", "limite": 3})
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual(r["resultat"]["plan"], ["orfan/deterministe", "frugal"])
+        t = self.attendre(r["resultat"]["tache"])
+        self.assertTrue(t["ok"], t)
+        self.assertEqual([e["nom"] for e in t["etapes"]], ["orfan/deterministe", "frugal"])                   # un pas par chercheur, dans l'ordre
+        self.assertTrue(all("ligne" in e and "jetons" in e["ligne"] for e in t["etapes"]))                     # avec ce que chacun a rendu
+        c = t["resultat"]["course"]
+        self.assertEqual({x["etage"] for x in c["resultats"]}, {"orfan/deterministe", "frugal"})
+        self.assertIn(c["id"], [x["id"] for x in self.ex("moteurs")["resultat"]["courses"]])
+
+    def test_le_plafond_du_jour_de_l_admin_vaut_aussi_pour_la_course(self):
+        self.n.reglages.poser("evolution.propositions_par_jour", 1, par="essai")
+        args = {"point": "labo.somme_min", "etages": ["orfan/deterministe", "frugal"], "budget": "essais", "limite": 3}
+        self.attendre(self.ex("course_tache", args)["resultat"]["tache"])                       # la première course consomme la seule proposition permise
+        t = self.attendre(self.ex("course_tache", args)["resultat"]["tache"])
+        raisons = " ".join(str(x["raison"]) for x in t["resultat"]["course"]["resultats"])
+        self.assertIn("plafond de 1 proposition", raisons)                                       # le réglage de l'admin (1), pas la valeur du fichier (20)
+
+    def test_une_course_a_au_moins_deux_chercheurs_connus_et_sans_doublon(self):
+        for etages in (["orfan/deterministe"], ["orfan/deterministe", "n-existe-pas"], ["frugal", "frugal"]):
+            r = self.ex("course_tache", {"point": "labo.somme_min", "etages": etages})
+            self.assertNotEqual(r["statut"], "faite", etages)
+
+    def test_un_compte_ordinaire_ne_lance_pas_de_course(self):
+        self.assertEqual(self.ex("course_tache", {"point": "labo.somme_min", "etages": ["orfan/deterministe", "frugal"]}, compte=TM.SIMPLE)["statut"], "refuse")
+
+    def test_chaque_chercheur_a_une_classe_de_cout_en_un_mot(self):
+        classes = {e["id"]: e["classe"] for e in self.ex("moteurs")["resultat"]["cascade"]}
+        self.assertEqual(classes["orfan/deterministe"], "gratuit")
+        self.assertEqual(classes["frugal"], "sobre")
+        self.assertEqual((classes["orfan/modele"], classes["sedal"]), ("gourmand", "gourmand"))
 
 
 if __name__ == "__main__":
