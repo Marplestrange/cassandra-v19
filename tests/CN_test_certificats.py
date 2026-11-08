@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #592eaa
+# VERSION CN : 0.1.0  #511d76
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=592eaa ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=511d76 ▼▼▼
 """Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau."""
 import importlib.util
 import shutil
