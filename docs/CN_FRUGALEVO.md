@@ -94,3 +94,8 @@ Une seule fois, avant la recherche, le modèle fort lit le texte du problème, l
 - La qualité dépend des modèles liés aux rôles « strategie » et « executant » ; un modèle fort qui n'écrit pas les balises attendues donne zéro idée (Frugal se rabat alors sur un texte brut unique).
 - Nous n'avons pas reproduit les chiffres de leur article ; aucune affirmation de gain de coût n'est faite ici.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

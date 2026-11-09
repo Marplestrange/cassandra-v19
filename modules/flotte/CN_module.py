@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.3  #4fee5c
+# VERSION CN : 0.1.4  #cdae4a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=4fee5c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=cdae4a ▼▼▼
 """La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 
 Porté de la V18 (`flotte_*`, `fleet_*`, `ms_*`), avec ses leçons :
@@ -47,6 +47,7 @@ def brancher(ctx):
     db = ctx.stockage
     acces = o.Acces()
     ctx.acces = acces
+    acces.lecteur = lambda: ctx.executer_lecture("tailscale.etat")      # le module Tailscale lit l'état une fois pour tous (son cache) ; s'il ne répond pas, Flotte lit elle-même
     ctx.hote_nom = None
 
     def hote():

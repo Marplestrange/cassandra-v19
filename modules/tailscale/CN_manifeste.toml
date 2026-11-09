@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.3.0  #1f13d5
+# VERSION CN : 0.4.0  #2d634d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale.
 # MÉTHODE    : le client `tailscale` local, par son socket ; l'installateur donne à l'utilisateur de Cassandra le droit de le piloter (--operator), jamais de root.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=1f13d5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=2d634d ▼▼▼
 [module]
 id = "tailscale"
 nom = "Tailscale"
-version = "0.3.0"
+version = "0.4.0"
 noyau_min = "0.1.0"
 description = "Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale."
 confiance = "interne"
@@ -137,6 +137,36 @@ perimetre = ["un geste noté au journal de ce module, une seule fois", "le même
 preuve = "le geste est marqué défait au journal"
 retour = "refaire le geste"
 
+[[capacites]]
+id = "reseau"
+libelle = "La santé du réseau de cette machine : UDP, IPv4, IPv6, le relais Tailscale (DERP) préféré et la latence vers les plus proches (netcheck, quelques secondes)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "services"
+libelle = "Les services que cette machine publie dans le réseau Tailscale (tailscale serve), et ceux que Funnel expose à Internet"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "serve_regler"
+libelle = "Publier un service LOCAL de cette machine dans le réseau Tailscale, en HTTPS (443, 8443 ou 10000) : visible des seules machines du réseau. Jamais Internet (Funnel), jamais une autre machine que celle-ci"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["un port local de cette machine (127.0.0.1) vers le réseau Tailscale seulement", "`tailscale serve --bg` : ni Funnel, ni cible distante, ni fichier"]
+preuve = "relire `tailscale serve status` : le service est publié sur ce port et ce chemin"
+retour = "retirer le service (possible seulement s'il n'y en avait aucun avant)"
+
+[[capacites]]
+id = "serve_retirer"
+libelle = "Retirer tous les services publiés par Tailscale Serve, et ce que Funnel exposait à Internet"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["la configuration Tailscale Serve de cette machine"]
+preuve = "relire `tailscale serve status` : plus rien de publié"
+retour = "republier les services un à un (la configuration d'avant est notée au journal, pas rétablie seule)"
+
 [[ecrans]]
 id = "vue_tailscale"
 libelle = "Tailscale"
@@ -154,6 +184,11 @@ ordre = 20
 role = "admin"
 icone = "globe"
 # ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : le manifeste ci-dessus (capacités, droits, réglages, écran, menu) est du nexus
+# EC : les points d'évolution déclarés plus bas (erreur, resume)
+# LIEN : points/EC_erreur.py, points/EC_resume.py, contrats/ (contrat et corpus doré de chaque point)
 
 [[points_evolution]]
 id = "erreur"

@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.3.0  #2a3a4a
+# VERSION CN : 0.4.0  #2a3a4a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Pose le client Tailscale s'il manque, le démarre, et donne à l'utilisateur de Cassandra le droit de le piloter (--operator) pour que l'interface connecte la machine sans root.
 # MÉTHODE    : l'installateur officiel de Tailscale ; `tailscale set --operator` ne touche ni la connexion ni les réglages réseau.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=2a3a4a ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=2a3a4a ▼▼▼
 set -eu
 set -o pipefail                  # sans cela, un curl en échec donne un script vide à `sh` et l'installation « réussit » sans rien poser
 U="${CASSANDRA_UTILISATEUR:-cassandra}"

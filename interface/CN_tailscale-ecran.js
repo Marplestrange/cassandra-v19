@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #154d25
+// VERSION CN : 0.1.0  #b653aa
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=154d25 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=b653aa ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -69,12 +69,13 @@
     const st = document.createElement("style"); st.id = "ts-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "ts"; corps.appendChild(racine);
 
-    const S = { e: null, occupe: false, erreur: "", quitter: false, couper: false, nom: "", ssh: false, ping: {}, q: "", filtre: "tous", j: null, lu: 0 };
+    const S = { e: null, occupe: false, erreur: "", quitter: false, couper: false, nom: "", ssh: false, ping: {}, q: "", filtre: "tous", j: null, lu: 0, net: null, srv: null };
     let minuterie = null;
 
     async function charger(silencieux) {
       try { S.e = await agir("tailscale.etat"); S.erreur = ""; S.lu = Date.now(); } catch (e) { S.erreur = e.message || String(e); }
       try { S.j = (await agir("tailscale.journal", { limite: 10 })).gestes; } catch (_) { /* le journal est un plus : l’écran marche sans */ }
+      try { S.srv = (await agir("tailscale.services")).services; } catch (_) { S.srv = null; }
       if (!silencieux || document.body.contains(racine)) dessiner();
       armer();
     }
@@ -211,6 +212,37 @@
         '<div class="acts"><button class="btn" data-a="regler-nom"' + dis + '>Renommer</button><button class="btn" data-a="regler-routes"' + dis + '>Annoncer ces routes</button><button class="btn" data-a="regler-sortie"' + dis + ">Appliquer la sortie</button></div></div>";
     }
 
+    function carteSanteReseau(e) {
+      const n = S.net;
+      const pastille = (ok, titre) => '<span class="pastille ' + (ok ? "ok" : "al") + '">' + titre + "</span> ";
+      let h = '<div class="carte"><div class="acts" style="justify-content:space-between"><h2 style="font:650 16px Inter,system-ui,sans-serif">Santé du réseau</h2>' +
+        '<button class="btn" data-a="netcheck"' + (S.occupe || n === "…" ? " disabled" : "") + ">" + (n === "…" ? "Mesure en cours…" : "Tester le réseau") + "</button></div>";
+      if (e.relais_maison) h += '<p class="note">Relais Tailscale (DERP) de cette machine : <span class="mono">' + esc(e.relais_maison) + "</span></p>";
+      if (n && n !== "…") {
+        h += "<div>" + pastille(n.udp, "UDP " + (n.udp ? "ok" : "bloqué")) + pastille(n.ipv4, "IPv4") + pastille(n.ipv6, "IPv6 " + (n.ipv6 ? "ok" : "absent")) + pastille(!n.nat_varie, n.nat_varie ? "NAT variable (connexions directes plus difficiles)" : "NAT stable") +
+          (n.portail_captif ? pastille(false, "portail captif") : "") + "</div>";
+        if (n.relais_prefere) h += '<p class="note">Relais préféré : <b>' + esc(n.relais_prefere.nom || n.relais_prefere.code || n.relais_prefere.id) + "</b> (" + n.relais_prefere.ms + " ms). Les plus proches : " +
+          n.regions.map((r) => esc(r.code || r.id) + " " + r.ms + " ms").join(" · ") + ". Mesuré à " + esc(n.mesure) + ".</p>";
+      } else if (!n) h += '<p class="note">Un test de quelques secondes : UDP, IPv6 et la latence vers les relais Tailscale les plus proches.</p>';
+      return h + "</div>";
+    }
+
+    function carteServices(e) {
+      const l = S.srv;
+      if (l === null) return "";
+      const bloque = S.occupe || e.pilotable === false;
+      let h = '<div class="carte"><h2 style="font:650 16px Inter,system-ui,sans-serif">Services publiés dans le réseau</h2>';
+      h += l.length ? '<div class="pairs">' + l.map((x) => '<div class="pair" style="grid-template-columns:minmax(120px,1fr) minmax(120px,1fr) auto"><span class="mono">https://' + esc(x.hote) + esc(x.chemin) + "</span><span class=\"mono note\">→ " + esc(x.cible) + "</span>" +
+        (x.public ? '<span class="pastille dg">public sur Internet</span>' : '<span class="pastille mu">réseau Tailscale</span>') + "</div>").join("") + "</div>"
+        : '<p class="note">Rien n’est publié. Publier un service local le rend joignable, en HTTPS, par les seules machines de ton réseau (jamais Internet).</p>';
+      h += '<div class="champs"><label class="ch"><b>Service local</b><span class="note">Un port de cette machine : 3000, ou 127.0.0.1:3000.</span><input type="text" id="ts-s-cible" placeholder="3000"></label>' +
+        '<label class="ch"><b>Port HTTPS</b><span class="note">Où le réseau le voit.</span><select id="ts-s-port"><option>443</option><option>8443</option><option>10000</option></select></label>' +
+        '<label class="ch"><b>Chemin</b><span class="note">Facultatif : /app.</span><input type="text" id="ts-s-chemin" placeholder="/"></label></div>' +
+        '<div class="acts"><button class="btn" data-a="serve-oui"' + (bloque ? " disabled" : "") + '>Publier dans le réseau</button>' +
+        (l.length ? '<button class="btn dng" data-a="serve-reset"' + (bloque ? " disabled" : "") + ">Tout retirer</button>" : "") + "</div></div>";
+      return h;
+    }
+
     function carteGestes(e) {
       const ssh = e.ssh === true;
       const refus = e.pilotable === false;      // Cassandra n'est pas l'opérateur du client : tout geste serait refusé, on le dit au lieu de proposer des boutons qui échouent
@@ -229,8 +261,8 @@
     function dessiner() {
       const e = S.e;
       let h = '<div class="tete"><h1>Tailscale</h1><p class="sous">Le réseau privé de cette machine : la joindre de n’importe où sans ouvrir un seul port, et joindre tes autres machines.</p><div class="acts" style="margin-top:8px"><button class="btn" data-a="relire">Relire</button><span class="note">' + (S.lu ? "Relu à " + new Date(S.lu).toLocaleTimeString() : "") + "</span></div></div>";
-      if (S.erreur) h += '<div class="carte" style="color:var(--danger)">' + esc(S.erreur) + "</div>";
-      if (!e) { racine.innerHTML = h + '<div class="attente">Lecture de l’état de Tailscale…</div>'; return; }
+      if (S.erreur) h += '<div class="carte" role="alert" style="color:var(--danger)">' + esc(S.erreur) + '<div class="acts"><button class="btn" data-a="relire">Réessayer</button></div></div>';
+      if (!e) { racine.innerHTML = h + '<div class="attente" role="status" aria-live="polite">Lecture de l’état de Tailscale…</div>'; return; }
       if (e.etat === "absent" || e.etat === "arrete") {
         h += '<div class="carte"><div>' + pastille(e) + '</div><p>' + esc(e.texte || "") + "</p>" +
           (e.etat === "absent" ? '<p class="note">Sur la machine : <span class="mono">CN_install.sh --module tailscale</span> installe le client et donne à Cassandra le droit de le piloter.</p>'
@@ -240,10 +272,10 @@
       h += '<div class="carte"><div class="hero"><div><span class="lib">État</span>' + pastille(e) + (e.sante && e.sante.length ? e.sante.slice(0, 3).map(sante).join("") : "") + "</div>" +
         (e.etat === "connecte" ? '<div><span class="lib">Cette machine</span><span class="gros">' + esc(e.nom || "—") + '</span><span class="note mono">' + esc(e.dns) + ' <button class="btn" data-a="copier" data-t="' + esc(e.dns) + '" style="padding:1px 6px;font-size:10.5px">Copier</button></span></div>' +
           '<div><span class="lib">Adresse</span><span class="gros">' + esc(e.ip4 || "—") + '</span><span class="note mono">' + esc(e.ip6) + ' <button class="btn" data-a="copier" data-t="' + esc(e.ip4) + '" style="padding:1px 6px;font-size:10.5px">Copier l’adresse</button></span></div>' +
-          '<div><span class="lib">Réseau</span><span class="gros" style="font-size:16px">' + esc(e.reseau || "—") + '</span><span class="note">client ' + esc(e.version) + "</span></div>" : "") + "</div></div>";
+          '<div><span class="lib">Réseau</span><span class="gros" style="font-size:16px">' + esc(e.reseau || "—") + '</span><span class="note">client ' + esc(e.version) + (e.mise_a_jour ? " · mise à jour disponible : " + esc(e.mise_a_jour) : "") + "</span></div>" : "") + "</div></div>";
       if (e.en_attente) h += e.lien ? carteLien(e) : '<div class="carte attente">Tailscale prépare le lien de connexion…</div>';
       else if (e.etat === "a_approuver") h += '<div class="carte"><p>La machine est identifiée mais l’administrateur de ton réseau Tailscale doit l’approuver (login.tailscale.com › Machines).</p></div>';
-      else if (e.etat === "connecte") h += avisExpiration(e) + carteReseau(e) + carteGestes(e) + carteReglages(e);
+      else if (e.etat === "connecte") h += avisExpiration(e) + carteReseau(e) + carteSanteReseau(e) + carteGestes(e) + carteReglages(e) + carteServices(e);
       else h += carteConnexion(e);
       h += carteJournal(e);
       racine.innerHTML = h; lier();
@@ -263,6 +295,23 @@
       const a = b.dataset.a;
       if (a === "relire") return charger();
       if (a === "copier") return copier(b.dataset.t);
+      if (a === "netcheck") {
+        S.net = "…"; dessiner();
+        try { S.net = await agir("tailscale.reseau", { force: true }); } catch (err) { S.net = null; S.erreur = err.message || String(err); }
+        dessiner(); return;
+      }
+      if (a === "serve-oui") {
+        const cible = String((racine.querySelector("#ts-s-cible") || {}).value || "").trim();
+        const port = parseInt((racine.querySelector("#ts-s-port") || {}).value || "443", 10);
+        const chemin = String((racine.querySelector("#ts-s-chemin") || {}).value || "").trim();
+        if (!cible) { dire("Indique le port local à publier (3000)", "err"); return; }
+        if (!confirm("Publier " + cible + " dans ton réseau Tailscale (HTTPS " + port + ") ? Toutes les machines de ton réseau pourront l’ouvrir ; Internet non.")) return;
+        return faire(() => agir("tailscale.serve_regler", { port: port, cible: cible, chemin: chemin || "/" }), "Service publié dans le réseau.");
+      }
+      if (a === "serve-reset") {
+        if (!confirm("Retirer tous les services publiés par Tailscale Serve (et ce que Funnel exposait à Internet) ? Leurs adresses cesseront de répondre.")) return;
+        return faire(() => agir("tailscale.serve_retirer"), "Services retirés.");
+      }
       if (a === "defaire-geste") return faire(() => agir("tailscale.defaire_geste", { id: parseInt(b.dataset.id, 10) }), "Geste défait.");
       if (a === "quitter") { S.quitter = true; dessiner(); return; }
       if (a === "quitter-non") { S.quitter = false; dessiner(); return; }

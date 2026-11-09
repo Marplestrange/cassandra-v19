@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #675f22
+# VERSION CN : 0.1.0  #4d13a7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module tailscale : le client est simulé (un faux `tailscale` qui répond comme le vrai), le reste tourne dans un vrai noyau.
 # MÉTHODE    : on remplace `_lancer` du module ; on vérifie les états, le lien d'identification, la clé qui ne traîne nulle part, et les refus dits en clair.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=675f22 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4d13a7 ▼▼▼
 """Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."""
 import json
 import shutil
@@ -67,6 +67,9 @@ class Monde(unittest.TestCase):
         self.g["_lancer"] = self.faux_client
         self.g["_TTL"] = 0                                          # pas de cache : les bancs changent l'état du faux client entre deux lectures
         self.pong = ""
+        self.netcheck = {"UDP": True, "IPv4": True, "IPv6": False, "MappingVariesByDestIP": False, "PreferredDERP": 28, "RegionLatency": {"28": 6363935, "14": 33737425, "1": 103629646}}
+        self.derp = {"Regions": {"28": {"RegionCode": "hel", "RegionName": "Helsinki"}, "14": {"RegionCode": "fra", "RegionName": "Frankfurt"}, "1": {"RegionCode": "nyc", "RegionName": "New York City"}}}
+        self.serve = {}
         self.g["utilisateur"] = lambda: "cassandra"          # le compte qui pilote : fixé, le banc ne dépend pas de celui qui le lance
         self.apres_cle = CONNECTE
         self.g["_PROC"] = str(base / "pas-de-proc")            # le banc ne regarde pas les vrais processus de la machine
@@ -81,6 +84,23 @@ class Monde(unittest.TestCase):
             return 0, self.bruit_avant + json.dumps(self.etat) + self.bruit_apres
         if args[:2] == ["debug", "prefs"]:
             return 0, json.dumps(self.prefs)
+        if args[:2] == ["debug", "derp-map"]:
+            return 0, json.dumps(self.derp)
+        if args[0] == "netcheck":
+            return 0, "# Warning: this JSON format is not yet considered a stable interface" + chr(10) + "2026/11/09 portmap: monitor: gateway changed" + chr(10) + json.dumps(self.netcheck)
+        if args[0] == "serve":
+            if args[1:3] == ["status", "--json"]:
+                return 0, json.dumps(self.serve)
+            if args[1] == "reset":
+                self.serve = {}
+                return 0, ""
+            port = [x.split("=")[1] for x in args if x.startswith("--https=")][0]
+            chemin = args[args.index("--set-path") + 1] if "--set-path" in args else "/"
+            hote = "argos.tail1.ts.net:" + port
+            web = dict(self.serve.get("Web") or {})
+            web[hote] = {"Handlers": dict((web.get(hote) or {}).get("Handlers") or {}, **{chemin: {"Proxy": "http://" + args[-1].replace("http://", "")}})}
+            self.serve = dict(self.serve, Web=web, TCP={port: {"HTTPS": True}})
+            return 0, ""
         cle = args[0]
         if cle in self.reponses:
             return self.reponses[cle]
@@ -497,6 +517,78 @@ class Journal(Monde):
         p = r["pairs"][0]
         self.assertEqual((p["tags"], p["routes"], p["relais"], p["direct"], p["octets"], p["depuis"]), (["tag:server"], ["192.168.1.0/24"], "par", False, 150, "2026-09-07"))
         self.assertEqual(r["relais_maison"], "hel")
+
+class Sante(Monde):
+    """La santé du réseau, la version du client et les services publiés."""
+
+    def test_le_reseau_dit_le_relais_prefere_et_les_latences(self):
+        r = self.lire("reseau", force=True)
+        self.assertEqual((r["udp"], r["ipv4"], r["ipv6"]), (True, True, False))
+        self.assertEqual((r["relais_prefere"]["code"], r["relais_prefere"]["ms"]), ("hel", 6.4))
+        self.assertEqual([x["code"] for x in r["regions"]], ["hel", "fra", "nyc"], "du plus proche au plus loin")
+
+    def test_le_reseau_est_reutilise_une_minute(self):
+        self.g["_RESEAU"].update(t=0.0, val=None)
+        self.lire("reseau")
+        n = len([a for a in self.appels if a[0] == "netcheck"])
+        self.lire("reseau")
+        self.assertEqual(len([a for a in self.appels if a[0] == "netcheck"]), n)
+        self.lire("reseau", force=True)
+        self.assertEqual(len([a for a in self.appels if a[0] == "netcheck"]), n + 1)
+
+    def test_la_mise_a_jour_du_client_est_annoncee(self):
+        self.etat = dict(CONNECTE, ClientVersion={"RunningLatest": False, "LatestVersion": "1.99.0"})
+        self.assertEqual(self.lire("etat")["mise_a_jour"], "1.99.0")
+        self.etat = dict(CONNECTE, ClientVersion={"RunningLatest": True})
+        self.assertEqual(self.lire("etat")["mise_a_jour"], "")
+        self.etat = CONNECTE
+        self.assertEqual(self.lire("etat")["mise_a_jour"], "")
+
+    def test_les_services_publies_se_lisent_funnel_compris(self):
+        self.serve = {"TCP": {"443": {"HTTPS": True}, "2222": {"TCPForward": "127.0.0.1:22"}}, "AllowFunnel": {"argos.tail1.ts.net:443": True},
+                      "Web": {"argos.tail1.ts.net:443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:9000"}}}}}
+        s = self.lire("services")["services"]
+        self.assertEqual([(x["hote"], x["chemin"], x["cible"], x["public"]) for x in s],
+                         [("argos.tail1.ts.net:443", "/", "http://127.0.0.1:9000", True), (":2222", "", "tcp 127.0.0.1:22", False)])
+
+    def test_publier_un_port_local_puis_le_defaire(self):
+        self.etat = CONNECTE
+        r = self.lire("serve_regler", port=8443, cible="9000", chemin="app")
+        self.assertEqual((r["serve_port"], r["serve_chemin"], r["serve_cible"]), (8443, "/app", "127.0.0.1:9000"))
+        up = [a for a in self.appels if a[0] == "serve" and "--bg" in a][0]
+        self.assertEqual(up, ["serve", "--bg", "--yes", "--https=8443", "--set-path", "/app", "127.0.0.1:9000"])
+        self.assertTrue(self.lire("services")["services"])
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["capacite"], g["defaisable"]), ("serve_regler", True))
+        self.lire("defaire_geste", id=g["id"])
+        self.assertEqual(self.lire("services")["services"], [], "il n'y avait rien avant : le retour retire le service")
+
+    def test_publier_refuse_toute_cible_qui_n_est_pas_un_port_local(self):
+        self.etat = CONNECTE
+        for port, cible, chemin in ((443, "192.168.1.5:80", "/"), (443, "http://exemple.com", "/"), (443, "/etc/passwd", "/"), (443, "unix:/tmp/x.sock", "/"), (443, "127.0.0.1:99999", "/"),
+                                    (443, "localhost:3000; id", "/"), (80, "3000", "/"), (443, "3000", "/../x"), (443, "3000", "/a b")):
+            with self.assertRaises(Exception, msg=(port, cible, chemin)):
+                self.lire("serve_regler", port=port, cible=cible, chemin=chemin)
+        self.assertFalse([a for a in self.appels if a[0] == "serve" and "--bg" in a], "rien n'est envoyé au client")
+
+    def test_le_retour_ne_retire_pas_ce_qui_etait_deja_publie(self):
+        self.etat = CONNECTE
+        self.serve = {"Web": {"argos.tail1.ts.net:443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:1"}}}}}
+        self.lire("serve_regler", port=8443, cible="9000")
+        g = self.lire("journal")["gestes"][0]
+        with self.assertRaises(Exception) as q:
+            self.lire("defaire_geste", id=g["id"])
+        self.assertIn("déjà", str(q.exception))
+        self.assertEqual(len(self.lire("services")["services"]), 2, "rien n'a été retiré")
+
+    def test_tout_retirer_note_ce_qui_etait_publie(self):
+        self.etat = CONNECTE
+        self.serve = {"Web": {"argos.tail1.ts.net:443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:1"}}}}}
+        r = self.lire("serve_retirer")
+        self.assertEqual((len(r["serve_avant"]), r["services"]), (1, []))
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["capacite"], g["defaisable"], g["libelle"]), ("serve_retirer", False, "Services publiés retirés (1)"))
+
 
 if __name__ == "__main__":
     unittest.main()

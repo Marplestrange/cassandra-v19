@@ -291,3 +291,8 @@ Ce qui en découle (et qui est codé) : une génération trouve les mêmes gains
 
 Limites : un seul modèle, des fonctions écrites pour le banc, deux passes, aucune donnée de production. Le rejeu refuse les entrées de plus de 64 Ko : les fonctions à grosses entrées restent « corpus trop étroit » (le plafond est maintenant un paramètre, son défaut reste à 64 Ko). `sommes_plage` n'aboutit dans aucune configuration.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

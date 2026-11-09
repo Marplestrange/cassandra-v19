@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.3.0  #66fe4c
+# VERSION CN : 0.4.0  #3b70a3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=66fe4c ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=3b70a3 ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -45,6 +45,10 @@ _PROC = "/proc"                                    # où chercher un `up` en att
 _SOCKET = os.environ.get("CASSANDRA_TAILSCALE_SOCKET", "")   # un tailscaled qui n'écoute pas sur le socket par défaut (et le banc contre un vrai tailscaled)
 _TTL = 2.0                                         # secondes pendant lesquelles `etat` réutilise la dernière lecture (statut + préférences) ; 0 : jamais
 _CACHE = {"t": 0.0, "val": None}
+_RESEAU = {"t": 0.0, "val": None}                  # le dernier netcheck (lent : quelques secondes de sondes) : réutilisé 60 s
+SERVE_PORTS = (443, 8443, 10000)                   # les ports HTTPS que Tailscale Serve accepte
+CIBLE_LOCALE = re.compile(r"^(?:https?://)?(?:127\.0\.0\.1|localhost|\[::1\])(?::(\d{1,5}))?(?:/[A-Za-z0-9._~/%-]*)?$")
+CHEMIN_SERVE = re.compile(r"^/[A-Za-z0-9._~/-]{0,120}$")
 _VERROU = threading.RLock()                        # un seul geste à la fois sur la connexion : deux `up` en même temps laisseraient un processus orphelin
 
 
@@ -259,7 +263,11 @@ def brancher(ctx):
             q["direct"] = bool(p.get("CurAddr"))
             q["octets"] = int(p.get("RxBytes") or 0) + int(p.get("TxBytes") or 0)
             q["depuis"] = str(p.get("Created") or "")[:10]
+            q["dns"] = str(p.get("DNSName") or "").split(".")[0]
         r["relais_maison"] = str((d.get("Self") or {}).get("Relay") or "")
+        r["os"] = str((d.get("Self") or {}).get("OS") or "")
+        cv = d.get("ClientVersion") or {}
+        r["mise_a_jour"] = str(cv.get("LatestVersion") or "") if cv and cv.get("RunningLatest") is False else ""
 
     def _etat(c, frais):
         """`frais` : relire le client. Sinon la dernière lecture de moins de _TTL secondes sert (l'écran et `flotte` relisent souvent) ; tout geste qui écrit relit à neuf."""
@@ -624,6 +632,98 @@ def brancher(ctx):
         return {"machine": cible["nom"], "ip": cible["ip"], "ok": True, "reponses": len(reponses), "chemin": reponses[-1]["chemin"], "via": reponses[-1]["via"],
                 "ms": round(sum(x["ms"] for x in reponses) / len(reponses), 1)}
 
+    # --- la santé du réseau (netcheck) : le chemin vers les relais, UDP, IPv6, NAT. Lent (quelques secondes) : à la demande, réutilisé 60 s.
+    def reseau(c, force=False):
+        if not force and _RESEAU["val"] is not None and time.time() - _RESEAU["t"] < 60:
+            return _RESEAU["val"]
+        code, sortie = _lancer(["netcheck", "--format=json"], 45)
+        if code != 0:
+            raise ValueError(_erreur(sortie))
+        try:
+            d = _json(sortie)
+        except ValueError:
+            raise ValueError("netcheck n'a pas rendu de résultat lisible : %s" % (sortie.splitlines() or [""])[-1][:120]) from None
+        noms = {}
+        code2, sortie2 = _lancer(["debug", "derp-map"], 15)
+        if code2 == 0:
+            try:
+                noms = {str(k): v for k, v in (_json(sortie2).get("Regions") or {}).items()}
+            except ValueError:
+                noms = {}
+        regions = [{"id": int(k), "code": str((noms.get(str(k)) or {}).get("RegionCode") or ""), "nom": str((noms.get(str(k)) or {}).get("RegionName") or ""), "ms": round(float(ns) / 1e6, 1)}
+                   for k, ns in (d.get("RegionLatency") or {}).items()]
+        regions.sort(key=lambda x: x["ms"])
+        pref = next((x for x in regions if x["id"] == d.get("PreferredDERP")), None)
+        val = {"udp": bool(d.get("UDP")), "ipv4": bool(d.get("IPv4")), "ipv6": bool(d.get("IPv6")), "nat_varie": bool(d.get("MappingVariesByDestIP")), "portail_captif": bool(d.get("CaptivePortal")),
+               "relais_prefere": pref, "regions": regions[:6], "mesure": datetime.datetime.now().strftime("%H:%M:%S")}
+        _RESEAU.update(t=time.time(), val=val)
+        return val
+
+    # --- les services publiés dans le réseau (tailscale serve) : lus tels que le client les a ; publiés seulement vers un port LOCAL ; Funnel (Internet public) n'est jamais activé d'ici
+    def lire_services():
+        code, sortie = _lancer(["serve", "status", "--json"], 15)
+        if code != 0:
+            raise ValueError(_erreur(sortie))
+        try:
+            cfg = _json(sortie)
+        except ValueError:
+            cfg = {}                                 # « rien de publié » : pas de JSON
+        public = cfg.get("AllowFunnel") or {}
+        out = []
+        for hote, web in (cfg.get("Web") or {}).items():
+            for chemin, h in ((web or {}).get("Handlers") or {}).items():
+                out.append({"hote": str(hote)[:120], "chemin": str(chemin)[:120], "cible": str(h.get("Proxy") or h.get("Path") or ("texte" if h.get("Text") else ""))[:200], "public": bool(public.get(hote))})
+        for port, t in (cfg.get("TCP") or {}).items():
+            if (t or {}).get("TCPForward"):
+                out.append({"hote": ":" + str(port), "chemin": "", "cible": "tcp " + str(t["TCPForward"])[:100], "public": False})
+        return out
+
+    def services(c):
+        return {"services": lire_services()}
+
+    def serve_regler(c, port=443, cible="", chemin="/"):
+        with _VERROU:
+            try:
+                port = int(port)
+            except (TypeError, ValueError):
+                port = 0
+            if port not in SERVE_PORTS:
+                raise ValueError("Port HTTPS : %s" % ", ".join(str(x) for x in SERVE_PORTS))
+            cible = str(cible or "").strip()
+            if cible.isdigit():
+                cible = "127.0.0.1:" + cible
+            m = CIBLE_LOCALE.match(cible)
+            if not m or (m.group(1) and not 1 <= int(m.group(1)) <= 65535):
+                raise ValueError("Cible : un port local (3000) ou 127.0.0.1:3000 : jamais une autre machine ni un fichier")
+            chemin = "/" + str(chemin or "").strip().strip("/")
+            if not CHEMIN_SERVE.match(chemin) or ".." in chemin.split("/"):
+                raise ValueError("Chemin invalide (lettres, chiffres, tirets, points et barres)")
+            avant = lire_services()
+            args = ["serve", "--bg", "--yes", "--https=%d" % port] + (["--set-path", chemin] if chemin != "/" else []) + [cible]
+            code, sortie = _lancer(args, 30)
+            if code != 0:
+                raise ValueError(_erreur(sortie))
+            return dict(_etat(c, True), serve_port=port, serve_chemin=chemin, serve_cible=cible, serve_avant=avant, services=lire_services())
+
+    def prouver_serve(c, res):
+        return any(x["hote"].endswith(":%d" % res.get("serve_port", 0)) and x["chemin"] == res.get("serve_chemin") for x in lire_services())
+
+    def defaire_serve(c, res):
+        with _VERROU:
+            if res.get("serve_avant"):
+                raise ValueError("Il y avait déjà des services publiés : ils ne se rétablissent pas seuls. Retire celui-ci avec « Tout retirer » puis republie les autres.")
+            code, sortie = _lancer(["serve", "reset"], 20)
+            if code != 0:
+                raise ValueError(_erreur(sortie))
+
+    def serve_retirer(c):
+        with _VERROU:
+            avant = lire_services()
+            code, sortie = _lancer(["serve", "reset"], 20)         # efface aussi ce que Funnel exposait à Internet
+            if code != 0:
+                raise ValueError(_erreur(sortie))
+            return dict(_etat(c, True), serve_avant=avant, services=lire_services())
+
     # --- le journal : chaque geste qui écrit est noté (quand, qui, quoi, ce qu'il a rendu) pour pouvoir être défait depuis l'écran
     def horodate():
         return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
@@ -644,7 +744,7 @@ def brancher(ctx):
             return res
         return enveloppe
 
-    DEFAIRE = {"connecter": defaire_connecter, "deconnecter": defaire_deconnecter, "ssh_regler": defaire_ssh, "regler": defaire_regler, "quitter": lambda c, res: connecter(c)}
+    DEFAIRE = {"serve_regler": defaire_serve, "connecter": defaire_connecter, "deconnecter": defaire_deconnecter, "ssh_regler": defaire_ssh, "regler": defaire_regler, "quitter": lambda c, res: connecter(c)}
 
     def afficher(v):
         if isinstance(v, bool):
@@ -658,6 +758,10 @@ def brancher(ctx):
             return "Réglage « %s » : %s → %s" % (res.get("reglage_cle", args.get("cle", "?")), afficher(res.get("reglage_avant")), afficher(res.get("reglage_demande")))
         if cap == "ssh_regler":
             return "SSH par Tailscale %s" % ("activé" if args.get("actif", True) else "coupé")
+        if cap == "serve_regler":
+            return "Service publié : https :%s%s → %s" % (res.get("serve_port", args.get("port", 443)), res.get("serve_chemin", "/"), res.get("serve_cible", args.get("cible", "?")))
+        if cap == "serve_retirer":
+            return "Services publiés retirés (%d)" % len(res.get("serve_avant") or [])
         return {"connecter": "Connexion à Tailscale" + (" par clé" if args.get("avec_cle") else ""), "deconnecter": "Tailscale coupé", "quitter": "Machine retirée du réseau",
                 "annuler": "Connexion en attente abandonnée"}.get(cap, cap)
 
@@ -698,6 +802,10 @@ def brancher(ctx):
     ctx.implementer("etat", etat)
     ctx.implementer("ping", ping)
     ctx.implementer("journal", journal)
+    ctx.implementer("reseau", reseau)
+    ctx.implementer("services", services)
+    ctx.implementer("serve_regler", journaliser("serve_regler", serve_regler), prouver_serve, defaire_serve, simuler=lambda x, port=443, cible="", **_: "publierait %s dans le réseau Tailscale (HTTPS %s)" % (cible, port))
+    ctx.implementer("serve_retirer", journaliser("serve_retirer", serve_retirer), lambda c, res: not lire_services(), lambda c, res: None, simuler=lambda x, **_: "retirerait tous les services publiés par Tailscale Serve")
     ctx.implementer("defaire_geste", defaire_geste, prouver_defait, lambda c, res: None, simuler=lambda x, id=0, **_: "défairait le geste n°%s du journal" % id)
     ctx.implementer("connecter", journaliser("connecter", connecter), prouver_connecter, defaire_connecter, simuler=lambda x, nom="", ssh=False, avec_cle=False, **_: "connecterait la machine à Tailscale" + (" avec la clé enregistrée" if avec_cle else " (lien d'identification)"))
     ctx.implementer("annuler", journaliser("annuler", annuler), lambda c, res: not res.get("en_attente"), lambda c, res: None, simuler=lambda x, **_: "abandonnerait la connexion en attente")
