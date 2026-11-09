@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2cae8c
+# VERSION CN : 0.1.0  #28d36f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`, `port_libre` et `shutil` sont remplacés ; le dossier du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2cae8c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=28d36f ▼▼▼
 """Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`,
 `port_libre` et `shutil` sont remplacés ; le dossier du serveur est un dossier temporaire. On vérifie surtout ce qui est REFUSÉ et que le script n'est lancé que s'il est celui qu'on a confirmé."""
 import hashlib
@@ -228,6 +228,18 @@ class Exploitation(Monde):
         self.sorties["docker compose"] = (0, '{"Service":"netbird-server","State":"running","Image":"netbirdio/netbird-server:latest"}\n{"Service":"dashboard","State":"exited","Image":"netbirdio/dashboard:latest"}')
         r = self.lance("etat")
         self.assertEqual((r["installe"], r["meta"]["domaine"], [(c["service"], c["etat"]) for c in r["conteneurs"]]), (True, "netbird.exemple.fr", [("netbird-server", "running"), ("dashboard", "exited")]))
+
+    def test_etat_dit_les_ports_pris_avant_l_installation(self):
+        self.occupes = {("tcp", 443), ("udp", 3478)}
+        r = self.lance("etat")
+        self.assertEqual(sorted(r["occupes"]), ["tcp/443", "udp/3478"])
+
+    def test_etat_installe_ne_cherche_plus_les_ports_mais_rend_ceux_des_conteneurs(self):
+        self.poser()
+        self.sorties["docker compose"] = (0, '{"Service":"netbird-server","State":"running","Image":"i","Publishers":[{"URL":"127.0.0.1","TargetPort":80,"PublishedPort":8081,"Protocol":"tcp"},{"URL":"::","TargetPort":3478,"PublishedPort":0,"Protocol":"udp"}]}')
+        r = self.lance("etat")
+        self.assertNotIn("occupes", r)
+        self.assertEqual(r["conteneurs"][0]["ports"], ["127.0.0.1:8081->80/tcp"])
 
     def test_etat_lit_aussi_un_tableau_json(self):
         self.poser()

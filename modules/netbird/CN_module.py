@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0423b2
+# VERSION CN : 0.1.0  #ee3268
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0423b2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ee3268 ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -52,6 +52,17 @@ _SSO = {"lien": "", "t": 0.0}                      # le dernier lien d'identific
 _TTL = 2.0                                         # secondes pendant lesquelles `etat` réutilise sa dernière lecture ; 0 : jamais
 _CACHE = {"t": 0.0, "val": None}
 _VERROU = threading.RLock()
+# Les ports d'un serveur NetBird auto-hébergé, tels que NetBird les documente (docs.netbird.io/selfhosted/selfhosted-quickstart et /selfhosted/external-reverse-proxy).
+PORTS = [
+    {"port": 80, "proto": "tcp", "public": True, "modes": ["traefik"], "usage": "HTTP : certificats Let's Encrypt et redirection vers HTTPS"},
+    {"port": 443, "proto": "tcp", "public": True, "modes": ["traefik", "nginx", "caddy"], "usage": "HTTPS : tableau de bord, API, gRPC et relais (publié par traefik, ou par ton proxy nginx ou caddy)"},
+    {"port": 3478, "proto": "udp", "public": True, "modes": ["traefik", "nginx", "caddy"], "usage": "STUN/TURN : publié directement, il ne passe jamais par un proxy"},
+    {"port": 8080, "proto": "tcp", "public": False, "modes": ["nginx", "caddy"], "usage": "Tableau de bord, sur cette machine seulement : ton proxy y envoie tout sauf les chemins du serveur"},
+    {"port": 8081, "proto": "tcp", "public": False, "modes": ["nginx", "caddy"], "usage": "Serveur NetBird (gestion, signal, relais), sur cette machine seulement : /api, /oauth2, /relay, /ws-proxy, gRPC (pile v0.65.0 et après)"},
+    {"port": 8083, "proto": "tcp", "public": False, "modes": ["nginx", "caddy"], "ancien": True, "usage": "Signal en WebSocket : /ws-proxy/signal (ancienne pile, avant v0.65.0)"},
+    {"port": 8084, "proto": "tcp", "public": False, "modes": ["nginx", "caddy"], "ancien": True, "usage": "Relais : /relay (ancienne pile, avant v0.65.0)"},
+    {"port": 10000, "proto": "tcp", "public": False, "modes": ["nginx", "caddy"], "ancien": True, "usage": "Signal en gRPC : /signalexchange.SignalExchange (ancienne pile, avant v0.65.0)"},
+]
 _SERVEUR = {"meta": None}                          # ce que la commande root `serveur` a dit du serveur NetBird posé (domaine, version…), pour savoir où est son API
 ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 NOM_API = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,62}$")
@@ -438,13 +449,29 @@ def brancher(ctx):
         return {"disponible": v["disponible"], "sites": v["sites"], "zones": v["zones"], "propositions": propositions,
                 "domaine": v["domaine"], "administre": v["administre"] if domaine else None, "par": v["par"], "raison": v["raison"] if domaine else "", "libre": bool(ctx.reglage("domaine_libre", False))}
 
+    def serveur_ports(c, proxy=""):
+        if proxy and proxy not in ("traefik", "nginx", "caddy"):
+            raise ValueError("Proxy : traefik, nginx ou caddy")
+        e = serveur_etat(c)
+        mode = proxy or str((e.get("meta") or {}).get("proxy") or "")
+        pris = set(e.get("occupes") or []) if e.get("occupes") is not None else None
+        ports = []
+        for p in PORTS:
+            if mode and mode not in p["modes"]:
+                continue
+            cle = "%s/%d" % (p["proto"], p["port"])
+            etat = "inconnu" if pris is None else "libre" if cle not in pris else "pris_par_proxy" if (p["port"] in (80, 443) and mode in ("nginx", "caddy")) else "occupe"
+            ports.append(dict(p, etat=etat))
+        reels = [{"service": x.get("service", ""), "ports": x.get("ports", [])} for x in (e.get("conteneurs") or []) if x.get("ports")]
+        return {"proxy": mode, "installe": bool(e.get("installe")), "disponible": bool(e.get("disponible")), "ports": ports, "reels": reels}
+
     def serveur_telecharger(c, version=""):
         version = str(version or "").strip()
         if not VERSION_SERVEUR.match(version):
             raise ValueError("Version explicite attendue (v0.40.0) : jamais « latest »")
         return srv_ok(srv("telecharger", [version], None, 60))
 
-    def serveur_installer(c, version="", sha256="", domaine="", email="", proxy="nginx"):
+    def serveur_installer(c, version="", sha256="", domaine="", email="", proxy="nginx", hors_cassandra=False):
         with _VERROU:
             version, sha256, domaine, email = str(version or "").strip(), str(sha256 or "").strip().lower(), str(domaine or "").strip().lower(), str(email or "").strip()
             if not VERSION_SERVEUR.match(version) or not SHA.match(sha256):
@@ -454,13 +481,13 @@ def brancher(ctx):
             if not EMAIL.match(email):
                 raise ValueError("Adresse e-mail invalide (sert aux certificats Let's Encrypt)")
             v = verdict_domaine(domaine)
-            if not v["administre"] and not ctx.reglage("domaine_libre", False):
-                raise ValueError(v["raison"] + " (ou active le réglage « domaine_libre » pour un domaine que Cassandra n'administre pas)")
+            if not v["administre"] and not hors_cassandra and not ctx.reglage("domaine_libre", False):
+                raise ValueError(v["raison"] + " (ou coche « domaine que Cassandra n'administre pas » : son DNS et son certificat sont alors à ta charge)")
             if proxy not in ("traefik", "nginx", "caddy"):
                 raise ValueError("Proxy : traefik (TLS intégré, ports 80 et 443 libres), nginx ou caddy (le proxy existant publie le serveur)")
             r = srv_ok(srv("installer", [version, sha256, domaine, email, proxy], None, 295))
             _SERVEUR["meta"] = None
-            return dict(serveur_etat(c), installation=r.get("sortie", "")[-600:])
+            return dict(serveur_etat(c), installation=r.get("sortie", "")[-600:], domaine_hors_cassandra=bool(hors_cassandra and not v["administre"]))
 
     def prouver_serveur_installe(c, res):
         for _ in range(15):
@@ -737,7 +764,7 @@ def brancher(ctx):
         n = res.get("nom") or args.get("nom") or res.get("id") or ""
         return {"connecter": "Connexion à NetBird" + (" par clé" if args.get("avec_cle") else " (lien d'identification)"), "deconnecter": "NetBird coupé",
                 "annuler": "Connexion en attente abandonnée", "serveur_telecharger": "Script du serveur téléchargé (%s)" % res.get("version", args.get("version", "?")),
-                "serveur_installer": "Serveur NetBird installé (%s, %s)" % ((res.get("meta") or {}).get("domaine", args.get("domaine", "?")), args.get("proxy", "nginx")), "serveur_mettre_a_jour": "Serveur NetBird mis à jour",
+                "serveur_installer": "Serveur NetBird installé (%s, %s)%s" % ((res.get("meta") or {}).get("domaine", args.get("domaine", "?")), args.get("proxy", "nginx"), " : domaine hors Cassandra" if res.get("domaine_hors_cassandra") else ""), "serveur_mettre_a_jour": "Serveur NetBird mis à jour",
                 "serveur_redemarrer": "Serveur NetBird redémarré", "serveur_retirer": "Serveur NetBird retiré" + (" avec ses données (comptes et machines perdus)" if res.get("purge") else ""),
                 "machine_modifier": "Machine « %s » modifiée" % n, "machine_supprimer": "Machine « %s » supprimée du réseau" % n, "cle_creer": "Clé d'installation « %s » créée" % n,
                 "cle_revoquer": "Clé d'installation « %s » %s" % (n, "révoquée" if res.get("revoquee", True) else "rétablie"), "cle_supprimer": "Clé d'installation « %s » supprimée" % n,
@@ -791,6 +818,7 @@ def brancher(ctx):
     ctx.implementer("serveur_journaux", serveur_journaux)
     ctx.implementer("serveur_nginx", serveur_nginx)
     ctx.implementer("serveur_domaines", serveur_domaines)
+    ctx.implementer("serveur_ports", serveur_ports)
     ctx.implementer("serveur_telecharger", journaliser("serveur_telecharger", serveur_telecharger), lambda c, res: bool(SHA.match(str(res.get("sha256", "")))), lambda c, res: None,
                     simuler=lambda x, version="", **_: "téléchargerait le script d'installation du serveur NetBird %s et en donnerait l'empreinte" % version)
     ctx.implementer("serveur_installer", journaliser("serveur_installer", serveur_installer), prouver_serveur_installe, lambda c, res: None,

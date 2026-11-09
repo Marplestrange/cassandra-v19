@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4a6241
+# VERSION CN : 0.1.0  #ecb93b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (l'installer dans Docker, le connecter, le couper) ET, au besoin, un serveur NetBird auto-hébergé (l'installer, le tenir à jour, administrer ses machines, clés, groupes et politiques).
 # MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4a6241 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ecb93b ▼▼▼
 [module]
 id = "netbird"
 nom = "NetBird"
@@ -194,6 +194,12 @@ risque = "lecture"
 droit = "serveur"
 
 [[capacites]]
+id = "serveur_ports"
+libelle = "Les ports du serveur NetBird : ceux qu'il faut publier (TCP 80 et 443, UDP 3478), ceux que ton proxy nginx ou caddy doit joindre sur cette machine (8080 tableau de bord, 8081 serveur), s'ils sont libres, et ceux que les conteneurs publient vraiment"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
 id = "serveur_telecharger"
 libelle = "Télécharger le script officiel d'installation du serveur NetBird d'une version précise et en rendre l'empreinte SHA-256 : rien n'est exécuté, rien n'est installé"
 risque = "faible"
@@ -207,7 +213,7 @@ id = "serveur_installer"
 libelle = "Installer un serveur NetBird auto-hébergé : le script officiel de la version confirmée (empreinte comparée à celle de `serveur_telecharger`), son docker compose, ses certificats, le proxy choisi (traefik, nginx ou caddy)"
 risque = "eleve"
 droit = "serveur"
-perimetre = ["/opt/netbird-serveur seulement", "ports 80, 443 et 3478/udp quand le proxy est traefik", "un domaine que Cassandra administre (site du panneau d'hébergement ou sa zone DNS), et l'adresse e-mail, confirmés"]
+perimetre = ["/opt/netbird-serveur seulement", "ports 80, 443 et 3478/udp quand le proxy est traefik", "un domaine que Cassandra administre (site du panneau d'hébergement ou sa zone DNS) ou, sur demande expresse, un domaine qu'elle n'administre pas, et l'adresse e-mail, confirmés"]
 preuve = "relire docker compose : les conteneurs du serveur tournent"
 retour = "retirer le serveur (ses données sont gardées sauf demande contraire)"
 

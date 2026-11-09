@@ -61,6 +61,9 @@ def verifier(valeur, motif, quoi):
     return valeur
 
 
+PORTS_SURVEILLES = (("tcp", 80), ("tcp", 443), ("tcp", 8080), ("tcp", 8081), ("udp", 3478))      # ceux que la pile NetBird utilise (docs.netbird.io/selfhosted/external-reverse-proxy)
+
+
 def port_libre(protocole, port):
     """Le port est-il libre sur la machine ? (on tente de l'occuper un instant)"""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM if protocole == "tcp" else socket.SOCK_DGRAM)
@@ -114,7 +117,9 @@ def conteneurs():
             continue
         for x in (c if isinstance(c, list) else [c]):
             if isinstance(x, dict):
-                out.append({"service": str(x.get("Service") or x.get("Name") or "")[:60], "etat": str(x.get("State") or "")[:20], "image": str(x.get("Image") or "")[:100]})
+                pubs = [p for p in (x.get("Publishers") or []) if isinstance(p, dict) and int(p.get("PublishedPort") or 0) > 0]
+                ports = sorted({"%s:%d->%d/%s" % (str(p.get("URL") or "0.0.0.0")[:40], int(p["PublishedPort"]), int(p.get("TargetPort") or 0), str(p.get("Protocol") or "tcp")[:4]) for p in pubs})
+                out.append({"service": str(x.get("Service") or x.get("Name") or "")[:60], "etat": str(x.get("State") or "")[:20], "image": str(x.get("Image") or "")[:100], "ports": ports[:8]})
     return out
 
 
@@ -123,6 +128,8 @@ def verbe_etat(a):
     d = {"ok": True, "docker": docker, "jq": shutil.which("jq") is not None, "installe": installe(), "dossier": DOSSIER, "meta": meta(), "conteneurs": []}
     if docker and d["installe"]:
         d["conteneurs"] = conteneurs()
+    if not d["installe"]:
+        d["occupes"] = ["%s/%d" % (p, n) for p, n in PORTS_SURVEILLES if not port_libre(p, n)]       # ce qui bloquerait l'installation, avant de la tenter
     return d
 
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a8dece
+# VERSION CN : 0.1.0  #807f10
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de ce que le module netbird sait faire d'un serveur NetBird auto-hébergé : l'installer (par la commande root, simulée) et l'administrer par son API (simulée : un faux serveur qui répond comme lui). Rien n'est installé, aucun réseau n'est touché.
 # MÉTHODE    : un vrai noyau, une fausse commande root `serveur`, une fausse API NetBird ; on vérifie les garde-fous, le secret qui ne traîne nulle part et le retour de chaque geste.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a8dece ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=807f10 ▼▼▼
 """Bancs de la gestion d'un serveur NetBird : commande root et API NetBird SIMULÉES, noyau réel."""
 import copy
 import json
@@ -85,7 +85,7 @@ class Gestion(Monde):
         self.api = FauxServeur()
         self.g["_http"] = self.api
         self.valeurs.update(url_api="https://netbird.exemple.fr", jeton_api=JETON)
-        self.installe, self.conteneurs = False, []
+        self.installe, self.conteneurs, self.occupes = False, [], []
         self.panneau = {"fastpanel.sites": [{"domaine": "netbird.exemple.fr"}, {"domaine": "Boutique.exemple.fr"}], "fastpanel.dns": [{"zone": "exemple.fr", "nom": "@", "type": "A", "valeur": "1.2.3.4"}, {"zone": "autre.org", "nom": "@", "type": "A", "valeur": "1.2.3.4"}]}
 
         def lecture(cap, **a):
@@ -102,7 +102,8 @@ class Gestion(Monde):
             self.racines.append(("serveur:" + verbe, list(args), entree))
             if verbe == "etat":
                 return {"ok": True, "docker": True, "jq": True, "installe": self.installe, "dossier": "/opt/netbird-serveur",
-                        "meta": {"domaine": "netbird.exemple.fr", "version": "v0.40.0", "proxy": "nginx"} if self.installe else {}, "conteneurs": self.conteneurs}
+                        "meta": {"domaine": "netbird.exemple.fr", "version": "v0.40.0", "proxy": "nginx"} if self.installe else {}, "conteneurs": self.conteneurs,
+                        **({} if self.installe else {"occupes": self.occupes})}
             if verbe == "telecharger":
                 return {"ok": True, "version": args[0], "sha256": SHA, "taille": 1234, "url": "https://github.com/…"}
             if verbe == "installer":
@@ -167,6 +168,43 @@ class Serveur(Gestion):
             self.installer("netbird.inconnu.net")
         self.assertIn("n'administre", str(q.exception))
         self.assertFalse([x for x in self.racines if x[0] == "serveur:installer"], "refusé avant la commande root")
+
+    def test_un_domaine_hors_cassandra_se_declare_expressement(self):
+        r = self.lire("serveur_installer", version="v0.40.0", sha256=SHA, domaine="netbird.inconnu.net", email="admin@exemple.fr", proxy="nginx", hors_cassandra=True)
+        self.assertTrue(r["installe"] and r["domaine_hors_cassandra"])
+        self.assertIn("domaine hors Cassandra", self.lire("journal")["gestes"][0]["libelle"])
+
+    def test_la_case_hors_cassandra_ne_change_rien_pour_un_domaine_administre(self):
+        r = self.installer_hors("netbird.exemple.fr")
+        self.assertFalse(r["domaine_hors_cassandra"])
+
+    def installer_hors(self, domaine):
+        return self.lire("serveur_installer", version="v0.40.0", sha256=SHA, domaine=domaine, email="admin@exemple.fr", proxy="nginx", hors_cassandra=True)
+
+    def test_un_domaine_hors_cassandra_reste_valide_comme_un_nom(self):
+        for d in ("pas un domaine", "../x", "a..b"):
+            with self.assertRaises(Echec, msg=d):
+                self.installer_hors(d)
+
+    def test_ports_avant_installation_selon_le_proxy(self):
+        self.occupes = ["tcp/443", "tcp/8081"]
+        r = self.lire("serveur_ports", proxy="nginx")
+        etat = {"%s/%d" % (p["proto"], p["port"]): p["etat"] for p in r["ports"]}
+        self.assertEqual((etat["tcp/443"], etat["tcp/8081"], etat["udp/3478"], etat["tcp/8080"]), ("pris_par_proxy", "occupe", "libre", "libre"))
+        self.assertNotIn("tcp/80", etat, "nginx n'a pas besoin du port 80 de NetBird")
+        t = self.lire("serveur_ports", proxy="traefik")
+        self.assertEqual({"%s/%d" % (p["proto"], p["port"]) for p in t["ports"]}, {"tcp/80", "tcp/443", "udp/3478"})
+
+    def test_ports_reels_une_fois_installe(self):
+        self.installe = True
+        self.conteneurs = [{"service": "netbird-server", "etat": "running", "image": "x", "ports": ["127.0.0.1:8081->80/tcp"]}, {"service": "coturn", "etat": "running", "image": "y", "ports": []}]
+        r = self.lire("serveur_ports")
+        self.assertEqual((r["installe"], r["proxy"], r["reels"]), (True, "nginx", [{"service": "netbird-server", "ports": ["127.0.0.1:8081->80/tcp"]}]))
+        self.assertTrue(all(p["etat"] == "inconnu" for p in r["ports"]), "installé : l'occupation n'est plus un obstacle")
+
+    def test_ports_proxy_inconnu_refuse(self):
+        with self.assertRaises(Echec):
+            self.lire("serveur_ports", proxy="apache")
 
     def test_un_nom_qui_finit_comme_une_zone_sans_en_etre_une_est_refuse(self):
         with self.assertRaises(Echec):
