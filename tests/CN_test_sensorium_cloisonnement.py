@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c8c144
+# VERSION CN : 0.1.0  #1d1111
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du cloisonnement du Sensorium : un compte ordinaire ne lit pas l'infrastructure de l'instance ; un administrateur la lit toujours.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c8c144 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1d1111 ▼▼▼
 """Bancs du cloisonnement du Sensorium : un compte ordinaire ne lit pas l'infrastructure de l'instance ; un administrateur la lit toujours.
 
 Un vrai noyau est monté (droits, modules, sensorium) avec un administrateur et deux comptes ordinaires, dont un dans une autre société. Le collecteur est simulé : aucun socket, aucun service réel."""
@@ -125,9 +125,31 @@ class Fuite(Banc):
             self.n.droits.regler("compte", SIMPLE, "sensorium.voir_infra", None)
         self.assertEqual(self.ex("sensorium.monde", SIMPLE)["statut"], "refuse")
 
-    def test_la_securite_reste_fermee_et_serie_reste_ouverte(self):
+    SERIE = dict(mesure="cpu", depuis="2026-11-01 00:00:00", jusqu_a="2026-11-02 00:00:00")
+
+    def test_la_securite_reste_fermee(self):
         self.assertEqual(self.ex("sensorium.secu", SIMPLE)["statut"], "refuse")
-        self.assertNotEqual(self.ex("sensorium.serie", SIMPLE, mesure="cpu", depuis="2026-11-01 00:00:00", jusqu_a="2026-11-02 00:00:00").get("droit"), "sensorium.voir_infra")
+
+    def test_serie_exige_voir_infra_un_compte_ordinaire_est_refuse(self):
+        r = self.ex("sensorium.serie", SIMPLE, **self.SERIE)
+        self.assertEqual(r["statut"], "refuse", r)
+        self.assertEqual(r.get("droit"), "sensorium.voir_infra", r)
+        r = self.ex("sensorium.serie", AUTRE, **self.SERIE)
+        self.assertEqual(r["statut"], "refuse", r)
+
+    def test_serie_un_compte_qui_a_voir_infra_est_accepte_pas_un_autre(self):
+        self.n.droits.regler("compte", SIMPLE, "sensorium.voir_infra", "accorde")
+        try:
+            r = self.ex("sensorium.serie", SIMPLE, **self.SERIE)
+            self.assertNotEqual(r["statut"], "refuse", r)
+            self.assertEqual(self.ex("sensorium.serie", AUTRE, **self.SERIE)["statut"], "refuse")
+        finally:
+            self.n.droits.regler("compte", SIMPLE, "sensorium.voir_infra", None)
+        self.assertEqual(self.ex("sensorium.serie", SIMPLE, **self.SERIE)["statut"], "refuse")
+
+    def test_serie_un_administrateur_est_accepte_d_office(self):
+        r = self.ex("sensorium.serie", ADMIN, **self.SERIE)
+        self.assertNotEqual(r["statut"], "refuse", r)
 
     def test_le_droit_est_sensible_et_jamais_par_defaut(self):
         module, d = self.n.droits.connus["sensorium.voir_infra"]

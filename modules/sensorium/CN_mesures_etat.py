@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.2  #9d96fe
+# VERSION CN : 0.2.3  #9d96fe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'état d'une mesure, calculé sans rien lire ni écrire : fonctions pures (l'heure arrive en paramètre).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.2 empreinte=9d96fe ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.3 empreinte=9d96fe ▼▼▼
 """L'état d'une mesure, calculé sans rien lire ni écrire : fonctions pures (l'heure arrive en paramètre).
 
 Le silence n'est jamais un « ok » : une mesure est `ok`, `alerte` ou `inconnu`. Une lecture trop ancienne, de confiance trop basse, ou jugée avec une horloge qui n'est pas fiable donne `inconnu`.

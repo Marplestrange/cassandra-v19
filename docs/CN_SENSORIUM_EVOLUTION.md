@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=507d42 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=3b85d5 ▼▼▼ -->
 # Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées
 
 Statut : note de conception, rédigée AVANT le code (09-11-2026). Chaque point porte un statut : **[décidé]** (je l'implémente, c'est écrit ici pourquoi),
@@ -46,17 +46,16 @@ Public : les modules à venir (Serveur DNS, Kino, Bibliothèque, modules métier
 
 ## 2. [décidé] Fermer la fuite : le droit `voir_infra`
 
-Nouveau droit `voir_infra` (sensible, jamais attribué par défaut). Posé sur toutes les lectures d'infrastructure listées en §0 **sauf `serie`** (voir plus bas). Un administrateur passe tous les contrôles de droits
+Nouveau droit `voir_infra` (sensible, jamais attribué par défaut). Posé sur toutes les lectures d'infrastructure listées en §0 y compris `serie` (décision de Drisse, plus bas). Un administrateur passe tous les contrôles de droits
 (constaté : l'essai du §0 le montre pour `premier`), donc **aucun administrateur ne perd rien**. Conséquences assumées :
 
 * un compte non administrateur n'obtient plus `monde`, `etat`, etc. ; le module Mémoire, qui lit `sensorium.monde` au nom de l'utilisateur, reçoit « aucun relevé disponible » (c'est son comportement déjà prévu) : le contexte d'un
   modèle n'embarque plus l'infrastructure pour un utilisateur ordinaire ;
 * `vue` n'appelle `sensorium.metriques` et `sensorium.sante` que pour un administrateur (`admin_seul` vrai dans `SOURCES`) : rien à changer ;
-* **`serie` reste ouverte** : le module `mesures` l'appelle au nom du compte qui regarde ses courbes, derrière son propre droit `mesures.voir`. La fermer casserait un usage légitime ; ce qu'elle expose se limite à neuf
-  courbes de la machine (processeur, mémoire, disque…). **[proposé]** : la fermer elle aussi une fois que `mesures` aura son propre accès. Décision laissée à Drisse.
-* **`serie` : options pour Drisse (rien d'appliqué)** : (A, recommandée) droit `voir_infra` sur `serie`, attribué par un administrateur au groupe qui détient déjà `mesures.voir` ; coût : une opération de réglage, aucun code ; les courbes de la machine
-  disparaissent pour qui n'a pas ce droit. (B) un droit propre `voir_courbes`, par défaut vrai : ne ferme rien, ne fait que donner un interrupteur. (C) laisser ouvert (état actuel). Le module Mesures lit au nom de qui regarde : aucune option
-  ne lui donne de passe-droit sans qu'un compte porte le droit.
+* **`serie` : [décidé par Drisse, option A, Sensorium 0.2.3]** la capacité exige le droit `voir_infra` (sensible, jamais par défaut, les administrateurs l'ont d'office). Le module `mesures` l'appelle au nom du compte qui regarde ses courbes : un
+  compte qui a `mesures.voir` mais pas `sensorium.voir_infra` ne voit donc plus les courbes de la machine. Il reste UNE opération de réglage hors du code : un administrateur accorde `sensorium.voir_infra` au groupe qui détient
+  `mesures.voir` (rien dans le dépôt n'attribue `mesures.voir` à un groupe : c'est un réglage d'instance). Bancs : `Fuite.test_serie_*` (compte ordinaire refusé, compte qui a le droit accepté et pas un autre, administrateur accepté).
+  Options écartées : (B) droit propre `voir_courbes`, par défaut vrai (ne fermait rien) ; (C) laisser ouvert.
 * **[à vérifier]** l'interface (pages Système, Tableaux) n'a pas pu être exercée ici ; ces pages sont derrière un menu d'administrateur.
 
 ## 3. [décidé] Mesures de première classe : tri-état, fraîcheur, confiance
@@ -231,7 +230,7 @@ pour brancher une autre implémentation (Go), on remplace cette seule fonction p
 
 ## 14. Ce qui n'est pas fait ici
 
-Le protocole Kino réseau ; la fermeture de `serie` ; des relations avec cascade au registre ; toute modification de l'interface (écrans) ; l'exercice des écrans existants avec un compte ordinaire.
+Le protocole Kino réseau ; des relations avec cascade au registre ; toute modification de l'interface (écrans) ; l'exercice des écrans existants avec un compte ordinaire.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->

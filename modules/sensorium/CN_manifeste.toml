@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.2  #bceeab
+# VERSION CN : 0.2.3  #a0de2d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.2 empreinte=bceeab ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.3 empreinte=a0de2d ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.2.2"
+version = "0.2.3"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"
@@ -416,6 +416,7 @@ retrait = "CN_retirer.sh"
 id = "serie"
 libelle = "Les points d'une mesure de la machine (processeur, mémoire, disque…) sur une période, lus dans l'historique du collecteur"
 risque = "lecture"
+droit = "voir_infra"
 
 [[mesures]]
 id = "cpu"
