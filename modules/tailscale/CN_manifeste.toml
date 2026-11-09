@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.2.0  #e8ec2a
+# VERSION CN : 0.3.0  #1f13d5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale.
 # MÉTHODE    : le client `tailscale` local, par son socket ; l'installateur donne à l'utilisateur de Cassandra le droit de le piloter (--operator), jamais de root.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=e8ec2a ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=1f13d5 ▼▼▼
 [module]
 id = "tailscale"
 nom = "Tailscale"
-version = "0.2.0"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale."
 confiance = "interne"
@@ -43,6 +43,7 @@ type = "reseau_prive"
 libelle = "La connexion Tailscale de la machine"
 
 [permissions]
+stockage = true
 reseau = ["le client Tailscale local (son socket) ; login.tailscale.com par ce client"]
 
 [[reglages]]
@@ -120,6 +121,21 @@ id = "ping"
 libelle = "Joindre une machine du réseau Tailscale et dire par quel chemin (direct ou relais) et en combien de temps"
 risque = "lecture"
 droit = "utiliser"
+
+[[capacites]]
+id = "journal"
+libelle = "Les derniers gestes faits sur Tailscale depuis Cassandra : quand, par qui, quoi, et ce qui peut encore se défaire"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "defaire_geste"
+libelle = "Défaire un geste du journal Tailscale : reconnecter après une coupure, remettre un réglage ou SSH à leur valeur d'avant, couper une connexion que l'on vient d'ouvrir"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["un geste noté au journal de ce module, une seule fois", "le même retour que celui du geste d'origine"]
+preuve = "le geste est marqué défait au journal"
+retour = "refaire le geste"
 
 [[ecrans]]
 id = "vue_tailscale"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dce85f
+# VERSION CN : 0.1.0  #675f22
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module tailscale : le client est simulé (un faux `tailscale` qui répond comme le vrai), le reste tourne dans un vrai noyau.
 # MÉTHODE    : on remplace `_lancer` du module ; on vérifie les états, le lien d'identification, la clé qui ne traîne nulle part, et les refus dits en clair.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dce85f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=675f22 ▼▼▼
 """Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."""
 import json
 import shutil
@@ -438,6 +438,65 @@ class Ajouts(Monde):
         self.assertFalse(v.attendre(0.7))
         self.assertEqual(dormi, [0.7])
 
+
+class Journal(Monde):
+    """Le journal des gestes, leur retour depuis l'écran, et ce que l'écran montre de chaque machine."""
+
+    def test_un_geste_qui_ecrit_est_note_puis_se_defait(self):
+        self.etat = CONNECTE
+        self.lire("deconnecter")
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["capacite"], g["libelle"], g["defaisable"], g["defait"]), ("deconnecter", "Tailscale coupé", True, False))
+        r = self.lire("defaire_geste", id=g["id"])
+        self.assertEqual(r["etat"], "connecte", "le retour de « Déconnecter » rallume la machine sans drapeau")
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["defait"], g["defaisable"]), (True, False))
+        with self.assertRaises(Exception):
+            self.lire("defaire_geste", id=g["id"])
+
+    def test_un_reglage_defait_remet_la_valeur_d_avant(self):
+        self.etat = CONNECTE
+        self.prefs = {"RouteAll": False}
+        self.lire("regler", cle="accept_routes", valeur=True)
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual(g["libelle"], "Réglage « accept_routes » : coupé → activé")
+        self.lire("defaire_geste", id=g["id"])
+        self.assertFalse(self.prefs["RouteAll"])
+
+    def test_annuler_se_note_mais_ne_se_defait_pas_et_un_id_inconnu_est_refuse(self):
+        self.etat = CONNECTE
+        self.lire("annuler")
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["capacite"], g["defaisable"]), ("annuler", False))
+        for i in (g["id"], 99999):
+            with self.assertRaises(Exception):
+                self.lire("defaire_geste", id=i)
+
+    def test_un_journal_qui_casse_ne_fait_pas_echouer_le_geste(self):
+        from unittest import mock
+        self.etat = CONNECTE
+        base = self.n.executeur.contextes["tailscale"].stockage
+        with mock.patch.object(base, "ecrire", side_effect=RuntimeError("disque plein")):
+            self.assertTrue(self.lire("ssh_regler", actif=True)["ssh"])
+
+    def test_le_journal_ne_garde_pas_la_cle_et_reste_borne(self):
+        ctx = self.n.executeur.contextes["tailscale"]
+        ctx.reglage = lambda nom, defaut="": CLE if nom == "cle_auth" else defaut
+        self.etat = statut("NeedsLogin")
+        self.lire("connecter", avec_cle=True)
+        base = ctx.stockage
+        brut = " ".join(str(l["args"]) + str(l["res"]) for l in base.lire("SELECT args, res FROM gestes"))
+        self.assertNotIn(CLE, brut)
+        self.assertEqual(self.lire("journal", limite=1)["gestes"][0]["libelle"], "Connexion à Tailscale par clé")
+
+    def test_l_etat_donne_ce_que_l_ecran_montre_de_chaque_machine(self):
+        pairs = {"a": {"HostName": "orion", "DNSName": "orion.tail1.ts.net.", "TailscaleIPs": ["100.64.0.2"], "OS": "linux", "Online": True, "Tags": ["tag:server"],
+                       "PrimaryRoutes": ["192.168.1.0/24"], "Relay": "par", "CurAddr": "", "RxBytes": 100, "TxBytes": 50, "Created": "2026-09-07T22:40:49Z", "LastSeen": "2026-11-09T10:00:00Z"}}
+        self.etat = dict(CONNECTE, Self=dict(CONNECTE["Self"], Relay="hel"), Peer=pairs)
+        r = self.lire("etat")
+        p = r["pairs"][0]
+        self.assertEqual((p["tags"], p["routes"], p["relais"], p["direct"], p["octets"], p["depuis"]), (["tag:server"], ["192.168.1.0/24"], "par", False, 150, "2026-09-07"))
+        self.assertEqual(r["relais_maison"], "hel")
 
 if __name__ == "__main__":
     unittest.main()

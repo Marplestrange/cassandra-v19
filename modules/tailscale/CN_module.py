@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.2.0  #cc11f2
+# VERSION CN : 0.3.0  #66fe4c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=cc11f2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=66fe4c ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -26,6 +26,7 @@ Rien n'est inventé : un client absent, un tailscaled arrêté, une identificati
 from __future__ import annotations
 
 import datetime
+import functools
 import ipaddress
 import json
 import os
@@ -218,6 +219,7 @@ class Veilleur:
 def brancher(ctx):
     global _point
     _point = ctx.point
+    db = ctx.stockage                                # le journal des gestes de ce module (jamais un secret : ni clé, ni jeton)
     def _jours(iso):
         """Jours avant une date d'expiration (négatif : déjà expirée), ou None."""
         try:
@@ -246,6 +248,19 @@ def brancher(ctx):
         return {"accept_routes": bool(prefs.get("RouteAll")), "accept_dns": bool(prefs.get("CorpDNS")), "shields_up": bool(prefs.get("ShieldsUp")), "hostname": str(prefs.get("Hostname") or ""),
                 "advertise_routes": sorted(x for x in routes if x not in ("0.0.0.0/0", "::/0")), "advertise_exit_node": "0.0.0.0/0" in routes, "exit_node": str(prefs.get("ExitNodeIP") or "")}
 
+    def enrichir(r, d):
+        """Ce que l'écran montre en plus par machine : étiquettes, routes annoncées, relais, échanges, date d'arrivée. Lu dans le statut brut ; la sortie du point `resume` ne change pas."""
+        par_ip = {(p.get("TailscaleIPs") or [""])[0]: p for p in (d.get("Peer") or {}).values()}
+        for q in r.get("pairs") or []:
+            p = par_ip.get(q["ip"]) or {}
+            q["tags"] = [str(x)[:40] for x in (p.get("Tags") or [])][:5]
+            q["routes"] = [str(x)[:50] for x in (p.get("PrimaryRoutes") or [])][:8]
+            q["relais"] = str(p.get("Relay") or "")
+            q["direct"] = bool(p.get("CurAddr"))
+            q["octets"] = int(p.get("RxBytes") or 0) + int(p.get("TxBytes") or 0)
+            q["depuis"] = str(p.get("Created") or "")[:10]
+        r["relais_maison"] = str((d.get("Self") or {}).get("Relay") or "")
+
     def _etat(c, frais):
         """`frais` : relire le client. Sinon la dernière lecture de moins de _TTL secondes sert (l'écran et `flotte` relisent souvent) ; tout geste qui écrit relit à neuf."""
         maintenant_t = time.time()
@@ -262,6 +277,7 @@ def brancher(ctx):
             _CACHE.update(t=maintenant_t, val=(d, prefs))
         r = resume(d)
         r.update(expirations(d))
+        enrichir(r, d)
         if prefs is not None:
             r["ssh"] = bool(prefs.get("RunSSH"))
             r["operateur"] = str(prefs.get("OperatorUser") or "")
@@ -608,14 +624,87 @@ def brancher(ctx):
         return {"machine": cible["nom"], "ip": cible["ip"], "ok": True, "reponses": len(reponses), "chemin": reponses[-1]["chemin"], "via": reponses[-1]["via"],
                 "ms": round(sum(x["ms"] for x in reponses) / len(reponses), 1)}
 
+    # --- le journal : chaque geste qui écrit est noté (quand, qui, quoi, ce qu'il a rendu) pour pouvoir être défait depuis l'écran
+    def horodate():
+        return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+    def noter(nom, args, res):
+        """Ne fait JAMAIS échouer le geste : un journal qui casse ne doit pas défaire ce qui a marché."""
+        try:
+            db.ecrire("INSERT INTO gestes(ts, capacite, compte, args, res) VALUES (?,?,?,?,?)", (horodate(), nom, str(ctx.compte or ""), json.dumps(args, default=str)[:2000], json.dumps(res, default=str)[:20000]))
+            db.ecrire("DELETE FROM gestes WHERE id NOT IN (SELECT id FROM gestes ORDER BY id DESC LIMIT 200)")
+        except Exception:                           # noqa: BLE001
+            pass
+
+    def journaliser(nom, faire):
+        @functools.wraps(faire)
+        def enveloppe(c, *a, **kw):
+            res = faire(c, *a, **kw)
+            noter(nom, kw, res)
+            return res
+        return enveloppe
+
+    DEFAIRE = {"connecter": defaire_connecter, "deconnecter": defaire_deconnecter, "ssh_regler": defaire_ssh, "regler": defaire_regler, "quitter": lambda c, res: connecter(c)}
+
+    def afficher(v):
+        if isinstance(v, bool):
+            return "activé" if v else "coupé"
+        if isinstance(v, (list, tuple)):
+            return ", ".join(str(x) for x in v) or "aucune"
+        return str(v) if v not in (None, "") else "(vide)"
+
+    def libelle_geste(cap, args, res):
+        if cap == "regler":
+            return "Réglage « %s » : %s → %s" % (res.get("reglage_cle", args.get("cle", "?")), afficher(res.get("reglage_avant")), afficher(res.get("reglage_demande")))
+        if cap == "ssh_regler":
+            return "SSH par Tailscale %s" % ("activé" if args.get("actif", True) else "coupé")
+        return {"connecter": "Connexion à Tailscale" + (" par clé" if args.get("avec_cle") else ""), "deconnecter": "Tailscale coupé", "quitter": "Machine retirée du réseau",
+                "annuler": "Connexion en attente abandonnée"}.get(cap, cap)
+
+    def journal(c, limite=20):
+        limite = max(1, min(int(limite or 20), 100))
+        gestes = []
+        for g in db.lire("SELECT * FROM gestes ORDER BY id DESC LIMIT ?", (limite,)):
+            try:
+                args, res = json.loads(g["args"] or "{}"), json.loads(g["res"] or "{}")
+            except ValueError:
+                args, res = {}, {}
+            gestes.append({"id": g["id"], "ts": g["ts"], "capacite": g["capacite"], "compte": g["compte"], "libelle": libelle_geste(g["capacite"], args, res), "defait": bool(g["defait"]),
+                           "defait_ts": g["defait_ts"] or "", "defaisable": g["capacite"] in DEFAIRE and not g["defait"]})
+        return {"gestes": gestes}
+
+    def defaire_geste(c, id=0):
+        with _VERROU:
+            lignes = db.lire("SELECT * FROM gestes WHERE id=?", (int(id or 0),))
+            if not lignes:
+                raise ValueError("Geste inconnu")
+            g = lignes[0]
+            if g["defait"]:
+                raise ValueError("Ce geste est déjà défait")
+            if g["capacite"] not in DEFAIRE:
+                raise ValueError("Ce geste ne se défait pas (rien à remettre)")
+            try:
+                res = json.loads(g["res"] or "{}")
+            except ValueError:
+                raise ValueError("Le résultat noté de ce geste est illisible : il ne peut pas être défait") from None
+            DEFAIRE[g["capacite"]](c, res)
+            db.ecrire("UPDATE gestes SET defait=1, defait_ts=? WHERE id=?", (horodate(), int(g["id"])))
+            return dict(_etat(c, True), geste_defait=int(g["id"]))
+
+    def prouver_defait(c, res):
+        lignes = db.lire("SELECT defait FROM gestes WHERE id=?", (res.get("geste_defait"),))
+        return bool(lignes and lignes[0]["defait"])
+
     ctx.implementer("etat", etat)
     ctx.implementer("ping", ping)
-    ctx.implementer("connecter", connecter, prouver_connecter, defaire_connecter, simuler=lambda x, nom="", ssh=False, avec_cle=False, **_: "connecterait la machine à Tailscale" + (" avec la clé enregistrée" if avec_cle else " (lien d'identification)"))
-    ctx.implementer("annuler", annuler, lambda c, res: not res.get("en_attente"), lambda c, res: None, simuler=lambda x, **_: "abandonnerait la connexion en attente")
-    ctx.implementer("deconnecter", deconnecter, prouver_pas_connecte, defaire_deconnecter, simuler=lambda x, **_: "couperait Tailscale sur cette machine")
-    ctx.implementer("quitter", quitter, prouver_pas_connecte, lambda c, res: connecter(c), simuler=lambda x, **_: "retirerait la machine du réseau Tailscale")
-    ctx.implementer("regler", regler, prouver_regler, defaire_regler, simuler=lambda x, cle="", valeur=None, **_: "changerait le réglage Tailscale « %s »" % cle)
-    ctx.implementer("ssh_regler", ssh_regler, lambda c, res: lire_ssh() == res.get("ssh_demande"), defaire_ssh, simuler=lambda x, actif=True, **_: "%s SSH par Tailscale" % ("activerait" if actif else "couperait"))
+    ctx.implementer("journal", journal)
+    ctx.implementer("defaire_geste", defaire_geste, prouver_defait, lambda c, res: None, simuler=lambda x, id=0, **_: "défairait le geste n°%s du journal" % id)
+    ctx.implementer("connecter", journaliser("connecter", connecter), prouver_connecter, defaire_connecter, simuler=lambda x, nom="", ssh=False, avec_cle=False, **_: "connecterait la machine à Tailscale" + (" avec la clé enregistrée" if avec_cle else " (lien d'identification)"))
+    ctx.implementer("annuler", journaliser("annuler", annuler), lambda c, res: not res.get("en_attente"), lambda c, res: None, simuler=lambda x, **_: "abandonnerait la connexion en attente")
+    ctx.implementer("deconnecter", journaliser("deconnecter", deconnecter), prouver_pas_connecte, defaire_deconnecter, simuler=lambda x, **_: "couperait Tailscale sur cette machine")
+    ctx.implementer("quitter", journaliser("quitter", quitter), prouver_pas_connecte, lambda c, res: connecter(c), simuler=lambda x, **_: "retirerait la machine du réseau Tailscale")
+    ctx.implementer("regler", journaliser("regler", regler), prouver_regler, defaire_regler, simuler=lambda x, cle="", valeur=None, **_: "changerait le réglage Tailscale « %s »" % cle)
+    ctx.implementer("ssh_regler", journaliser("ssh_regler", ssh_regler), lambda c, res: lire_ssh() == res.get("ssh_demande"), defaire_ssh, simuler=lambda x, actif=True, **_: "%s SSH par Tailscale" % ("activerait" if actif else "couperait"))
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

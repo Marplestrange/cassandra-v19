@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #2da43b
+// VERSION CN : 0.1.0  #4b6085
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=2da43b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4b6085 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -69,11 +69,12 @@
     const st = document.createElement("style"); st.id = "ts-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "ts"; corps.appendChild(racine);
 
-    const S = { e: null, occupe: false, erreur: "", quitter: false, couper: false, nom: "", ssh: false, ping: {} };
+    const S = { e: null, occupe: false, erreur: "", quitter: false, couper: false, nom: "", ssh: false, ping: {}, q: "", filtre: "tous", j: null, lu: 0 };
     let minuterie = null;
 
     async function charger(silencieux) {
-      try { S.e = await agir("tailscale.etat"); S.erreur = ""; } catch (e) { S.erreur = e.message || String(e); }
+      try { S.e = await agir("tailscale.etat"); S.erreur = ""; S.lu = Date.now(); } catch (e) { S.erreur = e.message || String(e); }
+      try { S.j = (await agir("tailscale.journal", { limite: 10 })).gestes; } catch (_) { /* le journal est un plus : l’écran marche sans */ }
       if (!silencieux || document.body.contains(racine)) dessiner();
       armer();
     }
@@ -81,7 +82,23 @@
     function armer() {
       if (minuterie) { clearTimeout(minuterie); minuterie = null; }
       const e = S.e;
-      if (e && (e.en_attente || e.etat === "demarrage") && document.body.contains(racine)) minuterie = setTimeout(() => { if (document.body.contains(racine) && !S.occupe) charger(true); }, 2500);
+      if (!document.body.contains(racine)) return;
+      const vite = e && (e.en_attente || e.etat === "demarrage");
+      minuterie = setTimeout(() => {
+        if (!document.body.contains(racine)) return;
+        const ae = document.activeElement;
+        const saisie = ae && racine.contains(ae) && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName);       // on ne redessine pas sous les doigts de quelqu’un qui tape
+        if (!S.occupe && !saisie) charger(true); else armer();
+      }, vite ? 2500 : 20000);
+    }
+
+    async function copier(t) {
+      try { await navigator.clipboard.writeText(t); dire("Copié : " + t); }
+      catch (_) {
+        const x = document.createElement("textarea"); x.value = t; document.body.appendChild(x); x.select();
+        try { document.execCommand("copy"); dire("Copié : " + t); } catch (e2) { dire("Copie impossible", "err"); }
+        x.remove();
+      }
     }
     const faire = async (f, ok) => {
       if (S.occupe) return; S.occupe = true; dessiner();
@@ -117,13 +134,46 @@
         '<div class="acts"><input type="password" id="ts-cle" placeholder="tskey-auth-…" autocomplete="off" spellcheck="false" style="flex:1 1 260px"><button class="btn" data-a="cle"' + (S.occupe || e.pilotable === false ? " disabled" : "") + ">Se connecter avec la clé</button></div></details></div>";
     }
 
+    const octets = (n) => (n >= 1e9 ? (n / 1e9).toFixed(1) + " Go" : n >= 1e6 ? (n / 1e6).toFixed(1) + " Mo" : n >= 1e3 ? Math.round(n / 1e3) + " Ko" : n ? n + " o" : "");
+
+    function ligneMachine(p) {
+      const details = [p.os, p.routes && p.routes.length ? "routes " + p.routes.join(", ") : "", p.en_ligne ? (p.direct ? "chemin direct" : (p.relais ? "relais " + p.relais : "")) : "",
+        octets(p.octets) ? "échanges " + octets(p.octets) : "", p.depuis ? "depuis " + p.depuis : ""].filter(Boolean).join(" · ");
+      const ping = S.ping[p.nom];
+      return '<div class="pair"><span class="pt' + (p.en_ligne ? " on" : "") + '"></span><span class="nom">' + esc(p.nom) + (p.sortie ? ' <span class="pastille al">sortie</span>' : "") +
+        (p.offre_sortie ? ' <span class="pastille mu">offre une sortie</span>' : "") + (p.tags || []).map((t) => ' <span class="pastille mu">' + esc(t) + "</span>").join("") +
+        '<br><span class="note">' + esc(details) + "</span></span>" +
+        '<span class="mono ip note">' + esc(p.ip) + ' <button class="btn" data-a="copier" data-t="' + esc(p.ip) + '" style="padding:1px 6px;font-size:10.5px">Copier</button></span>' +
+        '<span class="note">' + (p.en_ligne ? "en ligne" : age(p.vu)) +
+        (p.en_ligne ? ' <button class="btn" data-a="ping" data-m="' + esc(p.nom) + '" style="padding:2px 8px;font-size:11px;margin-left:6px"' + (ping === "…" ? " disabled" : "") + ">Ping</button>" : "") +
+        (ping && ping !== "…" ? '<br><span class="mono">' + esc(ping) + "</span>" : "") + "</span></div>";
+    }
+
     function carteReseau(e) {
       const pairs = e.pairs || [];
-      let h = '<div class="carte"><div class="acts" style="justify-content:space-between"><h2 style="font:650 16px Inter,system-ui,sans-serif">Les machines du réseau <span class="note">(' + e.en_ligne + " en ligne sur " + pairs.length + ")</span></h2></div>";
-      h += pairs.length ? '<div class="pairs">' + pairs.map((p) => '<div class="pair"><span class="pt' + (p.en_ligne ? " on" : "") + '"></span><span class="nom">' + esc(p.nom) + (p.sortie ? ' <span class="pastille al">sortie</span>' : "") + '</span><span class="mono ip note">' + esc(p.ip) + "</span><span class=\"note\">" + (p.en_ligne ? "en ligne" : age(p.vu)) + (p.en_ligne ? ' <button class="btn" data-a="ping" data-m="' + esc(p.nom) + '" style="padding:2px 8px;font-size:11px;margin-left:6px"' + (S.ping[p.nom] === "…" ? " disabled" : "") + ">Ping</button>" : "") +
-        (S.ping[p.nom] && S.ping[p.nom] !== "…" ? '<br><span class="mono">' + esc(S.ping[p.nom]) + "</span>" : "") + "</span></div>").join("") + "</div>"
-        : '<p class="note">Aucune autre machine sur ce réseau pour l’instant. Installe Tailscale ailleurs et connecte-la au même compte.</p>';
+      const q = String(S.q || "").trim().toLowerCase();
+      const vus = pairs.filter((p) => (S.filtre === "tous" || (S.filtre === "en_ligne" ? p.en_ligne : !p.en_ligne)) &&
+        (!q || (p.nom + " " + p.ip + " " + (p.os || "") + " " + (p.tags || []).join(" ")).toLowerCase().includes(q)));
+      let h = '<div class="carte"><div class="acts" style="justify-content:space-between"><h2 style="font:650 16px Inter,system-ui,sans-serif">Les machines du réseau <span class="note">(' + e.en_ligne + " en ligne sur " + pairs.length + ")</span></h2>" +
+        '<a class="btn" href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener noreferrer">Console Tailscale</a></div>';
+      if (pairs.length > 3) {
+        h += '<div class="acts"><input type="text" id="ts-q" placeholder="Chercher une machine, une adresse, une étiquette…" value="' + esc(S.q) + '" style="flex:1 1 220px"><select id="ts-f">' +
+          [["tous", "Toutes"], ["en_ligne", "En ligne"], ["hors_ligne", "Hors ligne"]].map((o) => '<option value="' + o[0] + '"' + (S.filtre === o[0] ? " selected" : "") + ">" + o[1] + "</option>").join("") + "</select></div>";
+      }
+      h += vus.length ? '<div class="pairs">' + vus.map(ligneMachine).join("") + "</div>"
+        : (pairs.length ? '<p class="note">Aucune machine ne correspond.</p>' : '<p class="note">Aucune autre machine sur ce réseau pour l’instant. Installe Tailscale ailleurs et connecte-la au même compte.</p>');
       return h + "</div>";
+    }
+
+    function carteJournal(e) {
+      const g = S.j || [];
+      if (!g.length) return "";
+      const bloque = S.occupe || e.pilotable === false;
+      const quand = (ts) => { const d = new Date(String(ts).replace(" ", "T") + "Z"); return isNaN(d) ? ts : d.toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); };
+      return '<div class="carte"><h2 style="font:650 16px Inter,system-ui,sans-serif">Derniers gestes</h2><div class="pairs">' + g.map((x) =>
+        '<div class="pair" style="grid-template-columns:minmax(90px,auto) minmax(120px,1fr) auto"><span class="note">' + esc(quand(x.ts)) + "</span><span>" + esc(x.libelle) +
+        '<br><span class="note">' + esc(x.compte || "") + (x.defait ? " · défait" : "") + "</span></span>" +
+        (x.defaisable ? '<button class="btn" data-a="defaire-geste" data-id="' + x.id + '"' + (bloque ? " disabled" : "") + ">Défaire</button>" : "<span></span>") + "</div>").join("") + "</div></div>";
     }
 
     // Une clé qui expire fait tomber la machine du réseau sans prévenir : on le dit 14 jours avant.
@@ -178,7 +228,7 @@
 
     function dessiner() {
       const e = S.e;
-      let h = '<div class="tete"><h1>Tailscale</h1><p class="sous">Le réseau privé de cette machine : la joindre de n’importe où sans ouvrir un seul port, et joindre tes autres machines.</p></div>';
+      let h = '<div class="tete"><h1>Tailscale</h1><p class="sous">Le réseau privé de cette machine : la joindre de n’importe où sans ouvrir un seul port, et joindre tes autres machines.</p><div class="acts" style="margin-top:8px"><button class="btn" data-a="relire">Relire</button><span class="note">' + (S.lu ? "Relu à " + new Date(S.lu).toLocaleTimeString() : "") + "</span></div></div>";
       if (S.erreur) h += '<div class="carte" style="color:var(--danger)">' + esc(S.erreur) + "</div>";
       if (!e) { racine.innerHTML = h + '<div class="attente">Lecture de l’état de Tailscale…</div>'; return; }
       if (e.etat === "absent" || e.etat === "arrete") {
@@ -188,18 +238,22 @@
         racine.innerHTML = h; lier(); return;
       }
       h += '<div class="carte"><div class="hero"><div><span class="lib">État</span>' + pastille(e) + (e.sante && e.sante.length ? e.sante.slice(0, 3).map(sante).join("") : "") + "</div>" +
-        (e.etat === "connecte" ? '<div><span class="lib">Cette machine</span><span class="gros">' + esc(e.nom || "—") + '</span><span class="note mono">' + esc(e.dns) + "</span></div>" +
-          '<div><span class="lib">Adresse</span><span class="gros">' + esc(e.ip4 || "—") + '</span><span class="note mono">' + esc(e.ip6) + "</span></div>" +
+        (e.etat === "connecte" ? '<div><span class="lib">Cette machine</span><span class="gros">' + esc(e.nom || "—") + '</span><span class="note mono">' + esc(e.dns) + ' <button class="btn" data-a="copier" data-t="' + esc(e.dns) + '" style="padding:1px 6px;font-size:10.5px">Copier</button></span></div>' +
+          '<div><span class="lib">Adresse</span><span class="gros">' + esc(e.ip4 || "—") + '</span><span class="note mono">' + esc(e.ip6) + ' <button class="btn" data-a="copier" data-t="' + esc(e.ip4) + '" style="padding:1px 6px;font-size:10.5px">Copier l’adresse</button></span></div>' +
           '<div><span class="lib">Réseau</span><span class="gros" style="font-size:16px">' + esc(e.reseau || "—") + '</span><span class="note">client ' + esc(e.version) + "</span></div>" : "") + "</div></div>";
       if (e.en_attente) h += e.lien ? carteLien(e) : '<div class="carte attente">Tailscale prépare le lien de connexion…</div>';
       else if (e.etat === "a_approuver") h += '<div class="carte"><p>La machine est identifiée mais l’administrateur de ton réseau Tailscale doit l’approuver (login.tailscale.com › Machines).</p></div>';
       else if (e.etat === "connecte") h += avisExpiration(e) + carteReseau(e) + carteGestes(e) + carteReglages(e);
       else h += carteConnexion(e);
+      h += carteJournal(e);
       racine.innerHTML = h; lier();
     }
 
     function lier() {
       racine.querySelectorAll("[data-a]").forEach((b) => b.addEventListener("click", () => geste(b)));
+      const qi = racine.querySelector("#ts-q"), fi = racine.querySelector("#ts-f");
+      if (qi) qi.addEventListener("input", () => { S.q = qi.value; dessiner(); const n2 = racine.querySelector("#ts-q"); if (n2) { n2.focus(); n2.setSelectionRange(n2.value.length, n2.value.length); } });
+      if (fi) fi.addEventListener("change", () => { S.filtre = fi.value; dessiner(); });
       const n = racine.querySelector("#ts-nom"), s = racine.querySelector("#ts-ssh");
       if (n) n.addEventListener("input", () => { S.nom = n.value; });
       if (s) s.addEventListener("change", () => { S.ssh = s.checked; });
@@ -208,6 +262,8 @@
     async function geste(b) {
       const a = b.dataset.a;
       if (a === "relire") return charger();
+      if (a === "copier") return copier(b.dataset.t);
+      if (a === "defaire-geste") return faire(() => agir("tailscale.defaire_geste", { id: parseInt(b.dataset.id, 10) }), "Geste défait.");
       if (a === "quitter") { S.quitter = true; dessiner(); return; }
       if (a === "quitter-non") { S.quitter = false; dessiner(); return; }
       if (a === "quitter-oui") return faire(() => agir("tailscale.quitter"), "Machine retirée du réseau Tailscale.");

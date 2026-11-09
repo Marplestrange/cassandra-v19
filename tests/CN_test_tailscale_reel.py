@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Banc du module tailscale contre un VRAI tailscaled (mode utilisateur, socket et état dans 
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #cd93c7
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Banc du module tailscale contre un VRAI tailscaled (mode utilisateur, socket et état dans un dossier temporaire : le tailscaled de la machine n'est pas touché).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd93c7 ▼▼▼
 """Banc du module tailscale contre un VRAI tailscaled (mode utilisateur, socket et état dans un dossier temporaire : le tailscaled de la machine n'est pas touché).
 
 Les bancs simulés (CN_test_tailscale.py) ne voient pas ce que le vrai client refuse ou renvoie : trois défauts n'ont été trouvés qu'en essayant pour de vrai (un `up` avec
@@ -158,3 +173,9 @@ class Reel(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Echec, Reel
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)
