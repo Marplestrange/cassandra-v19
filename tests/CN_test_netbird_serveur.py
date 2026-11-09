@@ -6,23 +6,26 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #245ae6
+# VERSION CN : 0.1.0  #e5eb15
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`, `port_libre` et `shutil` sont remplacés ; le dossier du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=245ae6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e5eb15 ▼▼▼
 """Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`,
 `port_libre` et `shutil` sont remplacés ; le dossier du serveur est un dossier temporaire. On vérifie surtout ce qui est REFUSÉ et que le script n'est lancé que s'il est celui qu'on a confirmé."""
 import hashlib
+import io
 import importlib.machinery
 import importlib.util
 import json
+import shutil
 import socket
 import sys
 import subprocess
 import os
+import tarfile
 import tempfile
 import types
 import unittest
@@ -53,11 +56,15 @@ class Monde(unittest.TestCase):
         self.sorties = {}                                     # début de commande -> (code, sortie)
         self.occupes = set()                                  # ("tcp", 80)…
         self.docker = self.jq = True
+        self.ufw = self.firewalld = False
+        self.m.SAUVEGARDES = str(Path(self.tmp.name) / "sauvegardes")
+        self.compteur = 0
+        self.m.maintenant = self.horloge
         self.corps = SCRIPT
         self.m.executer = self.faux
         self.m.ouvrir = self.faux_ouvrir
         self.m.port_libre = lambda proto, port: (proto, port) not in self.occupes
-        self.m.shutil = types.SimpleNamespace(which=lambda x: "/usr/bin/" + x if (x == "docker" and self.docker) or (x == "jq" and self.jq) else None, rmtree=__import__("shutil").rmtree)
+        self.m.shutil = types.SimpleNamespace(which=lambda x: "/usr/bin/" + x if (x == "docker" and self.docker) or (x == "jq" and self.jq) or (x == "ufw" and self.ufw) or (x == "firewall-cmd" and self.firewalld) else None, rmtree=__import__("shutil").rmtree)
 
     def faux(self, commande, capture_output=True, text=True, timeout=0, cwd=None, env=None):
         self.cmds.append(list(commande))
@@ -66,6 +73,10 @@ class Monde(unittest.TestCase):
             if " ".join(commande).startswith(debut):
                 return types.SimpleNamespace(returncode=code, stdout=sortie, stderr="")
         return types.SimpleNamespace(returncode=0, stdout="ok", stderr="")
+
+    def horloge(self):
+        self.compteur += 1
+        return "20261109-%06d" % (100000 + self.compteur)
 
     def faux_ouvrir(self, url, timeout=0):
         self.urls.append(url)
@@ -425,6 +436,249 @@ class Exploitation(Monde):
             r = self.lance(*argv)
             self.assertFalse(r["ok"], argv)
         self.assertTrue(cible.exists(), "la cible du lien n'est jamais supprimée")
+
+
+def monde_pile(t):
+    """Une pile posée : un volume réel (dossier temporaire) et les réponses de docker qui le décrivent."""
+    vol = Path(t.tmp.name) / "docker" / "netbird_data" / "_data"
+    vol.mkdir(parents=True)
+    (vol / "store.db").write_text("comptes-v1")
+    t.poser()
+    Path(t.dossier, "config.yaml").write_text("config-v1")
+    Path(t.dossier, "docker-compose.yml").write_text("services: {}")
+    t.vol = vol
+    fiche = {"Name": "/netbird-server-1", "Image": "sha256:" + "a" * 64, "Config": {"Image": "netbirdio/netbird-server:latest", "Labels": {"com.docker.compose.service": "netbird-server"}},
+             "Mounts": [{"Type": "volume", "Name": "netbird_data", "Source": str(vol)}, {"Type": "bind", "Source": "/etc/x"}]}
+    ps = os.path.join(t.dossier, "docker-compose.yml")
+    t.sorties["docker compose -f %s ps -a -q" % ps] = (0, "abc123def456")
+    t.sorties["docker compose -f %s ps -a --format json" % ps] = (0, '{"Service":"netbird-server","State":"running","Image":"i"}')
+    t.sorties["docker inspect abc123def456"] = (0, json.dumps([fiche]))
+    t.sorties["docker volume inspect"] = (0, str(vol))
+    return vol
+
+
+class Sauvegardes(Monde):
+    def setUp(self):
+        super().setUp()
+        self.vol = monde_pile(self)
+
+    def commandes(self):
+        return [" ".join(c[4:]) if c[:3] == ["docker", "compose", "-f"] else " ".join(c) for c in self.cmds]
+
+    def test_sauvegarder_copie_le_volume_et_le_dossier_sans_rien_perdre(self):
+        r = self.lance("sauvegarder", "avant_maj")
+        self.assertTrue(r["ok"], r)
+        d = Path(self.m.SAUVEGARDES, r["id"])
+        meta = json.loads((d / "meta.json").read_text())
+        self.assertEqual((meta["raison"], meta["version"], meta["domaine"]), ("avant_maj", "v0.40.0", "netbird.exemple.fr"))
+        self.assertEqual(meta["images"], [{"service": "netbird-server", "ref": "netbirdio/netbird-server:latest", "id": "sha256:" + "a" * 64}])
+        self.assertEqual([v["nom"] for v in meta["volumes"]], ["netbird_data"])
+        with tarfile.open(d / "volume-0.tar.gz") as t:
+            self.assertIn("./store.db", t.getnames())
+        with tarfile.open(d / "dossier.tar.gz") as t:
+            self.assertIn("./config.yaml", t.getnames())
+        cmds = self.commandes()
+        self.assertLess(cmds.index("stop"), cmds.index("start"), "le serveur est arrêté pour la copie, puis relancé")
+        self.assertTrue(os.stat(d).st_mode & 0o777 in (0o700, 0o777), "le dossier n'est lisible que par root")
+
+    def test_un_serveur_arrete_n_est_pas_relance_par_la_sauvegarde(self):
+        ps = os.path.join(self.dossier, "docker-compose.yml")
+        self.sorties["docker compose -f %s ps -a --format json" % ps] = (0, '{"Service":"netbird-server","State":"exited","Image":"i"}')
+        self.assertTrue(self.lance("sauvegarder")["ok"])
+        self.assertNotIn("start", self.commandes())
+        self.assertNotIn("stop", self.commandes())
+
+    def test_sauvegarder_refuse_ce_qui_n_est_pas_prevu(self):
+        for argv in (("sauvegarder", "nimporte"), ("sauvegarder", "manuelle", "x")):
+            self.assertFalse(self.lance(*argv)["ok"], argv)
+        Path(self.dossier, "cassandra.json").unlink()
+        self.assertIn("aucun serveur", self.lance("sauvegarder")["erreur"])
+
+    def test_une_sauvegarde_qui_echoue_ne_laisse_rien_et_relance_le_serveur(self):
+        self.m.archiver = lambda *a, **k: (_ for _ in ()).throw(OSError("disque plein"))
+        r = self.lance("sauvegarder")
+        self.assertFalse(r["ok"])
+        self.assertEqual(os.listdir(self.m.SAUVEGARDES), [], "pas de sauvegarde à moitié écrite")
+        self.assertIn("start", self.commandes(), "le serveur n'est pas laissé arrêté")
+
+    def test_un_volume_dont_le_dossier_est_inattendu_est_refuse(self):
+        for source in ("/etc", "relatif/_data", "/var/lib/docker/volumes/autre/_data"):
+            with self.assertRaises(ValueError, msg=source):
+                self.m.source_volume("netbird_data", source)
+
+    def test_seules_les_dix_plus_recentes_sont_gardees(self):
+        for _ in range(12):
+            self.assertTrue(self.lance("sauvegarder")["ok"])
+        r = self.lance("sauvegardes")
+        self.assertEqual(len(r["sauvegardes"]), 10)
+        self.assertEqual(r["sauvegardes"][0]["id"], "20261109-100012", "la plus récente d'abord")
+        self.assertEqual(r["sauvegardes"][-1]["id"], "20261109-100003")
+        self.assertEqual((r["garde"], r["sauvegardes"][0]["raison"], r["sauvegardes"][0]["version"]), (10, "manuelle", "v0.40.0"))
+
+    def test_la_liste_ignore_ce_qui_n_est_pas_une_sauvegarde(self):
+        self.assertTrue(self.lance("sauvegarder")["ok"])
+        Path(self.m.SAUVEGARDES, "pas-un-id").mkdir()
+        Path(self.m.SAUVEGARDES, "20260101-000000").mkdir()                                     # sans meta.json
+        self.assertEqual(len(self.lance("sauvegardes")["sauvegardes"]), 1)
+
+    def test_restaurer_remet_le_volume_et_la_config_apres_une_sauvegarde_de_securite(self):
+        ident = self.lance("sauvegarder", "avant_maj")["id"]
+        (self.vol / "store.db").write_text("comptes-v2-abimes")
+        Path(self.dossier, "config.yaml").write_text("config-v2")
+        self.cmds.clear()
+        r = self.lance("restaurer", ident)
+        self.assertTrue(r["ok"], r)
+        self.assertEqual((self.vol / "store.db").read_text(), "comptes-v1")
+        self.assertEqual(Path(self.dossier, "config.yaml").read_text(), "config-v1")
+        raisons = [x["raison"] for x in self.lance("sauvegardes")["sauvegardes"]]
+        self.assertIn("avant_restauration", raisons, "ce qui était là est copié avant d'être remplacé")
+        cmds = self.commandes()
+        self.assertIn("down", cmds)
+        self.assertEqual(cmds[-1], "up -d")
+        self.assertFalse([c for c in cmds if "--force-recreate" in c or c.startswith("docker tag")], "sans « images », les images ne bougent pas")
+
+    def test_restaurer_avec_images_remet_les_anciennes_images_et_recree(self):
+        ident = self.lance("sauvegarder", "avant_maj")["id"]
+        self.cmds.clear()
+        r = self.lance("restaurer", ident, "images")
+        self.assertTrue(r["ok"] and r["images_remises"] == 1, r)
+        self.assertIn("docker tag sha256:%s netbirdio/netbird-server:latest" % ("a" * 64), self.commandes())
+        self.assertEqual(self.commandes()[-1], "up -d --force-recreate")
+
+    def test_restaurer_apres_un_retrait_avec_donnees_remet_aussi_la_marque(self):
+        ident = self.lance("sauvegarder", "avant_retrait")["id"]
+        shutil.rmtree(self.dossier)
+        (self.vol / "store.db").unlink()
+        r = self.lance("restaurer", ident)
+        self.assertTrue(r["ok"], r)
+        self.assertTrue(Path(self.dossier, "cassandra.json").exists())
+        self.assertEqual((self.vol / "store.db").read_text(), "comptes-v1")
+        self.assertFalse(self.lance("etat")["partiel"])
+
+    def test_restaurer_refuse_ce_qui_est_suspect(self):
+        ident = self.lance("sauvegarder")["id"]
+        for argv in (("restaurer",), ("restaurer", "../x"), ("restaurer", ident, "tout"), ("restaurer", "20200101-000000"), ("restaurer", ident, "images", "x")):
+            self.assertFalse(self.lance(*argv)["ok"], argv)
+        self.cmds.clear()
+        d = Path(self.m.SAUVEGARDES, ident)
+        fiche = json.loads((d / "meta.json").read_text())
+        fiche["volumes"] = [{"nom": "../../etc", "fichier": "volume-0.tar.gz"}]
+        (d / "meta.json").write_text(json.dumps(fiche))
+        self.assertIn("volume illisible", self.lance("restaurer", ident)["erreur"])
+        self.assertFalse([c for c in self.commandes() if c in ("down", "up -d")], "rien n'est arrêté pour une sauvegarde illisible")
+
+    def test_une_archive_qui_sort_de_son_dossier_est_refusee(self):
+        dest = Path(self.tmp.name) / "dest"
+        dest.mkdir()
+        for nom, fabriquer in (("chemin.tar.gz", lambda t: t.addfile(self.membre("../evil.txt", b"x"), io.BytesIO(b"x"))),
+                               ("absolu.tar.gz", lambda t: t.addfile(self.membre("/tmp/evil.txt", b"x"), io.BytesIO(b"x"))),
+                               ("lien.tar.gz", lambda t: t.addfile(self.lien("ici", "../../dehors"))),
+                               ("special.tar.gz", lambda t: t.addfile(self.special("fifo")))):
+            archive = Path(self.tmp.name) / nom
+            with tarfile.open(archive, "w:gz") as t:
+                fabriquer(t)
+            with self.assertRaises(ValueError, msg=nom):
+                self.m.extraire(str(archive), str(dest))
+        self.assertEqual(os.listdir(dest), [], "rien n'a été extrait")
+        self.assertFalse(Path(self.tmp.name, "evil.txt").exists())
+
+    @staticmethod
+    def membre(nom, corps):
+        i = tarfile.TarInfo(nom)
+        i.size = len(corps)
+        return i
+
+    @staticmethod
+    def lien(nom, cible):
+        i = tarfile.TarInfo(nom)
+        i.type, i.linkname = tarfile.SYMTYPE, cible
+        return i
+
+    @staticmethod
+    def special(nom):
+        i = tarfile.TarInfo(nom)
+        i.type = tarfile.FIFOTYPE
+        return i
+
+
+class PareFeu(Monde):
+    UFW = "Status: active\n\nTo                         Action      From\n--                         ------      ----\n22/tcp                     ALLOW       Anywhere\n443/tcp                    ALLOW       Anywhere\n443/tcp (v6)               ALLOW       Anywhere (v6)\n"
+
+    def test_ufw_actif_et_les_ports_de_netbird_deja_ouverts(self):
+        self.ufw = True
+        self.sorties["ufw status"] = (0, self.UFW)
+        r = self.lance("pare_feu")
+        self.assertEqual((r["outil"], r["actif"], r["ouverts"]), ("ufw", True, ["443/tcp"]), "22/tcp n'est pas un port de NetBird : il n'est pas rendu")
+
+    def test_ufw_inactif_firewalld_et_aucun(self):
+        self.ufw = True
+        self.sorties["ufw status"] = (0, "Status: inactive")
+        self.assertFalse(self.lance("pare_feu")["actif"])
+        self.ufw, self.firewalld = False, True
+        self.sorties["firewall-cmd --state"] = (0, "running")
+        self.sorties["firewall-cmd --list-ports"] = (0, "3478/udp 8000/tcp")
+        r = self.lance("pare_feu")
+        self.assertEqual((r["outil"], r["actif"], r["ouverts"]), ("firewalld", True, ["3478/udp"]))
+        self.firewalld = False
+        self.assertEqual(self.lance("pare_feu"), {"ok": True, "outil": "", "actif": False, "ouverts": []})
+
+    def test_ouvrir_ne_pose_que_ce_qui_manque_et_dit_ce_qu_elle_a_fait(self):
+        self.ufw = True
+        self.sorties["ufw status"] = (0, self.UFW)
+        r = self.lance("pare_feu_ouvrir", "nginx")
+        self.assertTrue(r["ok"], r)
+        self.assertEqual((r["ouverts_par_nous"], r["deja_ouverts"]), (["3478/udp"], ["443/tcp"]))
+        self.assertEqual([c for c in self.cmds if c[:2] == ["ufw", "allow"]], [["ufw", "allow", "3478/udp", "comment", "NetBird (Cassandra)"]])
+        self.cmds.clear()
+        r = self.lance("pare_feu_ouvrir", "traefik")
+        self.assertEqual(r["ouverts_par_nous"], ["80/tcp", "3478/udp"], "avec traefik, le 80 sert aux certificats")
+
+    def test_ouvrir_refuse_un_pare_feu_inactif_inconnu_ou_un_proxy_inconnu(self):
+        self.ufw = True
+        self.sorties["ufw status"] = (0, "Status: inactive")
+        self.assertIn("inactif", self.lance("pare_feu_ouvrir", "nginx")["erreur"])
+        for argv in (("pare_feu_ouvrir",), ("pare_feu_ouvrir", "apache"), ("pare_feu_ouvrir", "nginx", "x")):
+            self.assertFalse(self.lance(*argv)["ok"], argv)
+        self.ufw = False
+        self.assertIn("aucun pare-feu", self.lance("pare_feu_ouvrir", "nginx")["erreur"])
+        self.assertFalse([c for c in self.cmds if c[:2] == ["ufw", "allow"]])
+
+    def test_une_regle_refusee_arrete_l_ouverture_en_disant_ce_qui_est_deja_fait(self):
+        self.ufw = True
+        self.sorties["ufw status"] = (0, "Status: active")
+        self.sorties["ufw allow 443/tcp"] = (0, "Rule added")
+        self.sorties["ufw allow 3478/udp"] = (1, "ERROR: bad rule")
+        r = self.lance("pare_feu_ouvrir", "nginx")
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["ouverts_par_nous"], ["443/tcp"], "le retour sait quoi refermer")
+
+    def test_fermer_ne_touche_qu_aux_ports_de_netbird(self):
+        self.ufw = True
+        self.assertTrue(self.lance("pare_feu_fermer", "3478/udp", "443/tcp")["ok"])
+        self.assertEqual([c for c in self.cmds if c[:2] == ["ufw", "delete"]], [["ufw", "delete", "allow", "3478/udp"], ["ufw", "delete", "allow", "443/tcp"]])
+        self.cmds.clear()
+        for argv in (("pare_feu_fermer",), ("pare_feu_fermer", "22/tcp"), ("pare_feu_fermer", "443/tcp", "22/tcp"), ("pare_feu_fermer", "443;ls")):
+            self.assertFalse(self.lance(*argv)["ok"], argv)
+        self.assertFalse(self.cmds, "rien n'est lancé avant d'avoir tout vérifié")
+
+    def test_firewalld_ouvre_en_permanent_puis_recharge(self):
+        self.firewalld = True
+        self.sorties["firewall-cmd --state"] = (0, "running")
+        self.sorties["firewall-cmd --list-ports"] = (0, "")
+        r = self.lance("pare_feu_ouvrir", "nginx")
+        self.assertEqual(r["ouverts_par_nous"], ["443/tcp", "3478/udp"])
+        self.assertEqual([c for c in self.cmds if "--permanent" in c], [["firewall-cmd", "--permanent", "--add-port=443/tcp"], ["firewall-cmd", "--permanent", "--add-port=3478/udp"]])
+        self.assertIn(["firewall-cmd", "--reload"], self.cmds)
+
+
+class Adresse(Monde):
+    def test_ip_dit_si_l_adresse_est_privee(self):
+        self.m.ip_sortante = lambda: "93.184.216.34"
+        self.assertEqual(self.lance("ip"), {"ok": True, "ip": "93.184.216.34", "privee": False})
+        self.m.ip_sortante = lambda: "192.168.1.20"
+        self.assertTrue(self.lance("ip")["privee"])
+        self.assertFalse(self.lance("ip", "x")["ok"])
+
 
 
 if __name__ == "__main__":

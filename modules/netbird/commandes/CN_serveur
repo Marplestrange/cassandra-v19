@@ -20,6 +20,14 @@ Verbes (table fermée) :
   mettre_a_jour                                  docker compose pull, puis up -d
   commande up|down|restart|logs                  docker compose, rien d'autre
   nginx                                          lit la conf nginx que le script a générée (si le proxy est nginx)
+  sauvegarder [raison]                           copie les volumes et le dossier du serveur dans /var/backups/cassandra/netbird/<date> (le serveur est arrêté le temps de la copie) ;
+                                                 raison : manuelle, avant_maj, avant_retrait, avant_restauration ; les 10 plus récentes sont gardées
+  sauvegardes                                    la liste des sauvegardes (date, raison, taille, version)
+  restaurer <id> [images]                        remet une sauvegarde (une sauvegarde de sécurité est faite avant) ; « images » remet aussi les images d'alors
+  pare_feu                                       ufw ou firewalld : actif ? et lesquels des ports NetBird sont ouverts
+  pare_feu_ouvrir <traefik|nginx|caddy>          ouvre les ports publics de NetBird (443/tcp, 3478/udp, et 80/tcp avec traefik) ; rend ceux qu'elle a ouverts elle-même
+  pare_feu_fermer <port/proto>…                  referme ces ports, parmi ceux de NetBird seulement
+  ip                                             l'adresse de cette machine, telle que la voit le réseau (pour l'enregistrement DNS)
   retirer [purger]                               docker compose down ; avec « purger » : les volumes et le dossier (les comptes et les machines du serveur sont PERDUS)
 Rend UNE ligne de JSON : {"ok": true, …} ou {"ok": false, "erreur": "…"} ; le code de sortie est 0 si ok."""
 import errno
@@ -28,9 +36,11 @@ import json
 import os
 import re
 import shutil
+import ipaddress
 import socket
 import subprocess
 import sys
+import tarfile
 import time
 import urllib.request
 
@@ -50,6 +60,14 @@ SCRIPT_MAX = 300000
 SORTIE_MAX = 4000
 SORTIE_LISTE = 400000                                              # `compose ps --format json` : une ligne par service, avec ses étiquettes ; la couper ferait perdre des services
 DELAI_INSTALL = 280
+SAUVEGARDES = "/var/backups/cassandra/netbird"
+ID_SAUV = re.compile(r"^\d{8}-\d{6}$")
+RAISONS = ("manuelle", "avant_maj", "avant_retrait", "avant_restauration")
+GARDER = 10                                                    # les sauvegardes les plus récentes qu'on garde ; les plus anciennes partent
+REF_IMAGE = re.compile(r"^[a-z0-9][a-z0-9./_-]{0,120}(:[A-Za-z0-9_.-]{1,127})?$")
+ID_IMAGE = re.compile(r"^sha256:[0-9a-f]{64}$")
+PORTS_NETBIRD = ("80/tcp", "443/tcp", "3478/udp")                  # les seuls ports que le pare-feu ouvre ou referme d'ici
+COMMENTAIRE_PF = "NetBird (Cassandra)"
 
 executer = subprocess.run                                       # remplaçables : les bancs n'ont ni Docker, ni réseau, ni ports à eux
 ouvrir = urllib.request.urlopen
@@ -289,7 +307,308 @@ def verbe_retirer(a):
 
 
 
-VERBES = {"etat": verbe_etat, "telecharger": verbe_telecharger, "installer": verbe_installer, "mettre_a_jour": verbe_mettre_a_jour, "commande": verbe_commande, "nginx": verbe_nginx, "retirer": verbe_retirer}
+# ---- sauvegarde, restauration
+def maintenant():
+    return time.strftime("%Y%m%d-%H%M%S")
+
+
+def inspecter(ids):
+    """`docker inspect` de ces conteneurs : la liste de leurs fiches (une par conteneur)."""
+    if not ids:
+        return []
+    code, sortie = lancer(["docker", "inspect"] + ids, 30, None, SORTIE_LISTE)
+    try:
+        d = json.loads(sortie) if code == 0 else []
+    except ValueError:
+        return []
+    return [x for x in d if isinstance(x, dict)] if isinstance(d, list) else []
+
+
+def fiches():
+    """Les conteneurs de la pile : leurs volumes (nom et dossier sur la machine) et leurs images (référence et identifiant)."""
+    code, sortie = compose(["ps", "-a", "-q"], 30)
+    ids = [x for x in sortie.split() if re.match(r"^[0-9a-f]{6,64}$", x)] if code == 0 else []
+    volumes, images, vus = [], [], set()
+    for f in inspecter(ids):
+        for m in f.get("Mounts") or []:
+            if isinstance(m, dict) and m.get("Type") == "volume" and m.get("Name") and m.get("Source") and m["Name"] not in vus:
+                vus.add(m["Name"])
+                volumes.append({"nom": str(m["Name"]), "source": str(m["Source"])})
+        ref, ident = str((f.get("Config") or {}).get("Image") or ""), str(f.get("Image") or "")
+        images.append({"service": str(((f.get("Config") or {}).get("Labels") or {}).get("com.docker.compose.service") or f.get("Name") or "")[:60].lstrip("/"), "ref": ref, "id": ident})
+    return volumes, images
+
+
+def source_volume(nom, source):
+    """Le dossier du volume sur la machine, vérifié : un chemin absolu qui finit par <nom>/_data (jamais un dossier choisi par quelqu'un d'autre)."""
+    s = os.path.normpath(str(source))
+    if not os.path.isabs(s) or os.path.basename(s) != "_data" or os.path.basename(os.path.dirname(s)) != nom:
+        refuser("dossier de volume inattendu pour « %s »" % nom)
+    return s
+
+
+def archiver(source, archive, exclure=()):
+    with tarfile.open(archive, "w:gz") as t:
+        t.add(source, arcname=".", filter=lambda i: None if any(os.path.basename(i.name).startswith(x) for x in exclure) else i)
+
+
+def extraire(archive, dest):
+    """Extrait une archive DANS dest : aucun chemin absolu ni « .. », aucun lien qui sorte de dest, aucun fichier spécial."""
+    racine = os.path.realpath(dest)
+    with tarfile.open(archive, "r:gz") as t:
+        membres = t.getmembers()
+        for m in membres:
+            cible = os.path.realpath(os.path.join(racine, m.name))
+            if cible != racine and not cible.startswith(racine + os.sep):
+                refuser("archive refusée : un chemin sort du dossier (%s)" % m.name[:60])
+            if m.issym() or m.islnk():
+                lien = os.path.realpath(os.path.join(os.path.dirname(cible), m.linkname)) if m.issym() else os.path.realpath(os.path.join(racine, m.linkname))
+                if lien != racine and not lien.startswith(racine + os.sep):
+                    refuser("archive refusée : un lien sort du dossier (%s)" % m.name[:60])
+            elif not (m.isfile() or m.isdir()):
+                refuser("archive refusée : fichier spécial (%s)" % m.name[:60])
+        try:
+            t.extractall(racine, members=membres, filter="fully_trusted")                  # les membres sont vérifiés ci-dessus
+        except TypeError:
+            t.extractall(racine, members=membres)
+
+
+def vider(dossier):
+    for nom in os.listdir(dossier):
+        chemin = os.path.join(dossier, nom)
+        if os.path.isdir(chemin) and not os.path.islink(chemin):
+            shutil.rmtree(chemin)
+        else:
+            os.remove(chemin)
+
+
+def fiche_sauvegarde(i):
+    """Ce que dit meta.json d'une sauvegarde, ou None si elle est illisible."""
+    try:
+        with open(os.path.join(SAUVEGARDES, i, "meta.json")) as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        return None
+    return d if isinstance(d, dict) and d.get("id") == i else None
+
+
+def ids_sauvegardes():
+    try:
+        return sorted((x for x in os.listdir(SAUVEGARDES) if ID_SAUV.match(x)), reverse=True)
+    except OSError:
+        return []
+
+
+def elaguer():
+    for i in ids_sauvegardes()[GARDER:]:
+        shutil.rmtree(os.path.join(SAUVEGARDES, i), ignore_errors=True)
+
+
+def taille_dossier(d):
+    return sum(os.path.getsize(os.path.join(d, f)) for f in os.listdir(d) if os.path.isfile(os.path.join(d, f)))
+
+
+def en_marche():
+    return any(c.get("etat") == "running" for c in conteneurs())
+
+
+def verbe_sauvegarder(a):
+    if len(a) > 1 or (a and a[0] not in RAISONS):
+        refuser("usage : sauvegarder [%s]" % "|".join(RAISONS))
+    if not installe():
+        refuser("aucun serveur posé : rien à sauvegarder")
+    dossier_sur()
+    raison = a[0] if a else "manuelle"
+    volumes, images = fiches()
+    sources = [(v["nom"], source_volume(v["nom"], v["source"])) for v in volumes]
+    ident = maintenant()
+    while ident in ids_sauvegardes():                              # deux sauvegardes dans la même seconde
+        ident = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time() + 1 + len(ids_sauvegardes())))
+    dest = os.path.join(SAUVEGARDES, ident)
+    os.makedirs(SAUVEGARDES, mode=0o700, exist_ok=True)
+    os.makedirs(dest, mode=0o700)
+    arrete = en_marche()
+    try:
+        if arrete:
+            code, sortie = compose(["stop"], 120)                    # la base du serveur est copiée à l'arrêt : une copie cohérente
+            if code != 0:
+                refuser("le serveur n'a pas pu être arrêté pour la copie : %s" % sortie[-160:])
+        fichiers = []
+        for k, (nom, src) in enumerate(sources):
+            f = "volume-%d.tar.gz" % k
+            archiver(src, os.path.join(dest, f))
+            fichiers.append({"nom": nom, "fichier": f})
+        archiver(DOSSIER, os.path.join(dest, "dossier.tar.gz"), (".installer-",))
+    except BaseException:
+        shutil.rmtree(dest, ignore_errors=True)
+        raise
+    finally:
+        if arrete:
+            compose(["start"], 120)
+    m = meta()
+    fiche = {"id": ident, "quand": time.strftime("%Y-%m-%d %H:%M:%S"), "raison": raison, "version": m.get("version", ""), "domaine": m.get("domaine", ""), "proxy": m.get("proxy", ""), "volumes": fichiers, "images": images}
+    with open(os.path.join(dest, "meta.json"), "w") as f:
+        json.dump(dict(fiche, taille=taille_dossier(dest)), f)
+    elaguer()
+    return {"ok": True, "id": ident, "raison": raison, "volumes": len(fichiers), "taille": taille_dossier(dest)}
+
+
+def verbe_sauvegardes(a):
+    if a:
+        refuser("sauvegardes n'a pas d'argument")
+    liste = []
+    for i in ids_sauvegardes():
+        f = fiche_sauvegarde(i)
+        if f:
+            liste.append({"id": i, "quand": str(f.get("quand") or ""), "raison": str(f.get("raison") or ""), "version": str(f.get("version") or ""), "taille": int(f.get("taille") or 0), "volumes": len(f.get("volumes") or [])})
+    return {"ok": True, "sauvegardes": liste, "dossier": SAUVEGARDES, "garde": GARDER}
+
+
+def remettre_images(fiche):
+    """`docker tag <identifiant d'alors> <référence>` : la référence repointe vers l'ancienne image, si elle est encore sur la machine."""
+    remises = 0
+    for x in fiche.get("images") or []:
+        if isinstance(x, dict) and ID_IMAGE.match(str(x.get("id") or "")) and REF_IMAGE.match(str(x.get("ref") or "")):
+            code, _ = lancer(["docker", "tag", x["id"], x["ref"]], 30)
+            remises += 1 if code == 0 else 0
+    return remises
+
+
+def verbe_restaurer(a):
+    if not a or len(a) > 2 or (len(a) == 2 and a[1] != "images"):
+        refuser("usage : restaurer <id> [images]")
+    ident = verifier(a[0], ID_SAUV, "identifiant de sauvegarde")
+    f = fiche_sauvegarde(ident)
+    if f is None:
+        refuser("sauvegarde introuvable ou illisible : %s" % ident)
+    dossier_sur()
+    src = os.path.join(SAUVEGARDES, ident)
+    cibles = []
+    for v in f.get("volumes") or []:
+        if not isinstance(v, dict) or not re.match(r"^volume-\d{1,3}\.tar\.gz$", str(v.get("fichier") or "")) or not re.match(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$", str(v.get("nom") or "")):
+            refuser("la sauvegarde décrit un volume illisible")
+        cibles.append((v["nom"], os.path.join(src, v["fichier"])))
+    if not os.path.isfile(os.path.join(src, "dossier.tar.gz")):
+        refuser("la sauvegarde est incomplète : dossier.tar.gz manque")
+    if installe() and os.path.exists(os.path.join(DOSSIER, "docker-compose.yml")):
+        verbe_sauvegarder(["avant_restauration"])                   # on ne remplace rien sans avoir copié ce qui est là
+        code, sortie = compose(["down"], 120)
+        if code != 0:
+            refuser("le serveur n'a pas pu être arrêté : %s" % sortie[-160:])
+    os.makedirs(DOSSIER, mode=0o700, exist_ok=True)
+    extraire(os.path.join(src, "dossier.tar.gz"), DOSSIER)
+    for nom, archive in cibles:
+        lancer(["docker", "volume", "create", nom], 30)
+        code, sortie = lancer(["docker", "volume", "inspect", "-f", "{{.Mountpoint}}", nom], 20)
+        point = source_volume(nom, sortie.strip()) if code == 0 else refuser("le volume « %s » n'a pas pu être préparé" % nom)
+        vider(point)
+        extraire(archive, point)
+    if not installe():
+        marquer({"version": f.get("version", ""), "domaine": f.get("domaine", ""), "proxy": f.get("proxy", ""), "installe_le": time.strftime("%Y-%m-%d %H:%M:%S")}, "ok")
+    remises = remettre_images(f) if len(a) == 2 else 0
+    code, sortie = compose(["up", "-d"] + (["--force-recreate"] if len(a) == 2 else []), DELAI_INSTALL)
+    return {"ok": code == 0, "code": code, "sortie": sortie, "id": ident, "volumes": len(cibles), "images_remises": remises}
+
+
+# ---- pare-feu
+def pare_feu_outil():
+    return "ufw" if shutil.which("ufw") else "firewalld" if shutil.which("firewall-cmd") else ""
+
+
+def pare_feu_lire(outil):
+    """(actif, ports ouverts parmi ceux de NetBird)."""
+    if outil == "ufw":
+        code, sortie = lancer(["ufw", "status"], 20)
+        actif = code == 0 and re.search(r"^Status:\s+active", sortie, re.M) is not None
+        ouverts = set()
+        for ligne in sortie.splitlines():
+            m = re.match(r"^(\d{1,5})(?:/(tcp|udp))?(?:\s+\(v6\))?\s+ALLOW\b", ligne.strip())
+            if m:
+                ouverts |= {"%s/%s" % (m.group(1), p) for p in ((m.group(2),) if m.group(2) else ("tcp", "udp"))}
+        return actif, sorted(ouverts & set(PORTS_NETBIRD))
+    code, sortie = lancer(["firewall-cmd", "--state"], 20)
+    actif = code == 0 and sortie.strip() == "running"
+    code, ports = lancer(["firewall-cmd", "--list-ports"], 20)
+    return actif, sorted(set(ports.split()) & set(PORTS_NETBIRD)) if code == 0 else []
+
+
+def verbe_pare_feu(a):
+    if a:
+        refuser("pare_feu n'a pas d'argument")
+    outil = pare_feu_outil()
+    if not outil:
+        return {"ok": True, "outil": "", "actif": False, "ouverts": []}
+    actif, ouverts = pare_feu_lire(outil)
+    return {"ok": True, "outil": outil, "actif": actif, "ouverts": ouverts}
+
+
+def ports_publics(proxy):
+    """Ce qu'il faut ouvrir sur internet : 443 (le proxy) et 3478/udp ; 80 aussi avec traefik (certificats)."""
+    return (["80/tcp"] if proxy == "traefik" else []) + ["443/tcp", "3478/udp"]
+
+
+def pare_feu_agir(outil, port, ouvrir):
+    if outil == "ufw":
+        return lancer(["ufw", "allow", port, "comment", COMMENTAIRE_PF] if ouvrir else ["ufw", "delete", "allow", port], 30)
+    code, sortie = lancer(["firewall-cmd", "--permanent", "--add-port=" + port if ouvrir else "--remove-port=" + port], 30)
+    return (lancer(["firewall-cmd", "--reload"], 30) if code == 0 else (code, sortie))
+
+
+def verbe_pare_feu_ouvrir(a):
+    if len(a) != 1 or a[0] not in PROXYS:
+        refuser("usage : pare_feu_ouvrir <traefik|nginx|caddy>")
+    outil = pare_feu_outil()
+    if not outil:
+        refuser("aucun pare-feu connu sur cette machine (ufw, firewalld) : rien à ouvrir")
+    actif, ouverts = pare_feu_lire(outil)
+    if not actif:
+        refuser("le pare-feu %s est inactif : les ports ne sont pas filtrés, rien à ouvrir" % outil)
+    par_nous, deja = [], []
+    for p in ports_publics(a[0]):
+        if p in ouverts:
+            deja.append(p)
+            continue
+        code, sortie = pare_feu_agir(outil, p, True)
+        if code != 0:
+            return {"ok": False, "code": code, "sortie": sortie, "ouverts_par_nous": par_nous, "erreur": "%s : ouverture de %s refusée (%s)" % (outil, p, sortie[-120:])}
+        par_nous.append(p)
+    return {"ok": True, "outil": outil, "ouverts_par_nous": par_nous, "deja_ouverts": deja}
+
+
+def verbe_pare_feu_fermer(a):
+    if not a or any(p not in PORTS_NETBIRD for p in a):
+        refuser("pare_feu_fermer : seulement %s" % ", ".join(PORTS_NETBIRD))
+    outil = pare_feu_outil()
+    if not outil:
+        refuser("aucun pare-feu connu sur cette machine")
+    fermes = []
+    for p in a:
+        code, sortie = pare_feu_agir(outil, p, False)
+        if code != 0:
+            return {"ok": False, "code": code, "sortie": sortie, "fermes": fermes}
+        fermes.append(p)
+    return {"ok": True, "outil": outil, "fermes": fermes}
+
+
+def ip_sortante():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("192.0.2.1", 9))                                  # rien n'est envoyé : on lit seulement l'adresse que le système choisirait
+        return s.getsockname()[0]
+    finally:
+        s.close()
+
+
+def verbe_ip(a):
+    if a:
+        refuser("ip n'a pas d'argument")
+    ip = ip_sortante()
+    return {"ok": True, "ip": ip, "privee": ipaddress.ip_address(ip).is_private}
+
+
+
+VERBES = {"etat": verbe_etat, "telecharger": verbe_telecharger, "installer": verbe_installer, "mettre_a_jour": verbe_mettre_a_jour, "commande": verbe_commande, "nginx": verbe_nginx, "retirer": verbe_retirer, "sauvegarder": verbe_sauvegarder, "sauvegardes": verbe_sauvegardes, "restaurer": verbe_restaurer,
+          "pare_feu": verbe_pare_feu, "pare_feu_ouvrir": verbe_pare_feu_ouvrir, "pare_feu_fermer": verbe_pare_feu_fermer, "ip": verbe_ip}
 
 
 def serveur(argv):
