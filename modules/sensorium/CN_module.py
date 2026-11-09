@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.15  #570201
+# VERSION CN : 0.2.0  #66293a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.15 empreinte=570201 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=66293a ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
@@ -29,8 +29,10 @@ from datetime import datetime, timedelta, timezone
 
 try:
     from . import CN_lecture as lec
+    from . import CN_capteurs as capt
 except ImportError:                        # chargé hors de son paquet (les bancs, l'outil de scellé) : le dossier est sur le chemin
     import CN_lecture as lec
+    import CN_capteurs as capt
 
 SOCKET = os.environ.get("SENSORIUM_SOCKET") or "/run/sensorium/knowledge.sock"
 DELAI = 5.0
@@ -153,6 +155,10 @@ def brancher(ctx):
             return
         vus = monde_c["vus"]
         monde_c.update(rows=rows, erreur="", t=time.time(), vus={r["wkey"]: vus.get(r["wkey"], 0) + 1 for r in rows if r.get("severity") == "warning"})
+        try:                                     # les mesures du monde que l'on suit ou publie deviennent des lectures ; une panne ici ne touche jamais la relève
+            capt.ingerer_monde(ctx, rows)
+        except Exception as ex:
+            ctx.log.warning("ingestion des mesures du monde : %s", ex)
 
     def monde_frais(ctx):
         if monde_c["rows"] is None or time.time() - monde_c["t"] > 45:
@@ -609,6 +615,20 @@ def brancher(ctx):
     ctx.implementer("changements", changements)
     ctx.implementer("serie", serie)
     ctx.implementer("secu", secu)
+
+    # ------------------------------------------------------------------ les mesures de première classe (CN_capteurs.py, docs/CN_SENSORIUM_EVOLUTION.md)
+    ctx.moteur("suivi_mesures", capt.tour_suivi)
+    ctx.detecteur("capteurs_suivis_muets", capt.suivies_muettes)
+    ctx.implementer("capteur_declarer", capt.capteur_declarer, capt.declare_prouve, capt.declare_defait)
+    ctx.implementer("capteur_retirer", capt.capteur_retirer, capt.retire_prouve, capt.retire_defait)
+    ctx.implementer("capteur_alimenter", capt.capteur_alimenter, capt.alimente_prouve, lambda c, res: None)
+    ctx.implementer("mesure_suivre", capt.mesure_suivre, capt.suivre_prouve, capt.suivre_defait)
+    ctx.implementer("mesure_ne_plus_suivre", capt.mesure_ne_plus_suivre, capt.ne_suit_prouve, capt.ne_suit_defait)
+    ctx.implementer("mesure_publier", capt.mesure_publier, capt.publier_prouve, capt.publier_defait)
+    ctx.implementer("lien_poser", capt.lien_poser, capt.lien_prouve, capt.lien_defait)
+    ctx.implementer("lien_retirer", capt.lien_retirer, capt.delie_prouve, capt.delie_defait)
+    for nom in ("mesure_etat", "vue_minimale", "mesure_detail", "mesures_suivies", "prevision_mesure", "autoobservation", "liens", "impact"):
+        ctx.implementer(nom, getattr(capt, nom))
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

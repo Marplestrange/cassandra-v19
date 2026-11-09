@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.15  #c27e5d
+# VERSION CN : 0.2.0  #e6ba24
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.15 empreinte=c27e5d ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=e6ba24 ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.1.15"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"
@@ -37,8 +37,12 @@ libelle = "Une machine observée par le Sensorium"
 type = "module_noyau"
 libelle = "Un module du noyau de Cassandra, dont le Sensorium suit la santé"
 
+[[objets]]
+type = "mesure"
+libelle = "Une mesure (clé « espace.nom ») dont le Sensorium suit l'état : sert de sujet à l'événement mesure.change ; le Sensorium n'en pose aucune au registre (les états se lisent par ses capacités, cloisonnées)"
+
 [evenements]
-emet = ["machine.sante_change", "machine.muette", "machine.reprise", "module_noyau.en_echec", "module_noyau.retabli"]
+emet = ["machine.sante_change", "machine.muette", "machine.reprise", "module_noyau.en_echec", "module_noyau.retabli", "mesure.change"]
 
 [[moteurs]]
 id = "releve"
@@ -525,6 +529,175 @@ id = "secu"
 libelle = "Les totaux d'attaques que le collecteur tient (jours, heures, chemins, adresses les plus actives, sites, robots), les mesures diverses (courriel, box, tailnet) et la sauvegarde hors machine — des agrégats, aucune ligne de journal"
 risque = "lecture"
 droit = "voir_securite"
+# ── Les mesures de première classe (docs/CN_SENSORIUM_EVOLUTION.md) ──
+[[droits]]
+id = "voir_etat"
+libelle = "Lire l'ÉTAT (ok, alerte, inconnu, depuis quand) des mesures que l'administrateur a publiées pour sa société : jamais une valeur, un détail ou un hôte"
+defaut = true
+
+[[droits]]
+id = "alimenter"
+libelle = "Déclarer des capteurs et leur envoyer des lectures, poser des relations entre objets (un module, un nœud satellite)"
+sensible = true
+
+[[droits]]
+id = "suivre"
+libelle = "Suivre des mesures : recevoir un événement mesure.change quand leur état change"
+sensible = true
+
+[[droits]]
+id = "publier"
+libelle = "Décider à qui l'état d'une mesure se montre (instance, certaines sociétés, toutes)"
+sensible = true
+
+[[moteurs]]
+id = "suivi_mesures"
+libelle = "Fait passer en « inconnu » une mesure suivie dont l'émetteur s'est tu, l'annonce, et purge l'historique ancien"
+mode = "periodique"
+toutes_les_s = 30
+duree_max_s = 20
+
+[[detecteurs]]
+id = "capteurs_suivis_muets"
+libelle = "Des mesures suivies ne répondent plus (un seul constat qui les résume)"
+frequence_s = 120
+
+[[capacites]]
+id = "capteur_declarer"
+libelle = "Déclarer un capteur (clé « espace.nom », fraîcheur attendue, seuils, sens du pire, confiance minimale) : l'espace appartient au compte qui le déclare en premier"
+risque = "faible"
+droit = "alimenter"
+perimetre = ["un capteur (une ligne : clé, seuils, fraîcheur) dans l'espace du compte"]
+preuve = "le capteur existe"
+retour = "le capteur déclaré pour la première fois est retiré"
+paliers = ["auto"]
+qui = ["humain", "compte", "agent", "cassandra"]
+
+[[capacites]]
+id = "capteur_retirer"
+libelle = "Retirer un capteur du compte, avec sa dernière lecture et son historique"
+risque = "faible"
+droit = "alimenter"
+perimetre = ["un capteur du compte, sa lecture et son historique"]
+preuve = "le capteur n'existe plus"
+retour = "le capteur est redéclaré (sa lecture et son historique ne reviennent pas)"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "capteur_alimenter"
+libelle = "Envoyer jusqu'à 50 lectures (valeur, gravité, heure revendiquée, confiance) aux capteurs du compte : chacune est acceptée ou refusée avec son motif"
+risque = "faible"
+droit = "alimenter"
+perimetre = ["la dernière lecture et l'historique des capteurs du compte"]
+preuve = "la dernière lecture acceptée est enregistrée"
+retour = "rien à défaire : la lecture suivante remplace la précédente, et l'historique est plafonné"
+paliers = ["auto"]
+qui = ["humain", "compte", "agent", "cassandra"]
+
+[[capacites]]
+id = "mesure_suivre"
+libelle = "Suivre une mesure : le compte reçoit mesure.change à chaque changement d'état (50 clés par compte, 500 au total)"
+risque = "faible"
+droit = "suivre"
+perimetre = ["une ligne de suivi (clé, compte)"]
+preuve = "le suivi existe"
+retour = "le suivi créé est retiré"
+paliers = ["auto"]
+qui = ["humain", "compte", "agent", "cassandra"]
+
+[[capacites]]
+id = "mesure_ne_plus_suivre"
+libelle = "Ne plus suivre une mesure"
+risque = "faible"
+droit = "suivre"
+perimetre = ["une ligne de suivi (clé, compte)"]
+preuve = "le suivi n'existe plus"
+retour = "le suivi retiré est remis"
+paliers = ["auto"]
+qui = ["humain", "compte", "agent", "cassandra"]
+
+[[capacites]]
+id = "mesure_publier"
+libelle = "Publier l'état d'une mesure pour des sociétés (« societes:1,2 »), pour toutes, ou la remettre à l'instance : jamais ses valeurs"
+risque = "faible"
+droit = "publier"
+perimetre = ["la visibilité d'une clé (une ligne)"]
+preuve = "la visibilité lue est celle demandée"
+retour = "la visibilité d'avant est remise"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "lien_poser"
+libelle = "Poser une relation « de dépend de vers » entre deux objets (depend_de, heberge_par, certifie_par, resout_par, decrit) pour l'analyse d'impact"
+risque = "faible"
+droit = "alimenter"
+perimetre = ["une ligne de relation"]
+preuve = "la relation existe"
+retour = "la relation posée est retirée"
+paliers = ["auto"]
+qui = ["humain", "compte", "agent", "cassandra"]
+
+[[capacites]]
+id = "lien_retirer"
+libelle = "Retirer une relation entre deux objets"
+risque = "faible"
+droit = "alimenter"
+perimetre = ["une ligne de relation"]
+preuve = "la relation n'existe plus"
+retour = "la relation retirée est remise"
+paliers = ["auto"]
+qui = ["humain", "compte", "agent", "cassandra"]
+
+[[capacites]]
+id = "mesure_etat"
+libelle = "L'état d'UNE mesure en quatre champs (clé, libellé, ok/alerte/inconnu, depuis quand) ; une clé inconnue et une clé non publiée pour la société rendent la même chose"
+risque = "lecture"
+droit = "voir_etat"
+
+[[capacites]]
+id = "vue_minimale"
+libelle = "Les états des mesures visibles pour le demandeur (toutes pour un administrateur ; pour les autres, celles publiées pour la société de l'acte) : jamais une valeur"
+risque = "lecture"
+droit = "voir_etat"
+
+[[capacites]]
+id = "mesure_detail"
+libelle = "Une mesure en détail : valeur, gravité, âge, confiance, décalage d'horloge, seuils, visibilité, qui la suit"
+risque = "lecture"
+droit = "voir_infra"
+
+[[capacites]]
+id = "mesures_suivies"
+libelle = "Les mesures suivies et leur état présent"
+risque = "lecture"
+droit = "voir_infra"
+
+[[capacites]]
+id = "prevision_mesure"
+libelle = "Combien de jours avant le seuil d'un capteur numérique (point d'évolution pente sur son historique) ; jamais une date inventée"
+risque = "lecture"
+droit = "voir_infra"
+
+[[capacites]]
+id = "autoobservation"
+libelle = "La santé du Sensorium lui-même : capteurs, lectures reçues et refusées, événements annoncés et fusionnés, plafonds, fraîcheur du suivi, horloge"
+risque = "lecture"
+droit = "voir_infra"
+
+[[capacites]]
+id = "liens"
+libelle = "Les relations d'un objet : de quoi il dépend, et ce qui dépend de lui"
+risque = "lecture"
+droit = "voir_infra"
+
+[[capacites]]
+id = "impact"
+libelle = "Qui est touché si cet objet tombe (parcours borné : profondeur 6, 200 objets)"
+risque = "lecture"
+droit = "voir_infra"
+
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

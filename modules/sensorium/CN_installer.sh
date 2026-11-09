@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.15  #05726b
+# VERSION CN : 0.2.0  #05726b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Installe le Sensorium : son dossier, son unité (dans le dossier de Cassandra, liée dans systemd), puis le démarre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.15 empreinte=05726b ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=05726b ▼▼▼
 # Installe le Sensorium : son dossier, son unité (dans le dossier de Cassandra, liée dans systemd), puis le démarre.
 # Idempotent : relancé (par CN_deploy.sh quand le module change), il remet l'unité à jour et redémarre le collecteur.
 set -euo pipefail
