@@ -397,6 +397,21 @@ class Administration(Gestion):
         masques = {c["id"]: c.get("masque") for c in m["capacites"]}
         self.assertEqual(masques["cle_creer"], ["cle_secrete"])
 
+    def test_les_menus_separent_le_client_du_serveur(self):
+        # « Installation » et « Serveur » prêtaient à confusion : le client rejoint un réseau, le serveur en héberge un.
+        manifeste = (RACINE / "modules" / "netbird" / "CN_manifeste.toml").read_text(encoding="utf-8")
+        import tomllib
+        m = tomllib.loads(manifeste.split("# ▼▼▼ BORNE CN", 1)[1].split("\n", 1)[1])
+        for rubrique in ("menus", "ecrans"):
+            noms = {x["id"]: x["libelle"] for x in m[rubrique] if x["id"].startswith("n_")}
+            self.assertEqual(noms["n_installation"], "Client", rubrique)
+            self.assertEqual(noms["n_serveur"], "Serveur", rubrique)
+            self.assertEqual(noms["n_gestion"], "Administration", rubrique)
+        droits = {x["id"]: x.get("droit") for x in m["menus"]}
+        self.assertEqual(droits["n_installation"], "utiliser", "le client ne demande pas le droit serveur")
+        self.assertEqual(droits["n_serveur"], "serveur")
+        self.assertEqual(droits["n_gestion"], "serveur")
+
 
 if __name__ == "__main__":
     unittest.main()

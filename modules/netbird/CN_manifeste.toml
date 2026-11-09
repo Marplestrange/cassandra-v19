@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ecb93b
+# VERSION CN : 0.1.0  #363b51
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (l'installer dans Docker, le connecter, le couper) ET, au besoin, un serveur NetBird auto-hébergé (l'installer, le tenir à jour, administrer ses machines, clés, groupes et politiques).
 # MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ecb93b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=363b51 ▼▼▼
 [module]
 id = "netbird"
 nom = "NetBird"
@@ -388,7 +388,7 @@ gabarit = "libre"
 
 [[ecrans]]
 id = "n_installation"
-libelle = "Installation"
+libelle = "Client"
 domaine = "reseau"
 gabarit = "libre"
 
@@ -400,7 +400,7 @@ gabarit = "libre"
 
 [[ecrans]]
 id = "n_gestion"
-libelle = "Gestion du réseau"
+libelle = "Administration"
 domaine = "reseau"
 gabarit = "libre"
 
@@ -442,7 +442,7 @@ droit = "utiliser"
 
 [[menus]]
 id = "n_installation"
-libelle = "Installation"
+libelle = "Client"
 ecran = "n_installation"
 parent = "netbird"
 ordre = 30
@@ -462,7 +462,7 @@ droit = "serveur"
 
 [[menus]]
 id = "n_gestion"
-libelle = "Gestion du réseau"
+libelle = "Administration"
 ecran = "n_gestion"
 parent = "netbird"
 ordre = 36
