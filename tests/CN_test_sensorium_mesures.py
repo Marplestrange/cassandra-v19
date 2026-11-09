@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f6608f
+# VERSION CN : 0.1.0  #9ac3ca
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f6608f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9ac3ca ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -496,6 +496,14 @@ class Relations(Mesures):
         self.assertIn("plafond", r["refuse"])
         self.assertEqual(len(self.ok("impact", ADMIN, objet="hub")["touches"]), 200)
         self.assertTrue(self.ok("impact", ADMIN, objet="hub")["tronque"])
+
+    def test_on_ne_retire_que_ses_propres_liens(self):
+        self.ok("lien_poser", KINO, de="a/b", vers="c/d")
+        self.assertFalse(self.ok("lien_retirer", KINO2, de="a/b", vers="c/d")["ok"], "le lien d'un autre compte")
+        self.assertEqual(len(self.ok("liens", ADMIN, objet="a/b")["depend_de"]), 1)
+        self.assertTrue(self.ok("lien_retirer", ADMIN, de="a/b", vers="c/d")["ok"], "un administrateur peut nettoyer")
+        self.ok("lien_poser", KINO, de="a/b", vers="c/d")
+        self.assertTrue(self.ok("lien_retirer", KINO, de="a/b", vers="c/d")["ok"])
 
     def test_retour_arriere_d_un_lien(self):
         self.ok("lien_poser", KINO, de="a/b", vers="c/d")

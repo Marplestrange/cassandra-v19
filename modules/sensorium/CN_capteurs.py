@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.2  #4ada00
+# VERSION CN : 0.2.2  #d4c426
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.2 empreinte=4ada00 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.2 empreinte=d4c426 ▼▼▼
 """Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 
 Tout vit dans la base du module (migration 004) : le noyau, le registre et le collecteur root ne changent pas. Le calcul de l'état est pur (CN_mesures_etat.py) ; ici, l'accès à la base,
@@ -537,13 +537,15 @@ def lien_defait(ctx, res):
 def lien_retirer(ctx, de="", relation="depend_de", vers=""):
     db = _db(ctx)
     avant = _un(db, "SELECT * FROM sensorium_liens WHERE de=? AND relation=? AND vers=?", (str(de), str(relation), str(vers)))
+    if avant and avant["par"] != ctx.compte and not privilegie(ctx):          # on ne retire que ses propres liens ; un administrateur ou un compte système peut nettoyer
+        return {"ok": False, "refuse": "ce lien a été posé par un autre compte", "de": str(de)[:160], "relation": str(relation)[:20], "vers": str(vers)[:160], "avant": None}
     if avant:
         db.ecrire("DELETE FROM sensorium_liens WHERE de=? AND relation=? AND vers=?", (avant["de"], avant["relation"], avant["vers"]))
     return {"ok": bool(avant), "de": str(de)[:160], "relation": str(relation)[:20], "vers": str(vers)[:160], "avant": avant}
 
 
 def delie_prouve(ctx, res):
-    return not _un(_db(ctx), "SELECT 1 AS x FROM sensorium_liens WHERE de=? AND relation=? AND vers=?", (res["de"], res["relation"], res["vers"]))
+    return (not res.get("ok") and res.get("avant") is None) or not _un(_db(ctx), "SELECT 1 AS x FROM sensorium_liens WHERE de=? AND relation=? AND vers=?", (res["de"], res["relation"], res["vers"]))
 
 
 def delie_defait(ctx, res):
