@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f2129e
+# VERSION CN : 0.1.0  #c5089a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'état d'une mesure (fonctions pures du Sensorium) : tri-état, fraîcheur, confiance, horloge, fusion des annonces, visibilité, prévision, impact.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f2129e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c5089a ▼▼▼
 """Bancs de l'état d'une mesure (fonctions pures du Sensorium) : tri-état, fraîcheur, confiance, horloge, fusion des annonces, visibilité, prévision, impact."""
 import sys
 import unittest
@@ -237,6 +237,27 @@ class Impact(unittest.TestCase):
 
     def test_objet_sans_dependant(self):
         self.assertEqual(e.impact(self.LIENS, "page/doc")["touches"], [])
+
+
+class TexteSur(unittest.TestCase):
+    """Le texte libre d'un capteur n'emporte ni caractère de contrôle, ni retournement de sens d'écriture, ni longueur démesurée."""
+
+    def test_retire_les_caracteres_de_controle_et_les_marques_invisibles(self):
+        self.assertEqual(e.texte_sur("a\x00b\x1b[31mc\x07d", 100), "ab[31mcd")
+        self.assertEqual(e.texte_sur("fdp\u202etxt.exe", 100), "fdptxt.exe")                  # retournement (RLO)
+        self.assertEqual(e.texte_sur("a\u200bb\ufeffc\u2066d\u2069", 100), "abcd")           # largeur nulle, BOM, isolats
+
+    def test_les_retours_a_la_ligne_et_les_tabulations_deviennent_des_espaces(self):
+        self.assertEqual(e.texte_sur("une\nligne\r\n\tde  texte", 100), "une ligne de texte")
+
+    def test_coupe_a_la_longueur_demandee_apres_nettoyage(self):
+        self.assertEqual(e.texte_sur("x" * 600, 500), "x" * 500)
+        self.assertEqual(e.texte_sur(None, 10), "")
+        self.assertEqual(e.texte_sur(12.5, 10), "12.5")
+
+    def test_ne_change_pas_les_chevrons_c_est_a_l_ecran_d_echapper(self):
+        """Échapper ici ferait un double échappement à l'affichage ; le texte reste du texte, jamais du balisage de confiance."""
+        self.assertEqual(e.texte_sur("<b>x</b> & y", 100), "<b>x</b> & y")
 
 
 if __name__ == "__main__":

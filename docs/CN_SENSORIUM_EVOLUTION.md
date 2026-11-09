@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=3b85d5 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9b1cbe ▼▼▼ -->
 # Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées
 
 Statut : note de conception, rédigée AVANT le code (09-11-2026). Chaque point porte un statut : **[décidé]** (je l'implémente, c'est écrit ici pourquoi),
@@ -142,6 +142,14 @@ par un administrateur / compte système. Si la Bibliothèque veut montrer un imp
 
 `autoobservation` (droit `voir_infra`) : capteurs, suivies, lectures reçues / refusées (par motif), événements émis / fusionnés, taille de l'historique, dernier tour du suivi, dernier relevé du collecteur, état de l'horloge.
 Un détecteur `capteurs_suivis_muets` fait UN constat qui résume les clés suivies devenues muettes (pas un constat par clé). Collecteur muet : les clés `monde.*` suivies passent à `inconnu` par péremption, pas par invention.
+
+## 9 bis. [décidé, fait] Le texte libre d'un capteur
+
+`detail`, `valeur_txt` (valeur non numérique), `libelle`, `unite` et `motif` sont du texte écrit par un module ou un nœud satellite : jamais de confiance. À l'entrée (`texte_sur`, `CN_mesures_etat.py`), on retire les caractères
+de contrôle (échappements de terminal compris), les marques de retournement du sens d'écriture (U+202A à U+202E, isolats U+2066 à U+2069), les caractères de largeur nulle et le BOM ; les retours à la ligne et tabulations deviennent un
+espace ; le texte est coupé (500 pour `detail`, 200 pour une valeur texte, 120 pour un libellé, 20 pour une unité). **Les chevrons ne sont pas touchés** : échapper à l'entrée ferait un double échappement à l'affichage. L'écran doit donc
+toujours poser ce texte comme du texte (`textContent`), jamais comme du balisage ; ce qui est stocké est sûr pour un terminal et un journal, pas pour `innerHTML`. **[à vérifier]** : je n'ai pas relu les écrans qui affichent ces champs.
+Bancs : `TexteSur` (pur, 4) et `TexteLibre` (par un vrai capteur).
 
 ## 10. [décidé, fait] Mesures de collecteur : l'horloge et la résolution DNS
 

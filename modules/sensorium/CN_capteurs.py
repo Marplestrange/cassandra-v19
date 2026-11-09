@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.3  #9081a6
+# VERSION CN : 0.2.3  #b072ac
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.3 empreinte=9081a6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.3 empreinte=b072ac ▼▼▼
 """Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 
 Tout vit dans la base du module (migration 004) : le noyau, le registre et le collecteur root ne changent pas. Le calcul de l'état est pur (CN_mesures_etat.py) ; ici, l'accès à la base,
@@ -168,7 +168,7 @@ def enregistrer(ctx, cle, valeur, gravite="", observe_a=None, confiance=None, de
         if rapide and prev and 0 <= now - prev["recu_a"] < PAS_LECTURE_S:
             return "trop_vite", None
         num = me.nombre(valeur)
-        txt = "" if num is not None else str(valeur if valeur is not None else "")[:200]
+        txt = "" if num is not None else me.texte_sur(valeur, 200)
         if gravite not in me.GRAVITES:
             gravite = me.gravite_des_seuils(num, (cap or {}).get("alerte"), (cap or {}).get("critique"), (cap or {}).get("pire", "haut")) if cap else "ok"
         dec = me.decalage(observe_a, now)
@@ -180,7 +180,7 @@ def enregistrer(ctx, cle, valeur, gravite="", observe_a=None, confiance=None, de
                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(cle) DO UPDATE SET valeur_num=excluded.valeur_num, valeur_txt=excluded.valeur_txt, gravite=excluded.gravite, "
                   "observe_a=excluded.observe_a, recu_a=excluded.recu_a, confiance=excluded.confiance, decalage_s=excluded.decalage_s, detail=excluded.detail, etat=excluded.etat, "
                   "raison=excluded.raison, depuis=excluded.depuis",
-                  (cle, num, txt, gravite, me.nombre(observe_a), now, conf, dec, str(detail or "")[:500], calcul["etat"], calcul["raison"], depuis,
+                  (cle, num, txt, gravite, me.nombre(observe_a), now, conf, dec, me.texte_sur(detail, 500), calcul["etat"], calcul["raison"], depuis,
                    prev["annonce"] if prev else "", prev["annonce_a"] if prev else None))
         if num is not None:
             dernier = _un(db, "SELECT t, etat FROM sensorium_historique WHERE cle=? ORDER BY id DESC LIMIT 1", (cle,))
@@ -269,7 +269,7 @@ def capteur_declarer(ctx, cle="", libelle="", unite="", fraicheur_s=300, alerte=
         db.ecrire("INSERT INTO sensorium_capteurs(cle, espace, proprietaire, libelle, unite, fraicheur_s, alerte, critique, pire, confiance_min, cree_le) VALUES (?,?,?,?,?,?,?,?,?,?,?) "
                   "ON CONFLICT(cle) DO UPDATE SET libelle=excluded.libelle, unite=excluded.unite, fraicheur_s=excluded.fraicheur_s, alerte=excluded.alerte, critique=excluded.critique, "
                   "pire=excluded.pire, confiance_min=excluded.confiance_min",
-                  (cle, esp, qui, str(libelle or "")[:120], str(unite or "")[:20], int(f), a, c, pire, cm, _maintenant()))
+                  (cle, esp, qui, me.texte_sur(libelle, 120), me.texte_sur(unite, 20), int(f), a, c, pire, cm, _maintenant()))
     return {"ok": True, "cle": cle, "espace": esp, "nouveau": not deja, "espace_nouveau": not prop}
 
 
@@ -355,7 +355,7 @@ def mesure_suivre(ctx, cle="", motif=""):
                 return {"ok": False, "refuse": "plafond atteint : %d clés suivies" % MAX_SUIVIES, "cle": cle}
             if db.lire("SELECT COUNT(*) AS n FROM sensorium_suivies WHERE suiveur=?", (qui,))[0]["n"] >= MAX_SUIVIES_PAR_SUIVEUR:
                 return {"ok": False, "refuse": "plafond atteint : %d clés suivies par compte" % MAX_SUIVIES_PAR_SUIVEUR, "cle": cle}
-            db.ecrire("INSERT INTO sensorium_suivies(cle, suiveur, motif, cree_le) VALUES (?,?,?,?)", (cle, qui, str(motif or "")[:200], _maintenant()))
+            db.ecrire("INSERT INTO sensorium_suivies(cle, suiveur, motif, cree_le) VALUES (?,?,?,?)", (cle, qui, me.texte_sur(motif, 200), _maintenant()))
     return {"ok": True, "cle": cle, "nouveau": not deja}
 
 
@@ -399,7 +399,7 @@ def mesure_publier(ctx, cle="", visibilite="instance", libelle=""):
     avant = _un(db, "SELECT * FROM sensorium_visibilites WHERE cle=?", (cle,))
     db.ecrire("INSERT INTO sensorium_visibilites(cle, visibilite, libelle, par, maj) VALUES (?,?,?,?,?) ON CONFLICT(cle) DO UPDATE SET visibilite=excluded.visibilite, "
               "libelle=CASE WHEN excluded.libelle<>'' THEN excluded.libelle ELSE sensorium_visibilites.libelle END, par=excluded.par, maj=excluded.maj",
-              (cle, visibilite, str(libelle or "")[:120], ctx.compte, _maintenant()))
+              (cle, visibilite, me.texte_sur(libelle, 120), ctx.compte, _maintenant()))
     return {"ok": True, "cle": cle, "visibilite": visibilite, "avant": avant}
 
 

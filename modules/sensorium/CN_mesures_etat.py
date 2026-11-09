@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.3  #9d96fe
+# VERSION CN : 0.2.3  #c1ce40
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'état d'une mesure, calculé sans rien lire ni écrire : fonctions pures (l'heure arrive en paramètre).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.3 empreinte=9d96fe ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.3 empreinte=c1ce40 ▼▼▼
 """L'état d'une mesure, calculé sans rien lire ni écrire : fonctions pures (l'heure arrive en paramètre).
 
 Le silence n'est jamais un « ok » : une mesure est `ok`, `alerte` ou `inconnu`. Une lecture trop ancienne, de confiance trop basse, ou jugée avec une horloge qui n'est pas fiable donne `inconnu`.
@@ -28,6 +28,19 @@ FUSION_S = 30                       # une clé n'annonce pas deux changements à
 GRAVITES = ("ok", "warning", "critical")
 ETATS = ("ok", "alerte", "inconnu")
 VISIBILITES = ("instance", "toutes")
+
+
+_INVISIBLES = re.compile("[" + chr(0) + "-" + chr(31) + chr(127) + "-" + chr(159) + chr(0x200b) + "-" + chr(0x200f) + chr(0x2028) + "-" + chr(0x202e) + chr(0x2060) + "-" + chr(0x2069) + chr(0xfeff) + "]")
+_BLANCS = re.compile(r"\s+")
+
+
+def texte_sur(valeur, longueur) -> str:
+    """Le texte libre d'un capteur, sans rien qui trompe l'œil ou le terminal : plus de caractères de contrôle (échappements de terminal compris), de retournement du sens d'écriture ni de caractères de
+    largeur nulle ; les retours à la ligne et tabulations deviennent un espace ; coupé à `longueur`. Les chevrons ne sont PAS touchés : échapper ici ferait un double échappement à l'affichage,
+    et c'est à l'écran de traiter ce texte comme du texte (textContent), jamais comme du balisage."""
+    t = "" if valeur is None else str(valeur)
+    t = _BLANCS.sub(" ", t.replace(chr(0), ""))
+    return _INVISIBLES.sub("", t).strip()[: max(0, int(longueur))]
 
 
 def cle_valide(cle) -> bool:

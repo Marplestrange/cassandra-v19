@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6753fb
+# VERSION CN : 0.1.0  #112961
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6753fb ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=112961 ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -207,6 +207,23 @@ class Capteurs(Mesures):
         db = self.n.executeur.contextes["sensorium"].stockage
         self.assertFalse(db.lire("SELECT 1 FROM sensorium_capteurs WHERE cle='dns.neuf'"))
         self.assertFalse(db.lire("SELECT 1 FROM sensorium_espaces WHERE espace='dns'"))
+
+
+class TexteLibre(Mesures):
+    """Le texte libre qu'un capteur envoie est nettoyé à l'entrée (docs/CN_SENSORIUM_EVOLUTION.md §9 bis)."""
+
+    def test_detail_valeur_texte_libelle_et_unite_sont_nettoyes(self):
+        self.declarer("infra.txt", KINO, libelle="Cert\x1b[2J‮ok", unite="s\x07", fraicheur_s=600)
+        self.ok("capteur_alimenter", KINO, lectures=[dict(cle="infra.txt", valeur="ok\x00‮\nfin", detail="ligne1\r\nligne2\x1b[31m​" + "z" * 900)])
+        d = self.ok("mesure_detail", ADMIN, cle="infra.txt")
+        for champ in ("detail", "libelle"):
+            texte = d[champ]
+            self.assertFalse(any(ord(c) < 32 or c in "‮​" for c in texte), (champ, texte))
+        self.assertLessEqual(len(d["detail"]), 500)
+        self.assertEqual(d["capteur"]["unite"], "s")
+        db = self.n.executeur.contextes["sensorium"].stockage
+        brut = db.lire("SELECT valeur_txt FROM sensorium_lectures WHERE cle='infra.txt'")[0]["valeur_txt"]
+        self.assertEqual(brut, "ok fin")
 
 
 class Etat(Mesures):
