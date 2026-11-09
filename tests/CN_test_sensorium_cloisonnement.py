@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #edd1a0
+# VERSION CN : 0.1.0  #c8c144
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du cloisonnement du Sensorium : un compte ordinaire ne lit pas l'infrastructure de l'instance ; un administrateur la lit toujours.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=edd1a0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c8c144 ▼▼▼
 """Bancs du cloisonnement du Sensorium : un compte ordinaire ne lit pas l'infrastructure de l'instance ; un administrateur la lit toujours.
 
 Un vrai noyau est monté (droits, modules, sensorium) avec un administrateur et deux comptes ordinaires, dont un dans une autre société. Le collecteur est simulé : aucun socket, aucun service réel."""
@@ -58,8 +58,10 @@ class Banc(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         base = Path(cls.tmp.name)
         mods = base / "modules"
+        cls.poser_modules_d_essai(mods)                                              # une sous-classe peut poser un module d'essai avant le montage
         for m in cls.MODULES:
-            shutil.copytree(RACINE / "modules" / m, mods / m, ignore=shutil.ignore_patterns("__pycache__"))
+            if not (mods / m).exists():
+                shutil.copytree(RACINE / "modules" / m, mods / m, ignore=shutil.ignore_patterns("__pycache__"))
         mf = mods / "sensorium" / "CN_manifeste.toml"
         mf.write_text(re.sub(r"\[installation\][^\[]*", "", mf.read_text(encoding="utf-8")), encoding="utf-8")          # pas d'installation de service root dans un banc
         cls.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
@@ -77,6 +79,10 @@ class Banc(unittest.TestCase):
         g = cls.n.catalogue.get("sensorium.monde").faire.__globals__
         cls.patch = mock.patch.dict(g, {"json_de": collecteur_simule})
         cls.patch.start()
+
+    @classmethod
+    def poser_modules_d_essai(cls, mods):
+        pass
 
     @classmethod
     def tearDownClass(cls):

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7e3bbf
+# VERSION CN : 0.1.0  #b79d63
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e3bbf ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b79d63 ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -572,6 +572,76 @@ class Compatibilite(Mesures):
             r = self.n.lancer("sensorium.monde")
         self.assertEqual(r.get("statut"), "fait")
         self.assertTrue(self.ok("etat", ADMIN)["rows"], "l'écran lit toujours le monde")
+
+
+MANIFESTE_EMETTEUR = """[module]
+id = "emetteur"
+nom = "Émetteur d'essai"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Un module du noyau qui nourrit un capteur du Sensorium, comme le fera le Serveur DNS."
+importance = "optionnel"
+sans = "Rien : c'est un module d'essai."
+
+[[droits]]
+id = "voir"
+libelle = "Voir l'émetteur d'essai"
+
+[[moteurs]]
+id = "pousser"
+libelle = "Déclare, alimente et suit un capteur"
+mode = "periodique"
+toutes_les_s = 30
+duree_max_s = 10
+
+[permissions]
+agir = true
+agir_moteur = ["sensorium.capteur_declarer", "sensorium.capteur_alimenter", "sensorium.mesure_suivre"]
+"""
+CODE_EMETTEUR = """
+def brancher(ctx):
+    def pousser(ctx):
+        a = lambda cap, **args: ctx.agir(cap, args, acteur="cassandra")
+        etat["declare"] = a("sensorium.capteur_declarer", cle="dns.latence_locale", libelle="Latence du résolveur local", unite="ms", fraicheur_s=120, alerte=150, critique=800)
+        etat["alimente"] = a("sensorium.capteur_alimenter", lectures=[{"cle": "dns.latence_locale", "valeur": etat["valeur"], "confiance": 0.9}])
+        etat["suit"] = a("sensorium.mesure_suivre", cle="dns.latence_locale", motif="essai")
+    etat = {"valeur": 42}
+    ctx.moteur("pousser", pousser)
+    ctx.etat_essai = etat
+"""
+
+
+class ViaUnModule(Mesures):
+    """La voie prévue pour le Serveur DNS : un module du noyau, depuis son moteur, par ctx.agir (compte système « noyau », acteur « cassandra »)."""
+    MODULES = ("droits", "modules", "sensorium", "emetteur")
+
+    @classmethod
+    def poser_modules_d_essai(cls, mods):
+        (mods / "emetteur").mkdir(parents=True)
+        (mods / "emetteur" / "CN_manifeste.toml").write_text(MANIFESTE_EMETTEUR, encoding="utf-8")
+        (mods / "emetteur" / "CN_module.py").write_text(CODE_EMETTEUR, encoding="utf-8")
+
+    def test_un_module_declare_alimente_et_suit_depuis_son_moteur(self):
+        self.assertEqual(self.n.lancer("emetteur.pousser").get("statut"), "fait")
+        etat = self.n.executeur.contextes["emetteur"].etat_essai
+        self.assertEqual((etat["declare"]["statut"], etat["alimente"]["statut"], etat["suit"]["statut"]), ("faite", "faite", "faite"), etat)
+        d = self.ok("mesure_detail", ADMIN, cle="dns.latence_locale")
+        self.assertEqual((d["etat"], d["valeur"], d["capteur"]["proprietaire"]), ("ok", 42.0, "noyau"))
+        self.assertEqual(d["suivie_par"], ["noyau"])
+        self.h.avance(2)
+        self.n.executeur.contextes["emetteur"].etat_essai["valeur"] = 900
+        self.n.lancer("emetteur.pousser")
+        evs = self.evenements()
+        self.assertEqual([(e["donnees"]["avant"], e["donnees"]["apres"], e["compte"]) for e in evs][-1], ("ok", "alerte", "noyau"))
+
+    def test_un_module_hors_de_sa_liste_ne_peut_pas_agir(self):
+        ctx = self.n.executeur.contextes["emetteur"]
+        ctx._en_moteur.valeur = True
+        try:
+            with self.assertRaises(PermissionError):
+                ctx.agir("sensorium.mesure_publier", {"cle": "dns.x", "visibilite": "toutes"}, acteur="cassandra")
+        finally:
+            ctx._en_moteur.valeur = False
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7a0742 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=05e5fa ▼▼▼ -->
 # Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées
 
 Statut : note de conception, rédigée AVANT le code (09-11-2026). Chaque point porte un statut : **[décidé]** (je l'implémente, c'est écrit ici pourquoi),
@@ -118,16 +118,47 @@ Aucun contrôle d'existence : une page de connaissance peut dépendre d'un objet
 `autoobservation` (droit `voir_infra`) : capteurs, suivies, lectures reçues / refusées (par motif), événements émis / fusionnés, taille de l'historique, dernier tour du suivi, dernier relevé du collecteur, état de l'horloge.
 Un détecteur `capteurs_suivis_muets` fait UN constat qui résume les clés suivies devenues muettes (pas un constat par clé). Collecteur muet : les clés `monde.*` suivies passent à `inconnu` par péremption, pas par invention.
 
-## 10. [proposé, selon le temps] Mesures de collecteur pour le DNS et l'horloge
+## 10. [décidé, fait] Mesures de collecteur : l'horloge et la résolution DNS
 
-Hors du noyau de ce travail : ajouter au collecteur (gardé entier) de petites fonctions `collect_*` : dérive d'horloge et source de temps, résolveur (présent, écoute), puits (`127.0.0.1`/`0.0.0.0`), latence local / public, serve-stale.
-Vu l'ampleur du collecteur (6 710 lignes, root, Linux) je ne les ajoute que si les tests simulés sont possibles sans réseau. Statut final dans le rapport.
+Deux fonctions ajoutées au collecteur (lecture seule, dans la boucle qui attrape déjà toute panne d'une mesure) :
+
+* `horloge.synchronisation` : chrony (`chronyc tracking` : synchronisée, dérive > 0,5 s, non synchronisée) ; repli sur `timedatectl` (NTPSynchronized) ; « horloge non réglée » si la machine croit être avant 2025.
+  `horloge.materielle` : pas de dossier `rtc*` = pas de pile ; alerte seulement si en plus le temps réseau n'est pas synchronisé (c'est le cas du Raspberry Pi sans horloge).
+* `dns.sante` : le premier résolveur de `/etc/resolv.conf` (IPv4) est interrogé par `dig` pour deux noms ; sa réponse vide ou « puits » (127.x, 0.0.0.0) est comparée à un résolveur public (1.1.1.1, 9.9.9.9) AVANT d'alerter ;
+  une différence d'adresses seule n'est pas une panne (les réseaux de diffusion répondent selon le lieu). Latence > 1,5 s : alerte.
+* **Non fait** : le serve-stale d'un résolveur (il ne se voit pas d'ici sans le journal du résolveur, qui dépend du moteur : à mesurer par le module Serveur DNS lui-même, qui déclarera un capteur) ; la présence de SearXNG
+  (l'adresse est un réglage du module Web, que le collecteur root ne lit pas : c'est au module Web de déclarer un capteur `web.moteur`, voir §13).
+* **Non vérifié sur une vraie machine** : les bancs simulent `chronyc`, `timedatectl` et `dig` d'après le format de leur sortie tel que je le connais.
 
 ## 11. Mémoire : la sonde `mesure_etat` [décidé]
 
 Artefact `mesure:<clé>` (empreinte = l'état, qui ne bouge qu'au changement) et sonde `mesure_etat [clé, état attendu]` en vocabulaire fermé. Une mesure `inconnu` ne conclut RIEN (comme « la sonde ne répond plus » : ne pas savoir n'est pas une réfutation).
 
-## 12. Ce qui n'est pas fait ici
+## 12. Ce qui est testé, et ce qui ne l'est pas
+
+Testé (bancs dans `tests/`, voir le rapport pour les nombres) : les fonctions pures ; un VRAI noyau monté avec un administrateur, deux comptes ordinaires dont un dans une autre société, deux comptes « nœud » ; un faux émetteur ; capteur muet,
+confiance, horloge fausse ou reculée, fusion des annonces, plafonds (capteurs, lectures, suivi, liens), clé non suivie, fuites (détail refusé, valeur absente de la vue minimale, inexistant = non publié), la voie directe depuis une société secondaire
+(refusée), la voie par un module ouvert (`_intro["lecture"]`), retour arrière d'une déclaration et d'un suivi, les sondes de la Mémoire contre un Sensorium simulé puis contre le vrai, les mesures d'horloge et de DNS avec de fausses commandes.
+
+**Non testé** : le collecteur sur une vraie machine Linux (chronyc, dig, timedatectl réels) ; l'interface (aucun écran n'a changé, mais les pages Système et Tableaux, derrière un menu d'administrateur, n'ont pas été exercées avec un compte
+ordinaire) ; la charge (milliers de lectures par seconde) ; la concurrence réelle de plusieurs fils HTTP (les écritures partagent un verrou de processus, pas un verrou de base) ; Linux (la suite a tourné sous Windows 11 : deux bancs
+`CodeScelle` y échouent déjà avant toute modification, seuls, et passent dans une exécution groupée — ordre dépendant, non expliqué).
+
+## 13. Utiliser le contrat (pour le Serveur DNS, Kino, le module Web)
+
+```python
+# Dans le moteur d'un module du noyau. Manifeste : [permissions] agir = true, agir_moteur = ["sensorium.capteur_declarer", "sensorium.capteur_alimenter", "sensorium.mesure_suivre"].
+# L'acteur doit être « cassandra » (le défaut « itare » n'est pas dans la liste des acteurs de ces capacités). Essayé tel quel par tests/CN_test_sensorium_mesures.py (ViaUnModule).
+a = lambda cap, **args: ctx.agir(cap, args, acteur="cassandra")
+a("sensorium.capteur_declarer", cle="dns.latence_locale", libelle="Latence du résolveur local", unite="ms", fraicheur_s=120, alerte=150, critique=800, pire="haut")
+a("sensorium.capteur_alimenter", lectures=[{"cle": "dns.latence_locale", "valeur": 42, "observe_a": time.time(), "confiance": 0.9}])
+a("sensorium.mesure_suivre", cle="dns.latence_locale", motif="la page Résolution en dépend")      # puis ctx.ecouter("mesure.change", ...) (à déclarer dans evenements.ecoute)
+```
+
+Un nœud Kino fera de même par l'API avec SON compte machine (droit `sensorium.alimenter`) : son espace (`kino-lyon.*`) lui appartient seul. **Limite assumée** : tous les modules du noyau agissent sous le même compte système
+« noyau » ; deux modules du noyau peuvent donc se marcher sur un espace. Tant qu'un module installé tourne dans le processus avec ses droits, ce n'est pas une frontière de sécurité de plus.
+
+## 14. Ce qui n'est pas fait ici
 
 Le protocole Kino réseau ; la fermeture de `serie` ; des relations avec cascade au registre ; toute modification de l'interface (écrans) ; l'exercice des écrans existants avec un compte ordinaire.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
