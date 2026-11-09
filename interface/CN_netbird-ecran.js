@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #73e346
+// VERSION CN : 0.1.0  #a01509
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=73e346 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a01509 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -70,19 +70,34 @@
     const st = document.createElement("style"); st.id = "nb-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "nb"; corps.appendChild(racine);
 
-    const S = { e: null, occupe: false, erreur: "", couper: false, q: "", filtre: "tous", j: null, lu: 0, nom: "", s: null, g: null, onglet: "machines", edit: "", cle: null, txt: null, dl: null, f: { version: "", domaine: "", email: "", proxy: "nginx", hors: false }, pt: null };
+    const S = { e: null, occupe: false, erreur: "", couper: false, q: "", filtre: "tous", j: null, lu: 0, nom: "", s: null, g: null, onglet: "machines", edit: "", cle: null, txt: null, dl: null, f: { version: "", domaine: "", email: "", proxy: "nginx", hors: false }, pt: null,
+      cMode: "docker", v: null, sBack: true, pf: null, sv: null, ipm: null, ipSaisie: "", dnsv: null, dmv: null };
     let minuterie = null;
 
     async function charger(silencieux) {
       try {
-        if (page === "serveur") { S.s = await agir("netbird.serveur_etat"); S.dm = S.s.installe ? null : await agir("netbird.serveur_domaines").catch(() => null); S.pt = await agir("netbird.serveur_ports", S.s.installe ? {} : { proxy: S.f.proxy }).catch(() => null); }
+        if (page === "serveur") { S.s = await agir("netbird.serveur_etat"); S.dm = S.s.installe ? null : await agir("netbird.serveur_domaines").catch(() => null); S.pt = await agir("netbird.serveur_ports", S.s.installe ? {} : { proxy: S.f.proxy }).catch(() => null);
+          S.pf = await agir("netbird.pare_feu_etat", { proxy: S.s.installe ? (S.s.meta || {}).proxy || "" : S.f.proxy }).catch(() => null);
+          S.sv = S.s.installe ? await agir("netbird.serveur_sauvegardes").catch(() => null) : null;
+          await chargerDns(); }
         else if (page === "gestion") S.g = await chargerReseau();
         else S.e = await agir("netbird.etat");
+        if (page === "vue" || page === "installation" || page === "serveur") S.v = await agir("netbird.versions").catch(() => null);
         S.erreur = ""; S.lu = Date.now();
       } catch (e) { S.erreur = e.message || String(e); if (page === "gestion") S.g = null; }
       if (page === "historique") { try { S.j = (await agir("netbird.journal", { limite: 30 })).gestes; } catch (_) { S.j = null; } }
       if (!silencieux || document.body.contains(racine)) dessiner();
       armer();
+    }
+    // Le DNS du domaine du serveur : l’adresse de la machine, ce que le domaine devient dans les zones de Cassandra, et s’il se résout déjà vers elle
+    async function chargerDns() {
+      const s = S.s || {};
+      if (!s.installe && !S.f.domaine && !S.f.hors && S.dm && S.dm.propositions && S.dm.propositions.length) S.f.domaine = S.dm.propositions[0];      // la liste montre déjà ce domaine : c'est lui qu'on installe si on ne touche à rien
+      const dom = s.installe ? (s.meta || {}).domaine : S.f.domaine;
+      if (!S.ipm) S.ipm = await agir("netbird.serveur_ip").catch(() => null);
+      S.dmv = dom ? await agir("netbird.serveur_domaines", { domaine: dom }).catch(() => null) : null;
+      const ip = S.ipSaisie || (S.ipm ? S.ipm.ip : "");
+      S.dnsv = dom && ip ? await agir("netbird.serveur_dns_verifier", { domaine: dom, ip: ip }).catch(() => null) : null;
     }
     async function chargerReseau() {
       const noms = ["machines", "cles", "groupes", "politiques"], r = await Promise.all(noms.map((n) => agir("netbird.api_" + n))), g = {};
@@ -123,7 +138,7 @@
         (c ? '<div><span class="lib">Cette machine</span><span class="gros">' + esc(e.nom || "—") + '</span><span class="note mono">' + esc(e.fqdn) + copie(e.fqdn) + "</span></div>" +
           '<div><span class="lib">Adresse</span><span class="gros">' + esc(e.ip || "—") + '</span><span class="note mono">' + esc(e.ip6 || "") + copie(e.ip, "Copier l’adresse") + "</span></div>" +
           '<div><span class="lib">Serveurs</span><span class="gros" style="font-size:16px">' + (e.gestion.connecte ? "gestion ✓" : "gestion ✗") + " · " + (e.signal.connecte ? "signal ✓" : "signal ✗") + "</span>" +
-          '<span class="note">relais ' + e.relais_dispo + "/" + e.relais_total + " · client " + esc(e.version) + (e.mode === "docker" ? " · dans Docker" : "") + "</span></div>" : "") + "</div></div>";
+          '<span class="note">relais ' + e.relais_dispo + "/" + e.relais_total + " · client " + esc(e.version) + (S.v && S.v.client_a_jour === false ? " (mise à jour : " + esc(S.v.derniere) + ")" : "") + (e.mode === "docker" ? " · dans Docker" : e.natif ? " · natif" : "") + "</span></div>" : "") + "</div></div>";
     }
     function avisSession(e) {
       return e.session_jours != null && e.session_jours <= 14 ? '<div class="carte" style="color:var(--warn)">La session de cette machine ' + (e.session_jours < 0 ? "a expiré" : "expire dans " + e.session_jours + " j") + " : reconnecte-la (sinon elle quitte le réseau).</div>" : "";
@@ -197,30 +212,45 @@
         '</p><div class="acts" style="margin-top:8px"><button class="btn" data-a="' + (client ? "vers-serveur" : "vers-installation") + '">' + (client ? "Aller au Serveur" : "Aller au Client") + "</button></div></div>";
     }
     // ---- le client : où il est, et le conteneur Docker
+    // Versions : ce qui est installé et la dernière publiée par NetBird (GitHub) ; « inconnu » quand on ne peut pas comparer
+    function ligneVersion(installee, aJour, derniere) {
+      return '<p class="note">Installée : <b>' + esc(installee || "inconnue") + "</b> · dernière publiée : <b>" + esc(derniere || "inconnue") + "</b>" + (aJour === true ? " : à jour." : aJour === false ? " : une mise à jour est disponible." : " : on ne peut pas comparer.") + (S.v && S.v.erreur ? " (" + esc(S.v.erreur) + ")" : "") + "</p>";
+    }
     function pageInstallation(e) {
-      const nonRoot = e.courtier === false;
+      const nonRoot = e.courtier === false, conteneurLa = e.conteneur === "en_marche" || e.conteneur === "arrete", v = S.v || {};
       const oui = (b) => '<span class="pastille ' + (b ? "ok" : "mu") + '">' + (b ? "oui" : "non") + "</span>";
       let h = aiguillage(true) + '<div class="carte"><h2 ' + H2 + ">Ce qui existe sur cette machine</h2><div class=\"hero\">" +
         '<div><span class="lib">Client NetBird installé</span>' + oui(e.natif) + "</div><div><span class=\"lib\">Docker</span>" + oui(e.docker) + "</div>" +
         '<div><span class="lib">Conteneur « ' + esc(e.nom_conteneur) + '»</span><span class="pastille ' + (e.conteneur === "en_marche" ? "ok" : e.conteneur === "absent" ? "mu" : "al") + '">' +
         esc({ en_marche: "en marche", arrete: "arrêté", absent: "absent", autre: "autre service (intouché)" }[e.conteneur] || e.conteneur) + "</span></div>" +
+        ((e.natif || conteneurLa) ? '<div><span class="lib">Version du client</span><span class="gros" style="font-size:16px">' + esc(v.client || e.version || "—") + '</span><span class="note">' + (v.client_a_jour === true ? "à jour" : v.client_a_jour === false ? "disponible : " + esc(v.derniere) : "") + "</span></div>" : "") +
         '<div><span class="lib">Utilisé par Cassandra</span><span class="gros" style="font-size:16px">' + esc({ natif_direct: "client natif", natif_racine: "client natif (par le courtier)", docker: "conteneur Docker", absent: "—" }[e.mode] || e.mode) + "</span></div></div></div>";
       h = aiguillage(true) + avisConflit(e) + h.slice(aiguillage(true).length);
-      if (nonRoot) h += '<div class="carte" style="color:var(--warn)">Le courtier ne répond pas ou la commande root du module n’est pas posée : <span class="mono">CN_install.sh --module netbird</span> la pose. Sans elle, Docker ne se pilote pas d’ici.</div>';
-      const bloque = S.occupe || !e.docker || nonRoot || e.natif || e.conteneur === "en_marche" || e.conteneur === "arrete" || e.conteneur === "autre";
-      h += '<div class="carte"><h2 ' + H2 + ">Installer NetBird dans Docker</h2><p class=\"note\">Crée le conteneur officiel <span class=\"mono\">netbirdio/netbird</span> : il redémarre avec la machine, utilise le réseau de la machine et garde son identité dans un volume. Aucun autre conteneur n’est touché.</p>" +
-        (e.natif ? '<p class="note" style="color:var(--warn)">Un client NetBird est déjà installé sur cette machine : un seul client par machine. Utilise celui-là, ou désinstalle-le avant d’installer le conteneur.</p>' : !e.docker ? '<p class="note" style="color:var(--warn)">Docker n’est pas installé sur cette machine.</p>' : e.conteneur === "autre" ? '<p class="note" style="color:var(--warn)">Un conteneur « ' + esc(e.nom_conteneur) + ' » existe déjà mais n’est pas NetBird : change le réglage « conteneur ».</p>' : "") +
-        '<div class="champs"><label class="ch"><b>Version</b><span class="note">latest, ou une version précise (0.40.0).</span><input type="text" id="nb-tag" value="latest" autocomplete="off" spellcheck="false"></label>' +
-        '<label class="ch"><b>Nom de la machine</b><span class="note">Facultatif.</span><input type="text" id="nb-i-nom" placeholder="argos" autocomplete="off" spellcheck="false"></label>' +
-        '<label class="ch"><b>Serveur de gestion</b><span class="note">Vide : NetBird Cloud (ou le réglage « url_gestion »).</span><input type="text" id="nb-i-url" placeholder="https://netbird.exemple.fr:443" autocomplete="off" spellcheck="false"></label>' +
-        '<label class="ch"><b>Clé d’installation</b><span class="note">Facultatif : avec elle le conteneur se connecte seul ; sans elle, un lien à ouvrir.</span><input type="password" id="nb-i-cle" placeholder="XXXXXXXX-XXXX-…" autocomplete="off" spellcheck="false"></label></div>' +
-        '<div class="acts"><button class="btn pri" data-a="installer"' + (bloque ? " disabled" : "") + ">Installer dans Docker</button></div></div>";
-      if (e.conteneur === "en_marche" || e.conteneur === "arrete") {
-        h += '<div class="carte"><h2 ' + H2 + ">Mettre à jour le client</h2><p class=\"note\">Télécharge la dernière image de la même étiquette et, si elle a changé, recrée le conteneur avec son volume : la machine est coupée quelques secondes, son identité est gardée.</p><div class=\"acts\"><button class=\"btn pri\" data-a=\"client-maj\"" + (S.occupe || nonRoot ? " disabled" : "") + ">Mettre à jour le client</button></div></div>";
+      if (nonRoot) h += '<div class="carte" style="color:var(--warn)">Le courtier ne répond pas ou la commande root du module n’est pas posée : <span class="mono">CN_install.sh --module netbird</span> la pose. Sans elle, ni Docker ni le paquet ne se pilotent d’ici.</div>';
+      const natif = S.cMode === "natif", autre = e.conteneur === "autre";
+      const bloque = S.occupe || nonRoot || e.natif || conteneurLa || autre || (!natif && !e.docker);
+      h += '<div class="carte"><h2 ' + H2 + ">Installer le client NetBird</h2>" +
+        (natif ? '<p class="note">Installe le paquet officiel de NetBird (apt ou dnf, par le courtier) : le client tourne comme un service de la machine. Un seul client par machine. Ensuite, connecte la machine depuis la <b>Vue d’ensemble</b>.</p>'
+          : '<p class="note">Crée le conteneur officiel <span class="mono">netbirdio/netbird</span> : il redémarre avec la machine, utilise le réseau de la machine et garde son identité dans un volume. Aucun autre conteneur n’est touché.</p>') +
+        (e.natif ? '<p class="note" style="color:var(--warn)">Un client NetBird est déjà installé sur cette machine : un seul client par machine. Utilise celui-là, ou désinstalle-le avant d’en installer un autre.</p>' : conteneurLa ? '<p class="note" style="color:var(--warn)">Un conteneur NetBird existe déjà : un seul client par machine. Retire-le avant d’installer le paquet.</p>' : !natif && !e.docker ? '<p class="note" style="color:var(--warn)">Docker n’est pas installé sur cette machine : choisis « Natif ».</p>' : autre ? '<p class="note" style="color:var(--warn)">Un conteneur « ' + esc(e.nom_conteneur) + ' » existe déjà mais n’est pas NetBird : change le réglage « conteneur ».</p>' : "") +
+        '<div class="champs"><label class="ch"><b>Où l’installer</b><span class="note">Docker (conseillé : isolé, facile à mettre à jour) ou natif (paquet officiel, service de la machine).</span><select id="nb-i-mode"><option value="docker"' + (natif ? "" : " selected") + '>Dans Docker</option><option value="natif"' + (natif ? " selected" : "") + ">Natif (paquet officiel)</option></select></label>" +
+        (natif ? "" : '<label class="ch"><b>Version</b><span class="note">latest, ou une version précise (0.40.0).</span><input type="text" id="nb-tag" value="latest" autocomplete="off" spellcheck="false"></label>' +
+          '<label class="ch"><b>Nom de la machine</b><span class="note">Facultatif.</span><input type="text" id="nb-i-nom" placeholder="argos" autocomplete="off" spellcheck="false"></label>' +
+          '<label class="ch"><b>Serveur de gestion</b><span class="note">Vide : NetBird Cloud (ou le réglage « url_gestion »).</span><input type="text" id="nb-i-url" placeholder="https://netbird.exemple.fr:443" autocomplete="off" spellcheck="false"></label>' +
+          '<label class="ch"><b>Clé d’installation</b><span class="note">Facultatif : avec elle le conteneur se connecte seul ; sans elle, un lien à ouvrir.</span><input type="password" id="nb-i-cle" placeholder="XXXXXXXX-XXXX-…" autocomplete="off" spellcheck="false"></label>') + "</div>" +
+        '<div class="acts"><button class="btn pri" data-a="' + (natif ? "installer-natif" : "installer") + '"' + (bloque ? " disabled" : "") + ">" + (natif ? "Installer le client natif" : "Installer dans Docker") + "</button></div></div>";
+      if (conteneurLa || e.natif) {
+        const aJour = v.client_a_jour === true;
+        h += '<div class="carte"><h2 ' + H2 + ">Mettre à jour le client</h2>" + ligneVersion(v.client || e.version, v.client_a_jour, v.derniere) +
+          '<p class="note">' + (e.natif ? "Le paquet est mis à jour par le gestionnaire de paquets de la machine (apt ou dnf), par le courtier." : "L’image est téléchargée et, si elle a changé, le conteneur est recréé avec son volume : la machine est coupée quelques secondes, son identité est gardée.") + " Le geste peut être défait depuis l’Historique.</p>" +
+          '<div class="acts"><button class="btn pri" data-a="client-maj"' + (S.occupe || nonRoot || aJour ? " disabled" : "") + ">" + (aJour ? "Déjà à jour" : v.client_a_jour === false ? "Mettre à jour vers " + esc(v.derniere) : "Mettre à jour le client") + "</button></div></div>";
+      }
+      if (conteneurLa) {
         h += '<div class="carte"><h2 ' + H2 + ">Retirer le conteneur</h2><p class=\"note\">Le volume est gardé : une réinstallation retrouve l’identité de la machine dans NetBird.</p><div class=\"acts\">" +
           (S.couper ? '<span class="confirme"><label class="coche"><input type="checkbox" id="nb-purge"><span>Supprimer aussi le volume : la machine perd son identité et il faudra une nouvelle identification.</span></label> <button class="btn dng" data-a="retirer-oui">Oui, retirer</button><button class="btn" data-a="deconnecter-non">Non</button></span>'
             : '<button class="btn dng" data-a="retirer"' + (S.occupe || nonRoot ? " disabled" : "") + ">Retirer le conteneur…</button>") + "</div></div>";
       }
+      if (e.natif) h += '<div class="carte"><h2 ' + H2 + ">Désinstaller le client natif</h2><p class=\"note\">Retire le paquet NetBird de la machine. La machine reste enregistrée dans le réseau : elle pourra se reconnecter.</p><div class=\"acts\"><button class=\"btn dng\" data-a=\"natif-retirer\"" + (S.occupe || nonRoot ? " disabled" : "") + ">Désinstaller le client…</button></div></div>";
       return h;
     }
 
@@ -240,14 +270,54 @@
         '<p class="note">Il faut aussi un nom de domaine propre au serveur NetBird (pas celui de Cassandra) qui pointe déjà vers cette machine, et les ports 80, 443 et 3478/udp ouverts (avec le proxy « nginx » ou « caddy », ton proxy existant publie le serveur : seul le port 3478/udp doit être libre).</p></div>';
     }
     const ETP = { libre: ["ok", "libre"], occupe: ["dg", "déjà pris : bloque l’installation"], pris_par_proxy: ["mu", "pris par ton proxy (normal)"], inconnu: ["mu", ""] };
+    // Le pare-feu : lesquels des ports publics de NetBird sont ouverts, et un bouton pour ouvrir ceux qui manquent
+    function bandePareFeu() {
+      const pf = S.pf;
+      if (!pf) return "";
+      if (!pf.outil) return '<p class="note">Aucun pare-feu géré d’ici (ufw ou firewalld) : si la machine en a un autre, ouvre-y <span class="mono">' + esc((pf.publics || []).join(", ")) + "</span> toi-même.</p>";
+      if (!pf.actif) return '<p class="note">Le pare-feu <b>' + esc(pf.outil) + "</b> est inactif : les ports ne sont pas filtrés.</p>";
+      const manque = (pf.publics || []).filter((p) => !(pf.ouverts || []).includes(p));
+      return '<div class="acts" style="margin-top:8px"><span class="note">Pare-feu : <b>' + esc(pf.outil) + "</b> (actif)</span>" + (manque.length ? '<button class="btn" data-a="pf-ouvrir"' + (S.occupe ? " disabled" : "") + ">Ouvrir " + esc(manque.join(", ")) + " dans " + esc(pf.outil) + "</button>" : '<span class="pastille ok">ports ouverts</span>') + "</div>";
+    }
     function cartePorts() {
       const p = S.pt;
       if (!p || !p.ports.length) return "";
+      const pf = S.pf && S.pf.outil && S.pf.actif ? S.pf : null;
       return '<div class="carte"><h2 ' + H2 + ">Ports" + (p.proxy ? " (proxy " + esc(p.proxy) + ")" : "") + '</h2><div class="pairs">' +
         p.ports.map((x) => '<div class="pair" style="grid-template-columns:minmax(110px,auto) minmax(140px,1fr) auto"><span class="nom">' + esc(x.proto.toUpperCase() + " " + x.port) + '<br><span class="note">' + (x.public ? "à ouvrir sur internet" : "sur cette machine seulement") + "</span></span><span class=\"note\">" + esc(x.usage) + "</span>" +
-          (p.installe || !ETP[x.etat][1] ? "<span></span>" : '<span class="pastille ' + ETP[x.etat][0] + '">' + ETP[x.etat][1] + "</span>") + "</div>").join("") + "</div>" +
+          "<span>" + (p.installe || !ETP[x.etat][1] ? "" : '<span class="pastille ' + ETP[x.etat][0] + '">' + ETP[x.etat][1] + "</span>") +
+          (pf && x.public ? ' <span class="pastille ' + (pf.ouverts.includes(x.port + "/" + x.proto) ? "ok" : "al") + '">' + (pf.ouverts.includes(x.port + "/" + x.proto) ? "ouvert" : "fermé") + " dans " + esc(pf.outil) + "</span>" : "") + "</span></div>").join("") + "</div>" + bandePareFeu() +
         (p.reels.length ? '<p class="note">Publiés par les conteneurs : <span class="mono">' + p.reels.map((r) => esc(r.service + " " + r.ports.join(", "))).join(" · ") + "</span></p>" : "") +
         '<p class="note">Le port 3478/udp ne passe jamais par un proxy. Source : documentation de NetBird (selfhosted-quickstart, external-reverse-proxy).</p></div>';
+    }
+    // L’enregistrement DNS du domaine du serveur : créé dans FASTPANEL quand la zone y est, à faire chez l’hébergeur DNS sinon
+    function carteDns(s) {
+      const dom = s.installe ? (s.meta || {}).domaine : S.f.domaine, titre = '<h2 ' + H2 + ">Enregistrement DNS</h2>";
+      if (!dom) return '<div class="carte">' + titre + '<p class="note">Choisis d’abord le domaine du serveur.</p></div>';
+      const ip = S.ipSaisie || (S.ipm ? S.ipm.ip : ""), v = S.dnsv, par = (S.dmv && S.dmv.par) || "", zone = /zone DNS/.test(par), present = !!(v && v.correspond && v.attendue === ip);
+      const etat = !v ? '<span class="pastille mu">inconnu</span>' : v.correspond ? '<span class="pastille ok">présent</span>' : v.resolu ? '<span class="pastille al">pointe ailleurs : ' + esc(v.adresses.join(", ")) + "</span>" : '<span class="pastille al">absent</span>';
+      let h = '<div class="carte">' + titre + '<div class="pairs"><div class="pair" style="grid-template-columns:minmax(120px,auto) minmax(120px,1fr) auto"><span class="nom">' + esc(dom) + '<br><span class="note">type A</span></span><span class="mono note">' + esc(ip || "adresse inconnue") + "</span><span>" + etat + "</span></div></div>" +
+        '<label class="ch" style="margin-top:8px"><b>Adresse de cette machine</b><span class="note">' + (S.ipm && S.ipm.privee ? "L’adresse vue ici est privée (machine derrière un routeur) : saisis l’adresse publique." : "Adresse vue par le système ; corrige-la si la machine est derrière un routeur.") + '</span><input type="text" id="nb-d-ip" value="' + esc(ip) + '" autocomplete="off" spellcheck="false"></label>';
+      if (present) h += '<p class="note">L’enregistrement est en place' + (zone ? " (zone hébergée par le panneau FASTPANEL)" : "") + ".</p>";
+      else if (zone) h += '<p class="note">La zone de ce domaine est hébergée par FASTPANEL : Cassandra peut créer l’enregistrement.</p><div class="acts"><button class="btn pri" data-a="dns-creer"' + (S.occupe || !ip ? " disabled" : "") + ">Créer l’enregistrement dans FASTPANEL</button><button class=\"btn\" data-a=\"dns-verifier\">Vérifier</button></div>";
+      else if (par) h += '<p class="note">Ce site est géré par le panneau d’hébergement : son DNS pointe normalement déjà vers cette machine.</p><div class="acts"><button class="btn" data-a="dns-verifier">Vérifier</button></div>';
+      else h += '<p class="note" style="color:var(--warn)">Domaine que Cassandra n’administre pas : crée cet enregistrement chez ton hébergeur DNS, puis vérifie.</p><div class="acts"><button class="btn" data-a="copier" data-t="' + esc(dom + " A " + ip) + '">Copier l’enregistrement</button><button class="btn" data-a="dns-verifier">Vérifier la résolution</button></div>';
+      return h + "</div>";
+    }
+    // Les sauvegardes du serveur : hors du dossier du serveur, donc la purge ne les emporte pas
+    function carteSauvegardes() {
+      const sv = S.sv, liste = (sv && sv.sauvegardes) || [], taille = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + " Mo" : Math.max(1, Math.round(n / 1024)) + " Ko";
+      const RAISON = { manuelle: "à la demande", avant_maj: "avant une mise à jour", avant_retrait: "avant un retrait avec données", avant_restauration: "avant une restauration" };
+      return '<div class="carte"><h2 ' + H2 + ">Sauvegardes</h2><p class=\"note\">Copie des comptes, machines et clés du serveur, dans <span class=\"mono\">" + esc((sv && sv.dossier) || "/var/backups/cassandra/netbird") + "</span> (lisible par root seul). Le serveur est arrêté quelques secondes le temps de la copie. Une sauvegarde est faite avant chaque mise à jour et avant tout retrait avec données ; les " + ((sv && sv.garde) || 10) + " plus récentes sont gardées.</p>" +
+        (liste.length ? '<div class="pairs">' + liste.map((b) => '<div class="pair" style="grid-template-columns:minmax(130px,1fr) minmax(90px,auto) auto"><span class="nom">' + esc(b.quand) + '<br><span class="note">' + esc(RAISON[b.raison] || b.raison) + (b.version ? " · " + esc(b.version) : "") + '</span></span><span class="note">' + esc(taille(b.taille)) + '</span><button class="btn" data-a="srv-resto" data-id="' + esc(b.id) + '"' + (S.occupe ? " disabled" : "") + ">Restaurer…</button></div>").join("") + "</div>" : '<p class="note">' + (sv ? "Aucune sauvegarde pour l’instant." : "La liste n’est pas lisible pour l’instant.") + "</p>") +
+        '<div class="acts"><button class="btn" data-a="srv-sauv"' + (S.occupe ? " disabled" : "") + ">Sauvegarder maintenant</button></div></div>";
+    }
+    function carteMajServeur(s) {
+      const m = s.meta || {}, v = S.v || {}, aJour = v.serveur_a_jour === true;
+      return '<div class="carte"><h2 ' + H2 + ">Mettre à jour le serveur</h2>" + ligneVersion(m.version, v.serveur_a_jour, v.derniere) +
+        '<p class="note">Télécharge les nouvelles images, puis redémarre le serveur : les machines se reconnectent seules. NetBird publie sous la même étiquette : la version affichée est celle de la dernière publication installée. Le geste peut être défait depuis l’Historique (données, configuration et images d’avant), s’il y a eu une sauvegarde.</p>' +
+        '<label class="coche"><input type="checkbox" id="nb-s-sauv"' + (S.sBack ? " checked" : "") + '><span>Sauvegarder les données avant (conseillé)</span></label>' +
+        '<div class="acts" style="margin-top:8px"><button class="btn pri" data-a="srv-maj"' + (S.occupe || aJour ? " disabled" : "") + ">" + (aJour ? "Déjà à jour" : v.serveur_a_jour === false ? "Mettre à jour vers " + esc(v.derniere) : "Mettre à jour le serveur") + "</button></div></div>";
     }
     const AUTRE = "__autre";
     // Le domaine se choisit dans UNE liste : ceux que Cassandra administre, puis, en dernier, « un autre domaine » (champ libre, DNS et certificat à la charge de l’utilisateur).
@@ -288,11 +358,11 @@
         fiche("Domaine", esc(m.domaine || "—")) + fiche("Version", esc(m.version || "—")) + fiche("Proxy", esc(m.proxy || "—")) + fiche("API", s.api_joignable ? "joignable ✓" : "ne répond pas ✗") + "</div>" +
         (s.conteneurs.length ? '<div class="pairs">' + s.conteneurs.map((c) => '<div class="pair" style="grid-template-columns:auto minmax(0,1fr) minmax(0,auto)"><span class="pt' + (c.etat === "running" ? " on" : "") + '"></span><span class="nom">' + esc(c.service) + '</span><span class="note" style="overflow-wrap:anywhere">' + esc(c.etat) + " · " + esc(c.image) + "</span></div>").join("") + "</div>" : "") + "</div>";
       if (s.setup_requis && url) h += '<div class="lien"><h2 ' + H2 + ">Dernier pas : crée le premier compte administrateur</h2><p class=\"note\">Ouvre la page d’installation de NetBird et crée toi-même ton compte : Cassandra ne choisit ni ne garde aucun mot de passe. Puis, dans le tableau de bord, crée un jeton d’accès personnel (Settings › Personal Access Tokens) et donne-le à Cassandra depuis la page <b>Administration</b>.</p><div class=\"acts\"><a class=\"btn pri\" href=\"" + esc(url) + '/setup" target="_blank" rel="noopener noreferrer">Ouvrir la page de création du compte</a></div></div>';
-      h += '<div class="carte"><h2 ' + H2 + ">Mettre à jour le serveur</h2><p class=\"note\">Télécharge les dernières images NetBird de la version installée, puis redémarre le serveur : les machines se reconnectent seules, les données et la configuration sont gardées.</p><div class=\"acts\"><button class=\"btn pri\" data-a=\"srv-maj\"" + (S.occupe ? " disabled" : "") + ">Mettre à jour le serveur</button></div></div>";
+      h += carteMajServeur(s) + carteDns(s) + carteSauvegardes();
       h += cartePorts() + '<div class="carte"><h2 ' + H2 + ">Entretien</h2><div class=\"acts\"><button class=\"btn\" data-a=\"srv-journaux\"" + (S.occupe ? " disabled" : "") + ">Voir les journaux</button><button class=\"btn\" data-a=\"srv-redemarrer\"" + (S.occupe ? " disabled" : "") + ">Redémarrer</button>" +
         (m.proxy === "nginx" ? '<button class="btn" data-a="srv-nginx"' + (S.occupe ? " disabled" : "") + ">Voir la conf nginx</button>" : "") + "</div>" + carteTexte() + "</div>";
       h += '<div class="carte"><h2 ' + H2 + ">Retirer le serveur</h2><p class=\"note\">Arrête les conteneurs. Les données (comptes, machines, clés) sont gardées : réinstaller retrouve le réseau tel quel.</p><div class=\"acts\">" +
-        (S.couper ? '<span class="confirme"><label class="coche"><input type="checkbox" id="nb-s-purge"><span>Supprimer aussi les données : tous les comptes, machines et clés sont perdus, sans retour.</span></label> <button class="btn dng" data-a="srv-retirer-oui">Oui, retirer</button><button class="btn" data-a="deconnecter-non">Non</button></span>'
+        (S.couper ? '<span class="confirme"><label class="coche"><input type="checkbox" id="nb-s-purge"><span>Supprimer aussi les données : tous les comptes, machines et clés sont retirés du serveur. Une sauvegarde est faite avant, hors du dossier du serveur ; sans elle, rien n’est supprimé.</span></label> <button class="btn dng" data-a="srv-retirer-oui">Oui, retirer</button><button class="btn" data-a="deconnecter-non">Non</button></span>'
           : '<button class="btn dng" data-a="srv-retirer"' + (S.occupe ? " disabled" : "") + ">Retirer le serveur…</button>") + "</div></div>";
       return h;
     }
@@ -302,7 +372,7 @@
     }
     function pageServeur(s) {
       if (!s.disponible) return '<div class="carte" style="color:var(--warn)">La commande root « serveur » du module ne répond pas : <span class="mono">CN_install.sh --module netbird</span> la pose, et le courtier doit être armé. Détail : ' + esc(s.erreur || "") + "</div>";
-      return aiguillage(false) + (s.installe ? carteServeur(s) : cartePrerequis(s) + cartePorts() + carteInstallation(s));
+      return aiguillage(false) + (s.installe ? carteServeur(s) : cartePrerequis(s) + cartePorts() + carteDns(s) + carteInstallation(s));
     }
 
     // ---- l’administration du réseau, par l’API du serveur : machines, clés d’installation, groupes, politiques
@@ -371,9 +441,14 @@
     function lier() {
       racine.querySelectorAll("[data-a]").forEach((b) => b.addEventListener("click", () => geste(b)));
       const px = racine.querySelector("#nb-s-prx");
-      if (px) px.addEventListener("change", async () => { S.f = lireForm(); try { S.pt = await agir("netbird.serveur_ports", { proxy: S.f.proxy }); } catch (_) { /* la carte garde l’ancienne vue */ } dessiner(); });
+      if (px) px.addEventListener("change", async () => { S.f = lireForm(); try { S.pt = await agir("netbird.serveur_ports", { proxy: S.f.proxy }); S.pf = await agir("netbird.pare_feu_etat", { proxy: S.f.proxy }).catch(() => S.pf); } catch (_) { /* la carte garde l’ancienne vue */ } dessiner(); });
+      const im = racine.querySelector("#nb-i-mode"), sb = racine.querySelector("#nb-s-sauv"), di = racine.querySelector("#nb-d-ip"), dd = racine.querySelector("#nb-s-dom");
+      if (im) im.addEventListener("change", () => { S.cMode = im.value; dessiner(); });
+      if (sb) sb.addEventListener("change", () => { S.sBack = sb.checked; });
+      if (di) di.addEventListener("change", async () => { S.ipSaisie = di.value.trim(); await chargerDns(); dessiner(); });
+      if (dd) dd.addEventListener("change", async () => { S.f = lireForm(); await chargerDns(); dessiner(); });
       const ds = racine.querySelector("#nb-s-domsel");
-      if (ds) ds.addEventListener("change", () => { S.f = lireForm(); if (S.f.hors) S.f.domaine = ""; dessiner(); });
+      if (ds) ds.addEventListener("change", async () => { S.f = lireForm(); if (S.f.hors) S.f.domaine = ""; await chargerDns(); dessiner(); });
       const qi = racine.querySelector("#nb-q"), fi = racine.querySelector("#nb-f"), n = racine.querySelector("#nb-nom");
       if (qi) qi.addEventListener("input", () => { S.q = qi.value; dessiner(); const n2 = racine.querySelector("#nb-q"); if (n2) { n2.focus(); n2.setSelectionRange(n2.value.length, n2.value.length); } });
       if (fi) fi.addEventListener("change", () => { S.filtre = fi.value; dessiner(); });
@@ -406,9 +481,33 @@
         return faire(() => (cle ? avecCle(cle, () => agir("netbird.installer_docker", Object.assign({ avec_cle: true }, args))) : agir("netbird.installer_docker", args)), "NetBird est installé dans Docker.");
       }
       if (a === "client-maj") {
-        if (!confirm("Mettre à jour le client NetBird ? L’image est téléchargée ; si elle a changé, le conteneur est recréé (identité gardée) et la machine est coupée quelques secondes.")) return;
-        return faire(async () => { const r = await agir("netbird.mettre_a_jour_client"); dire(r && r.maj_change ? "Client NetBird mis à jour." : "Le client NetBird est déjà à jour."); }, "");
+        if (!confirm("Mettre à jour le client NetBird ? " + (S.e && S.e.natif && S.e.conteneur === "absent" ? "Le paquet est mis à jour par apt ou dnf." : "L’image est téléchargée ; si elle a changé, le conteneur est recréé (identité gardée).") + " La machine est coupée quelques secondes. Le geste peut être défait depuis l’Historique.")) return;
+        return faire(async () => { const r = await agir("netbird.mettre_a_jour_client"); dire(r && r.maj_change ? "Client NetBird mis à jour" + (r.version_apres && r.version_avant !== r.version_apres ? " : " + r.version_avant + " → " + r.version_apres : "") + "." : "Le client NetBird est déjà à jour."); }, "");
       }
+      if (a === "installer-natif") {
+        if (!confirm("Installer le client NetBird natif (paquet officiel) ? Le dépôt de NetBird est ajouté à la machine (apt ou dnf, clés vérifiées), puis le paquet est installé et son service démarré.")) return;
+        return faire(() => agir("netbird.installer_natif"), "Le client NetBird natif est installé : connecte-le depuis la Vue d’ensemble.");
+      }
+      if (a === "natif-retirer") { if (!confirm("Désinstaller le client NetBird natif ? La machine quitte le réseau tant qu’elle n’est pas reconnectée.")) return; return faire(() => agir("netbird.retirer_natif"), "Client natif désinstallé."); }
+      if (a === "srv-sauv") return faire(async () => { const r = await agir("netbird.serveur_sauvegarder"); dire("Sauvegarde " + r.id + " faite."); }, "");
+      if (a === "srv-resto") {
+        const id = b.dataset.id;
+        if (!confirm("Restaurer la sauvegarde " + id + " ? Les données et la configuration actuelles du serveur sont remplacées (une sauvegarde de sécurité est faite avant). Le serveur est arrêté puis relancé.")) return;
+        return faire(() => agir("netbird.serveur_restaurer", { id: id }), "Sauvegarde restaurée.");
+      }
+      if (a === "pf-ouvrir") {
+        const px = S.s && S.s.installe ? (S.s.meta || {}).proxy || "" : S.f.proxy, manque = ((S.pf && S.pf.publics) || []).filter((p) => !(S.pf.ouverts || []).includes(p));
+        if (!confirm("Ouvrir " + manque.join(", ") + " dans le pare-feu " + ((S.pf && S.pf.outil) || "") + " de cette machine ? Seuls ces ports sont ajoutés ; rien n’est retiré. Le geste peut être défait depuis l’Historique.")) return;
+        return faire(() => agir("netbird.pare_feu_ouvrir", { proxy: px }), "Ports ouverts dans le pare-feu.");
+      }
+      if (a === "dns-creer") {
+        const ip = val("#nb-d-ip"), dom = S.s && S.s.installe ? (S.s.meta || {}).domaine : S.f.domaine;
+        if (!ip || !dom) { dire("Il faut un domaine et l’adresse de la machine.", "err"); return; }
+        if (!confirm("Créer dans la zone FASTPANEL l’enregistrement " + dom + " A " + ip + " ? Un nom qui a déjà un enregistrement n’est jamais remplacé. Le geste peut être défait.")) return;
+        S.ipSaisie = ip;
+        return faire(() => agir("fastpanel.dns_enregistrer", { domaine: dom, adresse: ip }), "Enregistrement DNS créé : la propagation peut prendre quelques minutes.");
+      }
+      if (a === "dns-verifier") { S.ipSaisie = val("#nb-d-ip"); return charger(); }
       if (a === "txt-fermer") { S.txt = null; dessiner(); return; }
       if (a === "onglet") { S.onglet = b.dataset.id; S.edit = ""; dessiner(); return; }
       if (a === "cle-ok") { S.cle = null; dessiner(); return; }
@@ -433,11 +532,16 @@
         return faire(async () => { await agir("netbird.serveur_installer", { version: S.f.version, sha256: S.dl.sha256, domaine: S.f.domaine, email: S.f.email, proxy: S.f.proxy, hors_cassandra: S.f.hors }); S.dl = null; }, "Serveur NetBird installé.");
       }
       if (a === "srv-redemarrer") { if (!confirm("Redémarrer le serveur NetBird ? Les machines se reconnectent seules.")) return; return faire(() => agir("netbird.serveur_redemarrer"), "Serveur redémarré."); }
-      if (a === "srv-maj") { if (!confirm("Mettre à jour les images du serveur NetBird ? Elles sont téléchargées puis le serveur redémarre.")) return; return faire(() => agir("netbird.serveur_mettre_a_jour"), "Serveur mis à jour."); }
+      if (a === "srv-maj") {
+        const sauv = !!(racine.querySelector("#nb-s-sauv") || {}).checked;
+        S.sBack = sauv;
+        if (!confirm("Mettre à jour le serveur NetBird" + (S.v && S.v.derniere ? " vers " + S.v.derniere : "") + (sauv ? " après une sauvegarde" : " SANS sauvegarde (la mise à jour ne pourra pas être défaite)") + " ? Les images sont téléchargées puis le serveur redémarre.")) return;
+        return faire(async () => { const r = await agir("netbird.serveur_mettre_a_jour", { sauvegarde: sauv }); dire("Serveur mis à jour" + (r.version_avant !== r.version_apres ? " : " + r.version_avant + " → " + r.version_apres : "") + (r.sauvegarde ? " ; sauvegarde " + r.sauvegarde + " faite avant." : ".")); }, "");
+      }
       if (a === "srv-journaux") return faire(async () => { S.txt = { titre: "Journaux du serveur (80 dernières lignes)", texte: (await agir("netbird.serveur_journaux")).journaux || "(vide)" }; }, "");
       if (a === "srv-nginx") return faire(async () => { S.txt = { titre: "Configuration nginx à publier", texte: (await agir("netbird.serveur_nginx")).conf || "" }; }, "");
       if (a === "srv-retirer") { S.couper = true; dessiner(); return; }
-      if (a === "srv-retirer-oui") { const purger = !!(racine.querySelector("#nb-s-purge") || {}).checked; return faire(async () => { const r = await agir("netbird.serveur_retirer", { purger: purger }); if (r && r.avertissement) dire(r.avertissement, "err"); else dire(r && r.purge ? "Serveur et données retirés." : "Serveur retiré (données gardées)."); }, ""); }
+      if (a === "srv-retirer-oui") { const purger = !!(racine.querySelector("#nb-s-purge") || {}).checked; return faire(async () => { const r = await agir("netbird.serveur_retirer", { purger: purger }); if (r && r.avertissement) dire(r.avertissement, "err"); else dire(r && r.purge ? "Serveur et données retirés" + (r.sauvegarde ? " ; sauvegarde " + r.sauvegarde + " gardée." : ".") : "Serveur retiré (données gardées)."); }, ""); }
       // ---- le réseau
       if (a === "m-renommer") { S.edit = b.dataset.id; dessiner(); return; }
       if (a === "m-non") { S.edit = ""; dessiner(); return; }
