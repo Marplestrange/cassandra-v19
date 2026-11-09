@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.1.0  #328020
+# VERSION CN : 0.5.0  #328020
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Dit si la cage des chercheurs s'ouvre pour le service ; ne bloque JAMAIS un déploiement (la cage est un mieux : sans elle, le chercheur tourne sans enveloppe et l'écran le dit).
 # MÉTHODE    : essaie bubblewrap sous l'utilisateur du service et lit la restriction d'espaces de noms du service ; toujours code 0.
 # ══════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=328020 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=328020 ▼▼▼
 set -u
 : "${CASSANDRA_UTILISATEUR:?}"
 command -v bwrap >/dev/null 2>&1 || { echo "evolution : pas de cage (bubblewrap absent) : les chercheurs tournent sans enveloppe"; exit 0; }

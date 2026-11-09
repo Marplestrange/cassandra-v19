@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d21706
+# VERSION CN : 0.1.0  #3ed371
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module tailscale : le client est simulé (un faux `tailscale` qui répond comme le vrai), le reste tourne dans un vrai noyau.
 # MÉTHODE    : on remplace `_lancer` du module ; on vérifie les états, le lien d'identification, la clé qui ne traîne nulle part, et les refus dits en clair.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d21706 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3ed371 ▼▼▼
 """Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."""
 import json
 import shutil
@@ -65,6 +65,11 @@ class Monde(unittest.TestCase):
         self.reponses = {}
         self.prefs = {"RunSSH": False}
         self.g["_lancer"] = self.faux_client
+        self.g["_TTL"] = 0                                          # pas de cache : les bancs changent l'état du faux client entre deux lectures
+        self.pong = ""
+        self.netcheck = {"UDP": True, "IPv4": True, "IPv6": False, "MappingVariesByDestIP": False, "PreferredDERP": 28, "RegionLatency": {"28": 6363935, "14": 33737425, "1": 103629646}}
+        self.derp = {"Regions": {"28": {"RegionCode": "hel", "RegionName": "Helsinki"}, "14": {"RegionCode": "fra", "RegionName": "Frankfurt"}, "1": {"RegionCode": "nyc", "RegionName": "New York City"}}}
+        self.serve = {}
         self.g["utilisateur"] = lambda: "cassandra"          # le compte qui pilote : fixé, le banc ne dépend pas de celui qui le lance
         self.apres_cle = CONNECTE
         self.g["_PROC"] = str(base / "pas-de-proc")            # le banc ne regarde pas les vrais processus de la machine
@@ -79,9 +84,35 @@ class Monde(unittest.TestCase):
             return 0, self.bruit_avant + json.dumps(self.etat) + self.bruit_apres
         if args[:2] == ["debug", "prefs"]:
             return 0, json.dumps(self.prefs)
+        if args[:2] == ["debug", "derp-map"]:
+            return 0, json.dumps(self.derp)
+        if args[0] == "netcheck":
+            if "netcheck" in self.reponses:
+                return self.reponses["netcheck"]
+            return 0, "# Warning: this JSON format is not yet considered a stable interface" + chr(10) + "2026/11/09 portmap: monitor: gateway changed" + chr(10) + json.dumps(self.netcheck)
+        if args[0] == "serve":
+            if args[1:3] == ["status", "--json"]:
+                return 0, json.dumps(self.serve)
+            if args[1] == "reset":
+                self.serve = {}
+                return 0, ""
+            port = [x.split("=")[1] for x in args if x.startswith("--https=")][0]
+            chemin = args[args.index("--set-path") + 1] if "--set-path" in args else "/"
+            hote = "argos.tail1.ts.net:" + port
+            web = dict(self.serve.get("Web") or {})
+            web[hote] = {"Handlers": dict((web.get(hote) or {}).get("Handlers") or {}, **{chemin: {"Proxy": "http://" + args[-1].replace("http://", "")}})}
+            self.serve = dict(self.serve, Web=web, TCP={port: {"HTTPS": True}})
+            return 0, ""
         cle = args[0]
         if cle in self.reponses:
             return self.reponses[cle]
+        if args == ["up"] and getattr(self, "identification_requise", False):
+            return None, "pas de réponse de tailscaled"         # le `up` seul attend une identification qui ne vient pas
+        if args == ["up"] and self.etat.get("BackendState") == "Stopped":
+            self.etat = CONNECTE                              # `up` seul : la machine enregistrée reprend sa configuration
+            return 0, ""
+        if cle == "up" and any(x == "--timeout=15m" or x.startswith("--timeout") for x in args) and self.etat.get("BackendState") == "Stopped" and not [x for x in args if x.startswith("--reset")]:
+            return 1, "changing settings via 'tailscale up' requires mentioning all non-default flags"       # ce que le vrai client dit (constaté sur argos)
         if cle == "up":
             f = [x for x in args if x.startswith("--auth-key=file:")]
             if f:
@@ -95,6 +126,22 @@ class Monde(unittest.TestCase):
             self.etat = statut("NeedsLogin")
         if cle == "set" and args[1].startswith("--ssh="):
             self.prefs["RunSSH"] = args[1].endswith("true")
+        if cle == "set" and "=" in args[1]:
+            nom, val = args[1].split("=", 1)
+            booleens = {"--accept-routes": "RouteAll", "--accept-dns": "CorpDNS", "--shields-up": "ShieldsUp"}
+            if nom in booleens:
+                self.prefs[booleens[nom]] = val == "true"
+            elif nom == "--hostname":
+                self.prefs["Hostname"] = val
+            elif nom == "--exit-node":
+                self.prefs["ExitNodeIP"] = val
+            elif nom == "--advertise-routes":
+                self.prefs["AdvertiseRoutes"] = [x for x in val.split(",") if x] or None
+            elif nom == "--advertise-exit-node":
+                routes = [x for x in (self.prefs.get("AdvertiseRoutes") or []) if x not in ("0.0.0.0/0", "::/0")]
+                self.prefs["AdvertiseRoutes"] = (routes + ["0.0.0.0/0", "::/0"] if val == "true" else routes) or None
+        if cle == "ping":
+            return 0, self.pong
         return 0, ""
 
     def lire(self, cap, **a):
@@ -202,15 +249,24 @@ class Corrections(Monde):
         ctx.reglage = lambda nom, defaut="": CLE if nom == "cle_auth" else defaut
 
     def test_reconnecter_une_machine_coupee_ne_remet_rien_a_zero(self):
-        self.cle()
         self.etat = statut("Stopped")
-        r = self.lire("connecter", nom="argos", ssh=True, avec_cle=True)
+        r = self.lire("connecter", nom="argos", ssh=True)
         self.assertEqual(r["etat"], "connecte")
-        up = [a for a in self.appels if a[0] == "up"][0]
-        self.assertNotIn("--reset", up, "--reset effacerait routes, nœud de sortie et DNS de la machine")
-        self.assertFalse([x for x in up if x.startswith("--hostname") or x == "--ssh"])
+        self.assertEqual([a for a in self.appels if a[0] == "up"], [["up"]],
+                         "aucun drapeau : ni --reset (efface routes, nœud de sortie, DNS), ni --timeout (le client refuse tout `up` avec drapeau quand un réglage n'est pas celui par défaut)")
         self.assertIn(["set", "--hostname=argos"], self.appels)
         self.assertIn(["set", "--ssh=true"], self.appels)
+
+    def test_une_machine_coupee_dont_l_identite_est_a_refaire_repart_comme_une_premiere_connexion(self):
+        self.cle()
+        self.etat = statut("Stopped")
+        self.identification_requise = True
+        r = self.lire("connecter", avec_cle=True)
+        self.assertEqual(r["etat"], "connecte")
+        ups = [a for a in self.appels if a[0] == "up"]
+        self.assertEqual(ups[0], ["up"])
+        self.assertIn("--reset", ups[1])
+        self.assertTrue([x for x in ups[1] if x.startswith("--operator=")])
 
     def test_une_machine_a_approuver_n_est_pas_defaite(self):
         self.cle()
@@ -282,6 +338,266 @@ class Corrections(Monde):
             self.lire("annuler")
         tuer.assert_called_once()
         self.assertEqual(tuer.call_args[0][0], 4242)
+
+
+class Ajouts(Monde):
+    """Réglages, ping, expiration des clés, cache et flux d'événements."""
+
+    def set_appels(self):
+        return [a for a in self.appels if a[0] == "set"]
+
+    def test_l_etat_donne_les_reglages_lus_dans_les_preferences(self):
+        self.etat = CONNECTE
+        self.prefs = {"RouteAll": True, "CorpDNS": True, "ShieldsUp": False, "Hostname": "argos", "AdvertiseRoutes": ["10.0.0.0/24", "0.0.0.0/0", "::/0"], "ExitNodeIP": ""}
+        r = self.lire("etat")["reglages"]
+        self.assertEqual((r["accept_routes"], r["accept_dns"], r["shields_up"], r["hostname"]), (True, True, False, "argos"))
+        self.assertEqual((r["advertise_routes"], r["advertise_exit_node"]), (["10.0.0.0/24"], True))
+
+    def test_regler_change_un_reglage_par_set_et_le_prouve(self):
+        self.etat = CONNECTE
+        r = self.lire("regler", cle="accept_routes", valeur=True)
+        self.assertTrue(r["reglages"]["accept_routes"])
+        self.assertIn(["set", "--accept-routes=true"], self.appels)
+        self.assertFalse([a for a in self.appels if a[0] == "up"], "jamais up --reset pour un réglage")
+
+    def test_regler_se_defait_par_la_valeur_d_avant(self):
+        self.etat = CONNECTE
+        self.prefs = {"ShieldsUp": False}
+        res = self.lire("regler", cle="shields_up", valeur="oui")
+        self.assertTrue(self.prefs["ShieldsUp"])
+        self.n.catalogue.get("tailscale.regler").defaire(self.n.executeur.contextes["tailscale"], res)
+        self.assertFalse(self.prefs["ShieldsUp"])
+
+    def test_regler_refuse_ce_qui_n_a_pas_de_sens(self):
+        self.etat = CONNECTE
+        for cle, valeur in (("inconnu", True), ("accept_routes", "peut-etre"), ("hostname", "mauvais nom;"), ("advertise_routes", "pas-une-route"),
+                            ("advertise_routes", "0.0.0.0/0"), ("exit_node", "100.64.0.2"), ("exit_node", "pas-une-ip")):
+            with self.assertRaises(Exception, msg=(cle, valeur)):
+                self.lire("regler", cle=cle, valeur=valeur)
+        self.assertFalse(self.set_appels(), "rien n'est envoyé au client quand la valeur est refusée")
+
+    def test_le_nom_se_remet_a_celui_du_systeme_en_le_videant(self):
+        self.etat = CONNECTE
+        self.prefs = {"Hostname": "autre"}
+        self.lire("regler", cle="hostname", valeur="")
+        self.assertIn(["set", "--hostname="], self.appels)
+        self.assertEqual(self.prefs["Hostname"], "")
+
+    def test_les_routes_annoncees_gardent_la_sortie_internet_deja_annoncee(self):
+        self.etat = CONNECTE
+        self.prefs = {"AdvertiseRoutes": ["0.0.0.0/0", "::/0"]}
+        r = self.lire("regler", cle="advertise_routes", valeur="192.168.1.0/24, 10.0.0.5/24")
+        arg = [a for a in self.set_appels() if a[1].startswith("--advertise-routes=")][0][1]
+        self.assertIn("192.168.1.0/24", arg)
+        self.assertIn("10.0.0.0/24", arg)                      # mise en forme : l'adresse d'hôte devient le réseau
+        self.assertIn("0.0.0.0/0", arg)
+        self.assertTrue(r["reglages"]["advertise_exit_node"])
+
+    def test_le_noeud_de_sortie_doit_etre_une_machine_qui_en_offre_une(self):
+        pairs = dict(CONNECTE["Peer"])
+        pairs["c"] = {"HostName": "sortie", "DNSName": "sortie.tail1.ts.net.", "TailscaleIPs": ["100.64.0.9"], "OS": "linux", "Online": True, "ExitNodeOption": True, "LastSeen": "2026-11-09T10:00:00Z"}
+        self.etat = dict(CONNECTE, Peer=pairs)
+        r = self.lire("regler", cle="exit_node", valeur="100.64.0.9")
+        self.assertEqual(r["reglages"]["exit_node"], "100.64.0.9")
+
+    def test_ping_dit_le_chemin_et_le_temps(self):
+        self.etat = CONNECTE
+        self.pong = "pong from orion (100.64.0.2) via DERP(hel) in 120ms" + chr(10) + "pong from orion (100.64.0.2) via 82.1.2.3:41641 in 20ms" + chr(10) + "pong from orion (100.64.0.2) via 82.1.2.3:41641 in 40ms"
+        r = self.lire("ping", machine="orion")
+        self.assertEqual((r["ok"], r["chemin"], r["reponses"], r["ms"]), (True, "direct", 3, 60.0))
+        self.assertIn(["ping", "-c", "3", "--timeout", "2s", "100.64.0.2"], self.appels)
+
+    def test_ping_sans_reponse_et_ping_d_une_machine_inconnue(self):
+        self.etat = CONNECTE
+        self.pong = "no reply"
+        r = self.lire("ping", machine="orion")
+        self.assertEqual((r["ok"], r["reponses"]), (False, 0))
+        n = len(self.appels)
+        with self.assertRaises(Exception):
+            self.lire("ping", machine="; rm -rf /")
+        self.assertEqual([a for a in self.appels[n:] if a[0] == "ping"], [], "la cible vient du réseau, jamais d'un argument libre")
+
+    def test_les_cles_qui_expirent_sont_annoncees(self):
+        import datetime as dt
+        bientot = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=5, hours=2)).isoformat()
+        passee = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=2)).isoformat()
+        loin = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=90)).isoformat()
+        pairs = {"a": dict(CONNECTE["Peer"]["a"], KeyExpiry=passee), "b": dict(CONNECTE["Peer"]["b"], KeyExpiry=loin)}
+        self.etat = dict(CONNECTE, Self=dict(CONNECTE["Self"], KeyExpiry=bientot), Peer=pairs)
+        r = self.lire("etat")
+        self.assertEqual(r["expiration"]["jours"], 5)
+        self.assertEqual([(x["nom"], x["jours"] < 0) for x in r["expirent"]], [("orion", True)])
+        self.etat = CONNECTE
+        self.assertIsNone(self.lire("etat")["expiration"])
+
+    def test_etat_reutilise_la_derniere_lecture_puis_les_gestes_relisent(self):
+        self.g["_TTL"] = 60
+        self.etat = CONNECTE
+        self.lire("etat")
+        n = len([a for a in self.appels if a[:2] == ["status", "--json"]])
+        self.lire("etat")
+        self.assertEqual(len([a for a in self.appels if a[:2] == ["status", "--json"]]), n, "deuxième lecture : servie par le cache")
+        self.lire("ssh_regler", actif=True)
+        self.assertTrue(self.lire("etat")["ssh"], "un geste qui écrit relit à neuf : le cache ne montre jamais l'avant")
+
+    def test_le_veilleur_reveille_l_attente_des_qu_un_evenement_arrive(self):
+        import sys as _s
+        import time as _t
+        V = self.g["Veilleur"]
+        v = V(commande=[_s.executable, "-c", "import time; time.sleep(0.3); print('evenement', flush=True); time.sleep(5)"])
+        try:
+            debut = _t.time()
+            self.assertTrue(v.attendre(4))
+            self.assertLess(_t.time() - debut, 2.5, "réveillé par l'événement, pas par la fin du délai")
+        finally:
+            v.fermer()
+
+    def test_sans_flux_le_veilleur_dort_comme_avant(self):
+        dormi = []
+        self.g["time"] = types.SimpleNamespace(time=time.time, sleep=lambda x: dormi.append(x))
+        v = self.g["Veilleur"](commande=["commande-qui-n-existe-pas-xyz"])
+        self.assertIsNone(v.proc)
+        self.assertFalse(v.attendre(0.7))
+        self.assertEqual(dormi, [0.7])
+
+
+class Journal(Monde):
+    """Le journal des gestes, leur retour depuis l'écran, et ce que l'écran montre de chaque machine."""
+
+    def test_un_geste_qui_ecrit_est_note_puis_se_defait(self):
+        self.etat = CONNECTE
+        self.lire("deconnecter")
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["capacite"], g["libelle"], g["defaisable"], g["defait"]), ("deconnecter", "Tailscale coupé", True, False))
+        r = self.lire("defaire_geste", id=g["id"])
+        self.assertEqual(r["etat"], "connecte", "le retour de « Déconnecter » rallume la machine sans drapeau")
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["defait"], g["defaisable"]), (True, False))
+        with self.assertRaises(Exception):
+            self.lire("defaire_geste", id=g["id"])
+
+    def test_un_reglage_defait_remet_la_valeur_d_avant(self):
+        self.etat = CONNECTE
+        self.prefs = {"RouteAll": False}
+        self.lire("regler", cle="accept_routes", valeur=True)
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual(g["libelle"], "Réglage « accept_routes » : coupé → activé")
+        self.lire("defaire_geste", id=g["id"])
+        self.assertFalse(self.prefs["RouteAll"])
+
+    def test_annuler_se_note_mais_ne_se_defait_pas_et_un_id_inconnu_est_refuse(self):
+        self.etat = CONNECTE
+        self.lire("annuler")
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["capacite"], g["defaisable"]), ("annuler", False))
+        for i in (g["id"], 99999):
+            with self.assertRaises(Exception):
+                self.lire("defaire_geste", id=i)
+
+    def test_un_journal_qui_casse_ne_fait_pas_echouer_le_geste(self):
+        from unittest import mock
+        self.etat = CONNECTE
+        base = self.n.executeur.contextes["tailscale"].stockage
+        with mock.patch.object(base, "ecrire", side_effect=RuntimeError("disque plein")):
+            self.assertTrue(self.lire("ssh_regler", actif=True)["ssh"])
+
+    def test_le_journal_ne_garde_pas_la_cle_et_reste_borne(self):
+        ctx = self.n.executeur.contextes["tailscale"]
+        ctx.reglage = lambda nom, defaut="": CLE if nom == "cle_auth" else defaut
+        self.etat = statut("NeedsLogin")
+        self.lire("connecter", avec_cle=True)
+        base = ctx.stockage
+        brut = " ".join(str(l["args"]) + str(l["res"]) for l in base.lire("SELECT args, res FROM gestes"))
+        self.assertNotIn(CLE, brut)
+        self.assertEqual(self.lire("journal", limite=1)["gestes"][0]["libelle"], "Connexion à Tailscale par clé")
+
+    def test_l_etat_donne_ce_que_l_ecran_montre_de_chaque_machine(self):
+        pairs = {"a": {"HostName": "orion", "DNSName": "orion.tail1.ts.net.", "TailscaleIPs": ["100.64.0.2"], "OS": "linux", "Online": True, "Tags": ["tag:server"],
+                       "PrimaryRoutes": ["192.168.1.0/24"], "Relay": "par", "CurAddr": "", "RxBytes": 100, "TxBytes": 50, "Created": "2026-09-07T22:40:49Z", "LastSeen": "2026-11-09T10:00:00Z"}}
+        self.etat = dict(CONNECTE, Self=dict(CONNECTE["Self"], Relay="hel"), Peer=pairs)
+        r = self.lire("etat")
+        p = r["pairs"][0]
+        self.assertEqual((p["tags"], p["routes"], p["relais"], p["direct"], p["octets"], p["depuis"]), (["tag:server"], ["192.168.1.0/24"], "par", False, 150, "2026-09-07"))
+        self.assertEqual(r["relais_maison"], "hel")
+
+class Sante(Monde):
+    """La santé du réseau, la version du client et les services publiés."""
+
+    def test_le_reseau_dit_le_relais_prefere_et_les_latences(self):
+        r = self.lire("reseau", force=True)
+        self.assertEqual((r["udp"], r["ipv4"], r["ipv6"]), (True, True, False))
+        self.assertEqual((r["relais_prefere"]["code"], r["relais_prefere"]["ms"]), ("hel", 6.4))
+        self.assertEqual([x["code"] for x in r["regions"]], ["hel", "fra", "nyc"], "du plus proche au plus loin")
+
+    def test_un_service_sans_netlink_recoit_le_remede_au_lieu_d_une_erreur_obscure(self):
+        self.g["_RESEAU"].update(t=0.0, val=None)
+        self.reponses["netcheck"] = (1, "route ip+net: netlinkrib: address family not supported by protocol")
+        with self.assertRaises(Exception) as q:
+            self.lire("reseau", force=True)
+        self.assertIn("AF_NETLINK", str(q.exception))
+        self.assertIn("restart", str(q.exception))
+
+    def test_le_reseau_est_reutilise_une_minute(self):
+        self.g["_RESEAU"].update(t=0.0, val=None)
+        self.lire("reseau")
+        n = len([a for a in self.appels if a[0] == "netcheck"])
+        self.lire("reseau")
+        self.assertEqual(len([a for a in self.appels if a[0] == "netcheck"]), n)
+        self.lire("reseau", force=True)
+        self.assertEqual(len([a for a in self.appels if a[0] == "netcheck"]), n + 1)
+
+    def test_la_mise_a_jour_du_client_est_annoncee(self):
+        self.etat = dict(CONNECTE, ClientVersion={"RunningLatest": False, "LatestVersion": "1.99.0"})
+        self.assertEqual(self.lire("etat")["mise_a_jour"], "1.99.0")
+        self.etat = dict(CONNECTE, ClientVersion={"RunningLatest": True})
+        self.assertEqual(self.lire("etat")["mise_a_jour"], "")
+        self.etat = CONNECTE
+        self.assertEqual(self.lire("etat")["mise_a_jour"], "")
+
+    def test_les_services_publies_se_lisent_funnel_compris(self):
+        self.serve = {"TCP": {"443": {"HTTPS": True}, "2222": {"TCPForward": "127.0.0.1:22"}}, "AllowFunnel": {"argos.tail1.ts.net:443": True},
+                      "Web": {"argos.tail1.ts.net:443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:9000"}}}}}
+        s = self.lire("services")["services"]
+        self.assertEqual([(x["hote"], x["chemin"], x["cible"], x["public"]) for x in s],
+                         [("argos.tail1.ts.net:443", "/", "http://127.0.0.1:9000", True), (":2222", "", "tcp 127.0.0.1:22", False)])
+
+    def test_publier_un_port_local_puis_le_defaire(self):
+        self.etat = CONNECTE
+        r = self.lire("serve_regler", port=8443, cible="9000", chemin="app")
+        self.assertEqual((r["serve_port"], r["serve_chemin"], r["serve_cible"]), (8443, "/app", "127.0.0.1:9000"))
+        up = [a for a in self.appels if a[0] == "serve" and "--bg" in a][0]
+        self.assertEqual(up, ["serve", "--bg", "--yes", "--https=8443", "--set-path", "/app", "127.0.0.1:9000"])
+        self.assertTrue(self.lire("services")["services"])
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["capacite"], g["defaisable"]), ("serve_regler", True))
+        self.lire("defaire_geste", id=g["id"])
+        self.assertEqual(self.lire("services")["services"], [], "il n'y avait rien avant : le retour retire le service")
+
+    def test_publier_refuse_toute_cible_qui_n_est_pas_un_port_local(self):
+        self.etat = CONNECTE
+        for port, cible, chemin in ((443, "192.168.1.5:80", "/"), (443, "http://exemple.com", "/"), (443, "/etc/passwd", "/"), (443, "unix:/tmp/x.sock", "/"), (443, "127.0.0.1:99999", "/"),
+                                    (443, "localhost:3000; id", "/"), (80, "3000", "/"), (443, "3000", "/../x"), (443, "3000", "/a b")):
+            with self.assertRaises(Exception, msg=(port, cible, chemin)):
+                self.lire("serve_regler", port=port, cible=cible, chemin=chemin)
+        self.assertFalse([a for a in self.appels if a[0] == "serve" and "--bg" in a], "rien n'est envoyé au client")
+
+    def test_le_retour_ne_retire_pas_ce_qui_etait_deja_publie(self):
+        self.etat = CONNECTE
+        self.serve = {"Web": {"argos.tail1.ts.net:443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:1"}}}}}
+        self.lire("serve_regler", port=8443, cible="9000")
+        g = self.lire("journal")["gestes"][0]
+        with self.assertRaises(Exception) as q:
+            self.lire("defaire_geste", id=g["id"])
+        self.assertIn("déjà", str(q.exception))
+        self.assertEqual(len(self.lire("services")["services"]), 2, "rien n'a été retiré")
+
+    def test_tout_retirer_note_ce_qui_etait_publie(self):
+        self.etat = CONNECTE
+        self.serve = {"Web": {"argos.tail1.ts.net:443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:1"}}}}}
+        r = self.lire("serve_retirer")
+        self.assertEqual((len(r["serve_avant"]), r["services"]), (1, []))
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual((g["capacite"], g["defaisable"], g["libelle"]), ("serve_retirer", False, "Services publiés retirés (1)"))
 
 
 if __name__ == "__main__":

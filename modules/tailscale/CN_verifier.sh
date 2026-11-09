@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.3  #4184cc
+# VERSION CN : 0.5.0  #44b0c7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Vérifie que le client Tailscale existe, que tailscaled répond et que l'utilisateur de Cassandra en est l'opérateur.
 # MÉTHODE    : lit les préférences de tailscaled ; l'opérateur est ce qui permet de piloter sans root.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=4184cc ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=44b0c7 ▼▼▼
 set -u
 U="${CASSANDRA_UTILISATEUR:-cassandra}"
 command -v tailscale >/dev/null 2>&1 || { echo "tailscale : le client est absent" >&2; exit 3; }
@@ -23,6 +23,12 @@ case "$p" in
   *\"OperatorUser\":\"$U\"*) ;;
   *) echo "tailscale : $U n'est pas l'opérateur (tailscale set --operator=$U)" >&2; exit 3 ;;
 esac
+if command -v systemctl >/dev/null 2>&1 && ! systemctl is-active --quiet cassandra-tailscale-operateur.timer 2>/dev/null; then
+  echo "tailscale : (avis) la minuterie qui rend le droit d'opérateur après un retrait du réseau n'est pas active : relancer CN_install.sh --module tailscale" >&2
+fi
+if command -v systemctl >/dev/null 2>&1 && [ ! -f "/etc/systemd/system/${CASSANDRA_UNITE:-cassandra-noyau.service}.d/tailscale-netlink.conf" ]; then
+  echo "tailscale : (avis) « Santé du réseau » ne marchera pas sous le service : le complément qui autorise AF_NETLINK est absent (CN_install.sh --module tailscale, puis redémarrer le noyau)" >&2
+fi
 echo "tailscale : le client répond et $U peut le piloter"
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

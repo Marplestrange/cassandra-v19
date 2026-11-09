@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.3  #ad4742
+# VERSION CN : 0.1.4  #e9dc6f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=ad4742 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=e9dc6f ▼▼▼
 """La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 
 Tout ce qui touche le réseau ou un binaire passe par la classe `Acces` : un banc la remplace, rien d'autre ne sort du module.
@@ -148,12 +148,39 @@ class Acces:
     def __init__(self):
         self._cache = {"t": 0.0, "d": None}
 
+    lecteur = None            # posé par le module : lit l'état par `tailscale.etat` (le module Tailscale, un seul lecteur et son cache) ; rend None s'il ne répond pas
+
+    @staticmethod
+    def _depuis_etat(e):
+        """Le même dictionnaire que la lecture directe, fait de l'état que rend le module Tailscale."""
+        out = {}
+        moi = nom(e.get("nom") or e.get("dns"))
+        if moi:
+            out[moi] = {"online": True, "os": str(e.get("os") or ""), "ip": e.get("ip4") or "", "last_seen": "", "self": True, "observe": horodate()}
+        for p in e.get("pairs") or []:
+            n = nom(p.get("dns") or p.get("nom"))
+            if n:
+                ls = str(p.get("vu") or "")
+                out[n] = {"online": bool(p.get("en_ligne")), "os": p.get("os", ""), "ip": p.get("ip") or "", "last_seen": ls + (":00" if len(ls) == 16 else ""), "self": False, "observe": horodate()}
+        out["_sante"] = [str(x) for x in (e.get("sante") or [])][:4]
+        return out
+
     def tailscale_live(self):
-        """`tailscale status --json`, 30 s de cache : nom -> {online, os, ip, last_seen, self}. Une absence de binaire rend {} : jamais un faux « en ligne »."""
+        """L'état de Tailscale, 30 s de cache : nom -> {online, os, ip, last_seen, self}. Lu par le module Tailscale s'il répond (un seul lecteur), sinon par `tailscale status --json`.
+        Une absence de binaire ou une panne rend {"_indisponible": True} : jamais un faux « en ligne », jamais « tout a disparu »."""
         import time
         now = time.time()
         if self._cache["d"] is not None and now - self._cache["t"] < 30:
             return self._cache["d"]
+        if self.lecteur is not None:
+            try:
+                e = self.lecteur()
+            except Exception:                        # noqa: BLE001
+                e = None
+            if isinstance(e, dict) and e.get("etat") == "connecte":
+                out = self._depuis_etat(e)
+                self._cache.update(t=now, d=out)
+                return out
         out = {}
         try:
             r = subprocess.run(["tailscale", "status", "--json"], capture_output=True, text=True, timeout=6)

@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3ae2c3
+# VERSION CN : 0.5.0  #3ae2c3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prépare la machine pour installer des chercheurs et les enfermer : le module d'environnements de Python (python3-venv), la cage (bubblewrap), et l'ouverture NOMMÉE du service qui laisse la cage créer ses espaces de noms.
 # MÉTHODE    : idempotent ; les outils manquants sont installés par le gestionnaire de paquets de la machine ; l'ouverture est un drop-in systemd nommé « evolution.conf », retiré par CN_retirer.sh ; le service n'est relancé que si elle change.
 # ══════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3ae2c3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=3ae2c3 ▼▼▼
 set -eu
 manquants=""
 python3 -c "import ensurepip" >/dev/null 2>&1 || manquants="$manquants python3-venv"

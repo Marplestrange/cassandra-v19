@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a73fbf
+# VERSION CN : 0.2.0  #a73fbf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Retire la minuterie qui copie la base de FastPanel ; la copie est effacée, la base d'origine n'est jamais touchée.
 # MÉTHODE    : arrête et défait les deux unités, supprime le dossier de la copie.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a73fbf ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=a73fbf ▼▼▼
 set -u
 systemctl disable --now cassandra-panneau.timer >/dev/null 2>&1 || true
 rm -f /etc/systemd/system/cassandra-panneau.timer /etc/systemd/system/cassandra-panneau.service

@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.1.0  #433383
+# VERSION CN : 0.5.0  #433383
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Referme l'ouverture nommée du service (la cage des chercheurs n'a plus ses espaces de noms) ; les outils installés restent.
 # MÉTHODE    : supprime le drop-in evolution.conf, recharge systemd et relance le noyau.
 # ══════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=433383 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=433383 ▼▼▼
 set -u
 if [ -f /etc/systemd/system/cassandra-noyau.service.d/evolution.conf ]; then
   rm -f /etc/systemd/system/cassandra-noyau.service.d/evolution.conf

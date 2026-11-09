@@ -120,3 +120,8 @@ Ce que ce filtre **fait** : il évite que la base se remplisse de quasi-copies. 
 4. Leur grille « qualité-diversité » est grossière. Il y a de la place pour mieux, sans forcément un modèle de sens : une mesure de **comportement à l'exécution** serait plus honnête pour notre problème (voir `docs/CN_SEDAL-SEMANTIQUE.md`).
 5. Le sens n'est jamais une preuve, chez eux non plus : l'évaluateur reste le juge ; le filtre de nouveauté ne fait que refuser une entrée.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

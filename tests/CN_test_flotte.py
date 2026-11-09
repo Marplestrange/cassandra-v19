@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4a88ec
+# VERSION CN : 0.1.0  #b6effa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la flotte : le parc fusionné, la présence, la disponibilité, le contrôle SSH, les commandes nommées. Aucun réseau : l'accès au monde est simulé.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4a88ec ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b6effa ▼▼▼
 """Bancs de la flotte : le parc fusionné, la présence, la disponibilité, le contrôle SSH, les commandes nommées. Aucun réseau : l'accès au monde est simulé."""
 import shutil
 import sys
@@ -259,6 +259,34 @@ class TailscaleIndisponible(Monde):
         arrete = mock.Mock(returncode=0, stdout='{"BackendState": "Stopped", "Peer": {}}')
         with mock.patch.object(subprocess, "run", return_value=arrete):
             self.assertTrue(o.Acces().tailscale_live().get("_indisponible"))
+
+
+class LecteurTailscale(Monde):
+    """Flotte lit l'état par le module Tailscale (un seul lecteur) ; sans lui, elle lit elle-même."""
+
+    ETAT = {"etat": "connecte", "nom": "orion", "dns": "orion", "os": "linux", "ip4": "100.64.0.1", "sante": ["une alerte"],
+            "pairs": [{"nom": "Athena", "dns": "athena", "ip": "100.64.0.2", "os": "linux", "en_ligne": True, "vu": "2026-11-09 10:00"},
+                      {"nom": "localhost", "dns": "localhost-1", "ip": "100.64.0.3", "os": "iOS", "en_ligne": False, "vu": ""}]}
+
+    def acces(self, lecteur):
+        from modules.flotte import CN_outils as o
+        a = o.Acces()
+        a.lecteur = lecteur
+        return a
+
+    def test_l_etat_du_module_tailscale_donne_le_meme_dictionnaire(self):
+        live = self.acces(lambda: self.ETAT).tailscale_live()
+        self.assertEqual((live["orion"]["self"], live["orion"]["os"], live["orion"]["ip"]), (True, "linux", "100.64.0.1"))
+        self.assertEqual((live["athena"]["online"], live["athena"]["ip"], live["athena"]["last_seen"]), (True, "100.64.0.2", "2026-11-09 10:00:00"))
+        self.assertIn("localhost-1", live, "le nom DNS court, comme la lecture directe : trois « localhost » ne se confondent pas")
+        self.assertEqual(live["_sante"], ["une alerte"])
+
+    def test_sans_reponse_du_module_flotte_lit_elle_meme_et_ne_conclut_rien(self):
+        import subprocess
+        from unittest import mock
+        for lecteur in (lambda: None, lambda: dict(self.ETAT, etat="deconnecte"), lambda: 1 / 0):
+            with mock.patch.object(subprocess, "run", side_effect=FileNotFoundError()):
+                self.assertEqual(self.acces(lecteur).tailscale_live(), {"_indisponible": True})
 
 
 class Verdict(Monde):
