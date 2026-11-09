@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.1  #dba004
+# VERSION CN : 0.1.2  #7e850f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=dba004 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=7e850f ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -30,12 +30,14 @@ import os
 import re
 import subprocess
 import tempfile
+import threading
 import time
 
 DELAI = 10
 CLE = re.compile(r"^tskey-[A-Za-z0-9_-]{8,200}$")
 NOM = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
-_EN_ATTENTE = {"proc": None}                       # le `tailscale up` sans clé, en attente d'identification
+_EN_ATTENTE = {"proc": None, "err": None}          # le `tailscale up` sans clé, en attente d'identification ; `err` : le fichier où va sa sortie d'erreur (jamais un tube : personne ne le vide)
+_VERROU = threading.RLock()                        # un seul geste à la fois sur la connexion : deux `up` en même temps laisseraient un processus orphelin
 
 
 _point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
@@ -71,8 +73,22 @@ def _lancer(args, delai=DELAI):
 
 
 def _erreur(sortie, cle=''):
-    """Une sortie du client, rendue lisible : sans la clé, avec la commande qui règle un refus d'accès. Le calcul est un POINT D'ÉVOLUTION : points/EC_erreur.py."""
-    return _appeler_point("erreur", {"sortie": sortie, "cle": cle})["valeur"]
+    """Une sortie du client, rendue lisible : sans la clé, avec la commande qui règle un refus d'accès. Le calcul est un POINT D'ÉVOLUTION : points/EC_erreur.py.
+    La commande citée nomme le compte réellement en jeu (CASSANDRA_UTILISATEUR), pas toujours « cassandra »."""
+    texte = _appeler_point("erreur", {"sortie": sortie, "cle": cle})["valeur"]
+    return texte.replace("--operator=cassandra", "--operator=" + utilisateur())
+
+
+def _json(sortie):
+    """Le JSON d'une sortie du client. `_lancer` joint stdout et stderr : un avertissement du client (version différente de tailscaled…) avant ou après le JSON ne doit pas
+    faire croire que tailscaled est arrêté. Lève ValueError s'il n'y a pas de JSON."""
+    i = str(sortie or "").find("{")
+    if i < 0:
+        raise ValueError("pas de JSON")
+    obj, _ = json.JSONDecoder().raw_decode(sortie[i:])
+    if not isinstance(obj, dict):
+        raise ValueError("pas un objet JSON")
+    return obj
 
 
 def utilisateur():
@@ -90,12 +106,9 @@ def lire_statut():
     if code is None:
         return None, sortie
     try:
-        return json.loads(sortie), None
+        return _json(sortie), None
     except ValueError:
         return None, _erreur(sortie)
-
-
-ETATS = {"Running": "connecte", "NeedsLogin": "a_identifier", "NeedsMachineAuth": "a_approuver", "Stopped": "deconnecte", "Starting": "demarrage", "NoState": "demarrage"}
 
 
 def resume(d):
@@ -103,15 +116,21 @@ def resume(d):
     return _appeler_point("resume", {"d": d})["valeur"]
 
 
-def lire_ssh():
-    """SSH par Tailscale est-il activé ? Ce sont les préférences qui le disent (`RunSSH`), pas le statut."""
+def lire_prefs():
+    """Les préférences du client (`debug prefs`) ou None : elles disent SSH (`RunSSH`) et qui est l'opérateur (`OperatorUser`), le statut non."""
     code, sortie = _lancer(["debug", "prefs"])
     if code != 0:
         return None
     try:
-        return bool(json.loads(sortie).get("RunSSH"))
+        return _json(sortie)
     except ValueError:
         return None
+
+
+def lire_ssh():
+    """SSH par Tailscale est-il activé ? Ce sont les préférences qui le disent (`RunSSH`), pas le statut."""
+    p = lire_prefs()
+    return None if p is None else bool(p.get("RunSSH"))
 
 
 def brancher(ctx):
@@ -124,7 +143,13 @@ def brancher(ctx):
                 return {"etat": "absent", "texte": "Tailscale n'est pas installé sur cette machine.", "en_attente": False}
             return {"etat": "arrete", "texte": raison or "tailscaled ne répond pas", "en_attente": False}
         r = resume(d)
-        r["ssh"] = lire_ssh()
+        prefs = lire_prefs()                         # une seule lecture : SSH et opérateur
+        if prefs is not None:
+            r["ssh"] = bool(prefs.get("RunSSH"))
+            r["operateur"] = str(prefs.get("OperatorUser") or "")
+            r["pilotable"] = r["operateur"] == utilisateur()      # faux : les gestes seraient refusés, l'écran le dit au lieu de proposer des boutons qui échouent
+        else:
+            r["ssh"], r["operateur"], r["pilotable"] = None, "", None
         p = _EN_ATTENTE["proc"]
         r["en_attente"] = bool(p and p.poll() is None)
         r["cle_enregistree"] = bool(str(ctx.reglage("cle_auth", "") or "").strip())
@@ -143,44 +168,93 @@ def brancher(ctx):
                     return r
                 if r["etat"] == "a_identifier" and r["lien"] and r["lien"] != sauf_lien and "a_identifier" in etats:
                     return r
+                if r["etat"] == "a_approuver" and "a_approuver" in etats:      # identifiée : il ne reste que l'approbation de l'administrateur, inutile d'attendre davantage
+                    return r
             time.sleep(0.7)
         return r
 
     def abandonner_attente():
-        p = _EN_ATTENTE["proc"]
-        _EN_ATTENTE["proc"] = None
+        p, err = _EN_ATTENTE["proc"], _EN_ATTENTE["err"]
+        _EN_ATTENTE["proc"] = _EN_ATTENTE["err"] = None
         if p and p.poll() is None:
             p.terminate()
             try:
                 p.wait(3)
             except Exception:                       # noqa: BLE001
                 p.kill()
+                try:
+                    p.wait(3)
+                except Exception:                   # noqa: BLE001
+                    pass
+        if err:
+            try:
+                err.close()
+            except OSError:
+                pass
+
+    def sortie_attente():
+        """Ce que le `up` en attente a dit sur sa sortie d'erreur (il a fini : le fichier est complet)."""
+        err = _EN_ATTENTE["err"]
+        if not err:
+            return ""
+        try:
+            err.flush()
+            err.seek(0)
+            return err.read().decode("utf-8", "replace")
+        except (OSError, ValueError):
+            return ""
+
+    def regler(nom, ssh):
+        """Applique nom et SSH à une machine DÉJÀ enregistrée : `set` les change sans rien remettre à zéro (`up --reset` effacerait routes, nœud de sortie, DNS…)."""
+        if nom:
+            code, sortie = _lancer(["set", "--hostname=" + nom])
+            if code != 0:
+                raise ValueError(_erreur(sortie))
+        if ssh:
+            code, sortie = _lancer(["set", "--ssh=true"])
+            if code != 0:
+                raise ValueError(_erreur(sortie))
 
     def connecter(c, nom="", ssh=False, avec_cle=False):
+        with _VERROU:
+            return _connecter(c, nom, ssh, avec_cle)
+
+    def _connecter(c, nom, ssh, avec_cle):
         d, raison = lire_statut()
         if d is None:
             raise ValueError("Tailscale n'est pas utilisable : %s" % (("le client est absent (CN_install.sh --module tailscale l'installe)") if raison == "absent" else raison))
-        if resume(d)["etat"] == "connecte":
-            return dict(etat(c), avant="connecte")
         nom = str(nom or "").strip().lower()
         if nom and not NOM.match(nom):
             raise ValueError("Nom de machine invalide : lettres, chiffres et tirets seulement")
-        # --reset remet TOUT à zéro, l'opérateur compris : sans --operator, la connexion réussit une fois puis Cassandra n'a plus le droit de rien piloter
-        args = ["up", "--reset", "--operator=" + utilisateur()]
-        if nom:
-            args.append("--hostname=" + nom)
-        if ssh:
-            args.append("--ssh")
+        etat_avant = resume(d)["etat"]
+        if etat_avant == "connecte":
+            regler(nom, ssh)                         # déjà connectée : ce qu'on demande (nom, SSH) s'applique quand même, sans rien relancer
+            return dict(etat(c), avant="connecte")
         abandonner_attente()
         ancien_lien = resume(d)["lien"]
+        if etat_avant == "deconnecte":
+            # Machine déjà enregistrée, seulement coupée : `up` SANS option reprend sa configuration gardée (opérateur, routes, nœud de sortie, DNS). `--reset` les effacerait.
+            args = ["up"]
+            reglages_apres = (nom, ssh)
+        else:
+            # Première connexion (ou après un retrait) : rien à garder. --reset remet TOUT à zéro, l'opérateur compris : sans --operator, la connexion réussit une fois
+            # puis Cassandra n'a plus le droit de rien piloter.
+            args = ["up", "--reset", "--operator=" + utilisateur()]
+            if nom:
+                args.append("--hostname=" + nom)
+            if ssh:
+                args.append("--ssh")
+            reglages_apres = ("", False)
         if avec_cle:
             cle = str(ctx.reglage("cle_auth", "") or "").strip()
             if not CLE.match(cle):
                 raise ValueError("La clé d'authentification doit ressembler à tskey-auth-… (créée sur login.tailscale.com › Settings › Keys)")
             fd, chemin = tempfile.mkstemp(prefix="ts-")                # mkstemp crée le fichier en 0600 : lisible par l'utilisateur de Cassandra seul
             try:
-                os.write(fd, cle.encode())
-                os.close(fd)
+                try:
+                    os.write(fd, cle.encode())
+                finally:
+                    os.close(fd)
                 code, sortie = _lancer(args + ["--auth-key=file:" + chemin, "--timeout=45s"], delai=60)
             finally:
                 try:
@@ -189,21 +263,29 @@ def brancher(ctx):
                     pass
             if code != 0:
                 raise ValueError(_erreur(sortie, cle))
-            return dict(attendre({"connecte"}, 8) or etat(c), avant="deconnecte")
+            r = attendre({"connecte", "a_approuver"}, 8)
+            if r is not None and r["etat"] == "connecte":
+                regler(*reglages_apres)
+            return dict(etat(c), avant="deconnecte")
+        err = tempfile.TemporaryFile()                                 # la sortie d'erreur du `up` en attente va dans un fichier : un tube que personne ne lit finirait par le bloquer
         try:
-            _EN_ATTENTE["proc"] = subprocess.Popen(["tailscale"] + args + ["--timeout=15m"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+            _EN_ATTENTE["proc"] = subprocess.Popen(["tailscale"] + args + ["--timeout=15m"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=err,
                                                    start_new_session=True)
+            _EN_ATTENTE["err"] = err
         except FileNotFoundError:
+            err.close()
             raise ValueError("Tailscale n'est pas installé")
-        r = attendre({"connecte", "a_identifier"}, 14, ancien_lien)
+        r = attendre({"connecte", "a_identifier", "a_approuver"}, 14, ancien_lien)
         p = _EN_ATTENTE["proc"]
-        if (r is None or not r["lien"]) and (r is None or r["etat"] != "connecte") and p is not None and p.poll() not in (None, 0):
-            erreur = _erreur((p.stderr.read() or b"").decode("utf-8", "replace") if p.stderr else "")
-            _EN_ATTENTE["proc"] = None
+        if (r is None or not r["lien"]) and (r is None or r["etat"] not in ("connecte", "a_approuver")) and p is not None and p.poll() not in (None, 0):
+            erreur = _erreur(sortie_attente())
+            abandonner_attente()
             raise ValueError(erreur)
-        if r is None or (r["etat"] != "connecte" and not r["lien"]):
+        if r is None or (r["etat"] not in ("connecte", "a_approuver") and not r["lien"]):
             raise ValueError("Tailscale n'a pas donné de lien de connexion : réessaie dans un instant")
-        return dict(r, en_attente=True, avant="deconnecte")
+        if r["etat"] == "connecte":
+            regler(*reglages_apres)
+        return dict(r, en_attente=r["etat"] == "a_identifier", avant="deconnecte")
 
     def maintenant():
         d, _ = lire_statut()
@@ -211,31 +293,38 @@ def brancher(ctx):
 
     # Chaque geste qui écrit rend ce qu'il faut pour être PROUVÉ (relire l'état) et DÉFAIT (revenir à l'état d'avant).
     def prouver_connecter(c, res):
-        """Connectée, ou un lien d'identification en attente. Quelques lectures : le lien se renouvelle un instant quand une tentative en remplace une autre."""
+        """Connectée, un lien d'identification en attente, ou identifiée et seulement à approuver par l'administrateur (ce n'est pas un échec : la défaire couperait une connexion
+        valable). Quelques lectures : le lien se renouvelle un instant quand une tentative en remplace une autre."""
         for _ in range(8):
             m = maintenant()
-            if m and (m["etat"] == "connecte" or (m["etat"] == "a_identifier" and m["lien"])):
+            if m and (m["etat"] in ("connecte", "a_approuver") or (m["etat"] == "a_identifier" and m["lien"])):
                 return True
             time.sleep(0.8)
         return False
 
     def defaire_connecter(c, res):
-        abandonner_attente()
-        if res.get("avant") != "connecte":
-            _lancer(["down"])
+        with _VERROU:
+            abandonner_attente()
+            if res.get("avant") != "connecte":
+                _lancer(["down"])
 
     def annuler(c):
-        abandonner_attente()
-        _lancer(["down"])
-        return dict(etat(c), avant="en_attente")
+        with _VERROU:
+            m = maintenant()
+            abandonner_attente()
+            if m is not None and m["etat"] == "connecte":
+                return dict(etat(c), avant="connecte")        # rien à abandonner : `down` couperait une connexion qui marche (et peut-être la session qui pilote la machine)
+            _lancer(["down"])
+            return dict(etat(c), avant="en_attente")
 
     def deconnecter(c):
-        avant = (maintenant() or {}).get("etat", "")
-        abandonner_attente()
-        code, sortie = _lancer(["down"])
-        if code != 0:
-            raise ValueError(_erreur(sortie))
-        return dict(etat(c), avant=avant)
+        with _VERROU:
+            avant = (maintenant() or {}).get("etat", "")
+            abandonner_attente()
+            code, sortie = _lancer(["down"])
+            if code != 0:
+                raise ValueError(_erreur(sortie))
+            return dict(etat(c), avant=avant)
 
     def defaire_deconnecter(c, res):
         if res.get("avant") == "connecte":
@@ -244,12 +333,13 @@ def brancher(ctx):
                 raise ValueError(_erreur(sortie))
 
     def quitter(c):
-        avant = (maintenant() or {}).get("etat", "")
-        abandonner_attente()
-        code, sortie = _lancer(["logout"], 20)
-        if code != 0:
-            raise ValueError(_erreur(sortie))
-        return dict(etat(c), avant=avant)
+        with _VERROU:
+            avant = (maintenant() or {}).get("etat", "")
+            abandonner_attente()
+            code, sortie = _lancer(["logout"], 20)
+            if code != 0:
+                raise ValueError(_erreur(sortie))
+            return dict(etat(c), avant=avant)
 
     def ssh_regler(c, actif=True):
         avant = lire_ssh()

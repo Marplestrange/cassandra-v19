@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #ba0088
+# VERSION EC : EC0 (référence 0.3.0)  #48d415
 # HÔTE CN    : CN_module.py · resume @1.0
 # RÔLE       : Le statut du client, aplati pour l'écran : état en clair, la machine, ses adresses, les autres machines du réseau.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=resume contrat=@1.0 version=EC0 empreinte=ba0088 ▼▼▼
+# ▼▼▼ BORNE EC point=resume contrat=@1.0 version=EC0 empreinte=48d415 ▼▼▼
 
 ETATS = {"Running": "connecte", "NeedsLogin": "a_identifier", "NeedsMachineAuth": "a_approuver", "Stopped": "deconnecte", "Starting": "demarrage", "NoState": "demarrage"}
 
@@ -25,7 +25,11 @@ def resume(d):
     pairs = []
     for p in (d.get("Peer") or {}).values():
         ls = str(p.get("LastSeen") or "")
-        pairs.append({"nom": (p.get("HostName") or str(p.get("DNSName") or "").split(".")[0]), "ip": (p.get("TailscaleIPs") or [""])[0], "os": p.get("OS", ""),
+        court = str(p.get("DNSName") or "").split(".")[0]
+        hote = p.get("HostName") or ""
+        # Un téléphone ou un conteneur annonce « localhost » : trois pairs du même nom ne se distinguent plus. Le nom DNS court (localhost-1, localhost-2…) est unique dans le réseau.
+        nom = court if (court and (not hote or hote.lower() == "localhost")) else (hote or court)
+        pairs.append({"nom": nom, "ip": (p.get("TailscaleIPs") or [""])[0], "os": p.get("OS", ""),
                       "en_ligne": bool(p.get("Online")), "vu": "" if ls.startswith("0001") else ls[:16].replace("T", " "), "sortie": bool(p.get("ExitNode")),
                       "offre_sortie": bool(p.get("ExitNodeOption"))})
     pairs.sort(key=lambda x: (not x["en_ligne"], x["nom"].lower()))

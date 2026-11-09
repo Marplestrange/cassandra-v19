@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #df169a
+# VERSION CN : 0.1.0  #4a88ec
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la flotte : le parc fusionné, la présence, la disponibilité, le contrôle SSH, les commandes nommées. Aucun réseau : l'accès au monde est simulé.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=df169a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4a88ec ▼▼▼
 """Bancs de la flotte : le parc fusionné, la présence, la disponibilité, le contrôle SSH, les commandes nommées. Aucun réseau : l'accès au monde est simulé."""
 import shutil
 import sys
@@ -234,6 +234,31 @@ class Disparues(Monde):
         self.ctx.stockage.ecrire("UPDATE vus SET ts='2020-01-01 00:00:00' WHERE nom='tel'")
         self.moteur("presence")
         self.assertNotIn("tel", [m["nom"] for m in self.ok("parc")["machines"]])
+
+
+class TailscaleIndisponible(Monde):
+    """Une panne de lecture de Tailscale n'est pas la disparition de toute la flotte."""
+
+    def test_une_panne_de_lecture_ne_fait_disparaitre_personne(self):
+        self.moteur("presence")
+        self.ctx.acces.tailscale_live = lambda: {"_indisponible": True}
+        self.moteur("presence")
+        self.assertEqual(len(self.evts("disparition")), 0)
+        parc = self.ok("parc")
+        for nom in ("athena", "rosco", "tel"):
+            self.assertFalse(self.machine(parc, nom)["disparue"], nom)
+        self.assertEqual(self.ex("oublier", nom="tel")["statut"], "echec")         # on ne sait pas si elle a disparu
+
+    def test_le_lecteur_rend_indisponible_et_non_vide_quand_tailscale_ne_repond_pas(self):
+        import subprocess
+        from unittest import mock
+        from modules.flotte import CN_outils as o
+        with mock.patch.object(subprocess, "run", side_effect=subprocess.TimeoutExpired("tailscale", 6)):
+            r = o.Acces().tailscale_live()
+        self.assertEqual(r, {"_indisponible": True})
+        arrete = mock.Mock(returncode=0, stdout='{"BackendState": "Stopped", "Peer": {}}')
+        with mock.patch.object(subprocess, "run", return_value=arrete):
+            self.assertTrue(o.Acces().tailscale_live().get("_indisponible"))
 
 
 class Verdict(Monde):

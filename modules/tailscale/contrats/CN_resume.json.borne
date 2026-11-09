@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.1  #16508f
+# VERSION CN : 0.1.2  #16508f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : resume.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

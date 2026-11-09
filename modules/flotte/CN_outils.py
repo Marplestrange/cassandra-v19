@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.2  #1a8f97
+# VERSION CN : 0.1.3  #ad4742
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=1a8f97 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=ad4742 ▼▼▼
 """La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 
 Tout ce qui touche le réseau ou un binaire passe par la classe `Acces` : un banc la remplace, rien d'autre ne sort du module.
@@ -158,6 +158,8 @@ class Acces:
         try:
             r = subprocess.run(["tailscale", "status", "--json"], capture_output=True, text=True, timeout=6)
             d = json.loads(r.stdout or "{}")
+            if r.returncode != 0 or d.get("BackendState") != "Running":
+                raise ValueError("tailscale ne répond pas ou n'est pas connecté")       # on ne SAIT pas qui est sur le réseau : ne rien en conclure
             me = d.get("Self") or {}
             if me:
                 out[nom(me.get("HostName") or me.get("DNSName"))] = {"online": True, "os": me.get("OS", ""), "ip": (me.get("TailscaleIPs") or [""])[0], "last_seen": "", "self": True, "observe": horodate()}
@@ -170,7 +172,11 @@ class Acces:
                           "last_seen": "" if ls.startswith("0001") else ls[:19].replace("T", " "), "self": False, "observe": horodate()}
             out["_sante"] = [str(x) for x in (d.get("Health") or [])][:4]
         except Exception:
-            pass
+            # Une panne passagère (délai dépassé, tailscaled qui redémarre) rendait {} : toute la flotte passait « disparue » pendant 30 s, avec ses événements et ses alertes.
+            # `_indisponible` dit « inconnu » (ni en ligne, ni disparue) ; la relecture se refait au bout de 5 s au lieu de 30.
+            out = {"_indisponible": True}
+            self._cache.update(t=now - 25, d=out)
+            return out
         self._cache.update(t=now, d=out)
         return out
 

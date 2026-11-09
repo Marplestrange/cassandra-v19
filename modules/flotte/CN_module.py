@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.2  #c292cc
+# VERSION CN : 0.1.3  #4fee5c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=c292cc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=4fee5c ▼▼▼
 """La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 
 Porté de la V18 (`flotte_*`, `fleet_*`, `ms_*`), avec ses leçons :
@@ -182,7 +182,7 @@ def brancher(ctx):
                 niveau = "signal"
             osl = (x["os"] or "").lower()
             mobile = "ios" in osl or "android" in osl
-            disparue = n != h and not x["registre"] and "tailscale" not in x["sources"] and statut != "retiree"
+            disparue = n != h and not x["registre"] and "tailscale" not in x["sources"] and statut != "retiree" and not live.get("_indisponible")
             if "ssh" not in x["sources"] and sd:
                 x["sources"]["ssh"] = ({"etat": "ok", "texte": "Tailscale SSH · %s · sans clé déclarée" % (sd["utilisateur"] or "root"), "observe": sd["ts"]} if sd["ok"] else {"etat": "erreur", "texte": "aucune clé · Tailscale SSH refusé", "observe": sd["ts"]})
             if "ssh" not in x["sources"]:
@@ -190,7 +190,7 @@ def brancher(ctx):
             if "registre" not in x["sources"]:
                 x["sources"]["registre"] = {"etat": "neutre" if n == h else "erreur", "texte": "hôte, implicite" if n == h else "absente", "observe": ""}
             if "tailscale" not in x["sources"]:
-                x["sources"]["tailscale"] = {"etat": "neutre", "texte": "absente du tailnet", "observe": ""}
+                x["sources"]["tailscale"] = {"etat": "neutre", "texte": "Tailscale indisponible" if live.get("_indisponible") else "absente du tailnet", "observe": ""}
             if "releves" not in x["sources"]:
                 x["sources"]["releves"] = {"etat": "neutre", "texte": "aucun relevé", "observe": ""}
             v, d = vus.get(n), dd.get(n)
@@ -482,7 +482,10 @@ def brancher(ctx):
             raise ValueError("nom manquant")
         if n == hote():
             raise ValueError("l'hôte ne s'oublie pas")
-        if n in acces.tailscale_live():
+        live = acces.tailscale_live()
+        if live.get("_indisponible"):
+            raise ValueError("Tailscale ne répond pas : impossible de savoir si %s a disparu. Réessaie dans un instant." % n)
+        if n in live:
             raise ValueError("Tailscale liste encore %s : ce n'est pas une disparue. Pour la sortir du parc, passe-la « retirée »." % n)
         if db.lire("SELECT 1 FROM machines WHERE nom=?", (n,)):
             raise ValueError("%s est au registre : retire-la du registre d'abord." % n)
@@ -668,9 +671,12 @@ def brancher(ctx):
         reg = registre()
         noms = {o.nom(r["nom"]) for r in reg}
         ssh = {o.nom(r["nom"]) for r in reg if r["type"] == "ssh"}
-        t1, disparues, oubliees = passe_presence_tailscale(live, eng, noms)
+        if live.get("_indisponible"):                   # Tailscale ne répond pas : ni transition, ni disparition, ni oubli sur une simple panne de lecture
+            t1, disparues, oubliees, sondes = [], [], [], []
+        else:
+            t1, disparues, oubliees = passe_presence_tailscale(live, eng, noms)
+            sondes = passe_sonde_ssh(live, eng, ssh)
         t2 = passe_registre() or []
-        sondes = passe_sonde_ssh(live, eng, ssh)
         for n, en, dm in t1 + t2:
             if eng.get(n, ("", ""))[0] == "intermittente":
                 continue

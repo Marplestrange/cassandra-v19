@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #deb334
+# VERSION CN : 0.1.0  #78728f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module tailscale : le client est simulé (un faux `tailscale` qui répond comme le vrai), le reste tourne dans un vrai noyau.
 # MÉTHODE    : on remplace `_lancer` du module ; on vérifie les états, le lien d'identification, la clé qui ne traîne nulle part, et les refus dits en clair.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=deb334 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=78728f ▼▼▼
 """Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."""
 import json
 import shutil
@@ -65,6 +65,9 @@ class Monde(unittest.TestCase):
         self.reponses = {}
         self.prefs = {"RunSSH": False}
         self.g["_lancer"] = self.faux_client
+        self.g["utilisateur"] = lambda: "cassandra"          # le compte qui pilote : fixé, le banc ne dépend pas de celui qui le lance
+        self.apres_cle = CONNECTE
+        self.bruit_avant = self.bruit_apres = ""
         self.g["time"] = types.SimpleNamespace(time=time.time, sleep=lambda s: None)
 
     def faux_client(self, args, delai=10):
@@ -72,7 +75,7 @@ class Monde(unittest.TestCase):
         if args[:2] == ["status", "--json"]:
             if self.etat is None:
                 return None, "absent"
-            return 0, json.dumps(self.etat)
+            return 0, self.bruit_avant + json.dumps(self.etat) + self.bruit_apres
         if args[:2] == ["debug", "prefs"]:
             return 0, json.dumps(self.prefs)
         cle = args[0]
@@ -83,7 +86,7 @@ class Monde(unittest.TestCase):
             if f:
                 self.cle_lue = open(f[0].split("file:", 1)[1]).read()
                 self.mode = oct(__import__("os").stat(f[0].split("file:", 1)[1]).st_mode & 0o777)
-                self.etat = CONNECTE
+                self.etat = self.apres_cle
             return 0, ""
         if cle == "down":
             self.etat = statut("Stopped")
@@ -130,6 +133,7 @@ class Etats(Monde):
 
 class Gestes(Monde):
     def test_connecter_avec_cle_ne_met_la_cle_ni_en_ligne_de_commande_ni_sur_disque(self):
+        self.etat = statut("NeedsLogin")                  # première connexion : rien à garder, `--reset --operator` est voulu
         ctx = self.n.executeur.contextes["tailscale"]
         ctx.reglage = lambda nom, defaut="": CLE if nom == "cle_auth" else defaut
         r = self.lire("connecter", nom="argos", ssh=True, avec_cle=True)
@@ -139,6 +143,7 @@ class Gestes(Monde):
         self.assertIn("--ssh", up)
         self.assertTrue([x for x in up if x.startswith("--operator=")], "--reset sans --operator ferait perdre à Cassandra le droit de piloter Tailscale")
         self.assertIn("--hostname=argos", up)
+        self.assertIn("--reset", up)
         self.assertEqual(self.cle_lue, CLE)
         if sys.platform != "win32":                       # Windows ne connaît pas les droits POSIX
             self.assertEqual(self.mode, "0o600")
@@ -186,6 +191,81 @@ class Gestes(Monde):
         self.etat = CONNECTE
         self.assertTrue(self.lire("ssh_regler", actif=True)["ssh"])
         self.assertFalse(self.lire("ssh_regler", actif=False)["ssh"])
+
+
+class Corrections(Monde):
+    """Les défauts relevés à l'audit : chacun a son banc."""
+
+    def cle(self):
+        ctx = self.n.executeur.contextes["tailscale"]
+        ctx.reglage = lambda nom, defaut="": CLE if nom == "cle_auth" else defaut
+
+    def test_reconnecter_une_machine_coupee_ne_remet_rien_a_zero(self):
+        self.cle()
+        self.etat = statut("Stopped")
+        r = self.lire("connecter", nom="argos", ssh=True, avec_cle=True)
+        self.assertEqual(r["etat"], "connecte")
+        up = [a for a in self.appels if a[0] == "up"][0]
+        self.assertNotIn("--reset", up, "--reset effacerait routes, nœud de sortie et DNS de la machine")
+        self.assertFalse([x for x in up if x.startswith("--hostname") or x == "--ssh"])
+        self.assertIn(["set", "--hostname=argos"], self.appels)
+        self.assertIn(["set", "--ssh=true"], self.appels)
+
+    def test_une_machine_a_approuver_n_est_pas_defaite(self):
+        self.cle()
+        self.etat = statut("NeedsLogin")
+        self.apres_cle = statut("NeedsMachineAuth")
+        r = self.lire("connecter", avec_cle=True)
+        self.assertEqual(r["etat"], "a_approuver")
+        self.assertFalse([a for a in self.appels if a[0] == "down"], "défaire couperait une connexion valable, qui n'attend que l'administrateur")
+
+    def test_annuler_ne_coupe_pas_une_connexion_qui_marche(self):
+        self.etat = CONNECTE
+        r = self.lire("annuler")
+        self.assertEqual(r["etat"], "connecte")
+        self.assertFalse([a for a in self.appels if a[0] == "down"])
+
+    def test_annuler_coupe_une_identification_abandonnee(self):
+        self.etat = statut("NeedsLogin", AuthURL="https://login.tailscale.com/a/abc123")
+        self.lire("annuler")
+        self.assertTrue([a for a in self.appels if a[0] == "down"])
+
+    def test_un_avertissement_du_client_ne_fait_pas_croire_que_tailscaled_est_arrete(self):
+        self.etat = CONNECTE
+        self.bruit_avant = 'Warning: client version "1.80.0" != tailscaled server version "1.104.4"' + chr(10)
+        self.bruit_apres = chr(10) + 'Warning: autre chose'
+        r = self.lire("etat")
+        self.assertEqual((r["etat"], r["nom"]), ("connecte", "argos"))
+
+    def test_deja_connecte_applique_quand_meme_le_nom_et_ssh_demandes(self):
+        self.etat = CONNECTE
+        r = self.lire("connecter", nom="neuf", ssh=True)
+        self.assertEqual(r["etat"], "connecte")
+        self.assertIn(["set", "--hostname=neuf"], self.appels)
+        self.assertIn(["set", "--ssh=true"], self.appels)
+        self.assertFalse([a for a in self.appels if a[0] == "up"])
+
+    def test_l_etat_dit_si_cassandra_peut_piloter(self):
+        self.etat = CONNECTE
+        self.prefs = {"RunSSH": False}
+        r = self.lire("etat")
+        self.assertIs(r["pilotable"], False)
+        self.prefs = {"RunSSH": False, "OperatorUser": "cassandra"}
+        self.assertIs(self.lire("etat")["pilotable"], True)
+
+    def test_le_refus_d_acces_nomme_le_compte_reel(self):
+        self.g["utilisateur"] = lambda: "service"
+        self.reponses["down"] = (1, "Access denied: checkprefs access denied")
+        with self.assertRaises(Exception) as q:
+            self.lire("deconnecter")
+        self.assertIn("--operator=service", str(q.exception))
+
+    def test_trois_machines_localhost_ne_portent_pas_le_meme_nom(self):
+        pairs = {str(i): {"HostName": "localhost", "DNSName": ("localhost.tail1.ts.net." if i == 0 else "localhost-%d.tail1.ts.net." % i), "TailscaleIPs": ["100.64.0.%d" % (10 + i)],
+                          "OS": "android", "Online": True, "LastSeen": "2026-11-09T10:00:00Z"} for i in range(3)}
+        self.etat = dict(CONNECTE, Peer=pairs)
+        noms = sorted(p["nom"] for p in self.lire("etat")["pairs"])
+        self.assertEqual(len(set(noms)), 3, noms)
 
 
 if __name__ == "__main__":

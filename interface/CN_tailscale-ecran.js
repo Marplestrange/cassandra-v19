@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #065892
+// VERSION CN : 0.1.0  #36c22f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=065892 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=36c22f ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -59,7 +59,7 @@
     const st = document.createElement("style"); st.id = "ts-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "ts"; corps.appendChild(racine);
 
-    const S = { e: null, occupe: false, erreur: "", quitter: false, nom: "", ssh: false };
+    const S = { e: null, occupe: false, erreur: "", quitter: false, couper: false, nom: "", ssh: false };
     let minuterie = null;
 
     async function charger(silencieux) {
@@ -76,7 +76,7 @@
     const faire = async (f, ok) => {
       if (S.occupe) return; S.occupe = true; dessiner();
       try { await f(); if (ok) dire(ok); } catch (e) { dire(e.message || String(e), "err"); S.erreur = e.message || String(e); }
-      finally { S.occupe = false; S.quitter = false; await charger(); }
+      finally { S.occupe = false; S.quitter = false; S.couper = false; await charger(); }
     };
 
     function pastille(e) { const p = (e.etat === "a_identifier" && !e.en_attente) ? ["mu", "Non connectée"] : (ETAT[e.etat] || ["mu", e.etat]); return '<span class="pastille ' + p[0] + '">' + esc(p[1]) + "</span>"; }
@@ -110,13 +110,17 @@
 
     function carteGestes(e) {
       const ssh = e.ssh === true;
-      return '<div class="carte"><h2 style="font:650 16px Inter,system-ui,sans-serif">Réglages</h2>' +
+      const refus = e.pilotable === false;      // Cassandra n'est pas l'opérateur du client : tout geste serait refusé, on le dit au lieu de proposer des boutons qui échouent
+      const bloque = S.occupe || refus;
+      return (refus ? '<div class="carte" style="color:var(--warn)">Cassandra n’a pas le droit de piloter Tailscale sur cette machine' + (e.operateur ? " (l’opérateur est « " + esc(e.operateur) + " »)" : "") +
+        ' : sur la machine, <span class="mono">sudo tailscale set --operator=cassandra</span> (ou relancer l’installateur du module).</div>' : "") + '<div class="carte"><h2 style="font:650 16px Inter,system-ui,sans-serif">Réglages</h2>' +
         '<div class="coche"><span style="flex:1"><b>SSH par Tailscale</b> ' + (e.ssh == null ? '<span class="pastille mu">inconnu</span>' : ssh ? '<span class="pastille ok">activé</span>' : '<span class="pastille mu">coupé</span>') +
         '<br><span class="note">Entrer sur la machine depuis ton réseau privé sans clé SSH ; les droits se règlent dans la politique de ton réseau Tailscale.</span></span>' +
-        '<button class="btn" data-a="ssh" data-v="' + (ssh ? "0" : "1") + '"' + (S.occupe || e.ssh == null ? " disabled" : "") + ">" + (ssh ? "Couper" : "Activer") + "</button></div>" +
-        '<div class="acts"><button class="btn" data-a="deconnecter"' + (S.occupe ? " disabled" : "") + ">Déconnecter</button>" +
+        '<button class="btn" data-a="ssh" data-v="' + (ssh ? "0" : "1") + '"' + (bloque || e.ssh == null ? " disabled" : "") + ">" + (ssh ? "Couper" : "Activer") + "</button></div>" +
+        '<div class="acts">' + (S.couper ? '<span class="confirme">Couper Tailscale sur cette machine ? Si tu t’y connectes par Tailscale, tu perdras l’accès. <button class="btn dng" data-a="deconnecter-oui">Oui, couper</button><button class="btn" data-a="deconnecter-non">Non</button></span>'
+          : '<button class="btn" data-a="deconnecter"' + (bloque ? " disabled" : "") + ">Déconnecter</button>") +
         (S.quitter ? '<span class="confirme">Retirer cette machine du réseau ? Il faudra s’identifier à nouveau. <button class="btn dng" data-a="quitter-oui">Oui, la retirer</button><button class="btn" data-a="quitter-non">Non</button></span>'
-          : '<button class="btn dng" data-a="quitter"' + (S.occupe ? " disabled" : "") + ">Retirer du réseau…</button>") + "</div></div>";
+          : '<button class="btn dng" data-a="quitter"' + (bloque ? " disabled" : "") + ">Retirer du réseau…</button>") + "</div></div>";
     }
 
     function dessiner() {
@@ -154,7 +158,9 @@
       if (a === "quitter") { S.quitter = true; dessiner(); return; }
       if (a === "quitter-non") { S.quitter = false; dessiner(); return; }
       if (a === "quitter-oui") return faire(() => agir("tailscale.quitter"), "Machine retirée du réseau Tailscale.");
-      if (a === "deconnecter") return faire(() => agir("tailscale.deconnecter"), "Tailscale est coupé sur cette machine.");
+      if (a === "deconnecter") { S.couper = true; dessiner(); return; }
+      if (a === "deconnecter-non") { S.couper = false; dessiner(); return; }
+      if (a === "deconnecter-oui") return faire(() => agir("tailscale.deconnecter"), "Tailscale est coupé sur cette machine.");
       if (a === "annuler") return faire(() => agir("tailscale.annuler"), "Connexion abandonnée.");
       if (a === "ssh") return faire(() => agir("tailscale.ssh_regler", { actif: b.dataset.v === "1" }), b.dataset.v === "1" ? "SSH par Tailscale activé." : "SSH par Tailscale coupé.");
       if (a === "connecter") {
