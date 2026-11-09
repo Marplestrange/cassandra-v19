@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9ad3df
+# VERSION CN : 0.1.0  #dce85f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module tailscale : le client est simulé (un faux `tailscale` qui répond comme le vrai), le reste tourne dans un vrai noyau.
 # MÉTHODE    : on remplace `_lancer` du module ; on vérifie les états, le lien d'identification, la clé qui ne traîne nulle part, et les refus dits en clair.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9ad3df ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dce85f ▼▼▼
 """Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."""
 import json
 import shutil
@@ -353,6 +353,13 @@ class Ajouts(Monde):
             with self.assertRaises(Exception, msg=(cle, valeur)):
                 self.lire("regler", cle=cle, valeur=valeur)
         self.assertFalse(self.set_appels(), "rien n'est envoyé au client quand la valeur est refusée")
+
+    def test_le_nom_se_remet_a_celui_du_systeme_en_le_videant(self):
+        self.etat = CONNECTE
+        self.prefs = {"Hostname": "autre"}
+        self.lire("regler", cle="hostname", valeur="")
+        self.assertIn(["set", "--hostname="], self.appels)
+        self.assertEqual(self.prefs["Hostname"], "")
 
     def test_les_routes_annoncees_gardent_la_sortie_internet_deja_annoncee(self):
         self.etat = CONNECTE

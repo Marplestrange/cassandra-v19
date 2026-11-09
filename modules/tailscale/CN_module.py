@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.2.0  #98462c
+# VERSION CN : 0.2.0  #cc11f2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=98462c ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=cc11f2 ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -515,9 +515,9 @@ def brancher(ctx):
             return bool(valeur)
         if cle == "hostname":
             v = str(valeur or "").strip().lower()
-            if not NOM.match(v):
+            if v and not NOM.match(v):
                 raise ValueError("Nom de machine invalide : lettres, chiffres et tirets seulement")
-            return v
+            return v                                 # vide : revient au nom du système
         if cle == "advertise_routes":
             items = valeur if isinstance(valeur, (list, tuple)) else str(valeur or "").split(",")
             sortie = set()

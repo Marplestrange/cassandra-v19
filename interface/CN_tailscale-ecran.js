@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #3c394d
+// VERSION CN : 0.1.0  #2da43b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=3c394d ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=2da43b ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -154,7 +154,7 @@
         bool("accept_dns", "Utiliser le DNS du réseau (MagicDNS)", "Résoudre les noms des machines du réseau.") +
         bool("shields_up", "Bouclier : refuser les connexions entrantes", "Cette machine joint les autres, mais personne ne la joint par Tailscale (SSH par Tailscale compris).") +
         bool("advertise_exit_node", "Offrir la sortie Internet de cette machine", "Les autres machines peuvent passer par elle pour sortir sur Internet ; l’administrateur doit l’approuver.") +
-        '<div class="champs"><label class="ch"><b>Nom de la machine</b><span class="note">Lettres, chiffres et tirets. Change son adresse DNS dans le réseau.</span><input type="text" id="ts-r-nom" value="' + esc(g.hostname) + '"></label>' +
+        '<div class="champs"><label class="ch"><b>Nom de la machine</b><span class="note">Lettres, chiffres et tirets ; vide : le nom du système. Change son adresse DNS dans le réseau.</span><input type="text" id="ts-r-nom" value="' + esc(g.hostname) + '"></label>' +
         '<label class="ch"><b>Routes annoncées</b><span class="note">Réseaux joignables par cette machine, séparés par des virgules (192.168.1.0/24).</span><input type="text" id="ts-r-routes" value="' + esc((g.advertise_routes || []).join(", ")) + '"></label>' +
         '<label class="ch"><b>Sortie Internet utilisée</b><span class="note">' + (sorties.length ? "Tout le trafic de cette machine passera par la machine choisie." : "Aucune machine du réseau n’offre de sortie.") + '</span><select id="ts-r-sortie"><option value="">aucune</option>' +
         sorties.map((p) => '<option value="' + esc(p.ip) + '"' + (p.ip === g.exit_node ? " selected" : "") + ">" + esc(p.nom) + "</option>").join("") + "</select></label></div>" +
