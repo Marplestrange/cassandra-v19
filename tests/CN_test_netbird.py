@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d19f08
+# VERSION CN : 0.1.0  #8c1b2b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module netbird : le client NetBird, Docker et le courtier sont SIMULÉS (un faux monde qui répond comme eux), le reste tourne dans un vrai noyau. On vérifie les états, la voie choisie (natif direct, natif par le courtier, conteneur)
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d19f08 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8c1b2b ▼▼▼
 """Bancs du module netbird : le client NetBird, Docker et le courtier sont SIMULÉS (un faux monde qui répond comme eux), le reste tourne dans un vrai noyau.
 On vérifie les états, la voie choisie (natif direct, natif par le courtier, conteneur), la clé qui ne traîne nulle part, l'installation et le retrait du conteneur, le journal et le retour."""
 import json
@@ -80,6 +80,8 @@ class Monde(unittest.TestCase):
         self.etat = statut("Idle")
         self.courtier = True
         self.refus = {}                      # (verbe ou premier argument) -> (code, sortie)
+        self.maj_change = True               # la mise à jour du conteneur a trouvé une image plus récente
+        self.maj_echoue = False
 
     # ---- le faux monde
     def cli(self, args, entree=None):
@@ -131,6 +133,13 @@ class Monde(unittest.TestCase):
             self.conteneur = "en_marche"
             self.etat = statut("Connected") if entree else statut("NeedsLogin")
             return {"ok": True, "code": 0, "sortie": "abc123"}
+        if verbe == "docker_maj":
+            if self.conteneur not in ("en_marche", "arrete"):
+                return {"ok": False, "erreur": "le conteneur n'existe pas"}
+            if self.maj_echoue:
+                return {"ok": False, "code": 1, "sortie": "pull access denied"}
+            self.conteneur = "en_marche"
+            return {"ok": True, "change": self.maj_change, "code": 0, "sortie": ""}
         if verbe == "docker_retirer":
             self.conteneur = "absent"
             return {"ok": True, "code": 0, "sortie": ""}
@@ -400,7 +409,46 @@ class Docker(Monde):
         self.assertEqual([x for x in self.racines if x[0] == "docker_retirer"][1][1], ["netbird", "purger"])
         self.assertEqual(self.lire("journal")["gestes"][0]["libelle"], "Conteneur NetBird retiré avec son volume (identité perdue)")
 
+    def test_mettre_a_jour_le_client_docker(self):
+        self.conteneur = "en_marche"
+        self.maj_change = True
+        r = self.lire("mettre_a_jour_client")
+        self.assertTrue(r["maj_change"])
+        self.assertEqual([x for x in self.racines if x[0] == "docker_maj"][0][1], ["netbird"], "sans étiquette : la même")
+        self.assertEqual(self.lire("journal")["gestes"][0]["libelle"], "Client NetBird mis à jour (conteneur recréé, identité gardée)")
+
+    def test_mettre_a_jour_un_client_deja_a_jour_le_dit(self):
+        self.conteneur = "en_marche"
+        self.maj_change = False
+        self.assertFalse(self.lire("mettre_a_jour_client")["maj_change"])
+        self.assertEqual(self.lire("journal")["gestes"][0]["libelle"], "Client NetBird déjà à jour")
+
+    def test_mettre_a_jour_avec_une_etiquette_precise(self):
+        self.conteneur = "arrete"
+        self.lire("mettre_a_jour_client", tag="0.41.0")
+        self.assertEqual([x for x in self.racines if x[0] == "docker_maj"][0][1], ["netbird", "0.41.0"])
+        for tag in ("latest;id", "a b"):
+            with self.assertRaises(Echec, msg=tag):
+                self.lire("mettre_a_jour_client", tag=tag)
+        self.assertEqual(len([x for x in self.racines if x[0] == "docker_maj"]), 1, "une étiquette suspecte n'arrive pas au courtier")
+
+    def test_mettre_a_jour_le_client_natif_renvoie_au_gestionnaire_de_paquets(self):
+        self.natif = True
+        with self.assertRaises(Echec) as q:
+            self.lire("mettre_a_jour_client")
+        self.assertIn("gestionnaire de paquets", str(q.exception))
+        self.assertFalse([x for x in self.racines if x[0] == "docker_maj"])
+
+    def test_mettre_a_jour_sans_conteneur_ou_si_le_pull_echoue_est_refuse(self):
+        with self.assertRaises(Echec):
+            self.lire("mettre_a_jour_client")
+        self.conteneur = "en_marche"
+        self.maj_echoue = True
+        with self.assertRaises(Echec):
+            self.lire("mettre_a_jour_client")
+
     def test_retirer_sans_conteneur_est_refuse(self):
+
         with self.assertRaises(Echec):
             self.lire("retirer_docker")
         self.assertFalse([x for x in self.racines if x[0] == "docker_retirer"])

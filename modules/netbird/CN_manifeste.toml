@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #363b51
+# VERSION CN : 0.1.0  #e4667a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (l'installer dans Docker, le connecter, le couper) ET, au besoin, un serveur NetBird auto-hébergé (l'installer, le tenir à jour, administrer ses machines, clés, groupes et politiques).
 # MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=363b51 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e4667a ▼▼▼
 [module]
 id = "netbird"
 nom = "NetBird"
@@ -168,6 +168,15 @@ droit = "administrer"
 perimetre = ["le conteneur nommé par le réglage « conteneur », s'il est bien une image netbirdio/netbird"]
 preuve = "relire `docker inspect` : le conteneur n'existe plus"
 retour = "réinstaller le conteneur (avec son volume gardé, la machine retrouve son identité ; purgé, il faut une nouvelle identification)"
+
+[[capacites]]
+id = "mettre_a_jour_client"
+libelle = "Mettre à jour le client NetBird installé dans Docker : télécharge l'image (même étiquette, ou celle demandée) et, si elle a changé, recrée le conteneur avec son volume ; la machine est coupée quelques secondes, son identité est gardée. Le client natif se met à jour par le gestionnaire de paquets de la machine"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["le conteneur nommé par le réglage « conteneur », s'il est bien une image netbirdio/netbird", "par le courtier : pull, puis recréation seulement si l'image a changé"]
+preuve = "relire `docker inspect` : le conteneur tourne après la mise à jour"
+retour = "aucun geste d'annulation ; réinstaller l'ancienne version depuis la page Client (le volume garde l'identité)"
 
 [[capacites]]
 id = "serveur_etat"

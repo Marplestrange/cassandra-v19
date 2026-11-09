@@ -14,6 +14,7 @@ Verbes :
   sso_annuler natif|docker <conteneur>          abandonne cette attente et coupe la connexion
   docker_installer <conteneur> <tag> [--management-url=U] [--hostname=H]
                                                  crée le conteneur officiel (netbirdio/netbird:<tag>) avec ce qu'il lui faut ; clé facultative sur l'entrée standard
+  docker_maj <conteneur> [tag]                  télécharge l’image (la même étiquette, ou <tag>) et, si elle a changé, recrée le conteneur avec son volume : l’identité est gardée
   docker_retirer <conteneur> [purger]           retire le conteneur (et, si « purger », son volume : l'identité de la machine dans NetBird)
 
 Un conteneur n'est touché que s'il est une image netbirdio/netbird : ce programme ne retire ni ne pilote jamais le conteneur d'un autre service.
@@ -235,6 +236,17 @@ def autres_clients(c):
     return [n for n, _, i in (l.partition("|") for l in sortie.splitlines()) if n != c and est_netbird(i)] if code == 0 else []
 
 
+def commande_run(c, hostname, cible, cle=False, url=None):
+    """Le `docker run` du client : le même à l’installation et à la mise à jour, pour que le conteneur recréé soit celui qu’on avait."""
+    cmd = ["docker", "run", "-d", "--name", c, "--hostname", hostname, "--restart", "unless-stopped", "--network", "host",
+           "--cap-add=NET_ADMIN", "--cap-add=SYS_ADMIN", "--cap-add=SYS_RESOURCE", "--device", "/dev/net/tun", "-v", "%s-donnees:/var/lib/netbird" % c]
+    if cle:
+        cmd += ["-e", "NB_SETUP_KEY"]
+    if url:
+        cmd += ["-e", "NB_MANAGEMENT_URL=" + url]
+    return cmd + [cible]
+
+
 def verbe_docker_installer(a, entree):
     if len(a) < 2:
         refuser("usage : docker_installer <conteneur> <tag> [options]")
@@ -252,14 +264,34 @@ def verbe_docker_installer(a, entree):
     if autres:
         refuser("un autre conteneur NetBird existe déjà (%s) : un seul client par machine" % ", ".join(autres)[:80])
     d = dict(o.split("=", 1) for o in opts)
-    cmd = ["docker", "run", "-d", "--name", c, "--hostname", d.get("--hostname", c), "--restart", "unless-stopped", "--network", "host",
-           "--cap-add=NET_ADMIN", "--cap-add=SYS_ADMIN", "--cap-add=SYS_RESOURCE", "--device", "/dev/net/tun", "-v", "%s-donnees:/var/lib/netbird" % c]
-    if cle:
-        cmd += ["-e", "NB_SETUP_KEY"]
-    if "--management-url" in d:
-        cmd += ["-e", "NB_MANAGEMENT_URL=" + d["--management-url"]]
-    code, sortie = lancer(cmd + ["%s:%s" % (IMAGE, tag)], delai=240, env=env_avec(cle))
+    code, sortie = lancer(commande_run(c, d.get("--hostname", c), "%s:%s" % (IMAGE, tag), cle, d.get("--management-url")), delai=240, env=env_avec(cle))
     return {"ok": code == 0, "code": code, "sortie": sortie}
+
+
+def verbe_docker_maj(a, entree):
+    if not a or len(a) > 2:
+        refuser("usage : docker_maj <conteneur> [tag]")
+    c = verifier_nom(a[0], CONTENEUR, "nom de conteneur")
+    tag = verifier_nom(a[1], TAG, "étiquette d'image") if len(a) == 2 else None
+    image, _ = conteneur_netbird(c)
+    if tag is None and "@" in image:
+        refuser("l'image du conteneur est épinglée par empreinte : elle ne se met pas à jour ; indique une étiquette")
+    cible = "%s:%s" % (IMAGE, tag) if tag else image
+    code, sortie = lancer(["docker", "pull", cible], delai=280)
+    if code != 0:
+        return {"ok": False, "code": code, "sortie": sortie}                          # rien n'est touché tant que l'image n'est pas là
+    _, vu = lancer(["docker", "container", "inspect", "-f", "{{.Image}}|{{.Config.Hostname}}", c], delai=20)
+    actuel, _, nom = vu.partition("|")
+    _, neuf = lancer(["docker", "image", "inspect", "-f", "{{.Id}}", cible], delai=20)
+    if actuel and actuel == neuf and cible == image:
+        return {"ok": True, "change": False, "code": 0, "sortie": sortie}             # déjà à jour : le conteneur n'est pas recréé
+    code, sortie = lancer(["docker", "rm", "-f", c], delai=60)
+    if code != 0:
+        return {"ok": False, "code": code, "sortie": sortie}
+    code, sortie = lancer(commande_run(c, nom.strip() if NOM.match(nom.strip()) else c, cible), delai=240)
+    if code != 0:
+        return {"ok": False, "code": code, "sortie": sortie, "erreur": "le nouveau conteneur n'a pas démarré (l'ancien est retiré, son volume est intact : réinstalle le client) : " + sortie[:200]}
+    return {"ok": True, "change": True, "code": 0, "sortie": sortie}
 
 
 def verbe_docker_retirer(a, entree):
@@ -273,7 +305,7 @@ def verbe_docker_retirer(a, entree):
     return {"ok": code == 0, "code": code, "sortie": sortie}
 
 
-VERBES = {"etat": verbe_etat, "cli": verbe_cli, "sso": verbe_sso, "sso_annuler": verbe_sso_annuler, "docker_installer": verbe_docker_installer, "docker_retirer": verbe_docker_retirer}
+VERBES = {"etat": verbe_etat, "cli": verbe_cli, "sso": verbe_sso, "sso_annuler": verbe_sso_annuler, "docker_installer": verbe_docker_installer, "docker_maj": verbe_docker_maj, "docker_retirer": verbe_docker_retirer}
 
 
 def piloter(argv, entree=""):

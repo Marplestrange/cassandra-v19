@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e91f20
+# VERSION CN : 0.1.0  #3f7049
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `piloter` du module netbird : ce que le courtier lance À ROOT. Ni Docker ni NetBird ici : `executer` est remplacé, chaque commande qui serait lancée est enregistrée, et l'on vérifie surtout ce qui est REFUSÉ (argum
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e91f20 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3f7049 ▼▼▼
 """Bancs de la commande root `piloter` du module netbird : ce que le courtier lance À ROOT. Ni Docker ni NetBird ici : `executer` est remplacé, chaque commande qui serait lancée est
 enregistrée, et l'on vérifie surtout ce qui est REFUSÉ (arguments hors table, conteneur d'un autre service, clé en ligne de commande)."""
 import importlib.machinery
@@ -202,7 +202,51 @@ class Docker(Monde):
         self.conteneurs["netbird"] = ("redis:7", "running")
         self.assertEqual(self.lance("etat", "netbird")["conteneur"], "autre")
 
+    def test_maj_telecharge_puis_recree_le_conteneur_avec_son_volume(self):
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
+        self.sorties["docker container inspect"] = (0, "sha256:ancienne|argos")
+        self.sorties["docker image inspect"] = (0, "sha256:nouvelle")
+        r = self.lance("docker_maj", "netbird")
+        self.assertTrue(r["ok"] and r["change"], r)
+        lances = self.lances()
+        self.assertEqual(lances[0], ["docker", "pull", "netbirdio/netbird:latest"], "le téléchargement d'abord")
+        rm = [c for c in lances if c[:2] == ["docker", "rm"]]
+        run = [c for c in lances if c[:2] == ["docker", "run"]][0]
+        self.assertEqual(rm, [["docker", "rm", "-f", "netbird"]])
+        self.assertFalse([c for c in lances if c[:2] == ["docker", "volume"]], "jamais de « volume rm » : l'identité est gardée")
+        self.assertIn("netbird-donnees:/var/lib/netbird", run)
+        self.assertEqual(run[run.index("--hostname") + 1], "argos", "le nom de la machine est gardé")
+        self.assertEqual(run[-1], "netbirdio/netbird:latest")
+
+    def test_maj_ne_touche_a_rien_quand_l_image_n_a_pas_change(self):
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
+        self.sorties["docker container inspect"] = (0, "sha256:meme|argos")
+        self.sorties["docker image inspect"] = (0, "sha256:meme")
+        r = self.lance("docker_maj", "netbird")
+        self.assertTrue(r["ok"])
+        self.assertFalse(r["change"])
+        self.assertFalse([c for c in self.lances() if c[:2] in (["docker", "rm"], ["docker", "run"])])
+
+    def test_maj_avec_etiquette_recree_et_un_pull_rate_ne_retire_rien(self):
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
+        self.sorties["docker container inspect"] = (0, "sha256:a|argos")
+        self.sorties["docker image inspect"] = (0, "sha256:a")
+        self.assertTrue(self.lance("docker_maj", "netbird", "0.41.0")["change"], "une autre étiquette recrée même si l'identifiant est le même")
+        self.assertEqual([c for c in self.lances() if c[:2] == ["docker", "run"]][0][-1], "netbirdio/netbird:0.41.0")
+        self.cmds.clear()
+        self.sorties["docker pull"] = (1, "pull access denied")
+        self.assertFalse(self.lance("docker_maj", "netbird")["ok"])
+        self.assertFalse([c for c in self.lances() if c[:2] in (["docker", "rm"], ["docker", "run"])], "tant que l'image n'est pas là, le conteneur reste")
+
+    def test_maj_refuse_ce_qui_n_est_pas_netbird_ou_suspect(self):
+        self.conteneurs["vaultwarden"] = ("vaultwarden/server:latest", "running")
+        self.conteneurs["netbird"] = ("netbirdio/netbird@sha256:abc", "running")
+        for argv in (("docker_maj", "vaultwarden"), ("docker_maj", "netbird"), ("docker_maj", "netbird", "x;id"), ("docker_maj", "a b"), ("docker_maj",), ("docker_maj", "netbird", "1", "2")):
+            self.assertFalse(self.lance(*argv)["ok"], argv)
+        self.assertFalse([c for c in self.lances() if c[0] == "docker" and c[1] in ("pull", "rm", "run")])
+
     def test_sans_docker_les_verbes_docker_le_disent(self):
+
         self.p.shutil = types.SimpleNamespace(which=lambda x: None)
         for argv in (("docker_installer", "netbird", "latest"), ("cli", "docker", "netbird", "--", "status"), ("docker_retirer", "netbird")):
             r = self.lance(*argv)

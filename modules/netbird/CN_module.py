@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ee3268
+# VERSION CN : 0.1.0  #ab0e40
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ee3268 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ab0e40 ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -396,6 +396,23 @@ def brancher(ctx):
             retirer_docker_effet(bool(purger))
             return dict(_etat(c, True), docker_purge=bool(purger))
 
+    def mettre_a_jour_client(c, tag=""):
+        with _VERROU:
+            tag = str(tag or "").strip()
+            if tag and not TAG.match(tag):
+                raise ValueError("Étiquette d'image invalide (latest, 0.30.0…)")
+            info = detecter(True)
+            if info["conteneur"] not in ("en_marche", "arrete"):
+                if info["natif"]:
+                    raise ValueError("Le client NetBird est installé directement sur cette machine, pas dans Docker : sa mise à jour passe par le gestionnaire de paquets de la machine (apt, dnf…), Cassandra n'y touche pas.")
+                raise ValueError("Il n'y a pas de conteneur NetBird « %s » à mettre à jour" % conteneur())
+            r = _racine("docker_maj", [conteneur()] + ([tag] if tag else []), None, 320)
+            if not r.get("ok"):
+                raise ValueError(erreur(r.get("erreur") or r.get("sortie")))
+            _MODE["val"] = None
+            _CACHE["val"] = None
+            return dict(_etat(c, True), maj_change=bool(r.get("change")))
+
     def prouver_retire(c, res):
         return detecter(True)["conteneur"] == "absent"
 
@@ -762,6 +779,8 @@ def brancher(ctx):
         if cap == "retirer_docker":
             return "Conteneur NetBird retiré" + (" avec son volume (identité perdue)" if res.get("docker_purge") else "")
         n = res.get("nom") or args.get("nom") or res.get("id") or ""
+        if cap == "mettre_a_jour_client":
+            return "Client NetBird mis à jour (conteneur recréé, identité gardée)" if res.get("maj_change") else "Client NetBird déjà à jour"
         return {"connecter": "Connexion à NetBird" + (" par clé" if args.get("avec_cle") else " (lien d'identification)"), "deconnecter": "NetBird coupé",
                 "annuler": "Connexion en attente abandonnée", "serveur_telecharger": "Script du serveur téléchargé (%s)" % res.get("version", args.get("version", "?")),
                 "serveur_installer": "Serveur NetBird installé (%s, %s)%s" % ((res.get("meta") or {}).get("domaine", args.get("domaine", "?")), args.get("proxy", "nginx"), " : domaine hors Cassandra" if res.get("domaine_hors_cassandra") else ""), "serveur_mettre_a_jour": "Serveur NetBird mis à jour",
@@ -813,6 +832,8 @@ def brancher(ctx):
     ctx.implementer("deconnecter", journaliser("deconnecter", deconnecter), prouver_pas_connecte, defaire_deconnecter, simuler=lambda x, **_: "couperait NetBird sur cette machine")
     ctx.implementer("installer_docker", journaliser("installer_docker", installer_docker), prouver_installe, defaire_installer,
                     simuler=lambda x, tag="latest", **_: "installerait le client NetBird dans un conteneur Docker (netbirdio/netbird:%s)" % tag)
+    ctx.implementer("mettre_a_jour_client", journaliser("mettre_a_jour_client", mettre_a_jour_client), prouver_installe, lambda c, res: None,
+                    simuler=lambda x, tag="", **_: "mettrait à jour le client NetBird (image netbirdio/netbird" + (":" + tag if tag else ", même étiquette") + ", conteneur recréé, volume gardé)")
     ctx.implementer("retirer_docker", journaliser("retirer_docker", retirer_docker), prouver_retire, lambda c, res: None, simuler=lambda x, purger=False, **_: "retirerait le conteneur NetBird" + (" et son volume" if purger else ""))
     ctx.implementer("serveur_etat", serveur_etat)
     ctx.implementer("serveur_journaux", serveur_journaux)

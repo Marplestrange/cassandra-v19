@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #3ee9d5
+// VERSION CN : 0.1.0  #647502
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=3ee9d5 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=647502 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -146,7 +146,13 @@
         : '<button class="btn" data-a="deconnecter"' + (S.occupe ? " disabled" : "") + ">Déconnecter</button>") + "</div></div>";
     }
     function carteAInstaller(e) {
-      return '<div class="carte"><h2 ' + H2 + ">NetBird n’est pas encore là</h2><p>" + esc(e.texte || "") + '</p><div class="acts"><button class="btn pri" data-a="vers-installation">Installer le client</button></div></div>';
+      return '<div class="carte"><h2 ' + H2 + ">Qu’est-ce que NetBird ?</h2>" +
+        '<p>NetBird relie tes machines entre elles par un <b>réseau privé chiffré</b> (WireGuard) : serveurs, portables, téléphones se joignent comme s’ils étaient sur le même réseau local, où qu’ils soient et sans ouvrir de port sur internet.</p>' +
+        '<p class="note">Il a deux morceaux. Le <b>client</b> tourne sur chaque machine qui rejoint le réseau. Le <b>serveur</b> tient le registre : qui est dans le réseau, avec quelle clé, et qui a le droit de joindre quoi. Ce serveur peut être celui de NetBird (NetBird Cloud) ou le tien.</p></div>' +
+        '<div class="carte"><h2 ' + H2 + ">Par où commencer ?</h2>" +
+        '<p class="note">' + esc(e.texte || "") + "</p>" +
+        '<div class="champs"><div><b>Rejoindre un réseau NetBird</b><p class="note">Cette machine devient un membre : le réseau est sur NetBird Cloud ou sur un serveur existant. Il suffit d’installer le <b>client</b>.</p><div class="acts"><button class="btn pri" data-a="vers-installation">Installer le client</button></div></div>' +
+        '<div><b>Héberger mon propre réseau</b><p class="note">Cassandra installe et administre un <b>serveur</b> NetBird sur cette machine (avec ton domaine), puis tu gères machines, clés et accès depuis ici. Ensuite, installe aussi le client si cette machine doit en faire partie.</p><div class="acts"><button class="btn" data-a="vers-serveur">Installer le serveur</button></div></div></div></div>';
     }
     // Un seul client NetBird par machine : le natif ET le conteneur en même temps se disputent l’interface wt0 et le port 51820.
     function avisConflit(e) {
@@ -209,6 +215,7 @@
         '<label class="ch"><b>Clé d’installation</b><span class="note">Facultatif : avec elle le conteneur se connecte seul ; sans elle, un lien à ouvrir.</span><input type="password" id="nb-i-cle" placeholder="XXXXXXXX-XXXX-…" autocomplete="off" spellcheck="false"></label></div>' +
         '<div class="acts"><button class="btn pri" data-a="installer"' + (bloque ? " disabled" : "") + ">Installer dans Docker</button></div></div>";
       if (e.conteneur === "en_marche" || e.conteneur === "arrete") {
+        h += '<div class="carte"><h2 ' + H2 + ">Mettre à jour le client</h2><p class=\"note\">Télécharge la dernière image de la même étiquette et, si elle a changé, recrée le conteneur avec son volume : la machine est coupée quelques secondes, son identité est gardée.</p><div class=\"acts\"><button class=\"btn pri\" data-a=\"client-maj\"" + (S.occupe || nonRoot ? " disabled" : "") + ">Mettre à jour le client</button></div></div>";
         h += '<div class="carte"><h2 ' + H2 + ">Retirer le conteneur</h2><p class=\"note\">Le volume est gardé : une réinstallation retrouve l’identité de la machine dans NetBird.</p><div class=\"acts\">" +
           (S.couper ? '<span class="confirme"><label class="coche"><input type="checkbox" id="nb-purge"><span>Supprimer aussi le volume : la machine perd son identité et il faudra une nouvelle identification.</span></label> <button class="btn dng" data-a="retirer-oui">Oui, retirer</button><button class="btn" data-a="deconnecter-non">Non</button></span>'
             : '<button class="btn dng" data-a="retirer"' + (S.occupe || nonRoot ? " disabled" : "") + ">Retirer le conteneur…</button>") + "</div></div>";
@@ -279,8 +286,9 @@
         fiche("Domaine", esc(m.domaine || "—")) + fiche("Version", esc(m.version || "—")) + fiche("Proxy", esc(m.proxy || "—")) + fiche("API", s.api_joignable ? "joignable ✓" : "ne répond pas ✗") + "</div>" +
         (s.conteneurs.length ? '<div class="pairs">' + s.conteneurs.map((c) => '<div class="pair" style="grid-template-columns:auto minmax(100px,1fr) minmax(120px,auto)"><span class="pt' + (c.etat === "running" ? " on" : "") + '"></span><span class="nom">' + esc(c.service) + '</span><span class="note">' + esc(c.etat) + " · " + esc(c.image) + "</span></div>").join("") + "</div>" : "") + "</div>";
       if (s.setup_requis && url) h += '<div class="lien"><h2 ' + H2 + ">Dernier pas : crée le premier compte administrateur</h2><p class=\"note\">Ouvre la page d’installation de NetBird et crée toi-même ton compte : Cassandra ne choisit ni ne garde aucun mot de passe. Puis, dans le tableau de bord, crée un jeton d’accès personnel (Settings › Personal Access Tokens) et donne-le à Cassandra depuis la page <b>Administration</b>.</p><div class=\"acts\"><a class=\"btn pri\" href=\"" + esc(url) + '/setup" target="_blank" rel="noopener noreferrer">Ouvrir la page de création du compte</a></div></div>';
+      h += '<div class="carte"><h2 ' + H2 + ">Mettre à jour le serveur</h2><p class=\"note\">Télécharge les dernières images NetBird de la version installée, puis redémarre le serveur : les machines se reconnectent seules, les données et la configuration sont gardées.</p><div class=\"acts\"><button class=\"btn pri\" data-a=\"srv-maj\"" + (S.occupe ? " disabled" : "") + ">Mettre à jour le serveur</button></div></div>";
       h += cartePorts() + '<div class="carte"><h2 ' + H2 + ">Entretien</h2><div class=\"acts\"><button class=\"btn\" data-a=\"srv-journaux\"" + (S.occupe ? " disabled" : "") + ">Voir les journaux</button><button class=\"btn\" data-a=\"srv-redemarrer\"" + (S.occupe ? " disabled" : "") + ">Redémarrer</button>" +
-        '<button class="btn" data-a="srv-maj"' + (S.occupe ? " disabled" : "") + ">Mettre à jour les images</button>" + (m.proxy === "nginx" ? '<button class="btn" data-a="srv-nginx"' + (S.occupe ? " disabled" : "") + ">Voir la conf nginx</button>" : "") + "</div>" + carteTexte() + "</div>";
+        (m.proxy === "nginx" ? '<button class="btn" data-a="srv-nginx"' + (S.occupe ? " disabled" : "") + ">Voir la conf nginx</button>" : "") + "</div>" + carteTexte() + "</div>";
       h += '<div class="carte"><h2 ' + H2 + ">Retirer le serveur</h2><p class=\"note\">Arrête les conteneurs. Les données (comptes, machines, clés) sont gardées : réinstaller retrouve le réseau tel quel.</p><div class=\"acts\">" +
         (S.couper ? '<span class="confirme"><label class="coche"><input type="checkbox" id="nb-s-purge"><span>Supprimer aussi les données : tous les comptes, machines et clés sont perdus, sans retour.</span></label> <button class="btn dng" data-a="srv-retirer-oui">Oui, retirer</button><button class="btn" data-a="deconnecter-non">Non</button></span>'
           : '<button class="btn dng" data-a="srv-retirer"' + (S.occupe ? " disabled" : "") + ">Retirer le serveur…</button>") + "</div></div>";
@@ -394,6 +402,10 @@
         if (!confirm("Installer le client NetBird dans un conteneur Docker (netbirdio/netbird:" + tag + ") ? L’image est téléchargée depuis Docker Hub.")) return;
         const args = { tag: tag, nom: val("#nb-i-nom"), url: val("#nb-i-url") };
         return faire(() => (cle ? avecCle(cle, () => agir("netbird.installer_docker", Object.assign({ avec_cle: true }, args))) : agir("netbird.installer_docker", args)), "NetBird est installé dans Docker.");
+      }
+      if (a === "client-maj") {
+        if (!confirm("Mettre à jour le client NetBird ? L’image est téléchargée ; si elle a changé, le conteneur est recréé (identité gardée) et la machine est coupée quelques secondes.")) return;
+        return faire(async () => { const r = await agir("netbird.mettre_a_jour_client"); dire(r && r.maj_change ? "Client NetBird mis à jour." : "Le client NetBird est déjà à jour."); }, "");
       }
       if (a === "txt-fermer") { S.txt = null; dessiner(); return; }
       if (a === "onglet") { S.onglet = b.dataset.id; S.edit = ""; dessiner(); return; }
