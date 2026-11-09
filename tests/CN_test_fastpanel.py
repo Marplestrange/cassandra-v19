@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9d114d
+# VERSION CN : 0.1.0  #01dff3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du pont FastPanel : un faux panneau (API HTTP avec état + base SQLite au schéma réel) et le module branché dans un vrai noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9d114d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=01dff3 ▼▼▼
 """Bancs du pont FastPanel : un faux panneau (API HTTP avec état + base SQLite au schéma réel) et le module branché dans un vrai noyau."""
 import json
 import shutil
@@ -62,6 +62,10 @@ class FauxPanneau:
         self.regles = [{"id": 1, "name": "SSH", "port_range": "22", "proto": "TCP", "type": "INPUT", "policy": "ACCEPT", "rules": []}]
         self.politique, self.suite_regle = "ACCEPT", 2
         self.renouvelle = True
+        self.rend_id = True
+        self.zones = [{"id": 3, "name": "exemple.fr"}, {"id": 4, "name": "atelier.org"}]
+        self.enregs = {3: [{"id": 1, "type": "A", "name": "@", "data": "1.2.3.4", "ttl": 3600}, {"id": 2, "type": "CNAME", "name": "app", "data": "exemple.fr", "ttl": 3600}], 4: []}
+        self.suite_enreg = 10
         faux = self
 
         class H(BaseHTTPRequestHandler):
@@ -128,6 +132,19 @@ class FauxPanneau:
                     return self._rep(200, {"data": {"id": rid}})
                 if m == "DELETE" and p.startswith("/firewall/ports/"):
                     faux.regles = [x for x in faux.regles if x["id"] != int(p.split("/")[3])]
+                    return self._rep(204)
+                if m == "GET" and p == "/dns/domains":
+                    return self._rep(200, {"data": faux.zones})
+                if m == "GET" and p.startswith("/dns/domain/") and p.endswith("/records"):
+                    return self._rep(200, {"data": faux.enregs[int(p.split("/")[3])]})
+                if m == "POST" and p.startswith("/dns/domain/") and p.endswith("/records"):
+                    r = dict(corps, id=faux.suite_enreg)
+                    faux.suite_enreg += 1
+                    faux.enregs[int(p.split("/")[3])].append(r)
+                    return self._rep(200, {"data": {"id": r["id"]}} if faux.rend_id else {})
+                if m == "DELETE" and p.startswith("/dns/domain/") and "/records/" in p:
+                    zid, rid = int(p.split("/")[3]), int(p.split("/")[5])
+                    faux.enregs[zid] = [x for x in faux.enregs[zid] if x["id"] != rid]
                     return self._rep(204)
                 if m == "GET" and p == "/databases":
                     return self._rep(200, {"data": faux.bases})
@@ -500,7 +517,65 @@ class Surveillance(Base):
         self.assertEqual(a["certificats"]["echus"], ["echu.exemple.fr"])
 
 
+class EnregistrementsDns(Base):
+    def setUp(self):
+        super().setUp()
+        self.noyau()
+
+    def faire(self, cap, **a):
+        return self.e("fastpanel." + cap, "humain", a, compte="")
+
+    def posts(self):
+        return [x for x in self.faux.requetes if x[0] == "POST" and "/records" in x[1]]
+
+    def test_creer_un_a_dans_la_zone_la_plus_precise(self):
+        r = self.faire("dns_enregistrer", domaine="Netbird.Exemple.fr", adresse="93.184.216.34")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual((r["resultat"]["zone"], r["resultat"]["nom"], r["resultat"]["type"], r["resultat"]["id"]), ("exemple.fr", "netbird", "A", 10))
+        self.assertEqual(self.posts()[0][2], {"type": "A", "name": "netbird", "data": "93.184.216.34", "ttl": 3600})
+        self.assertEqual(self.posts()[0][1], "/api/dns/domain/3/records")
+
+    def test_la_racine_de_la_zone_s_appelle_arobase(self):
+        r = self.faire("dns_enregistrer", domaine="atelier.org", adresse="93.184.216.34")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual(self.posts()[0][2]["name"], "@")
+
+    def test_un_domaine_hors_des_zones_du_panneau_est_refuse_sans_rien_envoyer(self):
+        r = self.faire("dns_enregistrer", domaine="netbird.autre.net", adresse="93.184.216.34")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("aucune zone DNS", r["erreur"])
+        self.assertFalse(self.posts())
+        self.assertEqual(self.faire("dns_enregistrer", domaine="notexemple.fr", adresse="93.184.216.34")["statut"], "echec", "exemple.fr n'est pas un suffixe de « notexemple.fr »")
+
+    def test_un_nom_deja_pris_n_est_jamais_remplace(self):
+        r = self.faire("dns_enregistrer", domaine="exemple.fr", adresse="93.184.216.34")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("a déjà un enregistrement A (1.2.3.4)", r["erreur"])
+        r = self.faire("dns_enregistrer", domaine="app.exemple.fr", adresse="93.184.216.34")
+        self.assertIn("CNAME", r["erreur"], "un CNAME occupe le nom : un A à côté serait invalide")
+        self.assertFalse(self.posts())
+
+    def test_les_arguments_suspects_sont_refuses(self):
+        for args in ({"domaine": "pas un domaine", "adresse": "93.184.216.34"}, {"domaine": "a.exemple.fr", "adresse": "pas-une-ip"}, {"domaine": "a.exemple.fr", "adresse": "127.0.0.1"},
+                     {"domaine": "a.exemple.fr", "adresse": "0.0.0.0"}, {"domaine": "a.exemple.fr", "adresse": "2001:db8::1"}, {"domaine": "a.exemple.fr", "adresse": "93.184.216.34", "type": "MX"},
+                     {"domaine": "a.exemple.fr", "adresse": "93.184.216.34", "ttl": 5}, {"domaine": "a.exemple.fr", "adresse": "93.184.216.34", "ttl": "abc"}):
+            self.assertEqual(self.faire("dns_enregistrer", **args)["statut"], "echec", args)
+        self.assertFalse(self.posts())
+        self.assertEqual(self.faire("dns_enregistrer", domaine="a.exemple.fr", adresse="2606:2800:220:1::1", type="AAAA")["statut"], "faite")
+
+    def test_le_retour_supprime_seulement_cet_enregistrement(self):
+        r = self.faire("dns_enregistrer", domaine="netbird.exemple.fr", adresse="93.184.216.34")
+        self.n.catalogue.get("fastpanel.dns_enregistrer").defaire(None, r["resultat"])
+        self.assertEqual([x["id"] for x in self.faux.enregs[3]], [1, 2], "l'enregistrement créé est parti, les deux d'avant restent")
+
+    def test_une_reponse_sans_identifiant_se_retrouve_par_le_contenu(self):
+        self.faux.rend_id = False
+        r = self.faire("dns_enregistrer", domaine="netbird.exemple.fr", adresse="93.184.216.34")
+        self.assertEqual((r["statut"], r["resultat"]["id"]), ("faite", 10))
+
+
 class Actions(Base):
+
     def setUp(self):
         super().setUp()
         self.noyau()

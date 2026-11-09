@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #2fdebd
+# VERSION CN : 0.2.0  #dae9ce
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=2fdebd ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=dae9ce ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -34,6 +34,7 @@ Leçons de la V18 gardées ici :
 from __future__ import annotations
 
 import base64
+import ipaddress
 import json
 import os
 import re
@@ -964,7 +965,60 @@ def brancher(ctx):
             return
         appeler("DELETE", "/api/databases/%s" % int(identifiant))      # cette base-là, que cet acte a créée : son utilisateur part avec elle
 
+    # ---- les enregistrements DNS des zones hébergées par le panneau : en créer un (A ou AAAA), jamais en remplacer un
+    def _zones_dns():
+        return _liste(appeler("GET", "/api/dns/domains"))
+
+    def _enregistrements(zone_id):
+        return _liste(appeler("GET", "/api/dns/domain/%d/records" % int(zone_id)))
+
+    def _valeur_enreg(r):
+        return str(r.get("data", r.get("value", "")) or "").strip()
+
+    def dns_enregistrer(c, domaine, adresse, type="A", ttl=3600):
+        d, t = nom_hote(domaine), str(type or "A").upper()
+        if not hote_valide(d):
+            raise ValueError("nom de domaine invalide")
+        if t not in ("A", "AAAA"):
+            raise ValueError("type d'enregistrement : A ou AAAA")
+        try:
+            ip = ipaddress.ip_address(str(adresse or "").strip())
+        except ValueError:
+            raise ValueError("adresse IP invalide") from None
+        if ip.version != (4 if t == "A" else 6) or ip.is_unspecified or ip.is_loopback or ip.is_multicast:
+            raise ValueError("adresse %s inutilisable pour un enregistrement %s" % (ip, t))
+        if not str(ttl).isdigit() or not 60 <= int(ttl) <= 86400:
+            raise ValueError("durée de vie entre 60 et 86400 secondes")
+        zones = [z for z in _zones_dns() if isinstance(z, dict) and z.get("name") and (d == nom_hote(z["name"]) or d.endswith("." + nom_hote(z["name"])))]
+        if not zones:
+            raise ValueError("« %s » n'appartient à aucune zone DNS hébergée par le panneau : l'enregistrement se crée chez l'hébergeur de ce domaine" % d)
+        z = max(zones, key=lambda x: len(x["name"]))
+        zone = nom_hote(z["name"])
+        rel = "@" if d == zone else d[:-len(zone) - 1]
+        existants = [r for r in _enregistrements(z["id"]) if str(r.get("type") or "").upper() in (t, "CNAME") and str(r.get("name") or "").lower() in (rel, d)]
+        if existants:
+            raise ValueError("« %s » a déjà un enregistrement %s (%s) : Cassandra n'en remplace aucun" % (d, existants[0].get("type"), _valeur_enreg(existants[0]) or "?"))
+        reponse = appeler("POST", "/api/dns/domain/%d/records" % int(z["id"]), {"type": t, "name": rel, "data": str(ip), "ttl": int(ttl)})
+        identifiant = _objet(reponse).get("id")
+        if identifiant is None:                                                       # la création peut ne rien rendre : on retrouve l'enregistrement par son contenu
+            identifiant = next((r.get("id") for r in _enregistrements(z["id"]) if str(r.get("type") or "").upper() == t and str(r.get("name") or "").lower() == rel and _valeur_enreg(r) == str(ip)), None)
+        return {"id": identifiant, "zone_id": int(z["id"]), "zone": zone, "nom": rel, "domaine": d, "type": t, "adresse": str(ip), "ttl": int(ttl)}
+
+    def prouver_dns(c, res):
+        for _ in range(int(ATTENTE_SERVICE_S / PAS_ATTENTE_S)):
+            if any(str(r.get("type") or "").upper() == res["type"] and str(r.get("name") or "").lower() == res["nom"] and _valeur_enreg(r) == res["adresse"] for r in _enregistrements(res["zone_id"])):
+                return True
+            time.sleep(PAS_ATTENTE_S)
+        return False
+
+    def defaire_dns(c, res):
+        identifiant = res.get("id")
+        if identifiant is None:
+            return
+        appeler("DELETE", "/api/dns/domain/%d/records/%d" % (int(res["zone_id"]), int(identifiant)))      # cet enregistrement-là, que cet acte vient de créer
+
     # ---- le pare-feu du panneau : règles, politique, et l'ESSAI (un réglage qui peut fermer se défait seul, sauf si on le garde)
+
     def regles_parefeu():
         regles = _liste(appeler("GET", "/api/firewall/ports"))
         politique = ""
@@ -1270,6 +1324,7 @@ def brancher(ctx):
     c.implementer("parefeu_regle_retirer", regle_retirer, prouver_retiree, defaire_regle, simuler=lambda x, id=0, **_: "retirerait la règle %s du pare-feu du panneau" % id)
     c.implementer("parefeu_politique", parefeu_politique, prouver_politique, defaire_regle, simuler=lambda x, politique="", **_: "passerait la politique du pare-feu à %s" % politique)
     c.implementer("parefeu_trancher", trancher, prouver_tranche, defaire_tranche)
+    c.implementer("dns_enregistrer", dns_enregistrer, prouver_dns, defaire_dns, simuler=lambda x, domaine="", adresse="", **_: "créerait l'enregistrement DNS %s -> %s dans la zone du panneau" % (domaine, adresse))
     c.implementer("base_creer", base_creer, prouver_base, defaire_base, simuler=lambda x, nom="", **_: "créerait la base %s avec son utilisateur" % nom)
     c.implementer("base_supprimer", base_supprimer, prouver_base_supprimee, defaire_base_supprimee, simuler=lambda x, id=0, **_: "supprimerait définitivement la base %s du panneau" % id)
     c.implementer("copie_restaurer", copie_restaurer, prouver_restauration, defaire_restauration, simuler=lambda x, copie_id="", compte="", **_: "restaurerait la copie %s sur le compte %s du panneau" % (copie_id, compte))

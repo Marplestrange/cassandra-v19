@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #60e71d
+# VERSION CN : 0.2.0  #90e443
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers le panneau d'hébergement FastPanel. Lit le parc (comptes, sites, certificats, bases, FTP, courrier, DNS, sauvegardes, services) dans la base du panneau, ouverte en lecture seule, et agit par son API : services, certificats, bases, stockages et plans de sauvegarde, avec preuve et retour arrière. Surveille les services tombés, les certificats proches de l'échéance, les sauvegardes absentes ou périmées et les versions de PHP en fin de support. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=60e71d ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=90e443 ▼▼▼
 [module]
 id = "fastpanel"
 nom = "FastPanel"
@@ -325,6 +325,17 @@ droit = "piloter"
 perimetre = ["un certificat du panneau", "une demande à l'autorité de certification, qui limite le nombre d'essais"]
 preuve = "la date d'émission du certificat doit avoir changé"
 retour = "aucun : un certificat renouvelé ne se défait pas, l'ancien reste valable jusqu'à son terme"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "dns_enregistrer"
+libelle = "Créer un enregistrement DNS (A ou AAAA) dans une zone hébergée par le panneau, par exemple pour le domaine d'un serveur NetBird : jamais en remplaçant un enregistrement existant"
+risque = "moyen"
+droit = "piloter"
+perimetre = ["une zone hébergée par le panneau : le domaine doit en faire partie", "un enregistrement A ou AAAA nouveau, vers une adresse publique valide ; un nom qui a déjà un A, un AAAA ou un CNAME est refusé"]
+preuve = "l'enregistrement figure dans la liste de la zone, avec son nom et son adresse"
+retour = "supprimer l'enregistrement que cet acte vient de créer, et lui seul"
 paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra", "itare"]
 
