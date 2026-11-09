@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #c5b06f
+// VERSION CN : 0.1.0  #f8a0f9
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=c5b06f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f8a0f9 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -74,7 +74,7 @@
 
     async function charger(silencieux) {
       try {
-        if (page === "serveur") S.s = await agir("netbird.serveur_etat");
+        if (page === "serveur") { S.s = await agir("netbird.serveur_etat"); S.dm = S.s.installe ? null : await agir("netbird.serveur_domaines").catch(() => null); }
         else if (page === "gestion") S.g = await chargerReseau();
         else S.e = await agir("netbird.etat");
         S.erreur = ""; S.lu = Date.now();
@@ -224,13 +224,19 @@
       return '<div class="carte"><h2 ' + H2 + ">Avant d’installer</h2><div class=\"hero\">" + fiche("Docker", oui(s.docker)) + fiche("jq (exigé par le script officiel)", oui(s.jq)) + "</div>" +
         '<p class="note">Il faut aussi un nom de domaine propre au serveur NetBird (pas celui de Cassandra) qui pointe déjà vers cette machine, et les ports 80, 443 et 3478/udp ouverts (avec le proxy « nginx » ou « caddy », ton proxy existant publie le serveur : seul le port 3478/udp doit être libre).</p></div>';
     }
+    function noteDomaines() {
+      const d = S.dm;
+      if (!d) return "";
+      if (!d.disponible) return "Le panneau d’hébergement ne répond pas : Cassandra ne peut pas vérifier le domaine" + (d.libre ? " (réglage « domaine_libre » actif : accepté)." : ".");
+      return d.propositions.length ? d.sites.length + " site(s) et " + d.zones.length + " zone(s) DNS administrés par Cassandra." + (d.libre ? " Réglage « domaine_libre » actif : un autre domaine est accepté." : "") : "Aucun site ni zone DNS dans le panneau d’hébergement : ajoutes-en un d’abord.";
+    }
     function carteInstallation(s) {
       const f = S.f, d = S.dl, bloque = S.occupe || !s.docker || !s.jq;
       const choix = [["nginx", "nginx (ton nginx publie le serveur)"], ["caddy", "caddy (ton caddy publie le serveur)"], ["traefik", "traefik (tout intégré : ports 80 et 443 libres)"]];
       let h = '<div class="carte"><h2 ' + H2 + ">Installer un serveur NetBird sur cette machine</h2>" +
         '<p class="note">Deux temps : Cassandra télécharge d’abord le script officiel de NetBird, et te montre son empreinte. Elle ne l’exécute qu’après ta confirmation, et seulement s’il n’a pas changé entre-temps.</p>' +
         '<div class="champs"><label class="ch"><b>Version</b><span class="note">Précise (v0.40.0) : jamais « latest ».</span><input type="text" id="nb-s-ver" value="' + esc(f.version) + '" placeholder="v0.40.0" autocomplete="off" spellcheck="false"></label>' +
-        '<label class="ch"><b>Domaine du serveur NetBird</b><span class="note">Un nom réservé à NetBird, différent de celui de Cassandra (par exemple netbird.exemple.fr), qui pointe vers cette machine.</span><input type="text" id="nb-s-dom" value="' + esc(f.domaine) + '" placeholder="netbird.exemple.fr" autocomplete="off" spellcheck="false"></label>' +
+        '<label class="ch"><b>Domaine du serveur NetBird</b><span class="note">Un nom réservé à NetBird, différent de celui de Cassandra, choisi parmi ceux qu’elle administre (sites du panneau d’hébergement, zones DNS) et qui pointe vers cette machine.</span><input type="text" id="nb-s-dom" list="nb-s-doms" value="' + esc(f.domaine) + '" placeholder="netbird.exemple.fr" autocomplete="off" spellcheck="false"><datalist id="nb-s-doms">' + ((S.dm && S.dm.propositions) || []).map((x) => '<option value="' + esc(x) + '"></option>').join("") + '</datalist><span class="note" id="nb-s-verd">' + noteDomaines() + "</span></label>" +
         '<label class="ch"><b>Adresse e-mail</b><span class="note">Pour les certificats Let’s Encrypt.</span><input type="text" id="nb-s-mel" value="' + esc(f.email) + '" placeholder="admin@exemple.fr" autocomplete="off" spellcheck="false"></label>' +
         '<label class="ch"><b>Proxy</b><span class="note">Qui publie le serveur sur internet.</span><select id="nb-s-prx">' + choix.map((o) => '<option value="' + o[0] + '"' + (f.proxy === o[0] ? " selected" : "") + ">" + o[1] + "</option>").join("") + "</select></label></div>";
       if (d) h += '<div class="lien"><h2 ' + H2 + ">Script téléchargé : " + esc(d.version) + '</h2><p class="note">Empreinte SHA-256 (' + esc(d.taille) + ' octets) : compare-la, si tu veux, à celle du script de cette version sur github.com/netbirdio/netbird.</p><span class="u">' + esc(d.sha256) + "</span>" +
@@ -368,6 +374,8 @@
       // ---- le serveur
       if (a === "srv-telecharger") {
         S.f = { version: val("#nb-s-ver"), domaine: val("#nb-s-dom"), email: val("#nb-s-mel"), proxy: val("#nb-s-prx") || "nginx" };
+        const dm = await agir("netbird.serveur_domaines", { domaine: S.f.domaine }).catch((e) => ({ administre: false, libre: false, raison: e.message || String(e) }));
+        if (!dm.administre && !dm.libre) { dire(dm.raison || "Domaine non administré par Cassandra.", "err"); return; }
         return faire(async () => { S.dl = await agir("netbird.serveur_telecharger", { version: S.f.version }); }, "Script téléchargé : vérifie son empreinte.");
       }
       if (a === "srv-installer") {

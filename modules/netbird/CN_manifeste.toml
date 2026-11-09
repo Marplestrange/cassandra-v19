@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #738b7e
+# VERSION CN : 0.1.0  #4a6241
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (l'installer dans Docker, le connecter, le couper) ET, au besoin, un serveur NetBird auto-hébergé (l'installer, le tenir à jour, administrer ses machines, clés, groupes et politiques).
 # MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=738b7e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4a6241 ▼▼▼
 [module]
 id = "netbird"
 nom = "NetBird"
@@ -54,6 +54,7 @@ libelle = "Un serveur NetBird auto-hébergé et son réseau"
 [permissions]
 stockage = true
 racine = true
+lectures = true
 reseau = ["le client NetBird local (son socket) ou son conteneur Docker ; le serveur de gestion NetBird (api.netbird.io par défaut, ou le vôtre) et ses relais, par ce client", "Docker Hub (netbirdio/netbird) quand le conteneur est installé", "github.com (le script officiel getting-started.sh, d'une version et d'une empreinte confirmées) et les images du serveur NetBird quand un serveur est installé", "l'API du serveur NetBird administré (réglage url_api, ou le domaine du serveur posé par Cassandra), avec le jeton d'accès enregistré : jamais ailleurs, sans suivre de redirection"]
 privileges = ["installer : la commande /usr/libexec/cassandra/netbird/piloter, lancée en root par le courtier : une table fermée de verbes, jamais un shell, jamais le conteneur d'un autre service", "serveur : la commande /usr/libexec/cassandra/netbird/serveur, lancée en root par le courtier : installe le script officiel de la version confirmée dans /opt/netbird-serveur seulement, et pilote docker compose de ce dossier seulement"]
 
@@ -86,6 +87,12 @@ defaut = ""
 id = "jeton_api"
 libelle = "Jeton d'accès personnel NetBird (tableau de bord › Settings › Personal Access Tokens) : donne à Cassandra la main d'un administrateur sur le réseau"
 type = "secret"
+
+[[reglages]]
+id = "domaine_libre"
+libelle = "Autoriser, pour le serveur NetBird, un domaine que Cassandra n'administre pas (ni site du panneau d'hébergement, ni zone DNS qu'il héberge). Par défaut non : le domaine se choisit parmi ceux qu'elle connaît"
+type = "booleen"
+defaut = false
 
 [[reglages]]
 id = "conteneur"
@@ -181,6 +188,12 @@ risque = "lecture"
 droit = "serveur"
 
 [[capacites]]
+id = "serveur_domaines"
+libelle = "Les domaines que Cassandra administre et qui peuvent porter le serveur NetBird : les sites du panneau d'hébergement et les noms de ses zones DNS ; avec un domaine donné, dit s'il en fait partie"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
 id = "serveur_telecharger"
 libelle = "Télécharger le script officiel d'installation du serveur NetBird d'une version précise et en rendre l'empreinte SHA-256 : rien n'est exécuté, rien n'est installé"
 risque = "faible"
@@ -194,7 +207,7 @@ id = "serveur_installer"
 libelle = "Installer un serveur NetBird auto-hébergé : le script officiel de la version confirmée (empreinte comparée à celle de `serveur_telecharger`), son docker compose, ses certificats, le proxy choisi (traefik, nginx ou caddy)"
 risque = "eleve"
 droit = "serveur"
-perimetre = ["/opt/netbird-serveur seulement", "ports 80, 443 et 3478/udp quand le proxy est traefik", "le domaine et l'adresse e-mail confirmés"]
+perimetre = ["/opt/netbird-serveur seulement", "ports 80, 443 et 3478/udp quand le proxy est traefik", "un domaine que Cassandra administre (site du panneau d'hébergement ou sa zone DNS), et l'adresse e-mail, confirmés"]
 preuve = "relire docker compose : les conteneurs du serveur tournent"
 retour = "retirer le serveur (ses données sont gardées sauf demande contraire)"
 

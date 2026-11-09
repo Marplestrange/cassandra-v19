@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #a8dece
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de ce que le module netbird sait faire d'un serveur NetBird auto-hébergé : l'installer (par la commande root, simulée) et l'administrer par son API (simulée : un faux serveur qui répond comme lui). Rien n'est installé, aucun réseau n'est touché.
 # MÉTHODE    : un vrai noyau, une fausse commande root `serveur`, une fausse API NetBird ; on vérifie les garde-fous, le secret qui ne traîne nulle part et le retour de chaque geste.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a8dece ▼▼▼
 """Bancs de la gestion d'un serveur NetBird : commande root et API NetBird SIMULÉES, noyau réel."""
 import copy
 import json
@@ -86,6 +86,13 @@ class Gestion(Monde):
         self.g["_http"] = self.api
         self.valeurs.update(url_api="https://netbird.exemple.fr", jeton_api=JETON)
         self.installe, self.conteneurs = False, []
+        self.panneau = {"fastpanel.sites": [{"domaine": "netbird.exemple.fr"}, {"domaine": "Boutique.exemple.fr"}], "fastpanel.dns": [{"zone": "exemple.fr", "nom": "@", "type": "A", "valeur": "1.2.3.4"}, {"zone": "autre.org", "nom": "@", "type": "A", "valeur": "1.2.3.4"}]}
+
+        def lecture(cap, **a):
+            if self.panneau is None:
+                raise RuntimeError("le panneau ne répond pas")
+            return self.panneau.get(cap)
+        self.ctx.executer_lecture = lecture
         self.g["_SERVEUR"]["meta"] = None
         racine_client = self.g["_racine"]
 
@@ -145,6 +152,48 @@ class Serveur(Gestion):
         verbe = [x for x in self.racines if x[0] == "serveur:installer"][0]
         self.assertEqual(verbe[1], ["v0.40.0", SHA, "netbird.exemple.fr", "admin@exemple.fr", "nginx"])
         self.assertEqual(self.lire("journal")["gestes"][0]["libelle"], "Serveur NetBird installé (netbird.exemple.fr, nginx)")
+
+    def installer(self, domaine):
+        return self.lire("serveur_installer", version="v0.40.0", sha256=SHA, domaine=domaine, email="admin@exemple.fr", proxy="nginx")
+
+    def test_un_site_du_panneau_est_un_domaine_administre(self):
+        self.assertTrue(self.installer("netbird.exemple.fr")["installe"])
+
+    def test_un_nom_de_la_zone_dns_du_panneau_est_administre(self):
+        self.assertTrue(self.installer("vpn.exemple.fr")["installe"], "sous-domaine d'une zone que le panneau héberge")
+
+    def test_un_domaine_que_cassandra_n_administre_pas_est_refuse(self):
+        with self.assertRaises(Echec) as q:
+            self.installer("netbird.inconnu.net")
+        self.assertIn("n'administre", str(q.exception))
+        self.assertFalse([x for x in self.racines if x[0] == "serveur:installer"], "refusé avant la commande root")
+
+    def test_un_nom_qui_finit_comme_une_zone_sans_en_etre_une_est_refuse(self):
+        with self.assertRaises(Echec):
+            self.installer("netbird.mauvaisexemple.fr")
+
+    def test_panneau_muet_on_ne_devine_pas(self):
+        self.panneau = None
+        with self.assertRaises(Echec) as q:
+            self.installer("netbird.exemple.fr")
+        self.assertIn("ne répond pas", str(q.exception))
+
+    def test_le_reglage_domaine_libre_autorise_un_domaine_non_administre(self):
+        self.valeurs["domaine_libre"] = True
+        self.assertTrue(self.installer("netbird.inconnu.net")["installe"])
+
+    def test_la_liste_propose_les_sites_et_un_sous_domaine_par_zone(self):
+        r = self.lire("serveur_domaines")
+        self.assertEqual((r["disponible"], r["administre"]), (True, None))
+        self.assertIn("netbird.exemple.fr", r["propositions"])
+        self.assertIn("netbird.autre.org", r["propositions"])
+        self.assertEqual(r["zones"], ["autre.org", "exemple.fr"])
+
+    def test_la_liste_dit_pourquoi_un_domaine_est_administre_ou_non(self):
+        self.assertEqual(self.lire("serveur_domaines", domaine="vpn.exemple.fr")["par"], "zone DNS « exemple.fr » hébergée par le panneau")
+        self.assertEqual(self.lire("serveur_domaines", domaine="boutique.exemple.fr")["par"], "site du panneau")
+        r = self.lire("serveur_domaines", domaine="x.net")
+        self.assertEqual((r["administre"], bool(r["raison"])), (False, True))
 
     def test_journaux_redemarrage_mise_a_jour_nginx(self):
         self.installe = True

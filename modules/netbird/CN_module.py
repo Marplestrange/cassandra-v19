@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #44ffe5
+# VERSION CN : 0.1.0  #0423b2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=44ffe5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0423b2 ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -409,6 +409,35 @@ def brancher(ctx):
             d["setup_requis"] = bool(code == 200 and isinstance(i, dict) and i.get("setup_required"))      # le premier compte reste à créer (page /setup)
         return d
 
+    # Le domaine du serveur NetBird doit être un nom que Cassandra ADMINISTRE : un site du panneau d'hébergement, ou un nom de la zone DNS qu'il héberge.
+    def lire_panneau(cap):
+        try:
+            r = ctx.executer_lecture(cap)
+        except Exception:
+            return None
+        return r if isinstance(r, list) else None                     # None : le panneau ne répond pas (≠ aucun site)
+
+    def domaines_administres():
+        sites, dns = lire_panneau("fastpanel.sites"), lire_panneau("fastpanel.dns")
+        nets = lambda xs, cle: sorted({str(x.get(cle) or "").strip().lower().rstrip(".") for x in (xs or []) if isinstance(x, dict)} - {""})
+        return {"disponible": sites is not None, "sites": nets(sites, "domaine"), "zones": nets(dns, "zone")}
+
+    def verdict_domaine(domaine):
+        d, adm = str(domaine or "").strip().lower().rstrip("."), domaines_administres()
+        zone = next((z for z in sorted(adm["zones"], key=len, reverse=True) if d == z or d.endswith("." + z)), "")
+        if d in adm["sites"]:
+            return dict(adm, domaine=d, administre=True, par="site du panneau", raison="")
+        if zone:
+            return dict(adm, domaine=d, administre=True, par="zone DNS « %s » hébergée par le panneau" % zone, raison="")
+        raison = ("Le panneau d'hébergement ne répond pas : Cassandra ne peut pas savoir si « %s » est un domaine qu'elle administre" % d) if not adm["disponible"] else             "« %s » n'est ni un site ni un nom d'une zone DNS que Cassandra administre : ajoute-le d'abord au panneau d'hébergement" % d
+        return dict(adm, domaine=d, administre=False, par="", raison=raison)
+
+    def serveur_domaines(c, domaine=""):
+        v = verdict_domaine(domaine)
+        propositions = list(v["sites"]) + ["netbird." + z for z in v["zones"] if ("netbird." + z) not in v["sites"]]
+        return {"disponible": v["disponible"], "sites": v["sites"], "zones": v["zones"], "propositions": propositions,
+                "domaine": v["domaine"], "administre": v["administre"] if domaine else None, "par": v["par"], "raison": v["raison"] if domaine else "", "libre": bool(ctx.reglage("domaine_libre", False))}
+
     def serveur_telecharger(c, version=""):
         version = str(version or "").strip()
         if not VERSION_SERVEUR.match(version):
@@ -424,6 +453,9 @@ def brancher(ctx):
                 raise ValueError("Domaine invalide : le nom (netbird.exemple.fr) qui pointe vers cette machine")
             if not EMAIL.match(email):
                 raise ValueError("Adresse e-mail invalide (sert aux certificats Let's Encrypt)")
+            v = verdict_domaine(domaine)
+            if not v["administre"] and not ctx.reglage("domaine_libre", False):
+                raise ValueError(v["raison"] + " (ou active le réglage « domaine_libre » pour un domaine que Cassandra n'administre pas)")
             if proxy not in ("traefik", "nginx", "caddy"):
                 raise ValueError("Proxy : traefik (TLS intégré, ports 80 et 443 libres), nginx ou caddy (le proxy existant publie le serveur)")
             r = srv_ok(srv("installer", [version, sha256, domaine, email, proxy], None, 295))
@@ -758,6 +790,7 @@ def brancher(ctx):
     ctx.implementer("serveur_etat", serveur_etat)
     ctx.implementer("serveur_journaux", serveur_journaux)
     ctx.implementer("serveur_nginx", serveur_nginx)
+    ctx.implementer("serveur_domaines", serveur_domaines)
     ctx.implementer("serveur_telecharger", journaliser("serveur_telecharger", serveur_telecharger), lambda c, res: bool(SHA.match(str(res.get("sha256", "")))), lambda c, res: None,
                     simuler=lambda x, version="", **_: "téléchargerait le script d'installation du serveur NetBird %s et en donnerait l'empreinte" % version)
     ctx.implementer("serveur_installer", journaliser("serveur_installer", serveur_installer), prouver_serveur_installe, lambda c, res: None,
