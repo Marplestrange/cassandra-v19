@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c8b5b7
+# VERSION CN : 0.1.0  #a68b0f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c8b5b7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a68b0f ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -120,7 +120,7 @@ def brancher(ctx):
         if not frais and _MODE["val"] is not None and time.time() - _MODE["t"] < 30:
             return _MODE["val"]
         forcer = str(ctx.reglage("mode", "auto") or "auto")
-        info = {"mode": "absent", "natif": False, "docker": False, "conteneur": "absent", "image": "", "courtier": True}
+        info = {"mode": "absent", "natif": False, "docker": False, "conteneur": "absent", "image": "", "courtier": True, "conflit": False}
         code, sortie = _direct(["version"], 8)
         natif_direct = code == 0
         if code is not None and code != 0 and re.search(r"permission denied", sortie, re.I):
@@ -137,6 +137,7 @@ def brancher(ctx):
             info["mode"] = "natif_racine"
         if forcer != "natif" and info["conteneur"] in ("en_marche", "arrete") and (forcer == "docker" or info["mode"] == "absent"):
             info["mode"] = "docker"
+        info["conflit"] = info["natif"] and info["conteneur"] in ("en_marche", "arrete")      # deux clients sur la machine : ils se disputent wt0 et le port 51820
         _MODE.update(t=time.time(), val=info)
         return info
 
@@ -201,7 +202,7 @@ def brancher(ctx):
             r = dict(_CACHE["val"])
         else:
             info = detecter(frais)
-            base = {"mode": info["mode"], "docker": info["docker"], "natif": info["natif"], "conteneur": info["conteneur"], "image": info["image"], "courtier": info["courtier"], "nom_conteneur": conteneur()}
+            base = {"mode": info["mode"], "docker": info["docker"], "natif": info["natif"], "conteneur": info["conteneur"], "image": info["image"], "courtier": info["courtier"], "conflit": info["conflit"], "nom_conteneur": conteneur()}
             if info["mode"] == "absent":
                 texte = ("Aucun client NetBird sur cette machine. Docker est là : le module peut installer le client dans un conteneur." if info["docker"]
                          else "NetBird n'est pas installé sur cette machine, et Docker non plus.")
@@ -313,6 +314,8 @@ def brancher(ctx):
                 if not CLE.match(cle):
                     raise ValueError("La clé d'installation doit ressembler à XXXXXXXX-XXXX-… (tableau de bord NetBird › Setup Keys)")
             info = detecter(True)
+            if info["natif"]:
+                raise ValueError("Un client NetBird est déjà installé sur cette machine : un seul client par machine (deux se disputeraient l'interface wt0 et le port 51820). Utilise celui-là, ou désinstalle-le d'abord.")
             if not info["docker"]:
                 raise ValueError("Docker n'est pas installé sur cette machine (ou le courtier ne répond pas) : %s" % ("la commande root du module est absente : CN_install.sh --module netbird" if not info["courtier"] else "installer Docker d'abord"))
             r = _racine("docker_installer", [conteneur(), tag] + opts, cle or None, 280)

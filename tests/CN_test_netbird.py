@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #20dd9f
+# VERSION CN : 0.1.0  #d19f08
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module netbird : le client NetBird, Docker et le courtier sont SIMULÉS (un faux monde qui répond comme eux), le reste tourne dans un vrai noyau. On vérifie les états, la voie choisie (natif direct, natif par le courtier, conteneur)
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=20dd9f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d19f08 ▼▼▼
 """Bancs du module netbird : le client NetBird, Docker et le courtier sont SIMULÉS (un faux monde qui répond comme eux), le reste tourne dans un vrai noyau.
 On vérifie les états, la voie choisie (natif direct, natif par le courtier, conteneur), la clé qui ne traîne nulle part, l'installation et le retrait du conteneur, le journal et le retour."""
 import json
@@ -178,6 +178,16 @@ class Etats(Monde):
         self.natif = self.docker = False
         self.assertEqual(self.lire("etat")["etat"], "absent")
 
+    def test_deux_clients_sur_la_machine_sont_signales(self):
+        self.conteneur = "en_marche"
+        self.etat = CONNECTE
+        r = self.lire("etat")
+        self.assertTrue(r["conflit"])
+        self.assertEqual(r["mode"], "natif_direct", "le client natif garde la main : le conteneur ne se pilote pas par-dessus")
+        self.conteneur = "absent"
+        self.g["_MODE"].update(t=0.0, val=None)
+        self.assertFalse(self.lire("etat")["conflit"])
+
     def test_le_conteneur_d_un_autre_service_n_est_pas_un_client(self):
         self.natif = False
         self.conteneur = "autre"
@@ -325,6 +335,13 @@ class Docker(Monde):
     def setUp(self):
         super().setUp()
         self.natif = False
+
+    def test_un_seul_client_par_machine_le_natif_interdit_le_conteneur(self):
+        self.natif = True
+        with self.assertRaises(Echec) as q:
+            self.lire("installer_docker")
+        self.assertIn("un seul client par machine", str(q.exception))
+        self.assertFalse([x for x in self.racines if x[0] == "docker_installer"], "refusé avant d'appeler le courtier")
 
     def test_installer_dans_docker_puis_le_defaire(self):
         r = self.lire("installer_docker", tag="0.40.0", nom="argos")

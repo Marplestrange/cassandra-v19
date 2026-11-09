@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #9f3ad6
+// VERSION CN : 0.1.0  #66c969
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=9f3ad6 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=66c969 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -136,8 +136,12 @@
     function carteAInstaller(e) {
       return '<div class="carte"><h2 ' + H2 + ">NetBird n’est pas encore là</h2><p>" + esc(e.texte || "") + '</p><div class="acts"><button class="btn pri" data-a="vers-installation">Aller à l’installation</button></div></div>';
     }
+    // Un seul client NetBird par machine : le natif ET le conteneur en même temps se disputent l’interface wt0 et le port 51820.
+    function avisConflit(e) {
+      return e.conflit ? '<div class="carte" style="color:var(--warn)">Deux clients NetBird sont installés sur cette machine (le client natif et le conteneur « ' + esc(e.nom_conteneur) + ' ») : ils se disputent l’interface <span class="mono">wt0</span> et le port 51820. Garde-en un seul : retire le conteneur depuis l’<b>Installation</b>, ou désinstalle le client natif.</div>' : "";
+    }
     function pageVue(e) {
-      let h = carteEtat(e);
+      let h = avisConflit(e) + carteEtat(e);
       if (e.etat === "absent" || e.etat === "a_installer") return h + carteAInstaller(e);
       if (e.etat === "arrete") return h + '<div class="carte"><p>' + esc(e.texte || "") + '</p><div class="acts"><button class="btn" data-a="relire">Relire</button></div></div>';
       if (e.en_attente && e.lien) return h + carteLien(e);
@@ -175,10 +179,11 @@
         '<div><span class="lib">Conteneur « ' + esc(e.nom_conteneur) + '»</span><span class="pastille ' + (e.conteneur === "en_marche" ? "ok" : e.conteneur === "absent" ? "mu" : "al") + '">' +
         esc({ en_marche: "en marche", arrete: "arrêté", absent: "absent", autre: "autre service (intouché)" }[e.conteneur] || e.conteneur) + "</span></div>" +
         '<div><span class="lib">Utilisé par Cassandra</span><span class="gros" style="font-size:16px">' + esc({ natif_direct: "client natif", natif_racine: "client natif (par le courtier)", docker: "conteneur Docker", absent: "—" }[e.mode] || e.mode) + "</span></div></div></div>";
+      h = avisConflit(e) + h;
       if (nonRoot) h += '<div class="carte" style="color:var(--warn)">Le courtier ne répond pas ou la commande root du module n’est pas posée : <span class="mono">CN_install.sh --module netbird</span> la pose. Sans elle, Docker ne se pilote pas d’ici.</div>';
-      const bloque = S.occupe || !e.docker || nonRoot || e.conteneur === "en_marche" || e.conteneur === "arrete" || e.conteneur === "autre";
+      const bloque = S.occupe || !e.docker || nonRoot || e.natif || e.conteneur === "en_marche" || e.conteneur === "arrete" || e.conteneur === "autre";
       h += '<div class="carte"><h2 ' + H2 + ">Installer NetBird dans Docker</h2><p class=\"note\">Crée le conteneur officiel <span class=\"mono\">netbirdio/netbird</span> : il redémarre avec la machine, utilise le réseau de la machine et garde son identité dans un volume. Aucun autre conteneur n’est touché.</p>" +
-        (!e.docker ? '<p class="note" style="color:var(--warn)">Docker n’est pas installé sur cette machine.</p>' : e.conteneur === "autre" ? '<p class="note" style="color:var(--warn)">Un conteneur « ' + esc(e.nom_conteneur) + ' » existe déjà mais n’est pas NetBird : change le réglage « conteneur ».</p>' : "") +
+        (e.natif ? '<p class="note" style="color:var(--warn)">Un client NetBird est déjà installé sur cette machine : un seul client par machine. Utilise celui-là, ou désinstalle-le avant d’installer le conteneur.</p>' : !e.docker ? '<p class="note" style="color:var(--warn)">Docker n’est pas installé sur cette machine.</p>' : e.conteneur === "autre" ? '<p class="note" style="color:var(--warn)">Un conteneur « ' + esc(e.nom_conteneur) + ' » existe déjà mais n’est pas NetBird : change le réglage « conteneur ».</p>' : "") +
         '<div class="champs"><label class="ch"><b>Version</b><span class="note">latest, ou une version précise (0.40.0).</span><input type="text" id="nb-tag" value="latest" autocomplete="off" spellcheck="false"></label>' +
         '<label class="ch"><b>Nom de la machine</b><span class="note">Facultatif.</span><input type="text" id="nb-i-nom" placeholder="argos" autocomplete="off" spellcheck="false"></label>' +
         '<label class="ch"><b>Serveur de gestion</b><span class="note">Vide : NetBird Cloud (ou le réglage « url_gestion »).</span><input type="text" id="nb-i-url" placeholder="https://netbird.exemple.fr:443" autocomplete="off" spellcheck="false"></label>' +

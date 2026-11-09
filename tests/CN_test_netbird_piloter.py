@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #021808
+# VERSION CN : 0.1.0  #e91f20
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `piloter` du module netbird : ce que le courtier lance À ROOT. Ni Docker ni NetBird ici : `executer` est remplacé, chaque commande qui serait lancée est enregistrée, et l'on vérifie surtout ce qui est REFUSÉ (argum
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=021808 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e91f20 ▼▼▼
 """Bancs de la commande root `piloter` du module netbird : ce que le courtier lance À ROOT. Ni Docker ni NetBird ici : `executer` est remplacé, chaque commande qui serait lancée est
 enregistrée, et l'on vérifie surtout ce qui est REFUSÉ (arguments hors table, conteneur d'un autre service, clé en ligne de commande)."""
 import importlib.machinery
@@ -47,7 +47,8 @@ class Monde(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.p.RUN = str(Path(self.tmp.name) / "run")
         self.p.executer = self.faux
-        self.p.shutil = types.SimpleNamespace(which=lambda x: "/usr/bin/" + x)
+        self.natif = True                                        # le paquet `netbird` est installé sur la machine
+        self.p.shutil = types.SimpleNamespace(which=lambda x: ("/usr/bin/" + x) if (x != "netbird" or self.natif) else None)
 
     def faux(self, commande, input=None, capture_output=True, text=True, timeout=0, env=None):
         self.cmds.append(list(commande))
@@ -101,6 +102,28 @@ class Cli(Monde):
 
 
 class Docker(Monde):
+    def setUp(self):
+        super().setUp()
+        self.natif = False                                       # Docker seul : le cas où l'on installe le conteneur
+
+    def test_un_seul_client_par_machine_le_natif_interdit_le_conteneur(self):
+        self.natif = True
+        r = self.lance("docker_installer", "netbird", "latest")
+        self.assertFalse(r["ok"])
+        self.assertIn("déjà installé", r["erreur"])
+        self.assertIn("wt0", r["erreur"])
+        self.assertFalse(self.lances(), "aucun `docker run`")
+
+    def test_un_seul_client_par_machine_un_autre_conteneur_netbird_l_interdit_aussi(self):
+        self.sorties["docker ps"] = (0, "nb-ancien|netbirdio/netbird:latest\nredis|redis:7\nnetbird|netbirdio/netbird:0.30")
+        r = self.lance("docker_installer", "netbird", "latest")
+        self.assertFalse(r["ok"])
+        self.assertIn("nb-ancien", r["erreur"])
+        self.assertFalse([c for c in self.lances() if c[:2] == ["docker", "run"]])
+
+    def test_les_conteneurs_des_autres_services_ne_genent_pas(self):
+        self.sorties["docker ps"] = (0, "redis|redis:7\nvaultwarden|vaultwarden/server:latest")
+        self.assertTrue(self.lance("docker_installer", "netbird", "latest")["ok"])
     def test_le_conteneur_d_un_autre_service_n_est_jamais_pilote_ni_retire(self):
         self.conteneurs["vaultwarden"] = ("vaultwarden/server:latest", "running")
         self.conteneurs["faux"] = ("evilnetbirdio/netbird:1", "running")
@@ -133,7 +156,7 @@ class Docker(Monde):
     def test_installer_cree_le_conteneur_officiel_avec_ce_qu_il_lui_faut(self):
         r = self.lance("docker_installer", "netbird", "0.40.0", "--management-url=https://netbird.exemple.fr:443", "--hostname=argos", entree=CLE)
         self.assertTrue(r["ok"], r)
-        cmd = self.lances()[0]
+        cmd = self.commande_run()
         for attendu in (["docker", "run", "-d"], ["--name", "netbird"], ["--hostname", "argos"], ["--restart", "unless-stopped"], ["--network", "host"], ["--device", "/dev/net/tun"],
                         ["-v", "netbird-donnees:/var/lib/netbird"], ["-e", "NB_SETUP_KEY"], ["-e", "NB_MANAGEMENT_URL=https://netbird.exemple.fr:443"]):
             self.assertTrue(any(cmd[i:i + len(attendu)] == attendu for i in range(len(cmd))), attendu)
@@ -145,7 +168,7 @@ class Docker(Monde):
 
     def test_installer_sans_cle_ne_met_aucune_cle(self):
         self.assertTrue(self.lance("docker_installer", "netbird", "latest")["ok"])
-        self.assertNotIn("NB_SETUP_KEY", self.lances()[0])
+        self.assertNotIn("NB_SETUP_KEY", self.commande_run())
 
     def test_installer_refuse_ce_qui_est_suspect_ou_deja_la(self):
         self.conteneurs["existe"] = ("netbirdio/netbird:latest", "running")
@@ -164,7 +187,12 @@ class Docker(Monde):
         self.assertEqual(self.lances(), [["docker", "rm", "-f", "netbird"], ["docker", "volume", "rm", "netbird-donnees"]])
         self.assertFalse(self.lance("docker_retirer", "netbird", "tout")["ok"])
 
+    def commande_run(self):
+        """La commande `docker run` lancée (les autres, comme `docker ps` ou `docker inspect`, sont des vérifications)."""
+        return [c for c in self.lances() if c[:2] == ["docker", "run"]][0]
+
     def test_etat_dit_ce_qui_existe(self):
+        self.natif = True
         self.assertEqual(self.lance("etat", "netbird")["conteneur"], "absent")
         self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "exited")
         self.assertEqual(self.lance("etat", "netbird")["conteneur"], "arrete")

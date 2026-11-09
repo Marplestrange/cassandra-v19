@@ -229,6 +229,12 @@ def verbe_sso_annuler(a, entree):
     return {"ok": code == 0, "code": code, "sortie": sortie}
 
 
+def autres_clients(c):
+    """Les AUTRES conteneurs NetBird déjà là, sous un autre nom que `c`."""
+    code, sortie = lancer(["docker", "ps", "-a", "--format", "{{.Names}}|{{.Image}}"], delai=20)
+    return [n for n, _, i in (l.partition("|") for l in sortie.splitlines()) if n != c and est_netbird(i)] if code == 0 else []
+
+
 def verbe_docker_installer(a, entree):
     if len(a) < 2:
         refuser("usage : docker_installer <conteneur> <tag> [options]")
@@ -239,6 +245,12 @@ def verbe_docker_installer(a, entree):
         refuser("Docker n'est pas installé sur cette machine")
     if image_du_conteneur(c) is not None:
         refuser("un conteneur « %s » existe déjà" % c)
+    # Un seul client NetBird par machine : deux se disputeraient l'interface wt0 et le port 51820 de WireGuard.
+    if shutil.which("netbird") is not None:
+        refuser("un client NetBird est déjà installé sur cette machine : deux clients se disputeraient l'interface wt0 et le port 51820 ; utilise celui-là, ou désinstalle-le d'abord")
+    autres = autres_clients(c)
+    if autres:
+        refuser("un autre conteneur NetBird existe déjà (%s) : un seul client par machine" % ", ".join(autres)[:80])
     d = dict(o.split("=", 1) for o in opts)
     cmd = ["docker", "run", "-d", "--name", c, "--hostname", d.get("--hostname", c), "--restart", "unless-stopped", "--network", "host",
            "--cap-add=NET_ADMIN", "--cap-add=SYS_ADMIN", "--cap-add=SYS_RESOURCE", "--device", "/dev/net/tun", "-v", "%s-donnees:/var/lib/netbird" % c]
