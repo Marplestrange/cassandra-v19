@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.1  #17b85c
+# VERSION CN : 0.1.1  #8f1992
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La mémoire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=17b85c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=8f1992 ▼▼▼
 """La mémoire.
 
 Portée de la V18 (l'« îlot mémoire » : `memoire_*`, `perception_*`, `chaine_*`), avec ses leçons — elles sont payées :
@@ -159,6 +159,19 @@ def brancher(ctx):
             if m is None:
                 return None, "module:" + a[0], "le module %s n'est pas actif" % a[0]
             return m.version == a[1], "module:" + a[0], ""
+        if nom == "mesure_etat":
+            # une mesure du Sensorium : ok, alerte ou inconnu. « inconnu » (muette, jamais lue, non visible pour ce compte) ne conclut RIEN : ne pas savoir n'est pas une réfutation.
+            if not re.match(r"^[a-z0-9][a-z0-9_.:/\-]{0,119}$", a[0]):
+                return None, "", "une mesure s'écrit « espace.nom »"
+            artefact = "mesure:" + a[0]
+            if len(a) < 2 or a[1] not in ("ok", "alerte", "inconnu"):
+                return None, artefact, "mesure_etat attend l'état attendu (ok, alerte ou inconnu) en second argument"
+            r = lecture("sensorium.mesure_etat", cle=a[0])
+            if not isinstance(r, dict) or r.get("etat") not in ("ok", "alerte", "inconnu"):
+                return None, artefact, "le Sensorium ne répond pas sur cette mesure"
+            if r["etat"] == "inconnu" and a[1] != "inconnu":
+                return None, artefact, "la mesure est inconnue (muette, jamais lue ou non visible) : on ne conclut rien"
+            return r["etat"] == a[1], artefact, ""
         # objet_present / objet_etat : le registre des objets, tel que les modules l'ont posé
         if len(a) < 2:
             return None, "", "cette sonde attend un type puis un identifiant"
@@ -190,6 +203,10 @@ def brancher(ctx):
                 return ""
             etat = obj.get("etat", "") if isinstance(obj, dict) else getattr(obj, "etat", "")
             return hashlib.md5(str(etat).encode("utf-8", "replace")).hexdigest()[:12]      # l'empreinte EST l'état : elle ne bouge qu'au changement
+        if sorte == "mesure":
+            r = lecture("sensorium.mesure_etat", cle=nom)
+            etat = r.get("etat") if isinstance(r, dict) else None
+            return hashlib.md5(("mesure|%s" % (etat or "?")).encode()).hexdigest()[:12]      # jamais vide : une mesure muette ou invisible n'est pas une mesure DISPARUE (ce qui ferait expirer le fait)
         return ""
 
     # ------------------------------------------------------------------ la porte

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.1  #44d4b0
+# VERSION CN : 0.1.1  #330e57
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=44d4b0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=330e57 ▼▼▼
 """Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base."""
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ DOUTE_SOURCES = ("reconciliation", "revalidation", "veto", "agent", "distillatio
 DOUTE_ECHEANCE_J = 7
 DOUTES_PAR_TOUR = 2
 ETAT_REVOIR_J = 15
-SONDES = ("capacite_existe", "capacite_absente", "module_actif", "module_version", "objet_present", "objet_etat")
+SONDES = ("capacite_existe", "capacite_absente", "module_actif", "module_version", "objet_present", "objet_etat", "mesure_etat")
 GENESE = hashlib.sha256(b"cassandra-memoire-v19-genese").hexdigest()
 
 # Les gardes mécaniques, sous la milliseconde : elles ne se négocient pas.
