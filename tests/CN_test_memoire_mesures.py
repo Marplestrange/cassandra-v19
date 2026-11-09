@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fe217f
+# VERSION CN : 0.1.0  #a066a3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la sonde `mesure_etat` du module Mémoire : un fait « état courant » peut dépendre d'une mesure du Sensorium (artefact `mesure:<clé>`).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fe217f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a066a3 ▼▼▼
 """Bancs de la sonde `mesure_etat` du module Mémoire : un fait « état courant » peut dépendre d'une mesure du Sensorium (artefact `mesure:<clé>`).
 
 Deux étages : une Mémoire seule dont le Sensorium est simulé (le vocabulaire de la sonde, les refus, la relecture), puis un vrai noyau monté avec le vrai Sensorium et un faux émetteur.
@@ -30,6 +30,7 @@ sys.path.insert(0, str(RACINE))
 from tests.CN_test_memoire import Monde, ROOT  # noqa: E402
 from tests.CN_test_sensorium_cloisonnement import ADMIN, MDP, collecteur_simule  # noqa: E402
 
+ORD = "ord@exemple.test"
 VALEUR = "le résolveur local répond vite à cet instant précis"
 
 
@@ -128,6 +129,8 @@ class AvecLeVraiSensorium(unittest.TestCase):
         cls.n.droits.regler_admin(ADMIN, True)
         cls.n.identite.creer("kino1@exemple.test", MDP)
         cls.n.droits.regler("compte", "kino1@exemple.test", "sensorium.alimenter", "accorde")
+        r = cls.n.identite.creer(ORD, MDP)
+        assert r["ok"] and not r["admin"], r
         cls.g = cls.n.catalogue.get("sensorium.mesure_etat").faire.__globals__
         cls.t = [1_800_000_000.0]
         cls.horloge = mock.patch.dict(cls.g, {"_maintenant": lambda: cls.t[0]})
@@ -168,6 +171,25 @@ class AvecLeVraiSensorium(unittest.TestCase):
         self.sensorium("capteur_alimenter", K, "compte", lectures=[{"cle": "dns.latence", "valeur": 500}])
         self.n.lancer("memoire.entretien")
         self.assertEqual(statut(), "expire", "la mesure est en alerte : le fait « ok » n'est plus vrai")
+
+
+    def test_fuite_la_relecture_ne_revele_pas_une_mesure_non_publiee_a_son_proprietaire(self):
+        """Un compte ordinaire écrit un fait « la mesure infra.secret est inconnue » : vrai POUR LUI (la mesure ne lui est pas publiée). La relecture, faite par un moteur sans compte,
+        ne doit pas lire la mesure en privilégié : sinon le fait expire et la raison, écrite au journal du propriétaire, lui apprend que la mesure existe et répond."""
+        K = "kino1@exemple.test"
+        self.sensorium("capteur_declarer", K, "compte", cle="infra.secret", fraicheur_s=600)
+        self.sensorium("capteur_alimenter", K, "compte", lectures=[{"cle": "infra.secret", "valeur": 1}])
+        self.assertEqual(self.sensorium("mesure_etat", ORD, "humain", cle="infra.secret")["etat"], "inconnu", "invisible pour ORD")
+        r = self.n.executeur.executer("memoire.ecrire", "humain", {"categorie": "config", "cle": "secret-inconnu", "valeur": VALEUR, "nature": "etat-courant",
+                                                                  "sonde": "mesure_etat", "sonde_args": ["infra.secret", "inconnu"]}, compte=ORD)
+        self.assertEqual(r["statut"], "faite", r)
+        mid = r["resultat"]["id"]
+        self.assertTrue(mid, r)
+        db = self.n.executeur.contextes["memoire"].stockage
+        self.n.lancer("memoire.entretien")
+        ligne = db.lire("SELECT statut FROM memoires WHERE id=?", (mid,))[0]
+        self.assertEqual(ligne["statut"], "actif", "la mesure a fuité : le fait a expiré parce qu'un moteur privilégié a lu l'état réel")
+        self.assertFalse([j for j in db.lire("SELECT details FROM journal WHERE verbe='oubli'") if "infra.secret" in (j["details"] or "")])
 
 
 if __name__ == "__main__":

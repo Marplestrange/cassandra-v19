@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.1  #8f1992
+# VERSION CN : 0.1.1  #cba5e6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La mémoire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=8f1992 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=cba5e6 ▼▼▼
 """La mémoire.
 
 Portée de la V18 (l'« îlot mémoire » : `memoire_*`, `perception_*`, `chaine_*`), avec ses leçons — elles sont payées :
@@ -137,7 +137,7 @@ def brancher(ctx):
         m = manifeste_de(mid)
         return next((c for c in (m.capacites if m else ()) if c.id == cid), None)
 
-    def sonde(nom, args):
+    def sonde(nom, args, pour=None):
         """(valeur, artefact, erreur). Une mesure REJOUABLE d'un vocabulaire FERMÉ, en lecture seule : jamais du texte libre — un souvenir qui porterait une commande rejouée par le système
         serait une porte d'exécution ouverte à quiconque sait écrire un souvenir. La VALEUR est le fait ; l'ARTEFACT est ce dont le mouvement déclenche la relecture."""
         a = [str(x).strip() for x in (args or [])]
@@ -166,7 +166,7 @@ def brancher(ctx):
             artefact = "mesure:" + a[0]
             if len(a) < 2 or a[1] not in ("ok", "alerte", "inconnu"):
                 return None, artefact, "mesure_etat attend l'état attendu (ok, alerte ou inconnu) en second argument"
-            r = lecture("sensorium.mesure_etat", cle=a[0])
+            r = lecture("sensorium.mesure_etat", **dict(cle=a[0], **({} if pour is None else {"pour": pour})))
             if not isinstance(r, dict) or r.get("etat") not in ("ok", "alerte", "inconnu"):
                 return None, artefact, "le Sensorium ne répond pas sur cette mesure"
             if r["etat"] == "inconnu" and a[1] != "inconnu":
@@ -185,7 +185,7 @@ def brancher(ctx):
             return None, artefact, "objet_etat attend l'état attendu en troisième argument"
         return str(obj.get("etat", "") if isinstance(obj, dict) else getattr(obj, "etat", "")) == a[2], artefact, ""
 
-    def artefact_empreinte(artefact):
+    def artefact_empreinte(artefact, pour=None):
         """L'empreinte de l'ARTEFACT, jamais du fichier : un déclencheur grossier (un mouvement), le verdict est celui de la sonde."""
         if not artefact or ":" not in artefact:
             return ""
@@ -204,7 +204,7 @@ def brancher(ctx):
             etat = obj.get("etat", "") if isinstance(obj, dict) else getattr(obj, "etat", "")
             return hashlib.md5(str(etat).encode("utf-8", "replace")).hexdigest()[:12]      # l'empreinte EST l'état : elle ne bouge qu'au changement
         if sorte == "mesure":
-            r = lecture("sensorium.mesure_etat", cle=nom)
+            r = lecture("sensorium.mesure_etat", **dict(cle=nom, **({} if pour is None else {"pour": pour})))
             etat = r.get("etat") if isinstance(r, dict) else None
             return hashlib.md5(("mesure|%s" % (etat or "?")).encode()).hexdigest()[:12]      # jamais vide : une mesure muette ou invisible n'est pas une mesure DISPARUE (ce qui ferait expirer le fait)
         return ""
@@ -1093,6 +1093,14 @@ def brancher(ctx):
             tires.append({"id": r["id"], "cle": r["cle"], "valeur": v, "message": r["message"], "metrique": r["metrique"], "op": r["op"], "seuil": r["seuil"], "proprietaire": r["proprietaire"]})
         return tires
 
+    def pour_de(proprietaire):
+        """Au nom de qui une relecture lit : du PROPRIÉTAIRE du souvenir (« compte:x » -> x), jamais du moteur, qui est privilégié. « partage » (écrit par un administrateur : la porte l'exige)
+        et les propriétaires système (itare, cassandra) lisent comme un administrateur (None). Tout autre propriétaire ne voit que ce qui est publié pour tous (« * »)."""
+        p = str(proprietaire or "")
+        if p.startswith("compte:") and len(p) > 7:
+            return p[len("compte:"):]
+        return None if p in ("partage", "itare", "cassandra") else "*"
+
     # ------------------------------------------------------------------ la péremption : « etat-courant » relu quand son artefact bouge
     def relire(limite=200):
         """Trois issues et un cas à part : l'artefact a DISPARU (expire sans re-mesure) ; l'empreinte a bougé et la sonde CONFIRME (reste actif) ; l'empreinte a bougé et la sonde CONTREDIT
@@ -1100,7 +1108,8 @@ def brancher(ctx):
         out = {"vus": 0, "immobiles": 0, "confirmes": 0, "contredits": 0, "disparus": 0, "muets": 0}
         for r in db.lire("SELECT * FROM memoires WHERE statut='actif' AND nature='etat-courant' AND COALESCE(artefact,'')<>'' ORDER BY id LIMIT ?", (int(limite),)):
             out["vus"] += 1
-            neuve = artefact_empreinte(r["artefact"])
+            pour = pour_de(r["proprietaire"])
+            neuve = artefact_empreinte(r["artefact"], pour)
             if not neuve:
                 out["disparus"] += 1
                 with db.transaction() as cx:
@@ -1109,7 +1118,7 @@ def brancher(ctx):
             if neuve == (r["artefact_empreinte"] or ""):
                 out["immobiles"] += 1
                 continue
-            val, _a, err = sonde(r["sonde"], json.loads(r["sonde_args"] or "[]"))
+            val, _a, err = sonde(r["sonde"], json.loads(r["sonde_args"] or "[]"), pour)
             if err:
                 out["muets"] += 1
                 continue

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.1  #9f6bce
+# VERSION CN : 0.2.2  #7d30c6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.1 empreinte=9f6bce ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.2 empreinte=7d30c6 ▼▼▼
 """Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 
 Tout vit dans la base du module (migration 004) : le noyau, le registre et le collecteur root ne changent pas. Le calcul de l'état est pur (CN_mesures_etat.py) ; ici, l'accès à la base,
@@ -97,8 +97,20 @@ def _libelle(db, cle, cap):
     return (r or {}).get("libelle") or ""
 
 
-def _peut_voir(ctx, db, cle) -> bool:
-    return me.visible_pour(_visibilite(db, cle), ctx.societe, privilegie(ctx))
+def vue_de(ctx, pour=None):
+    """(société, privilégié) selon lesquels on regarde. Par défaut : ceux de l'acte. `pour` ne sert qu'à un appelant PRIVILÉGIÉ (un moteur sans compte, qui travaille pour quelqu'un) : un compte
+    (« ses » droits et sa société) ou « * » (personne : seules les mesures publiées pour toutes). Un appelant ordinaire qui passe `pour` n'en tire rien : jamais la vue d'un autre."""
+    if pour is None or not privilegie(ctx):
+        return ctx.societe, privilegie(ctx)
+    pour = str(pour)
+    if pour in ("", "*"):
+        return "", False
+    return ctx.societe_de(pour), pour in SYSTEMES or bool(ctx.est_admin(pour))
+
+
+def _peut_voir(ctx, db, cle, vue=None) -> bool:
+    societe, prive = vue if vue is not None else vue_de(ctx)
+    return me.visible_pour(_visibilite(db, cle), societe, prive)
 
 
 # ---------------------------------------------------------------------- l'enregistrement d'une lecture (capteur ou monde)
@@ -386,10 +398,11 @@ def publier_defait(ctx, res):
 
 
 # ---------------------------------------------------------------------- lectures : minimale (cloisonnée), détaillée, suivies, prévision, auto-observation
-def mesure_etat(ctx, cle=""):
-    """L'état d'UNE clé, en quatre champs. Une clé inconnue et une clé non publiée pour la société du demandeur rendent EXACTEMENT la même chose."""
+def mesure_etat(ctx, cle="", pour=None):
+    """L'état d'UNE clé, en quatre champs. Une clé inconnue et une clé non publiée pour la société du demandeur rendent EXACTEMENT la même chose.
+    `pour` : voir vue_de (un moteur qui lit pour le compte d'un utilisateur, jamais en privilégié)."""
     db, cle = _db(ctx), str(cle)
-    if not me.cle_valide(cle) or not _peut_voir(ctx, db, cle):
+    if not me.cle_valide(cle) or not _peut_voir(ctx, db, cle, vue_de(ctx, pour)):
         return me.invisible(cle[:120])
     calcul, lec, cap, depuis = etat_de(db, cle, _maintenant())
     return me.minimal(cle, _libelle(db, cle, cap), calcul, depuis)

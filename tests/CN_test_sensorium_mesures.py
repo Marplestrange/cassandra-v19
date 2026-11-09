@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b79d63
+# VERSION CN : 0.1.0  #1a23d5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b79d63 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1a23d5 ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -642,6 +642,47 @@ class ViaUnModule(Mesures):
                 ctx.agir("sensorium.mesure_publier", {"cle": "dns.x", "visibilite": "toutes"}, acteur="cassandra")
         finally:
             ctx._en_moteur.valeur = False
+
+
+class Privilege(Mesures):
+    """La règle du compte vide (docs/CN_SENSORIUM_EVOLUTION.md §6 bis) : un moteur sans compte lit en PRIVILÉGIÉ ; s'il travaille pour quelqu'un il passe `pour`, et ne regarde jamais plus que lui."""
+
+    def lecture(self, compte, societe, cle, **extra):
+        lecture = self.n.executeur.contextes["sensorium"]._intro["lecture"]
+        return lecture("sensorium.mesure_etat", dict(cle=cle, **extra), compte, societe)
+
+    def setUp(self):
+        super().setUp()
+        self.declarer("dns.interne", KINO)
+        self.alimenter("dns.interne", 5)
+
+    def test_un_moteur_sans_compte_lit_en_privilegie(self):
+        self.assertEqual(self.lecture("", "", "dns.interne")["etat"], "ok")
+
+    def test_pour_restreint_un_moteur_a_la_vue_de_celui_pour_qui_il_travaille(self):
+        self.assertEqual(self.lecture("", "", "dns.interne", pour=SIMPLE)["etat"], "inconnu")
+        self.assertEqual(self.lecture("", "", "dns.interne", pour="*")["libelle"], "")
+        self.ok("mesure_publier", ADMIN, cle="dns.interne", visibilite="societes:2")
+        self.assertEqual(self.lecture("", "", "dns.interne", pour=AUTRE)["etat"], "ok")
+        self.assertEqual(self.lecture("", "", "dns.interne", pour=SIMPLE)["libelle"], "", "SIMPLE est dans la société 1")
+        self.assertEqual(self.lecture("", "", "dns.interne", pour="*")["libelle"], "", "personne : seulement « toutes »")
+        self.ok("mesure_publier", ADMIN, cle="dns.interne", visibilite="toutes")
+        self.assertEqual(self.lecture("", "", "dns.interne", pour="*")["etat"], "ok")
+
+    def test_un_compte_ordinaire_ne_gagne_rien_a_passer_pour(self):
+        for pour in (ADMIN, "", None, "noyau", "*"):
+            r = self.lecture(SIMPLE, "1", "dns.interne", pour=pour)
+            self.assertEqual((r["etat"], r["libelle"]), ("inconnu", ""), pour)
+        self.ok("mesure_publier", ADMIN, cle="dns.interne", visibilite="societes:2")
+        self.assertEqual(self.lecture(SIMPLE, "1", "dns.interne", pour=AUTRE)["libelle"], "", "il ne prend pas la vue d'un autre")
+
+    def test_un_module_du_noyau_agissant_sous_noyau_est_privilegie(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        ctx._compte.valeur = "noyau"
+        try:
+            self.assertTrue(self.g["privilegie"](ctx))
+        finally:
+            ctx._compte.valeur = ""
 
 
 if __name__ == "__main__":
