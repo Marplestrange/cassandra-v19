@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3bef38
+# VERSION CN : 0.1.0  #6ed3e8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de ce que le module netbird sait faire d'un serveur NetBird auto-hébergé : l'installer (par la commande root, simulée) et l'administrer par son API (simulée : un faux serveur qui répond comme lui). Rien n'est installé, aucun réseau n'est touché.
 # MÉTHODE    : un vrai noyau, une fausse commande root `serveur`, une fausse API NetBird ; on vérifie les garde-fous, le secret qui ne traîne nulle part et le retour de chaque geste.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3bef38 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6ed3e8 ▼▼▼
 """Bancs de la gestion d'un serveur NetBird : commande root et API NetBird SIMULÉES, noyau réel."""
 import copy
 import json
@@ -87,6 +87,7 @@ class Gestion(Monde):
         self.valeurs.update(url_api="https://netbird.exemple.fr", jeton_api=JETON)
         self.installe, self.conteneurs, self.occupes = False, [], []
         self.sauvegardes, self.sauvegarde_echoue, self.pf_ouverts, self.version_serveur = [], False, [], "v0.40.0"
+        self.jq = True
         self.github = {"tag_name": "v0.41.0"}
         faux_netbird = self.api
 
@@ -113,7 +114,7 @@ class Gestion(Monde):
                 return racine_client(verbe, args, entree, delai)
             self.racines.append(("serveur:" + verbe, list(args), entree))
             if verbe == "etat":
-                return {"ok": True, "docker": True, "jq": True, "installe": self.installe, "dossier": "/opt/netbird-serveur",
+                return {"ok": True, "docker": True, "jq": self.jq, "installe": self.installe, "dossier": "/opt/netbird-serveur",
                         "meta": {"domaine": "netbird.exemple.fr", "version": self.version_serveur, "proxy": "nginx"} if self.installe else {}, "conteneurs": self.conteneurs,
                         **({} if self.installe else {"occupes": self.occupes})}
             if verbe == "telecharger":
@@ -151,6 +152,9 @@ class Gestion(Monde):
             if verbe == "pare_feu_fermer":
                 self.pf_ouverts = [p for p in self.pf_ouverts if p not in args]
                 return {"ok": True, "outil": "ufw", "fermes": list(args)}
+            if verbe == "installer_jq":
+                self.jq = True
+                return {"ok": True, "code": 0, "sortie": "jq installé"}
             if verbe == "ip":
                 return {"ok": True, "ip": "93.184.216.34", "privee": False}
             return {"ok": False, "erreur": "verbe inconnu"}
@@ -311,6 +315,14 @@ class Maintenance(Gestion):
     def setUp(self):
         super().setUp()
         self.installe, self.conteneurs = True, [{"service": "management", "etat": "running", "image": "x"}]
+
+    def test_installer_jq_depuis_l_ecran_est_prouve_et_journalise(self):
+        self.jq = False
+        self.assertFalse(self.lire("serveur_etat")["jq"])
+        r = self.lire("serveur_installer_jq")
+        self.assertTrue(r["jq_installe"] and r["jq"])
+        self.assertIn(("serveur:installer_jq", [], None), self.racines)
+        self.assertIn("jq installé", self.lire("journal")["gestes"][0]["libelle"])
 
     def test_la_derniere_version_est_lue_chez_github_et_gardee_une_heure(self):
         r = self.lire("versions")

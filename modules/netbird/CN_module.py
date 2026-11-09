@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #624ac5
+# VERSION CN : 0.1.0  #8b5be4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=624ac5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8b5be4 ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -681,6 +681,14 @@ def brancher(ctx):
             if ports:
                 srv_ok(srv("pare_feu_fermer", ports))
 
+    def serveur_installer_jq(c):
+        with _VERROU:
+            r = srv_ok(srv("installer_jq", [], None, 300))
+            return dict(serveur_etat(c), jq_installe=True, installation=str(r.get("sortie", ""))[-300:])
+
+    def prouver_jq(c, res):
+        return bool(serveur_etat(c).get("jq"))
+
     def serveur_ip(c):
         return srv_ok(srv("ip"))
 
@@ -977,6 +985,8 @@ def brancher(ctx):
             return "Serveur NetBird restauré depuis la sauvegarde %s" % res.get("restauree", "?")
         if cap == "pare_feu_ouvrir":
             return "Ports NetBird ouverts dans le pare-feu (%s)" % (", ".join(res.get("ouverts_par_nous") or []) or "déjà tous ouverts")
+        if cap == "serveur_installer_jq":
+            return "jq installé (exigé par le script d'installation du serveur NetBird)"
         if cap == "installer_natif":
             return "Client NetBird natif installé (paquet officiel%s)" % (", version %s" % res["natif_version"] if res.get("natif_version") else "")
         if cap == "retirer_natif":
@@ -1055,6 +1065,7 @@ def brancher(ctx):
     ctx.implementer("serveur_restaurer", journaliser("serveur_restaurer", serveur_restaurer), prouver_restauration, defaire_restauration, simuler=lambda x, id="", **_: "restaurerait la sauvegarde %s du serveur NetBird (après une sauvegarde de sécurité)" % id)
     ctx.implementer("pare_feu_etat", pare_feu_etat)
     ctx.implementer("pare_feu_ouvrir", journaliser("pare_feu_ouvrir", pare_feu_ouvrir), prouver_pare_feu, defaire_pare_feu, simuler=lambda x, proxy="", **_: "ouvrirait dans le pare-feu les ports publics de NetBird (proxy %s)" % (proxy or "du serveur"))
+    ctx.implementer("serveur_installer_jq", journaliser("serveur_installer_jq", serveur_installer_jq), prouver_jq, lambda c, res: None, simuler=lambda x, **_: "installerait jq (paquet de la distribution) pour le script du serveur NetBird")
     ctx.implementer("serveur_ip", serveur_ip)
     ctx.implementer("serveur_dns_verifier", serveur_dns_verifier)
     ctx.implementer("serveur_redemarrer", journaliser("serveur_redemarrer", serveur_redemarrer), lambda c, res: True, lambda c, res: None, simuler=lambda x, **_: "redémarrerait le serveur NetBird")

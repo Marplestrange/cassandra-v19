@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a01509
+// VERSION CN : 0.1.0  #b4799f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a01509 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=b4799f ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -267,6 +267,8 @@
     const fiche = (l, v) => '<div><span class="lib">' + l + '</span><span class="gros" style="font-size:16px">' + v + "</span></div>";
     function cartePrerequis(s) {
       return '<div class="carte"><h2 ' + H2 + ">Avant d’installer</h2><div class=\"hero\">" + fiche("Docker", oui(s.docker)) + fiche("jq (exigé par le script officiel)", oui(s.jq)) + "</div>" +
+        (!s.docker ? '<p class="note" style="color:var(--warn)">Docker n’est pas installé : Cassandra ne l’installe pas, installe-le d’abord (le bouton d’installation reste grisé sans lui).</p>' : "") +
+        (!s.jq ? '<div class="acts"><span class="note" style="color:var(--warn)">jq manque : le script officiel d’installation en a besoin, et le bouton d’installation reste grisé sans lui.</span><button class="btn pri" data-a="srv-jq"' + (S.occupe ? " disabled" : "") + ">Installer jq</button></div>" : "") +
         '<p class="note">Il faut aussi un nom de domaine propre au serveur NetBird (pas celui de Cassandra) qui pointe déjà vers cette machine, et les ports 80, 443 et 3478/udp ouverts (avec le proxy « nginx » ou « caddy », ton proxy existant publie le serveur : seul le port 3478/udp doit être libre).</p></div>';
     }
     const ETP = { libre: ["ok", "libre"], occupe: ["dg", "déjà pris : bloque l’installation"], pris_par_proxy: ["mu", "pris par ton proxy (normal)"], inconnu: ["mu", ""] };
@@ -489,6 +491,10 @@
         return faire(() => agir("netbird.installer_natif"), "Le client NetBird natif est installé : connecte-le depuis la Vue d’ensemble.");
       }
       if (a === "natif-retirer") { if (!confirm("Désinstaller le client NetBird natif ? La machine quitte le réseau tant qu’elle n’est pas reconnectée.")) return; return faire(() => agir("netbird.retirer_natif"), "Client natif désinstallé."); }
+      if (a === "srv-jq") {
+        if (!confirm("Installer jq sur cette machine ? C’est un petit paquet de la distribution (apt, dnf ou yum), installé par le courtier : le script officiel du serveur NetBird en a besoin.")) return;
+        return faire(() => agir("netbird.serveur_installer_jq"), "jq est installé : tu peux maintenant télécharger le script du serveur.");
+      }
       if (a === "srv-sauv") return faire(async () => { const r = await agir("netbird.serveur_sauvegarder"); dire("Sauvegarde " + r.id + " faite."); }, "");
       if (a === "srv-resto") {
         const id = b.dataset.id;

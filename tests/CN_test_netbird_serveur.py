@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e5eb15
+# VERSION CN : 0.1.0  #4dc767
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`, `port_libre` et `shutil` sont remplacés ; le dossier du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e5eb15 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4dc767 ▼▼▼
 """Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`,
 `port_libre` et `shutil` sont remplacés ; le dossier du serveur est un dossier temporaire. On vérifie surtout ce qui est REFUSÉ et que le script n'est lancé que s'il est celui qu'on a confirmé."""
 import hashlib
@@ -57,6 +57,7 @@ class Monde(unittest.TestCase):
         self.occupes = set()                                  # ("tcp", 80)…
         self.docker = self.jq = True
         self.ufw = self.firewalld = False
+        self.paquets = "apt-get"                                   # le gestionnaire de paquets de la machine du banc
         self.m.SAUVEGARDES = str(Path(self.tmp.name) / "sauvegardes")
         self.compteur = 0
         self.m.maintenant = self.horloge
@@ -64,7 +65,7 @@ class Monde(unittest.TestCase):
         self.m.executer = self.faux
         self.m.ouvrir = self.faux_ouvrir
         self.m.port_libre = lambda proto, port: (proto, port) not in self.occupes
-        self.m.shutil = types.SimpleNamespace(which=lambda x: "/usr/bin/" + x if (x == "docker" and self.docker) or (x == "jq" and self.jq) or (x == "ufw" and self.ufw) or (x == "firewall-cmd" and self.firewalld) else None, rmtree=__import__("shutil").rmtree)
+        self.m.shutil = types.SimpleNamespace(which=lambda x: "/usr/bin/" + x if (x == "docker" and self.docker) or (x == "jq" and self.jq) or (x == "ufw" and self.ufw) or (x == "firewall-cmd" and self.firewalld) or x == self.paquets else None, rmtree=__import__("shutil").rmtree)
 
     def faux(self, commande, capture_output=True, text=True, timeout=0, cwd=None, env=None):
         self.cmds.append(list(commande))
@@ -669,6 +670,42 @@ class PareFeu(Monde):
         self.assertEqual(r["ouverts_par_nous"], ["443/tcp", "3478/udp"])
         self.assertEqual([c for c in self.cmds if "--permanent" in c], [["firewall-cmd", "--permanent", "--add-port=443/tcp"], ["firewall-cmd", "--permanent", "--add-port=3478/udp"]])
         self.assertIn(["firewall-cmd", "--reload"], self.cmds)
+
+
+class InstallerJq(Monde):
+    def setUp(self):
+        super().setUp()
+        self.jq = False
+
+    def test_apt_met_a_jour_l_index_puis_installe_jq_sans_question(self):
+        r = self.lance("installer_jq")
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(self.cmds, [["apt-get", "update"], ["apt-get", "install", "-y", "jq"]])
+        self.assertEqual(self.envs[1]["DEBIAN_FRONTEND"], "noninteractive")
+
+    def test_dnf_puis_yum(self):
+        self.paquets = "dnf"
+        self.assertTrue(self.lance("installer_jq")["ok"])
+        self.assertEqual(self.cmds, [["dnf", "install", "-y", "jq"]])
+        self.cmds.clear()
+        self.paquets = "yum"
+        self.lance("installer_jq")
+        self.assertEqual(self.cmds, [["yum", "install", "-y", "jq"]])
+
+    def test_refus_si_deja_la_si_aucun_gestionnaire_ou_un_argument(self):
+        self.jq = True
+        self.assertIn("déjà installé", self.lance("installer_jq")["erreur"])
+        self.jq, self.paquets = False, ""
+        self.assertIn("aucun gestionnaire", self.lance("installer_jq")["erreur"])
+        self.assertFalse(self.lance("installer_jq", "x")["ok"])
+        self.assertFalse(self.cmds)
+
+    def test_un_echec_du_gestionnaire_est_rendu_et_arrete_la_suite(self):
+        self.sorties["apt-get update"] = (100, "Err: dépôt injoignable")
+        r = self.lance("installer_jq")
+        self.assertFalse(r["ok"])
+        self.assertIn("injoignable", r["sortie"])
+        self.assertEqual(self.cmds, [["apt-get", "update"]], "pas d'installation si l'index n'a pas pu être mis à jour")
 
 
 class Adresse(Monde):

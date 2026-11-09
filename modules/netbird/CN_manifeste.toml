@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #686c86
+# VERSION CN : 0.1.0  #6fe1d0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (l'installer dans Docker, le connecter, le couper) ET, au besoin, un serveur NetBird auto-hébergé (l'installer, le tenir à jour, administrer ses machines, clés, groupes et politiques).
 # MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=686c86 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6fe1d0 ▼▼▼
 [module]
 id = "netbird"
 nom = "NetBird"
@@ -279,6 +279,15 @@ droit = "serveur"
 perimetre = ["80/tcp, 443/tcp et 3478/udp seulement", "ufw ou firewalld, par le courtier"]
 preuve = "relire le pare-feu : ces ports y sont ouverts"
 retour = "refermer seulement les ports que ce geste a ouverts (ceux qui l'étaient déjà restent ouverts)"
+
+[[capacites]]
+id = "serveur_installer_jq"
+libelle = "Installer jq, dont le script officiel d'installation du serveur NetBird a besoin : le paquet de la distribution, par apt-get, dnf ou yum"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["le paquet jq seulement", "refusé s'il est déjà là ; par le courtier : apt-get, dnf ou yum"]
+preuve = "relire l'état du serveur : jq est présent"
+retour = "désinstaller le paquet jq (aucun autre geste de ce module ne s'en sert)"
 
 [[capacites]]
 id = "serveur_ip"

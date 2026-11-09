@@ -27,6 +27,7 @@ Verbes (table fermée) :
   pare_feu                                       ufw ou firewalld : actif ? et lesquels des ports NetBird sont ouverts
   pare_feu_ouvrir <traefik|nginx|caddy>          ouvre les ports publics de NetBird (443/tcp, 3478/udp, et 80/tcp avec traefik) ; rend ceux qu'elle a ouverts elle-même
   pare_feu_fermer <port/proto>…                  referme ces ports, parmi ceux de NetBird seulement
+  installer_jq                                   installe jq (exigé par le script officiel) par apt-get, dnf ou yum, et rien d'autre
   ip                                             l'adresse de cette machine, telle que la voit le réseau (pour l'enregistrement DNS)
   retirer [purger]                               docker compose down ; avec « purger » : les volumes et le dossier (les comptes et les machines du serveur sont PERDUS)
 Rend UNE ligne de JSON : {"ok": true, …} ou {"ok": false, "erreur": "…"} ; le code de sortie est 0 si ok."""
@@ -594,6 +595,26 @@ def verbe_pare_feu_fermer(a):
     return {"ok": True, "outil": outil, "fermes": fermes}
 
 
+def verbe_installer_jq(a):
+    if a:
+        refuser("installer_jq n'a pas d'argument")
+    if shutil.which("jq") is not None:
+        refuser("jq est déjà installé")
+    env = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8", "DEBIAN_FRONTEND": "noninteractive"}
+    if shutil.which("apt-get") is not None:
+        commandes = [["apt-get", "update"], ["apt-get", "install", "-y", "jq"]]
+    elif shutil.which("dnf") is not None or shutil.which("yum") is not None:
+        commandes = [["dnf" if shutil.which("dnf") is not None else "yum", "install", "-y", "jq"]]
+    else:
+        refuser("aucun gestionnaire de paquets connu (apt-get, dnf, yum) : installe jq à la main")
+    sortie = ""
+    for c in commandes:
+        code, sortie = lancer(c, 240, env)
+        if code != 0:
+            return {"ok": False, "code": code, "sortie": sortie}
+    return {"ok": True, "code": 0, "sortie": sortie}
+
+
 def ip_sortante():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -612,7 +633,7 @@ def verbe_ip(a):
 
 
 VERBES = {"etat": verbe_etat, "telecharger": verbe_telecharger, "installer": verbe_installer, "mettre_a_jour": verbe_mettre_a_jour, "commande": verbe_commande, "nginx": verbe_nginx, "retirer": verbe_retirer, "sauvegarder": verbe_sauvegarder, "sauvegardes": verbe_sauvegardes, "restaurer": verbe_restaurer,
-          "pare_feu": verbe_pare_feu, "pare_feu_ouvrir": verbe_pare_feu_ouvrir, "pare_feu_fermer": verbe_pare_feu_fermer, "ip": verbe_ip}
+          "pare_feu": verbe_pare_feu, "pare_feu_ouvrir": verbe_pare_feu_ouvrir, "pare_feu_fermer": verbe_pare_feu_fermer, "ip": verbe_ip, "installer_jq": verbe_installer_jq}
 
 
 def serveur(argv):
