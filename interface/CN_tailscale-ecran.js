@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b653aa
+// VERSION CN : 0.1.0  #82f7ea
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b653aa ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=82f7ea ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -69,13 +69,24 @@
     const st = document.createElement("style"); st.id = "ts-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "ts"; corps.appendChild(racine);
 
+    // La page vient de l’écran ouvert (ctx.ecran = « tailscale:t_machines ») : le menu de gauche en a six, la scène est la même.
+    const PAGES = { t_vue: "vue", t_machines: "machines", t_reglages: "reglages", t_services: "services", t_sante: "sante", t_journal: "journal", vue_tailscale: "vue" };
+    const page = PAGES[String((ctx && ctx.ecran) || "").split(":")[1]] || "vue";
+    const TITRES = {
+      vue: ["", "Le réseau privé de cette machine : la joindre de n’importe où sans ouvrir un seul port, et joindre tes autres machines."],
+      machines: ["Machines", "Les machines de ton réseau : qui est en ligne, par quel chemin on les joint, et un ping."],
+      reglages: ["Réglages", "Les réglages du client Tailscale de cette machine : routes, DNS, bouclier, nom, sortie Internet."],
+      services: ["Services", "Ce que cette machine publie dans ton réseau Tailscale, en HTTPS."],
+      sante: ["Santé du réseau", "UDP, IPv6, NAT et la latence vers les relais Tailscale."],
+      journal: ["Historique", "Les derniers gestes faits sur Tailscale depuis Cassandra, avec leur retour."],
+    };
     const S = { e: null, occupe: false, erreur: "", quitter: false, couper: false, nom: "", ssh: false, ping: {}, q: "", filtre: "tous", j: null, lu: 0, net: null, srv: null };
     let minuterie = null;
 
     async function charger(silencieux) {
       try { S.e = await agir("tailscale.etat"); S.erreur = ""; S.lu = Date.now(); } catch (e) { S.erreur = e.message || String(e); }
-      try { S.j = (await agir("tailscale.journal", { limite: 10 })).gestes; } catch (_) { /* le journal est un plus : l’écran marche sans */ }
-      try { S.srv = (await agir("tailscale.services")).services; } catch (_) { S.srv = null; }
+      if (page === "journal") { try { S.j = (await agir("tailscale.journal", { limite: 30 })).gestes; } catch (_) { /* le journal est un plus : la page le dit */ S.j = null; } }
+      if (page === "services") { try { S.srv = (await agir("tailscale.services")).services; } catch (_) { S.srv = null; } }
       if (!silencieux || document.body.contains(racine)) dessiner();
       armer();
     }
@@ -258,9 +269,44 @@
           : '<button class="btn dng" data-a="quitter"' + (bloque ? " disabled" : "") + ">Retirer du réseau…</button>") + "</div></div>";
     }
 
+    function carteEtat(e) {
+      return '<div class="carte"><div class="hero"><div><span class="lib">État</span>' + pastille(e) + (e.sante && e.sante.length ? e.sante.slice(0, 3).map(sante).join("") : "") + "</div>" +
+        (e.etat === "connecte" ? '<div><span class="lib">Cette machine</span><span class="gros">' + esc(e.nom || "—") + '</span><span class="note mono">' + esc(e.dns) + ' <button class="btn" data-a="copier" data-t="' + esc(e.dns) + '" style="padding:1px 6px;font-size:10.5px">Copier</button></span></div>' +
+          '<div><span class="lib">Adresse</span><span class="gros">' + esc(e.ip4 || "—") + '</span><span class="note mono">' + esc(e.ip6) + ' <button class="btn" data-a="copier" data-t="' + esc(e.ip4) + '" style="padding:1px 6px;font-size:10.5px">Copier l’adresse</button></span></div>' +
+          '<div><span class="lib">Réseau</span><span class="gros" style="font-size:16px">' + esc(e.reseau || "—") + '</span><span class="note">client ' + esc(e.version) + (e.mise_a_jour ? " · mise à jour disponible : " + esc(e.mise_a_jour) : "") + "</span></div>" : "") + "</div></div>";
+    }
+
+    // Sur les autres pages, l’état tient en une ligne : de quoi savoir où l’on est sans quitter la page.
+    function bandeau(e) {
+      return '<div class="carte"><div class="acts">' + pastille(e) + (e.etat === "connecte" ? '<b class="mono">' + esc(e.nom || "") + '</b><span class="mono note">' + esc(e.ip4 || "") + "</span>" : "") + "</div></div>";
+    }
+
+    const noteHorsLigne = '<div class="carte"><p>Tailscale n’est pas connecté sur cette machine : connecte-la depuis la <b>Vue d’ensemble</b>.</p></div>';
+
+    function pageVue(e) {
+      let h = carteEtat(e);
+      if (e.en_attente) h += e.lien ? carteLien(e) : '<div class="carte attente">Tailscale prépare le lien de connexion…</div>';
+      else if (e.etat === "a_approuver") h += '<div class="carte"><p>La machine est identifiée mais l’administrateur de ton réseau Tailscale doit l’approuver (login.tailscale.com › Machines).</p></div>';
+      else if (e.etat === "connecte") h += avisExpiration(e) + carteGestes(e);
+      else h += carteConnexion(e);
+      return h;
+    }
+
+    function autrePage(e) {
+      const connecte = e.etat === "connecte";
+      if (page === "machines") return connecte ? avisExpiration(e) + carteReseau(e) : noteHorsLigne;
+      if (page === "reglages") return e.reglages ? carteReglages(e) : noteHorsLigne;
+      if (page === "services") return connecte ? carteServices(e) : noteHorsLigne;
+      if (page === "sante") return connecte ? carteSanteReseau(e) : noteHorsLigne;
+      if (page === "journal") return carteJournal(e) || '<div class="carte"><p class="note">' + (S.j === null ? "Le journal n’est pas lisible pour l’instant." : "Aucun geste noté pour l’instant : ils apparaissent ici dès qu’on connecte, coupe ou règle Tailscale depuis Cassandra.") + "</p></div>";
+      return "";
+    }
+
     function dessiner() {
       const e = S.e;
-      let h = '<div class="tete"><h1>Tailscale</h1><p class="sous">Le réseau privé de cette machine : la joindre de n’importe où sans ouvrir un seul port, et joindre tes autres machines.</p><div class="acts" style="margin-top:8px"><button class="btn" data-a="relire">Relire</button><span class="note">' + (S.lu ? "Relu à " + new Date(S.lu).toLocaleTimeString() : "") + "</span></div></div>";
+      const t = TITRES[page];
+      let h = '<div class="tete"><h1>Tailscale' + (t[0] ? ' <span class="note" style="font-weight:500">› ' + esc(t[0]) + "</span>" : "") + '</h1><p class="sous">' + esc(t[1]) + '</p><div class="acts" style="margin-top:8px">' +
+        '<button class="btn" data-a="relire">Relire</button><span class="note">' + (S.lu ? "Relu à " + new Date(S.lu).toLocaleTimeString() : "") + "</span></div></div>";
       if (S.erreur) h += '<div class="carte" role="alert" style="color:var(--danger)">' + esc(S.erreur) + '<div class="acts"><button class="btn" data-a="relire">Réessayer</button></div></div>';
       if (!e) { racine.innerHTML = h + '<div class="attente" role="status" aria-live="polite">Lecture de l’état de Tailscale…</div>'; return; }
       if (e.etat === "absent" || e.etat === "arrete") {
@@ -269,15 +315,7 @@
             : '<p class="note">Sur la machine : <span class="mono">sudo systemctl enable --now tailscaled</span>, puis recharge cet écran.</p>') + '<div class="acts"><button class="btn" data-a="relire">Relire</button></div></div>';
         racine.innerHTML = h; lier(); return;
       }
-      h += '<div class="carte"><div class="hero"><div><span class="lib">État</span>' + pastille(e) + (e.sante && e.sante.length ? e.sante.slice(0, 3).map(sante).join("") : "") + "</div>" +
-        (e.etat === "connecte" ? '<div><span class="lib">Cette machine</span><span class="gros">' + esc(e.nom || "—") + '</span><span class="note mono">' + esc(e.dns) + ' <button class="btn" data-a="copier" data-t="' + esc(e.dns) + '" style="padding:1px 6px;font-size:10.5px">Copier</button></span></div>' +
-          '<div><span class="lib">Adresse</span><span class="gros">' + esc(e.ip4 || "—") + '</span><span class="note mono">' + esc(e.ip6) + ' <button class="btn" data-a="copier" data-t="' + esc(e.ip4) + '" style="padding:1px 6px;font-size:10.5px">Copier l’adresse</button></span></div>' +
-          '<div><span class="lib">Réseau</span><span class="gros" style="font-size:16px">' + esc(e.reseau || "—") + '</span><span class="note">client ' + esc(e.version) + (e.mise_a_jour ? " · mise à jour disponible : " + esc(e.mise_a_jour) : "") + "</span></div>" : "") + "</div></div>";
-      if (e.en_attente) h += e.lien ? carteLien(e) : '<div class="carte attente">Tailscale prépare le lien de connexion…</div>';
-      else if (e.etat === "a_approuver") h += '<div class="carte"><p>La machine est identifiée mais l’administrateur de ton réseau Tailscale doit l’approuver (login.tailscale.com › Machines).</p></div>';
-      else if (e.etat === "connecte") h += avisExpiration(e) + carteReseau(e) + carteSanteReseau(e) + carteGestes(e) + carteReglages(e) + carteServices(e);
-      else h += carteConnexion(e);
-      h += carteJournal(e);
+      h += page === "vue" ? pageVue(e) : bandeau(e) + autrePage(e);
       racine.innerHTML = h; lier();
     }
 

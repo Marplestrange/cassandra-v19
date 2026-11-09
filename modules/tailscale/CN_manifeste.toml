@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.4.1  #9e1611
+# VERSION CN : 0.5.0  #5711e5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale.
 # MÉTHODE    : le client `tailscale` local, par son socket ; l'installateur donne à l'utilisateur de Cassandra le droit de le piloter (--operator), jamais de root.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=9e1611 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=5711e5 ▼▼▼
 [module]
 id = "tailscale"
 nom = "Tailscale"
-version = "0.4.1"
+version = "0.5.0"
 noyau_min = "0.1.0"
 description = "Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale."
 confiance = "interne"
@@ -168,10 +168,40 @@ preuve = "relire `tailscale serve status` : plus rien de publié"
 retour = "republier les services un à un (la configuration d'avant est notée au journal, pas rétablie seule)"
 
 [[ecrans]]
-id = "vue_tailscale"
-libelle = "Tailscale"
+id = "t_vue"
+libelle = "Vue d'ensemble"
 domaine = "reseau"
-gabarit = "tableau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "t_machines"
+libelle = "Machines"
+domaine = "reseau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "t_reglages"
+libelle = "Réglages"
+domaine = "reseau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "t_services"
+libelle = "Services"
+domaine = "reseau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "t_sante"
+libelle = "Santé du réseau"
+domaine = "reseau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "t_journal"
+libelle = "Historique"
+domaine = "reseau"
+gabarit = "libre"
 
 [theme]
 accent = "#1d6fa5"
@@ -179,10 +209,69 @@ accent = "#1d6fa5"
 [[menus]]
 id = "tailscale"
 libelle = "Tailscale"
-ecran = "vue_tailscale"
 ordre = 20
 role = "admin"
 icone = "globe"
+
+[[menus]]
+id = "t_vue"
+libelle = "Vue d’ensemble"
+ecran = "t_vue"
+parent = "tailscale"
+ordre = 10
+role = "admin"
+icone = "panorama"
+droit = "utiliser"
+
+[[menus]]
+id = "t_machines"
+libelle = "Machines"
+ecran = "t_machines"
+parent = "tailscale"
+ordre = 20
+role = "admin"
+icone = "server"
+droit = "utiliser"
+
+[[menus]]
+id = "t_reglages"
+libelle = "Réglages"
+ecran = "t_reglages"
+parent = "tailscale"
+ordre = 30
+role = "admin"
+icone = "puzzle"
+droit = "utiliser"
+
+[[menus]]
+id = "t_services"
+libelle = "Services"
+ecran = "t_services"
+parent = "tailscale"
+ordre = 40
+role = "admin"
+icone = "bolt"
+droit = "utiliser"
+
+[[menus]]
+id = "t_sante"
+libelle = "Santé du réseau"
+ecran = "t_sante"
+parent = "tailscale"
+ordre = 50
+role = "admin"
+icone = "radar"
+droit = "utiliser"
+
+[[menus]]
+id = "t_journal"
+libelle = "Historique"
+ecran = "t_journal"
+parent = "tailscale"
+ordre = 60
+role = "admin"
+icone = "journal"
+droit = "utiliser"
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

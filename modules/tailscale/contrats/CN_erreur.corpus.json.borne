@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.4.1  #148499
+# VERSION CN : 0.5.0  #148499
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : erreur.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)
