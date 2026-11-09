@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #877d85
+# VERSION CN : 0.1.0  #bf3562
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module web sans réseau réel : résolution et téléchargement simulés (adresses privées, redirections, taille, HTML, texte piégé).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=877d85 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bf3562 ▼▼▼
 """Bancs du module web sans réseau réel : résolution et téléchargement simulés (adresses privées, redirections, taille, HTML, texte piégé)."""
 import importlib.util
 import json
@@ -287,6 +287,48 @@ class Web(unittest.TestCase):
         self.moteur([{"title": "x", "url": "http://moteur.example/", "content": ""}])
         with self.assertRaises(ValueError):
             self.lire(None, "http://moteur.example/")      # même hôte que le moteur : lire reste soumis au refus des réseaux privés
+
+    # ---- la santé du moteur (lue par le Sensorium : mesure web.moteur)
+    def sante(self, reglages=None, **rep):
+        reg = {"moteur_url": "http://moteur.example:8888/"}
+        reg.update(reglages or {})
+        corps = rep.pop("corps", json.dumps({"results": []}).encode())
+        self.monter({"moteur.example": ["10.0.0.7"]},
+                    {("moteur.example", "/search?q=cassandra&format=json"): dict(corps=corps, entetes={"content-type": "application/json"}, **rep)}, reg)
+        return self.ctx.cap["sante_moteur"](None)
+
+    def test_sante_moteur_qui_repond(self):
+        r = self.sante()
+        self.assertEqual((r["configure"], r["ok"]), (True, True))
+        self.assertIsInstance(r["latence_ms"], int)
+        self.assertEqual(r["motif"], "")
+
+    def test_sante_sans_moteur_configure_ne_touche_pas_au_reseau(self):
+        self.monter({}, {}, {})
+        r = self.ctx.cap["sante_moteur"](None)
+        self.assertEqual((r["configure"], r["ok"]), (False, False))
+        self.assertEqual(self.res.appels, [])
+
+    def test_sante_moteur_en_erreur_dit_pourquoi(self):
+        r = self.sante(statut=500)
+        self.assertEqual((r["configure"], r["ok"]), (True, False))
+        self.assertIn("500", r["motif"])
+        self.assertIsNone(r["latence_ms"])
+
+    def test_sante_moteur_qui_ne_rend_pas_du_json(self):
+        r = self.sante(corps=b"<html>panne</html>")
+        self.assertFalse(r["ok"])
+        self.assertIn("JSON", r["motif"])
+
+    def test_sante_ne_donne_jamais_l_adresse_du_moteur_ni_ses_resultats(self):
+        r = self.sante(corps=json.dumps({"results": [{"title": "secret", "url": "http://x.example/", "content": "c"}]}).encode())
+        texte = json.dumps(r)
+        for interdit in ("moteur.example", "8888", "secret", "x.example"):
+            self.assertNotIn(interdit, texte)
+
+    def test_sante_n_ecrit_pas_dans_le_journal_des_lectures(self):
+        self.sante()
+        self.assertEqual(self.journal(), [])
 
 
 if __name__ == "__main__":

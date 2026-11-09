@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : web
 # ZONE       : CN
-# VERSION CN : 0.1.0  #668f65
+# VERSION CN : 0.1.1  #872d9f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La porte du dehors : recherche et lecture de pages web, protégées contre la forgerie de requête côté serveur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=668f65 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=872d9f ▼▼▼
 """Web : la seule porte des agents vers le dehors.
 
 Tout ce que ce module rend est une DONNÉE EXTÉRIEURE (capacités marquées `externe`) : du texte étranger, jamais une consigne. Il le rend tel quel, sans l'interpréter.
@@ -373,6 +373,30 @@ def brancher(ctx):
         journaliser(c, "rechercher", "", "cherche", len(rep["corps"]), "sha256:" + hashlib.sha256(rep["corps"]).hexdigest(), "%d résultat(s)" % len(resultats))
         return {"requete": requete, "resultats": resultats, "lu_le": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "externe": True, "avertissement": AVERTISSEMENT}
 
+    def sante_moteur(c):
+        """Le moteur configuré répond-il, vite, en JSON ? Lu par le Sensorium (mesure `web.moteur`). Même garde-fous que `rechercher` (adresse vérifiée, aucune redirection), mais RIEN d'autre n'en sort que
+        {configure, ok, latence_ms, motif} : ni l'adresse du moteur, ni un résultat. Pas d'écriture au journal des lectures (une sonde toutes les minutes le noierait)."""
+        if not str(ctx.reglage("moteur_url", "") or "").strip():
+            return {"configure": False, "ok": False, "latence_ms": None, "motif": "aucun moteur de recherche configuré"}
+        debut = time.monotonic()
+        try:
+            base, schema, hote, port, chemin = adresse_moteur("cassandra")
+            ips = controler(schema, hote, port, ports(), set(), dispense=True)
+            rep = telecharger(schema, hote, port, chemin, ips[0], min(entier("delai_s", 10, 2, 30), 5), TAILLE_MAX_MOTEUR, {"Accept": "application/json"})
+            if rep.get("ip_connectee") not in ips:
+                raise Refus("l'adresse réellement connectée n'est pas celle qui a été vérifiée")
+            if rep["statut"] != 200:
+                raise Refus("le moteur répond %d" % rep["statut"])
+            try:
+                json.loads(decoder(rep["corps"], rep["entetes"].get("content-type", "")))
+            except ValueError:
+                raise Refus("le moteur n'a pas rendu du JSON")
+        except Refus as ex:
+            return {"configure": True, "ok": False, "latence_ms": None, "motif": str(ex)[:120]}
+        except Exception as ex:
+            return {"configure": True, "ok": False, "latence_ms": None, "motif": "moteur injoignable (%s)" % type(ex).__name__}
+        return {"configure": True, "ok": True, "latence_ms": int((time.monotonic() - debut) * 1000), "motif": ""}
+
     def lectures_recentes(c, limite=50):
         try:
             limite = max(1, min(int(limite), 200))
@@ -383,6 +407,7 @@ def brancher(ctx):
     ctx.implementer("rechercher", rechercher)
     ctx.implementer("lire", lire)
     ctx.implementer("lectures_recentes", lectures_recentes)
+    ctx.implementer("sante_moteur", sante_moteur)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

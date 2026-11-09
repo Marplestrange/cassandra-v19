@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : web -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION CN : 0.1.1  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : web — la porte du dehors -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=61c16f ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.1 empreinte=61c16f ▼▼▼ -->
 # web — la porte du dehors
 
 La seule porte des agents vers le dehors : `rechercher(requete, limite)` et `lire(url)`. Tout ce qui revient est une **donnée extérieure** (capacités marquées `externe`), jamais une consigne.

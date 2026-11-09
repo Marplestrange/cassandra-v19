@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.3  #b072ac
+# VERSION CN : 0.2.4  #924ba2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.3 empreinte=b072ac ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.4 empreinte=924ba2 ▼▼▼
 """Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 
 Tout vit dans la base du module (migration 004) : le noyau, le registre et le collecteur root ne changent pas. Le calcul de l'état est pur (CN_mesures_etat.py) ; ici, l'accès à la base,
@@ -30,7 +30,7 @@ except ImportError:                        # chargé hors de son paquet (les ban
 
 log = logging.getLogger("sensorium.capteurs")
 
-ESPACES_RESERVES = ("monde", "sensorium", "noyau", "systeme", "cassandra")
+ESPACES_RESERVES = ("monde", "sensorium", "noyau", "systeme", "cassandra", "web")
 RELATIONS = ("depend_de", "heberge_par", "certifie_par", "resout_par", "decrit")       # toutes se lisent « de DÉPEND DE vers » : si `vers` tombe, `de` est touché
 REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:/@\-]{0,159}$")
 SYSTEMES = ("noyau", "cassandra")
@@ -210,6 +210,34 @@ def ingerer_monde(ctx, rows):
         refus, _ = enregistrer(ctx, cle, r.get("value"), g, detail=r.get("detail") or "", rapide=False)
         n += 0 if refus else 1
     return n
+
+
+CLE_MOTEUR_WEB = "web.moteur"
+LENT_MOTEUR_WEB_MS = 3000
+
+
+def ingerer_sante_web(ctx, sante):
+    """La santé du moteur de recherche (capacité `web.sante_moteur`, TIRÉE par le Sensorium : le module Web n'a aucun droit d'agir) devient la mesure `web.moteur`. Le Sensorium en est le seul émetteur
+    (espace `web` réservé). Pas de module Web, pas de moteur configuré, réponse illisible : AUCUNE lecture (la mesure se périme en `inconnu`, jamais un « ok » inventé)."""
+    if not isinstance(sante, dict) or not sante.get("configure"):
+        return 0
+    db = _db(ctx)
+    cap = _un(db, "SELECT * FROM sensorium_capteurs WHERE cle=?", (CLE_MOTEUR_WEB,))
+    if cap is None:
+        prop = _un(db, "SELECT proprietaire FROM sensorium_espaces WHERE espace='web'")
+        if prop and prop["proprietaire"] != "sensorium":
+            compter(db, "refus_espace_autre")
+            return 0
+        if not prop:
+            db.ecrire("INSERT INTO sensorium_espaces(espace, proprietaire, cree_le) VALUES ('web', 'sensorium', ?)", (_maintenant(),))
+        db.ecrire("INSERT INTO sensorium_capteurs(cle, espace, proprietaire, libelle, unite, fraicheur_s, alerte, critique, pire, confiance_min, cree_le) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                  (CLE_MOTEUR_WEB, "web", "sensorium", "Moteur de recherche", "ms", 180, LENT_MOTEUR_WEB_MS, None, "haut", 0, _maintenant()))
+        cap = _un(db, "SELECT * FROM sensorium_capteurs WHERE cle=?", (CLE_MOTEUR_WEB,))
+    ok = bool(sante.get("ok"))
+    latence = me.nombre(sante.get("latence_ms")) if ok else None
+    gravite = "critical" if not ok else ""                       # vide : les seuils du capteur jugent la latence
+    refus, _ = enregistrer(ctx, CLE_MOTEUR_WEB, latence, gravite, detail=sante.get("motif") or "", cap=cap, rapide=False)
+    return 0 if refus else 1
 
 
 def tour_suivi(ctx):

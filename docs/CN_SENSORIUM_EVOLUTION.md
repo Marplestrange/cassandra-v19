@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9b1cbe ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d89221 ▼▼▼ -->
 # Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées
 
 Statut : note de conception, rédigée AVANT le code (09-11-2026). Chaque point porte un statut : **[décidé]** (je l'implémente, c'est écrit ici pourquoi),
@@ -162,6 +162,16 @@ Deux fonctions ajoutées au collecteur (lecture seule, dans la boucle qui attrap
 * **Non fait** : le serve-stale d'un résolveur (il ne se voit pas d'ici sans le journal du résolveur, qui dépend du moteur : à mesurer par le module Serveur DNS lui-même, qui déclarera un capteur) ; la présence de SearXNG
   (l'adresse est un réglage du module Web, que le collecteur root ne lit pas : c'est au module Web de déclarer un capteur `web.moteur`, voir §13).
 * **Non vérifié sur une vraie machine** : les bancs simulent `chronyc`, `timedatectl` et `dig` d'après le format de leur sortie tel que je le connais.
+
+## 10 bis. [décidé, fait] SearXNG : la mesure `web.moteur`
+
+Le Sensorium **tire** la santé du moteur : à chaque relève du monde (60 s), il lit la capacité `web.sante_moteur` du module Web (`ctx.executer_lecture`, une lecture, comme `modules.sante`). Le module Web n'a donc **aucun droit d'agir** à demander
+(un module qui parle au dehors n'acquiert pas le pouvoir d'écrire ailleurs). `sante_moteur` fait une requête de recherche minimale avec les mêmes garde-fous que `rechercher` (adresse vérifiée, aucune redirection) et ne rend que
+`{configure, ok, latence_ms, motif}` : ni l'adresse du moteur, ni un résultat. Le Sensorium en tire `web.moteur` : valeur = latence en ms, alerte au-delà de 3000 ms, `critical` si le moteur ne répond pas ou pas en JSON ; fraîcheur 180 s,
+donc un moteur dont la relève s'arrête passe à `inconnu`. Pas de module Web, pas de moteur configuré, réponse illisible : **aucune lecture** (jamais un « ok » inventé). L'espace `web` est réservé au Sensorium (un capteur d'un autre compte ne peut
+pas le prendre). La clé reste invisible aux comptes ordinaires tant qu'un administrateur ne l'a pas publiée.
+**Constaté, non modifié** : le moteur configuré est dispensé en entier du refus des réseaux privés, y compris l'adresse locale des métadonnées d'hébergeur (comportement déjà présent de `rechercher`, l'URL étant posée par un administrateur).
+Bancs : `CN_test_web` (6 : sonde seule, faux réseau), `MoteurWeb` (6 : la mesure), `MoteurWebDeBoutEnBout` (2 : vrai module Web monté dans un vrai noyau, faux réseau). **Non vérifié** : un vrai SearXNG.
 
 ## 11. Mémoire : la sonde `mesure_etat` [décidé]
 

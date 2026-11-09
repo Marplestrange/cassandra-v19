@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #112961
+# VERSION CN : 0.1.0  #a444a3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=112961 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a444a3 ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -207,6 +207,93 @@ class Capteurs(Mesures):
         db = self.n.executeur.contextes["sensorium"].stockage
         self.assertFalse(db.lire("SELECT 1 FROM sensorium_capteurs WHERE cle='dns.neuf'"))
         self.assertFalse(db.lire("SELECT 1 FROM sensorium_espaces WHERE espace='dns'"))
+
+
+class MoteurWeb(Mesures):
+    """La mesure `web.moteur`, tirée de la capacité web.sante_moteur par le Sensorium lui-même (docs/CN_SENSORIUM_EVOLUTION.md §10 bis)."""
+
+    def ingerer(self, sante):
+        ctx = self.n.executeur.contextes["sensorium"]
+        capt = self.n.catalogue.get("sensorium.secu").faire.__globals__["capt"]        # le module tel que le noyau l'a chargé
+        return capt.ingerer_sante_web(ctx, sante)
+
+    def etat(self):
+        return self.ok("mesure_detail", ADMIN, cle="web.moteur")
+
+    def test_un_moteur_qui_repond_est_ok(self):
+        self.assertEqual(self.ingerer({"configure": True, "ok": True, "latence_ms": 120, "motif": ""}), 1)
+        d = self.etat()
+        self.assertEqual((d["etat"], d["valeur"]), ("ok", 120.0))
+
+    def test_un_moteur_lent_est_en_alerte_un_moteur_en_panne_aussi(self):
+        self.ingerer({"configure": True, "ok": True, "latence_ms": 9000, "motif": ""})
+        self.assertEqual(self.etat()["etat"], "alerte")
+        self.h.avance(2)
+        self.ingerer({"configure": True, "ok": False, "latence_ms": None, "motif": "le moteur répond 500"})
+        d = self.etat()
+        self.assertEqual((d["etat"], d["gravite"]), ("alerte", "critical"))
+        self.assertIn("500", d["detail"])
+
+    def test_pas_de_moteur_configure_ou_pas_de_module_web_aucune_lecture_jamais_un_ok_invente(self):
+        self.assertEqual(self.ingerer(None), 0)
+        self.assertEqual(self.ingerer({"configure": False, "ok": False, "latence_ms": None, "motif": "aucun moteur"}), 0)
+        self.assertEqual(self.ok("mesure_etat", ADMIN, cle="web.moteur")["etat"], "inconnu")
+
+    def test_un_moteur_qui_se_tait_devient_inconnu(self):
+        self.ingerer({"configure": True, "ok": True, "latence_ms": 50, "motif": ""})
+        self.h.avance(400)                                   # la relève devrait revenir toutes les minutes
+        self.assertEqual(self.etat()["etat"], "inconnu")
+
+    def test_l_espace_web_est_reserve_un_capteur_ne_peut_pas_le_prendre(self):
+        r = self.ok("capteur_declarer", KINO, cle="web.moteur", fraicheur_s=60)
+        self.assertFalse(r["ok"])
+
+    def test_un_compte_ordinaire_ne_voit_rien_tant_que_la_cle_n_est_pas_publiee(self):
+        self.ingerer({"configure": True, "ok": True, "latence_ms": 50, "motif": ""})
+        v = self.vue_pour("simple@exemple.test", "1", cle="web.moteur")
+        self.assertEqual((v["etat"], v["raison"]), ("inconnu", ""))
+        self.ok("mesure_publier", ADMIN, cle="web.moteur", visibilite="toutes")
+        self.assertEqual(self.vue_pour("simple@exemple.test", "1", cle="web.moteur")["etat"], "ok")
+
+
+class MoteurWebDeBoutEnBout(Mesures):
+    """Avec le VRAI module Web monté (faux réseau) : la relève du Sensorium tire web.sante_moteur et la mesure `web.moteur` apparaît, sans que Web ait le moindre droit d'agir."""
+    MODULES = ("droits", "modules", "sensorium", "web")
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        g = cls.n.catalogue.get("web.sante_moteur").faire.__globals__
+        cls.reponse = {"statut": 200}
+        resp = cls.reponse
+
+        def telecharger(schema, hote, port, chemin, ip, delai, max_octets, entetes=None):
+            return {"statut": resp["statut"], "entetes": {"content-type": "application/json"}, "corps": b'{"results": []}', "coupe": False, "ip_connectee": ip}
+        cls.patch_web = mock.patch.dict(g, {"resoudre": lambda hote, port: ["10.0.0.7"], "telecharger": telecharger})
+        cls.patch_web.start()
+        cls.n.reglages.poser("web.moteur_url", "http://moteur.example:8888/", "")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.patch_web.stop()
+        super().tearDownClass()
+
+    def relever(self):
+        self.n.lancer("sensorium.monde")                      # le moteur de relève, tel que le noyau le lance
+
+    def test_la_releve_tire_la_sante_du_moteur_et_la_mesure_existe(self):
+        self.reponse["statut"] = 200
+        self.relever()
+        self.assertEqual(self.ok("mesure_detail", ADMIN, cle="web.moteur")["etat"], "ok")
+        self.h.avance(2)
+        self.reponse["statut"] = 500
+        self.relever()
+        d = self.ok("mesure_detail", ADMIN, cle="web.moteur")
+        self.assertEqual((d["etat"], d["gravite"]), ("alerte", "critical"))
+        self.assertIn("500", d["detail"])
+
+    def test_le_module_web_n_a_pas_acquis_le_droit_d_agir(self):
+        self.assertFalse(self.n.executeur.contextes["web"].manifeste.permissions.agir)
 
 
 class TexteLibre(Mesures):
