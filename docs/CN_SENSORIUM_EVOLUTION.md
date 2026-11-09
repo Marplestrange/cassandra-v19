@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d89221 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7d93e8 ▼▼▼ -->
 # Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées
 
 Statut : note de conception, rédigée AVANT le code (09-11-2026). Chaque point porte un statut : **[décidé]** (je l'implémente, c'est écrit ici pourquoi),
@@ -98,7 +98,7 @@ Un capteur se **déclare** (`capteur_declarer` : clé, libellé, unité, `fraich
 Le collecteur root n'est pas touché. Propriété : la clé commence par un **espace** (`dns`, `kino-lyon`…) lié au **compte** qui l'a déclaré en premier ; un autre compte ne peut ni déclarer ni alimenter cet espace.
 Pour un module du noyau l'appelant est le compte système « noyau » (partagé) : un module installé tourne déjà dans le processus avec ses droits (`docs/CN_MODULES_DEVELOPPEUR.md`). **L'isolation réelle viendra avec un compte machine par
 nœud Kino** : chaque nœud aura son compte, donc son espace. Droits `alimenter` (sensible). Plafonds : 200 capteurs, 50 par compte, 1 lecture par seconde et par clé (les autres sont comptées « refusées »),
-500 points d'historique par clé et 14 jours. Le protocole réseau de Kino (signature, transport) n'est **pas** défini ici ; ce contrat est ce que ce protocole appellera. [proposé pour la suite]
+500 points d'historique par clé et 14 jours. Le protocole d'un nœud Kino est défini au §16 : il appelle ce contrat par la passerelle HTTP du noyau.
 
 ## 6. [décidé] Vue minimale à droit propre, sûre entre sociétés
 
@@ -207,7 +207,7 @@ Statut : **[décidé] pour les formats ci-dessous, qui décrivent ce que le code
 Transport : chaque message est un objet JSON (UTF-8). Aujourd'hui le « canal » est une capacité du noyau (`sensorium.<nom>`, arguments = champs de la requête, résultat = la réponse) ; un collecteur ou un nœud distant parlera
 le même JSON par un autre transport (à définir avec le Kino). Les instants sont des secondes Unix (nombre) ; les durées des secondes. Les clés : `^[a-z0-9][a-z0-9_.:/-]{0,119}$` ; l'espace est ce qui précède le premier `.` ou `:`.
 
-**Versions** [proposé] : aucune réponse ne porte encore de champ `version` ; ajouter `"v": 1` à chaque message est additif. Règle de compatibilité : un lecteur ignore les champs inconnus ; un champ n'est jamais retiré ni changé de sens dans une même version.
+**Versions** [décidé, §16] : aucun champ de version ; un changement incompatible aura un nom de capacité nouveau. Règle de compatibilité : un lecteur ignore les champs inconnus ; un champ n'est jamais retiré ni changé de sens dans une même version.
 
 **Erreurs** : une faute de l'émetteur n'est JAMAIS une erreur de transport (sinon la capacité serait rétrogradée pour tous) : la réponse porte `ok: false` + `refuse` (texte), ou, par lecture, `refusees: [{cle, motif}]`. Motifs de lecture refusée :
 `trop_vite` (plus d'une lecture par seconde et par clé), `capteur non déclaré`, `capteur d'un autre compte`, `lecture illisible`, `plus de 50 lectures par appel`. Les erreurs de transport/droit (`refuse`, `echec`) restent celles de l'exécuteur.
@@ -246,9 +246,31 @@ le même JSON par un autre transport (à définir avec le Kino). Les instants so
 **Tests de contrat** : `tests/CN_test_sensorium_contrat.py` vérifie, par le seul canal de la requête (l'exécuteur, comme un client distant), que chaque réponse porte les champs et types de la table ci-dessus et que la sémantique 1 à 8 tient sur des cas fixes. Il prend une fonction `appeler(nom, **champs) -> réponse` :
 pour brancher une autre implémentation (Go), on remplace cette seule fonction par un client du protocole. **[proposé]** : la comparaison « mesure par mesure » entre le collecteur Python (étalon) et un futur collecteur sur la même machine se fera sur les lectures `monde.*` (clé, état, gravité) ; elle n'existe pas encore.
 
+## 16. Le protocole d'un nœud satellite (Kino) : **[décidé par construction, à valider par Drisse]**
+
+**Principe : aucun protocole réseau nouveau.** Le noyau a déjà une porte HTTP pour toutes les capacités (`noyau/CN_passerelle.py`) ; un nœud parle à CETTE porte, avec les messages du §15. Rien à écrire côté Sensorium.
+
+* **Transport** : `POST /api/agir/sensorium.<capacité>` en HTTPS, corps `{"args": {…}}` (`Content-Type: application/json`, 1 Mo au plus), jeton dans `Authorization: Bearer <jeton>`. Accès par le réseau privé (Tailscale / NetBird) ou le reverse proxy ; jamais d'un cookie
+  (donc pas d'en-tête `X-Cassandra` ni de CSRF). Réponse : `{"statut", "resultat", …}` de l'exécuteur ; code HTTP 200 (`faite`), 202 (`racontee`), 403 (`refuse`), 500 (`echec`).
+* **Identité = un agent invité** (`inviter_agent`) : compte `agent:<nom>` (ex. `agent:kino-lyon`), jeton long de 43 caractères dont seule l'empreinte est gardée, rendu UNE fois, révocable sur-le-champ (`revoquer_agent`), remplacé par une nouvelle invitation du même nom (rotation).
+  Le jeton d'un agent ne vaut jamais une session humaine (banc `NoeudKino`).
+* **Droits** : ceux de l'invitant (`noyau/CN_droits.py`). **Règle impérative** : inviter les nœuds depuis un compte de service qui n'a QUE `sensorium.alimenter` (ni administrateur, ni `voir_infra`, ni `publier`). Inviter depuis un administrateur donnerait au nœud
+  tous les droits d'un administrateur. Banc : un nœud invité par un compte ordinaire est refusé sur `monde`, `demon`, `serie` et `mesure_publier`.
+* **Espace** : le nœud est seul propriétaire de son espace `<nom>` (ex. `kino-lyon.*`), pris à la première déclaration ; il ne lit ni n'écrit celui d'un autre (`capteur d'un autre compte`). Les espaces `monde`, `sensorium`, `noyau`, `systeme`, `cassandra`, `web` sont réservés.
+* **Cycle de vie du nœud** : (1) au démarrage et à chaque reconnexion, `capteur_declarer` pour chacun de ses capteurs (idempotent) ; (2) `capteur_alimenter` par lots de 50 au plus, au rythme d'au plus **la moitié de la `fraicheur_s`** du capteur, jamais plus d'une lecture par seconde et par clé ;
+  (3) **battement** : une clé `<nom>.pulse` (fraîcheur = 3 fois la période d'envoi) : son silence passe à `inconnu`, c'est ainsi qu'on voit qu'un nœud est tombé, sans mécanisme de plus.
+* **Horloge** : le nœud peut envoyer `observe_a` (son heure) ; la fraîcheur se juge sur l'heure de réception (§15 règle 2). Un nœud sans horloge fiable l'omet. Un écart de plus de 300 s plafonne la confiance à 0,5 (et le dit dans `mesure_detail`).
+* **Hors-ligne** : à la reconnexion, le nœud n'envoie que la **dernière** valeur de chaque clé, jamais un rejeu : l'historique daterait chaque point à l'heure de réception, un rejeu fausserait les courbes.
+* **Erreurs et reprises** : un `refusees[].motif` n'est pas une panne (`trop_vite` : attendre) ; `refuse` HTTP 403 = droit retiré ou jeton révoqué : arrêter et alerter, ne pas boucler ; réseau ou 5xx : nouvelle tentative avec attente croissante (5 s, doublée jusqu'à 300 s, avec une part d'aléa). Rien n'est à acquitter : `capteur_alimenter` est
+  idempotent (la dernière lecture remplace la précédente).
+* **Version** [décidé] : aucun champ `v`. Un changement incompatible portera un NOM de capacité nouveau (`capteur_alimenter_2`), comme le reste de la plateforme ; l'ancien nom reste servi tant qu'un nœud l'appelle. Cela remplace la proposition `"v": 1` du §15 : un argument inconnu serait refusé par l'exécuteur, un
+  champ de version n'aurait pas de place dans la requête.
+* **Sécurité** : TLS obligatoire hors réseau privé ; le jeton n'apparaît que dans l'en-tête ; un nœud compromis ne peut que fausser SES mesures et saturer ses propres plafonds (50 capteurs, 1 lecture/s/clé) : l'administrateur révoque, rien d'autre n'est touché.
+* **Testé** : les droits et la propriété d'espace d'un compte `agent:` par l'exécuteur du noyau (5 bancs `NoeudKino`), jeton révoqué non reconnu. **Non testé** : la jambe HTTP elle-même (aucun banc de la passerelle n'existait pour ce chemin), le TLS, la rotation sur un vrai nœud ; le logiciel Kino n'existe pas encore.
+
 ## 14. Ce qui n'est pas fait ici
 
-Le protocole Kino réseau ; des relations avec cascade au registre ; toute modification de l'interface (écrans) ; l'exercice des écrans existants avec un compte ordinaire.
+Le logiciel d'un nœud Kino (le protocole est défini au §16) ; des relations avec cascade au registre ; toute modification de l'interface (écrans) ; l'exercice des écrans existants avec un compte ordinaire.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->

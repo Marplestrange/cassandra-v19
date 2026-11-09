@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a444a3
+# VERSION CN : 0.1.0  #d4e093
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a444a3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d4e093 ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -294,6 +294,53 @@ class MoteurWebDeBoutEnBout(Mesures):
 
     def test_le_module_web_n_a_pas_acquis_le_droit_d_agir(self):
         self.assertFalse(self.n.executeur.contextes["web"].manifeste.permissions.agir)
+
+
+class NoeudKino(Mesures):
+    """Un nœud satellite se présente comme un AGENT INVITÉ (compte « agent:<nom> », jeton long, révocable) : docs/CN_SENSORIUM_EVOLUTION.md §16. Le protocole réseau est la passerelle HTTP du noyau, rien de plus."""
+
+    def setUp(self):
+        super().setUp()
+        self.n.identite.revoquer_agent("kino-lyon", KINO)
+        r = self.n.identite.inviter_agent("kino-lyon", KINO, "Kino de Lyon")           # invité par un compte qui n'a QUE le droit alimenter
+        self.assertTrue(r["ok"], r)
+        self.noeud, self.jeton = r["compte"], r["jeton"]
+
+    def noeud_fait(self, cap, **args):
+        return self.n.executeur.executer("sensorium." + cap, "agent", args, compte=self.noeud)
+
+    def test_le_noeud_declare_alimente_dans_son_propre_espace(self):
+        r = self.noeud_fait("capteur_declarer", cle="kino-lyon.temp", fraicheur_s=120, alerte=70)
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertTrue(r["resultat"]["ok"], r)
+        r = self.noeud_fait("capteur_alimenter", lectures=[dict(cle="kino-lyon.temp", valeur=42, observe_a=self.h())])
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual(r["resultat"]["acceptees"], ["kino-lyon.temp"])
+        self.assertEqual(self.ok("mesure_detail", ADMIN, cle="kino-lyon.temp")["etat"], "ok")
+        db = self.n.executeur.contextes["sensorium"].stockage
+        self.assertEqual(db.lire("SELECT proprietaire FROM sensorium_espaces WHERE espace='kino-lyon'")[0]["proprietaire"], self.noeud)
+
+    def test_le_noeud_n_a_que_les_droits_de_son_invitant_pas_ceux_d_un_administrateur(self):
+        for cap in ("monde", "demon", "serie"):
+            r = self.n.executeur.executer("sensorium." + cap, "agent", {}, compte=self.noeud)
+            self.assertEqual(r["statut"], "refuse", (cap, r))
+        self.assertEqual(self.noeud_fait("mesure_publier", cle="kino-lyon.temp", visibilite="toutes")["statut"], "refuse")
+
+    def test_un_noeud_ne_prend_pas_l_espace_d_un_autre(self):
+        self.faire("capteur_declarer", KINO2, cle="autre.x", fraicheur_s=60)
+        r = self.noeud_fait("capteur_alimenter", lectures=[dict(cle="autre.x", valeur=1)])
+        self.assertEqual(r["resultat"]["acceptees"], [])
+        self.assertEqual([x["motif"] for x in r["resultat"]["refusees"]], ["capteur d'un autre compte"])
+
+    def test_le_jeton_revoque_ne_reconnait_plus_le_noeud(self):
+        self.assertTrue(self.n.identite.valider_agent(self.jeton)["ok"])
+        self.assertTrue(self.n.identite.revoquer_agent("kino-lyon", KINO)["ok"])
+        self.assertFalse(self.n.identite.valider_agent(self.jeton)["ok"])
+
+    def test_le_jeton_ne_donne_jamais_une_session_humaine(self):
+        v = self.n.identite.valider_agent(self.jeton)
+        self.assertEqual(v["compte"], self.noeud)
+        self.assertFalse(self.n.identite.valider(self.jeton).get("ok"), "un jeton d'agent ne doit pas valoir session humaine")
 
 
 class TexteLibre(Mesures):
