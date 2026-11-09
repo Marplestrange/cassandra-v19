@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #647502
+// VERSION CN : 0.1.0  #645903
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=647502 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=645903 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -45,7 +45,8 @@
     ".nb .pair .nom{font:600 13px " + MONO + ";overflow-wrap:anywhere}.nb .pt{width:9px;height:9px;border-radius:50%;background:var(--txt-faint)}.nb .pt.on{background:var(--ok)}" +
     ".nb .attente{padding:30px;text-align:center;color:var(--txt-soft)}.nb .confirme{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px}" +
     ".sh-scene:has(>.sh-corps>.nb)>.sh-titre{display:none}" +
-    "@media (max-width:820px){.nb .pair{grid-template-columns:auto minmax(0,1fr) auto}.nb .pair .ip{grid-column:2 / -1}}";
+    "@media (max-width:820px){.nb .pair{grid-template-columns:auto minmax(0,1fr) auto}.nb .pair .ip{grid-column:2 / -1}}" +
+    "@media (max-width:620px){.nb .pair[style*=\"grid-template-columns\"]{grid-template-columns:minmax(0,1fr) !important}.nb .acts{flex-wrap:wrap}}";
 
   const age = (s) => { if (!s) return "jamais vue"; const d = new Date(String(s).replace(" ", "T") + ":00Z"); if (isNaN(d)) return s; const m = Math.max(0, Math.round((Date.now() - d) / 60000)); return m < 2 ? "à l’instant" : m < 90 ? "il y a " + m + " min" : m < 2880 ? "il y a " + Math.round(m / 60) + " h" : "il y a " + Math.round(m / 1440) + " j"; };
   const octets = (n) => (n >= 1e9 ? (n / 1e9).toFixed(1) + " Go" : n >= 1e6 ? (n / 1e6).toFixed(1) + " Mo" : n >= 1e3 ? Math.round(n / 1e3) + " Ko" : n ? n + " o" : "");
@@ -284,7 +285,7 @@
       const m = s.meta || {}, url = m.domaine ? "https://" + m.domaine : "";
       let h = '<div class="carte"><div class="hero"><div><span class="lib">Serveur</span><span class="pastille ' + (s.conteneurs.some((c) => c.etat === "running") ? "ok" : "al") + '">' + (s.conteneurs.some((c) => c.etat === "running") ? "En marche" : "Arrêté") + "</span></div>" +
         fiche("Domaine", esc(m.domaine || "—")) + fiche("Version", esc(m.version || "—")) + fiche("Proxy", esc(m.proxy || "—")) + fiche("API", s.api_joignable ? "joignable ✓" : "ne répond pas ✗") + "</div>" +
-        (s.conteneurs.length ? '<div class="pairs">' + s.conteneurs.map((c) => '<div class="pair" style="grid-template-columns:auto minmax(100px,1fr) minmax(120px,auto)"><span class="pt' + (c.etat === "running" ? " on" : "") + '"></span><span class="nom">' + esc(c.service) + '</span><span class="note">' + esc(c.etat) + " · " + esc(c.image) + "</span></div>").join("") + "</div>" : "") + "</div>";
+        (s.conteneurs.length ? '<div class="pairs">' + s.conteneurs.map((c) => '<div class="pair" style="grid-template-columns:auto minmax(0,1fr) minmax(0,auto)"><span class="pt' + (c.etat === "running" ? " on" : "") + '"></span><span class="nom">' + esc(c.service) + '</span><span class="note" style="overflow-wrap:anywhere">' + esc(c.etat) + " · " + esc(c.image) + "</span></div>").join("") + "</div>" : "") + "</div>";
       if (s.setup_requis && url) h += '<div class="lien"><h2 ' + H2 + ">Dernier pas : crée le premier compte administrateur</h2><p class=\"note\">Ouvre la page d’installation de NetBird et crée toi-même ton compte : Cassandra ne choisit ni ne garde aucun mot de passe. Puis, dans le tableau de bord, crée un jeton d’accès personnel (Settings › Personal Access Tokens) et donne-le à Cassandra depuis la page <b>Administration</b>.</p><div class=\"acts\"><a class=\"btn pri\" href=\"" + esc(url) + '/setup" target="_blank" rel="noopener noreferrer">Ouvrir la page de création du compte</a></div></div>';
       h += '<div class="carte"><h2 ' + H2 + ">Mettre à jour le serveur</h2><p class=\"note\">Télécharge les dernières images NetBird de la version installée, puis redémarre le serveur : les machines se reconnectent seules, les données et la configuration sont gardées.</p><div class=\"acts\"><button class=\"btn pri\" data-a=\"srv-maj\"" + (S.occupe ? " disabled" : "") + ">Mettre à jour le serveur</button></div></div>";
       h += cartePorts() + '<div class="carte"><h2 ' + H2 + ">Entretien</h2><div class=\"acts\"><button class=\"btn\" data-a=\"srv-journaux\"" + (S.occupe ? " disabled" : "") + ">Voir les journaux</button><button class=\"btn\" data-a=\"srv-redemarrer\"" + (S.occupe ? " disabled" : "") + ">Redémarrer</button>" +
