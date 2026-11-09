@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7d93e8 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d3e266 ▼▼▼ -->
 # Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées
 
 Statut : note de conception, rédigée AVANT le code (09-11-2026). Chaque point porte un statut : **[décidé]** (je l'implémente, c'est écrit ici pourquoi),
@@ -269,6 +269,11 @@ pour brancher une autre implémentation (Go), on remplace cette seule fonction p
 * **Testé** : les droits et la propriété d'espace d'un compte `agent:` par l'exécuteur du noyau (5 bancs `NoeudKino`), jeton révoqué non reconnu. **Non testé** : la jambe HTTP elle-même (aucun banc de la passerelle n'existait pour ce chemin), le TLS, la rotation sur un vrai nœud ; le logiciel Kino n'existe pas encore.
 
 ## 14. Ce qui n'est pas fait ici
+
+**Le compte système `noyau` partage tous les espaces : proposition, rien d'appliqué.** Tous les modules du noyau qui agissent depuis un moteur le font sous le même compte `noyau` ; l'espace d'un capteur est au compte, pas au module. Un module du noyau pourrait
+donc déclarer ou alimenter l'espace d'un autre. Le Sensorium ne sait pas QUEL module appelle : l'exécuteur ne le lui dit pas. La seule vraie correction est dans le noyau (~15 lignes : un fil local `_appelant` posé par `ctx.agir` à côté de `_compte`, exposé en `ctx.appelant`,
+puis le Sensorium indexe la propriété sur `(compte, appelant)`), mais elle touche `noyau/CN_contexte.py`, `noyau/CN_executeur.py` et `CN_main.py`, et les trois tests qui simulent `agir`. Je ne l'ai pas faite sans votre accord. Aujourd'hui, ce risque ne vaut que pour du code du noyau déjà de confiance ;
+les nœuds satellites et les comptes ordinaires ont chacun leur propre espace (bancs).
 
 Le logiciel d'un nœud Kino (le protocole est défini au §16) ; des relations avec cascade au registre ; toute modification de l'interface (écrans) ; l'exercice des écrans existants avec un compte ordinaire.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->

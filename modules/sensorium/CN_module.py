@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.4  #7a6784
+# VERSION CN : 0.2.4  #4ddd01
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.4 empreinte=7a6784 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.4 empreinte=4ddd01 ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
@@ -161,6 +161,8 @@ def brancher(ctx):
             ctx.log.warning("ingestion des mesures du monde : %s", ex)
         try:                                     # le moteur de recherche du module Web, s'il est installé et configuré : une lecture, jamais une écriture chez lui
             capt.ingerer_sante_web(ctx, ctx.executer_lecture("web.sante_moteur"))
+        except PermissionError as ex:            # module Web absent ou inactif : normal, rien à dire toutes les minutes
+            ctx.log.debug("mesure web.moteur indisponible : %s", ex)
         except Exception as ex:
             ctx.log.warning("mesure web.moteur : %s", ex)
 
