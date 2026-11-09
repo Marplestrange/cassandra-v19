@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.14  #0005b7
+# VERSION CN : 0.1.15  #c27e5d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.14 empreinte=0005b7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.15 empreinte=c27e5d ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.1.14"
+version = "0.1.15"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"
@@ -184,6 +184,7 @@ frequence_s = 60
 id = "sante"
 libelle = "La dernière relève : score de santé, ressources, unités en échec"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "reparer"
@@ -211,6 +212,7 @@ qui = ["humain", "compte"]
 id = "gestes_journal"
 libelle = "Les derniers gestes de réparation faits depuis le Sensorium : qui, quoi, résultat"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "temoin"
@@ -222,6 +224,7 @@ droit = "agir"
 id = "demon"
 libelle = "L'état du démon, dit par lui : processus, âge, mémoire, base, battement du watchdog, durée de ses passes ; et l'historique de ses redémarrages"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "redemarrer"
@@ -238,6 +241,7 @@ qui = ["humain", "compte", "cassandra"]
 id = "etat"
 libelle = "Tout ce que l'écran du Sensorium lit : les mesures nommées en français (famille, objet, alerte acceptée, maintenance), les changements, les corrélations, les fenêtres"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "erreur_navigateur"
@@ -254,11 +258,13 @@ qui = ["humain", "compte"]
 id = "erreurs_navigateur"
 libelle = "Les erreurs JavaScript signalées par les écrans (les trente dernières, avec leur nombre)"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "fenetres"
 libelle = "Les fenêtres de maintenance : en cours, à venir, et les dix dernières"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "accepter"
@@ -308,31 +314,37 @@ qui = ["humain", "compte"]
 id = "modules"
 libelle = "La santé de chaque module du noyau, telle que le noyau la mesure (verdict, moteurs, détecteurs coupés, refus)"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "metriques"
 libelle = "Les ressources, mesurées à l'instant (compter une fraction de seconde)"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "monde"
 libelle = "Le modèle du monde : ce que le collecteur sait, par préfixe de clé"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "entite"
 libelle = "Une entité surveillée (services, ports, certificats, sauvegardes...)"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "historique"
 libelle = "L'histoire d'une mesure sur trente jours"
 risque = "lecture"
+droit = "voir_infra"
 
 [[capacites]]
 id = "changements"
 libelle = "Ce qui a changé sur la machine depuis une date"
 risque = "lecture"
+droit = "voir_infra"
 
 [[ecrans]]
 id = "vue_sensorium"
@@ -491,6 +503,11 @@ description = "Processus tués faute de mémoire. Une seule occurrence est déj�
 [[droits]]
 id = "agir"
 libelle = "Agir depuis le Sensorium : accepter une alerte, poser une fenêtre de maintenance, redémarrer le démon"
+sensible = true
+
+[[droits]]
+id = "voir_infra"
+libelle = "Lire ce que le Sensorium sait de l'infrastructure de l'instance (modèle du monde, démon, santé des modules, historiques) : jamais attribué par défaut, les administrateurs l'ont d'office"
 sensible = true
 
 [[droits]]
