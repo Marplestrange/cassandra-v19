@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=8903ea ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=507d42 ▼▼▼ -->
 # Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées
 
 Statut : note de conception, rédigée AVANT le code (09-11-2026). Chaque point porte un statut : **[décidé]** (je l'implémente, c'est écrit ici pourquoi),
@@ -54,6 +54,9 @@ Nouveau droit `voir_infra` (sensible, jamais attribué par défaut). Posé sur t
 * `vue` n'appelle `sensorium.metriques` et `sensorium.sante` que pour un administrateur (`admin_seul` vrai dans `SOURCES`) : rien à changer ;
 * **`serie` reste ouverte** : le module `mesures` l'appelle au nom du compte qui regarde ses courbes, derrière son propre droit `mesures.voir`. La fermer casserait un usage légitime ; ce qu'elle expose se limite à neuf
   courbes de la machine (processeur, mémoire, disque…). **[proposé]** : la fermer elle aussi une fois que `mesures` aura son propre accès. Décision laissée à Drisse.
+* **`serie` : options pour Drisse (rien d'appliqué)** : (A, recommandée) droit `voir_infra` sur `serie`, attribué par un administrateur au groupe qui détient déjà `mesures.voir` ; coût : une opération de réglage, aucun code ; les courbes de la machine
+  disparaissent pour qui n'a pas ce droit. (B) un droit propre `voir_courbes`, par défaut vrai : ne ferme rien, ne fait que donner un interrupteur. (C) laisser ouvert (état actuel). Le module Mesures lit au nom de qui regarde : aucune option
+  ne lui donne de passe-droit sans qu'un compte porte le droit.
 * **[à vérifier]** l'interface (pages Système, Tableaux) n'a pas pu être exercée ici ; ces pages sont derrière un menu d'administrateur.
 
 ## 3. [décidé] Mesures de première classe : tri-état, fraîcheur, confiance
@@ -83,6 +86,13 @@ Registre des clés **suivies** (`sensorium_suivies`) : (clé, suiveur, motif). `
 (les va-et-vient plus rapides sont fusionnés : `avant` reste le dernier état ANNONCÉ). Un moteur périodique (`suivi_mesures`, 30 s) fait passer en `inconnu` une clé suivie dont l'émetteur s'est tu : sans lui, un capteur muet ne
 produirait jamais d'événement. Droit dédié `suivre` (sensible). Plafonds : 50 clés par suiveur, 500 au total. Le module Mémoire écoute déjà des événements nommés ; il n'en dépend pas (il relit).
 
+## 4 bis. [décidé, fait] Un suivi ne vaut pas droit de regard à vie
+
+À chaque annonce, la visibilité de la clé est revérifiée pour CHAQUE suiveur (publication courante, société de son compte ; un administrateur ou un compte système voit tout). Un suiveur qui ne voit plus la clé ne reçoit RIEN ;
+son suivi n'est pas retiré, il est **muet** (compteur `evenements_masques`) et redevient actif si la clé est republiée, avec un `avant` exact. Un suiveur non privilégié reçoit la raison COURTE (« muette », « confiance insuffisante »),
+comme la vue minimale : jamais la fraîcheur attendue ni les niveaux de confiance. **Limite** : le droit `suivre` est vérifié à la souscription, pas à chaque annonce (le service des droits n'est pas lisible depuis un module sans permission dédiée) ;
+retirer ce droit à un compte n'arrête pas un suivi existant tant que la clé reste visible pour lui. [à traiter si le besoin se présente]
+
 ## 5. [décidé] Capteurs enfichables : le contrat
 
 Un capteur se **déclare** (`capteur_declarer` : clé, libellé, unité, `fraicheur_s`, seuils `alerte`/`critique`, sens `pire` haut ou bas, `confiance_min`) puis **s'alimente** (`capteur_alimenter` : jusqu'à 50 lectures par appel).
@@ -102,11 +112,27 @@ nœud Kino** : chaque nœud aura son compte, donc son espace. Droits `alimenter`
   qui fait `ctx.executer_lecture("sensorium.vue_minimale")` : la société de l'acte est alors celle du demandeur, le droit `voir_etat` est celui de son compte, et la publication décide du reste. Les bancs le simulent par `_intro["lecture"]`.
 * Le détail (`mesure_detail`, valeurs, historique, confiance) exige `voir_infra`.
 
+## 6 bis. [décidé, fait] La règle du compte vide
+
+`privilegie()` vaut vrai pour un compte vide (un moteur du noyau), pour les comptes système (`noyau`, `cassandra`) et pour un administrateur. Chemins qui appellent le Sensorium avec un compte vide ou système, et règle de chacun :
+
+| Chemin | Qui | Règle | Banc |
+|---|---|---|---|
+| lecture inter-modules faite par un moteur (`ctx.executer_lecture` hors capacité) | tout module | lit en privilégié ; **s'il travaille pour quelqu'un il DOIT passer `pour`** (un compte, ou `*` = personne) et ne regarde alors jamais plus que lui | `Privilege` |
+| relecture de la Mémoire (`entretien`) | module Mémoire | lit au nom du PROPRIÉTAIRE du souvenir (`compte:x` -> x ; `partage`, `itare`, `cassandra` -> privilégié, un administrateur l'a écrit ; autre -> `*`) | `test_fuite_la_relecture…` (échouait avant) |
+| `ctx.agir` depuis un moteur | module déclarant `agir_moteur` | agit sous le compte `noyau` : privilégié ; l'étendue est la liste `agir_moteur` du manifeste | `ViaUnModule` |
+| capacité appelée par un utilisateur | tout compte | JAMAIS privilégié sauf administrateur ; `pour` ignoré | `Privilege` |
+| futur module Bibliothèque | à définir | mêmes règles : s'il lit depuis un moteur (page qui se périme), il passe `pour` = l'auteur de la page ; sinon une page « vivante » montrerait à tous ce que son auteur seul voit | — |
+
+`pour` n'est honoré que pour un appelant privilégié ; un compte ordinaire qui le passe n'en tire rien (jamais la vue d'un autre). Les autres lectures (`mesure_detail`, `vue_minimale`) n'ont pas de `pour` : elles se lisent au nom de l'acte.
+**Reste ouvert** : un module installé qui lit en moteur sans `pour` voit tout, et c'est inévitable tant qu'il tourne dans le processus avec ses droits (même constat que `docs/CN_MODULES_DEVELOPPEUR.md`).
+
 ## 7. [décidé] Relations entre objets
 
 Plutôt que d'élargir le registre du noyau (intouchable, et chaque module le lit), les relations vivent dans le Sensorium : `sensorium_liens (de, relation, vers)` avec des références `type/id` libres
 (`site/exemple.test`, `monde.ssl.exemple.test`, `service/nginx`). Capacités `lien_poser` / `lien_retirer` (droit `alimenter`), `liens`, `impact` (qui est touché si X tombe : parcours borné, profondeur 6, 200 nœuds, sans boucle infinie).
-Aucun contrôle d'existence : une page de connaissance peut dépendre d'un objet qui n'est pas (encore) au registre. **[proposé]** : si la Bibliothèque veut des liens avec cascade sur `objet.retire`, ce sera une évolution du registre, à part et signalée.
+**Cloisonnement des liens (voulu)** : les liens sont de l'INSTANCE, sans partition par société ; ils ne se lisent qu'avec `voir_infra` (jamais par une société secondaire, le module est d'instance). Un lien ne se retire que par son auteur ou
+par un administrateur / compte système. Si la Bibliothèque veut montrer un impact à une société, elle le fera avec ses propres pages, pas avec ces liens. Aucun contrôle d'existence : une page de connaissance peut dépendre d'un objet qui n'est pas (encore) au registre. **[proposé]** : si la Bibliothèque veut des liens avec cascade sur `objet.retire`, ce sera une évolution du registre, à part et signalée.
 
 ## 8. [décidé] Prévisions généralisées
 
@@ -176,11 +202,11 @@ le même JSON par un autre transport (à définir avec le Kino). Les instants so
 | `capteur_retirer` | `cle*` | `{ok, cle, avant}` ou `{ok:false, refuse}` |
 | `mesure_suivre` / `mesure_ne_plus_suivre` | `cle*`, `motif` | `{ok, cle, nouveau}` / `{ok, cle, avant}` |
 | `mesure_publier` | `cle*`, `visibilite*` (`instance`\|`toutes`\|`societes:<id>[,<id>…]`), `libelle` | `{ok, cle, visibilite, avant}` |
-| `mesure_etat` | `cle*` | `{cle, libelle, etat, depuis, raison}` |
+| `mesure_etat` | `cle*`, `pour` (appelant privilégié seulement, voir §6 bis) | `{cle, libelle, etat, depuis, raison}` |
 | `vue_minimale` | `cles` (≤ 100, sinon tout ce qui est visible) | `{mesures:[{cle, libelle, etat, depuis, raison}], maintenant}` |
 | `mesure_detail` | `cle*` | `{cle, libelle, unite, etat, raison, age_s, depuis, valeur, gravite, observe_a, recu_a, confiance, decalage_s, detail, capteur, visibilite, suivie_par}` |
 | `prevision_mesure` | `cle*`, `niveau` (`alerte`\|`critique`) | `{conclu, raison, jours_avant_seuil?, pente_par_jour?, r2?, cle, niveau, seuil, points}` |
-| `lien_poser` / `lien_retirer` | `de*`, `relation` (`depend_de`,`heberge_par`,`certifie_par`,`resout_par`,`decrit`), `vers*` | `{ok, de, relation, vers, nouveau}` |
+| `lien_poser` / `lien_retirer` (retrait : auteur ou administrateur ; sinon `{ok:false, refuse}`) | `de*`, `relation` (`depend_de`,`heberge_par`,`certifie_par`,`resout_par`,`decrit`), `vers*` | `{ok, de, relation, vers, nouveau}` |
 | `impact` / `liens` | `objet*` (`impact` : `profondeur` ≤ 6) | `{depart, touches:[{objet, via, relation, distance}], tronque}` / `{objet, depend_de, dependants}` |
 
 **Événement** `mesure.change` (un par suiveur) : `{cle, avant, apres, depuis, raison, suiveur}` ; `avant`/`apres` ∈ `ok`,`alerte`,`inconnu` ; `avant` vaut `inconnu` avant la première lecture.
