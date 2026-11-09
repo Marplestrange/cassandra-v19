@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.4.0  #3b70a3
+# VERSION CN : 0.4.1  #1e23fe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=3b70a3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=1e23fe ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -637,6 +637,9 @@ def brancher(ctx):
         if not force and _RESEAU["val"] is not None and time.time() - _RESEAU["t"] < 60:
             return _RESEAU["val"]
         code, sortie = _lancer(["netcheck", "--format=json"], 45)
+        if "address family not supported" in sortie:
+            raise ValueError("Le service Cassandra n'a pas le droit d'interroger les routes de la machine (AF_NETLINK) : CN_install.sh --module tailscale pose le complément systemd, "
+                             "puis il faut redémarrer le noyau (systemctl restart cassandra-noyau)")
         if code != 0:
             raise ValueError(_erreur(sortie))
         try:

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4d13a7
+# VERSION CN : 0.1.0  #3ed371
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module tailscale : le client est simulé (un faux `tailscale` qui répond comme le vrai), le reste tourne dans un vrai noyau.
 # MÉTHODE    : on remplace `_lancer` du module ; on vérifie les états, le lien d'identification, la clé qui ne traîne nulle part, et les refus dits en clair.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4d13a7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3ed371 ▼▼▼
 """Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."""
 import json
 import shutil
@@ -87,6 +87,8 @@ class Monde(unittest.TestCase):
         if args[:2] == ["debug", "derp-map"]:
             return 0, json.dumps(self.derp)
         if args[0] == "netcheck":
+            if "netcheck" in self.reponses:
+                return self.reponses["netcheck"]
             return 0, "# Warning: this JSON format is not yet considered a stable interface" + chr(10) + "2026/11/09 portmap: monitor: gateway changed" + chr(10) + json.dumps(self.netcheck)
         if args[0] == "serve":
             if args[1:3] == ["status", "--json"]:
@@ -526,6 +528,14 @@ class Sante(Monde):
         self.assertEqual((r["udp"], r["ipv4"], r["ipv6"]), (True, True, False))
         self.assertEqual((r["relais_prefere"]["code"], r["relais_prefere"]["ms"]), ("hel", 6.4))
         self.assertEqual([x["code"] for x in r["regions"]], ["hel", "fra", "nyc"], "du plus proche au plus loin")
+
+    def test_un_service_sans_netlink_recoit_le_remede_au_lieu_d_une_erreur_obscure(self):
+        self.g["_RESEAU"].update(t=0.0, val=None)
+        self.reponses["netcheck"] = (1, "route ip+net: netlinkrib: address family not supported by protocol")
+        with self.assertRaises(Exception) as q:
+            self.lire("reseau", force=True)
+        self.assertIn("AF_NETLINK", str(q.exception))
+        self.assertIn("restart", str(q.exception))
 
     def test_le_reseau_est_reutilise_une_minute(self):
         self.g["_RESEAU"].update(t=0.0, val=None)

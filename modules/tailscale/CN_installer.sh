@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.4.0  #2a3a4a
+# VERSION CN : 0.4.1  #4a54e4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Pose le client Tailscale s'il manque, le démarre, et donne à l'utilisateur de Cassandra le droit de le piloter (--operator) pour que l'interface connecte la machine sans root.
 # MÉTHODE    : l'installateur officiel de Tailscale ; `tailscale set --operator` ne touche ni la connexion ni les réglages réseau.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=2a3a4a ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=4a54e4 ▼▼▼
 set -eu
 set -o pipefail                  # sans cela, un curl en échec donne un script vide à `sh` et l'installation « réussit » sans rien poser
 U="${CASSANDRA_UTILISATEUR:-cassandra}"
@@ -69,6 +69,15 @@ AccuracySec=1s
 
 [Install]
 WantedBy=timers.target
+UNITE
+  # `tailscale netcheck` (« Santé du réseau ») interroge lui-même les routes de la machine par netlink, que l'unité du noyau interdit (RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6) :
+  # « netlinkrib: address family not supported ». Un complément AJOUTE AF_NETLINK à la liste (les valeurs se cumulent) : le service lit les routes et les adresses, sans aucune
+  # capacité réseau pour les changer. Il prend effet au prochain démarrage du noyau ; CN_retirer.sh le retire.
+  UN="${CASSANDRA_UNITE:-cassandra-noyau.service}"
+  mkdir -p "/etc/systemd/system/$UN.d"
+  cat > "/etc/systemd/system/$UN.d/tailscale-netlink.conf" <<'UNITE'
+[Service]
+RestrictAddressFamilies=AF_NETLINK
 UNITE
   systemctl daemon-reload >/dev/null 2>&1 || true
   systemctl enable --now cassandra-tailscale-operateur.timer >/dev/null 2>&1 || echo "tailscale : la minuterie du droit d'opérateur n'a pas pu démarrer" >&2
