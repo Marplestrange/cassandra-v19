@@ -6,25 +6,25 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #268847
+# VERSION CN : 0.1.0  #738b7e
 # VERSION EC : néant
 # EC LIÉES   : néant
-# RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : voir où il en est, l'installer (sur la machine ou dans Docker), le connecter (par un lien à ouvrir ou par une clé d'installation), le couper.
+# RÔLE       : Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (l'installer dans Docker, le connecter, le couper) ET, au besoin, un serveur NetBird auto-hébergé (l'installer, le tenir à jour, administrer ses machines, clés, groupes et politiques).
 # MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=268847 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=738b7e ▼▼▼
 [module]
 id = "netbird"
 nom = "NetBird"
 version = "0.1.0"
 noyau_min = "0.1.0"
-description = "Le réseau privé NetBird de la machine, piloté depuis l'interface : voir où il en est et les machines du réseau, le connecter (par un lien à ouvrir ou par une clé d'installation), le couper, et l'installer au besoin dans Docker."
+description = "Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (état, connexion, coupure, installation dans Docker) et, pour qui veut son propre réseau, un serveur NetBird auto-hébergé que Cassandra sait installer, tenir à jour et administrer (machines, clés d'installation, groupes, politiques d'accès)."
 confiance = "interne"
 famille = "reseau"
 groupe = "parc"
 proprietaire = "cassandra"
 importance = "optionnel"
-sans = "Plus de pilotage de NetBird depuis l'interface : il faudra le faire en ligne de commande (netbird up) ou avec docker."
+sans = "Plus de pilotage de NetBird depuis l'interface : le client se gère en ligne de commande (netbird up, docker) et un serveur auto-hébergé avec son tableau de bord et son docker compose."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 
@@ -38,19 +38,32 @@ id = "administrer"
 libelle = "Connecter ou couper la machine du réseau NetBird, installer ou retirer son conteneur Docker"
 sensible = true
 
+[[droits]]
+id = "serveur"
+libelle = "Installer, mettre à jour, retirer un serveur NetBird auto-hébergé sur cette machine, et administrer son réseau (machines, clés d'installation, groupes, politiques d'accès)"
+sensible = true
+
 [[objets]]
 type = "reseau_prive_netbird"
 libelle = "La connexion NetBird de la machine"
 
+[[objets]]
+type = "serveur_netbird"
+libelle = "Un serveur NetBird auto-hébergé et son réseau"
+
 [permissions]
 stockage = true
 racine = true
-reseau = ["le client NetBird local (son socket) ou son conteneur Docker ; le serveur de gestion NetBird (api.netbird.io par défaut, ou le vôtre) et ses relais, par ce client", "Docker Hub (netbirdio/netbird) quand le conteneur est installé"]
-privileges = ["installer : la commande /usr/libexec/cassandra/netbird/piloter, lancée en root par le courtier : une table fermée de verbes, jamais un shell, jamais le conteneur d'un autre service"]
+reseau = ["le client NetBird local (son socket) ou son conteneur Docker ; le serveur de gestion NetBird (api.netbird.io par défaut, ou le vôtre) et ses relais, par ce client", "Docker Hub (netbirdio/netbird) quand le conteneur est installé", "github.com (le script officiel getting-started.sh, d'une version et d'une empreinte confirmées) et les images du serveur NetBird quand un serveur est installé", "l'API du serveur NetBird administré (réglage url_api, ou le domaine du serveur posé par Cassandra), avec le jeton d'accès enregistré : jamais ailleurs, sans suivre de redirection"]
+privileges = ["installer : la commande /usr/libexec/cassandra/netbird/piloter, lancée en root par le courtier : une table fermée de verbes, jamais un shell, jamais le conteneur d'un autre service", "serveur : la commande /usr/libexec/cassandra/netbird/serveur, lancée en root par le courtier : installe le script officiel de la version confirmée dans /opt/netbird-serveur seulement, et pilote docker compose de ce dossier seulement"]
 
 [[racine]]
 id = "piloter"
 libelle = "Piloter NetBird À ROOT : le client posé sur la machine ou son conteneur Docker (état, connexion, coupure), créer ou retirer le conteneur officiel netbirdio/netbird. La clé d'installation passe par l'entrée standard."
+
+[[racine]]
+id = "serveur"
+libelle = "Poser et tenir un serveur NetBird auto-hébergé À ROOT : télécharger le script officiel de la version demandée, l'exécuter seulement si son empreinte est celle que l'administrateur a confirmée, puis docker compose de /opt/netbird-serveur (démarrer, arrêter, journaux, mise à jour, retrait). Rien d'autre."
 
 [[reglages]]
 id = "cle_install"
@@ -62,6 +75,17 @@ id = "url_gestion"
 libelle = "Adresse du serveur de gestion NetBird (vide : NetBird Cloud). Pour un NetBird auto-hébergé : https://netbird.exemple.fr:443"
 type = "texte"
 defaut = ""
+
+[[reglages]]
+id = "url_api"
+libelle = "Adresse de l'API du serveur NetBird à administrer (https://netbird.exemple.fr). Vide : le domaine du serveur installé depuis Cassandra"
+type = "texte"
+defaut = ""
+
+[[reglages]]
+id = "jeton_api"
+libelle = "Jeton d'accès personnel NetBird (tableau de bord › Settings › Personal Access Tokens) : donne à Cassandra la main d'un administrateur sur le réseau"
+type = "secret"
 
 [[reglages]]
 id = "conteneur"
@@ -139,8 +163,192 @@ preuve = "relire `docker inspect` : le conteneur n'existe plus"
 retour = "réinstaller le conteneur (avec son volume gardé, la machine retrouve son identité ; purgé, il faut une nouvelle identification)"
 
 [[capacites]]
+id = "serveur_etat"
+libelle = "Le serveur NetBird posé par Cassandra : installé ou non, version, domaine, conteneurs, premier compte à créer, API joignable"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "serveur_journaux"
+libelle = "Les 80 dernières lignes des journaux du serveur NetBird (docker compose logs)"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "serveur_nginx"
+libelle = "Le fichier de configuration nginx prêt à coller devant le serveur NetBird (mode « nginx »), tel que le script officiel l'a écrit"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "serveur_telecharger"
+libelle = "Télécharger le script officiel d'installation du serveur NetBird d'une version précise et en rendre l'empreinte SHA-256 : rien n'est exécuté, rien n'est installé"
+risque = "faible"
+droit = "serveur"
+perimetre = ["le script getting-started.sh de la version demandée, déposé dans /opt/netbird-serveur", "jamais « latest » : une version explicite"]
+preuve = "l'empreinte SHA-256 du fichier téléchargé est rendue"
+retour = "supprimer le fichier téléchargé (retirer le serveur)"
+
+[[capacites]]
+id = "serveur_installer"
+libelle = "Installer un serveur NetBird auto-hébergé : le script officiel de la version confirmée (empreinte comparée à celle de `serveur_telecharger`), son docker compose, ses certificats, le proxy choisi (traefik, nginx ou caddy)"
+risque = "eleve"
+droit = "serveur"
+perimetre = ["/opt/netbird-serveur seulement", "ports 80, 443 et 3478/udp quand le proxy est traefik", "le domaine et l'adresse e-mail confirmés"]
+preuve = "relire docker compose : les conteneurs du serveur tournent"
+retour = "retirer le serveur (ses données sont gardées sauf demande contraire)"
+
+[[capacites]]
+id = "serveur_mettre_a_jour"
+libelle = "Mettre à jour les images du serveur NetBird (docker compose pull puis up), sans changer sa configuration"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["les conteneurs de /opt/netbird-serveur"]
+preuve = "les conteneurs tournent après la mise à jour"
+retour = "remettre l'ancienne version du script et relancer (les données sont gardées)"
+
+[[capacites]]
+id = "serveur_redemarrer"
+libelle = "Redémarrer le serveur NetBird (docker compose restart) : les machines se reconnectent seules"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["les conteneurs de /opt/netbird-serveur"]
+preuve = "les conteneurs tournent"
+retour = "aucun retour utile : un redémarrage n'a pas de contraire"
+
+[[capacites]]
+id = "serveur_retirer"
+libelle = "Retirer le serveur NetBird (docker compose down). Sans purge, ses données sont gardées ; avec, les comptes, machines et clés sont perdus"
+risque = "eleve"
+droit = "serveur"
+perimetre = ["les conteneurs et, sur demande, les données de /opt/netbird-serveur"]
+preuve = "docker compose ne liste plus aucun conteneur"
+retour = "réinstaller le serveur (avec ses données gardées, le réseau reprend tel quel ; purgé, il est perdu)"
+
+[[capacites]]
+id = "api_verifier"
+libelle = "Vérifier que l'API du serveur NetBird répond et accepte le jeton d'accès enregistré, et dire combien de machines elle voit"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "api_machines"
+libelle = "Les machines du réseau NetBird : nom, adresse, connectée ou non, système, version, groupes, dernière vue, SSH, expiration"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "api_cles"
+libelle = "Les clés d'installation du réseau NetBird : nom, type, utilisations, expiration, groupes (jamais la clé elle-même : elle n'est montrée qu'à sa création)"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "api_groupes"
+libelle = "Les groupes du réseau NetBird et le nombre de machines de chacun"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "api_politiques"
+libelle = "Les politiques d'accès du réseau NetBird : qui peut joindre quoi, sur quel protocole"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "machine_modifier"
+libelle = "Renommer une machine du réseau NetBird, ou régler son SSH et l'expiration de sa connexion"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["une machine du réseau, par son identifiant"]
+preuve = "relire la machine : ses réglages sont ceux demandés"
+retour = "remettre les réglages d'avant (ils sont au journal)"
+
+[[capacites]]
+id = "machine_supprimer"
+libelle = "Retirer une machine du réseau NetBird : elle perd sa place et devra se reconnecter avec une clé"
+risque = "eleve"
+droit = "serveur"
+perimetre = ["une machine du réseau, par son identifiant"]
+preuve = "la machine n'est plus listée par l'API"
+retour = "la machine se reconnecte avec une clé d'installation"
+
+[[capacites]]
+id = "cle_creer"
+libelle = "Créer une clé d'installation NetBird (à usage unique ou réutilisable, durée limitée, groupes d'arrivée). La clé n'est montrée qu'une fois, à l'écran"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["une clé du réseau NetBird, nommée, valable de 1 à 365 jours"]
+preuve = "relire les clés : la nouvelle est listée"
+retour = "supprimer la clé (aucune machine ne s'est encore connectée avec)"
+masque = ["cle_secrete"]
+
+[[capacites]]
+id = "cle_revoquer"
+libelle = "Révoquer (ou rétablir) une clé d'installation NetBird : plus aucune machine ne peut s'enregistrer avec"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["une clé du réseau, par son identifiant"]
+preuve = "relire la clé : révoquée ou rétablie comme demandé"
+retour = "rétablir la clé"
+
+[[capacites]]
+id = "cle_supprimer"
+libelle = "Supprimer une clé d'installation NetBird"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["une clé du réseau, par son identifiant"]
+preuve = "la clé n'est plus listée"
+retour = "créer une nouvelle clé (l'ancienne ne revient pas)"
+
+[[capacites]]
+id = "groupe_creer"
+libelle = "Créer un groupe de machines dans le réseau NetBird"
+risque = "faible"
+droit = "serveur"
+perimetre = ["un groupe nommé"]
+preuve = "relire les groupes : le nouveau est listé"
+retour = "supprimer le groupe"
+
+[[capacites]]
+id = "groupe_supprimer"
+libelle = "Supprimer un groupe du réseau NetBird (refusé par NetBird tant qu'une règle ou une clé l'utilise)"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["un groupe, par son identifiant"]
+preuve = "le groupe n'est plus listé"
+retour = "recréer le groupe (ses machines devront y être remises)"
+
+[[capacites]]
+id = "politique_creer"
+libelle = "Créer une politique d'accès NetBird entre des groupes sources et des groupes destinations (protocole et sens au choix)"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["une politique nommée, avec une règle"]
+preuve = "relire les politiques : la nouvelle est listée"
+retour = "supprimer la politique"
+
+[[capacites]]
+id = "politique_activer"
+libelle = "Activer ou désactiver une politique d'accès NetBird sans la supprimer"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["une politique, par son identifiant"]
+preuve = "relire la politique : active ou non comme demandé"
+retour = "remettre l'état d'avant"
+
+[[capacites]]
+id = "politique_supprimer"
+libelle = "Supprimer une politique d'accès NetBird : les machines qu'elle reliait ne se joignent plus"
+risque = "eleve"
+droit = "serveur"
+perimetre = ["une politique, par son identifiant"]
+preuve = "la politique n'est plus listée"
+retour = "recréer la politique"
+
+[[capacites]]
 id = "defaire_geste"
-libelle = "Défaire un geste du journal NetBird : reconnecter après une coupure, couper une connexion que l'on vient d'ouvrir, retirer le conteneur que l'on vient d'installer"
+libelle = "Défaire un geste du journal NetBird : reconnecter après une coupure, couper une connexion que l'on vient d'ouvrir, retirer le conteneur que l'on vient d'installer, remettre une machine, une clé, un groupe ou une politique comme avant"
 risque = "moyen"
 droit = "administrer"
 perimetre = ["un geste noté au journal de ce module, une seule fois", "le même retour que celui du geste d'origine"]
@@ -162,6 +370,18 @@ gabarit = "libre"
 [[ecrans]]
 id = "n_installation"
 libelle = "Installation"
+domaine = "reseau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "n_serveur"
+libelle = "Serveur"
+domaine = "reseau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "n_gestion"
+libelle = "Gestion du réseau"
 domaine = "reseau"
 gabarit = "libre"
 
@@ -210,6 +430,26 @@ ordre = 30
 role = "admin"
 icone = "puzzle"
 droit = "utiliser"
+
+[[menus]]
+id = "n_serveur"
+libelle = "Serveur"
+ecran = "n_serveur"
+parent = "netbird"
+ordre = 35
+role = "admin"
+icone = "server"
+droit = "serveur"
+
+[[menus]]
+id = "n_gestion"
+libelle = "Gestion du réseau"
+ecran = "n_gestion"
+parent = "netbird"
+ordre = 36
+role = "admin"
+icone = "shield"
+droit = "serveur"
 
 [[menus]]
 id = "n_historique"

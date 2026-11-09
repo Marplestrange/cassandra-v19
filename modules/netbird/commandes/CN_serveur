@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+"""Installe et pilote un SERVEUR NetBird auto-hébergé À ROOT, par le courtier. Usage : serveur <verbe> [arguments]
+
+Un serveur NetBird (gestion, signal, relais, tableau de bord) est la pile Docker que fournit NetBird lui-même, par son script `getting-started.sh`. Ce programme ne fait que la poser,
+la tenir à jour et la retirer : l'ADMINISTRATION (machines, clés, groupes, politiques) passe par l'API du serveur, depuis le module, sans root.
+
+Ce que ce programme garantit, parce qu'il tourne à root :
+  - le dossier du serveur est GRAVÉ ici (/opt/netbird-serveur) : jamais un argument, jamais un lien symbolique ;
+  - le script officiel est téléchargé À PART (verbe `telecharger`), son empreinte SHA-256 est rendue à la personne qui décide, et `installer` ne le lance que si l'empreinte qu'elle a
+    confirmée est celle du fichier posé sur le disque (un fichier changé entre-temps n'est jamais exécuté) ; la version est EXPLICITE (v0.40.0), jamais « latest » ;
+  - rien ne passe par un shell : chaque argument est vérifié par une expression bornée ; l'environnement du script est construit ici, pas reçu ;
+  - un serveur déjà posé n'est jamais écrasé (le script officiel refuse aussi s'il trouve config.yaml).
+
+Verbes (table fermée) :
+  etat                                           ce qui est posé : Docker, jq, la pile, ses conteneurs, ce que Cassandra en sait (version, domaine)
+  telecharger <version>                          pose le script officiel de cette version ; rend son empreinte SHA-256 et sa taille
+  installer <version> <sha256> <domaine> <email> <traefik|nginx|caddy>
+                                                 lance le script (sans question) ; rend ce qu'il a dit. traefik : TLS intégré, ports 80 et 443 libres exigés ;
+                                                 nginx, caddy : le serveur n'écoute que sur 127.0.0.1, le proxy existant le publie (la conf générée se lit avec `nginx`)
+  mettre_a_jour                                  docker compose pull, puis up -d
+  commande up|down|restart|logs                  docker compose, rien d'autre
+  nginx                                          lit la conf nginx que le script a générée (si le proxy est nginx)
+  retirer [purger]                               docker compose down ; avec « purger » : les volumes et le dossier (les comptes et les machines du serveur sont PERDUS)
+Rend UNE ligne de JSON : {"ok": true, …} ou {"ok": false, "erreur": "…"} ; le code de sortie est 0 si ok."""
+import hashlib
+import json
+import os
+import re
+import shutil
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+
+DOSSIER = "/opt/netbird-serveur"
+MARQUE = "cassandra.json"
+SCRIPT = "getting-started.sh"
+URL_SCRIPT = "https://github.com/netbirdio/netbird/releases/download/%s/getting-started.sh"
+VERSION = re.compile(r"^v\d{1,3}\.\d{1,3}\.\d{1,3}$")
+SHA = re.compile(r"^[0-9a-f]{64}$")
+DOMAINE = re.compile(r"^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
+EMAIL = re.compile(r"^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$")
+PROXYS = {"traefik": "0", "nginx": "2", "caddy": "4"}           # NETBIRD_REVERSE_PROXY_TYPE du script officiel
+ACTIONS = {"up": ["up", "-d"], "down": ["down"], "restart": ["restart"], "logs": ["logs", "--tail", "80", "--no-color"]}
+SCRIPT_MAX = 300000
+SORTIE_MAX = 4000
+DELAI_INSTALL = 280
+
+executer = subprocess.run                                       # remplaçables : les bancs n'ont ni Docker, ni réseau, ni ports à eux
+ouvrir = urllib.request.urlopen
+
+
+def refuser(raison):
+    raise ValueError(raison)
+
+
+def verifier(valeur, motif, quoi):
+    if not isinstance(valeur, str) or not motif.match(valeur):
+        refuser("%s illisible" % quoi)
+    return valeur
+
+
+def port_libre(protocole, port):
+    """Le port est-il libre sur la machine ? (on tente de l'occuper un instant)"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM if protocole == "tcp" else socket.SOCK_DGRAM)
+    try:
+        s.bind(("0.0.0.0", port))
+        return True
+    except OSError:
+        return False
+    finally:
+        s.close()
+
+
+def lancer(commande, delai=60, env=None):
+    r = executer(commande, capture_output=True, text=True, timeout=delai, cwd=DOSSIER if os.path.isdir(DOSSIER) else "/", env=env)
+    return r.returncode, ((r.stdout or "") + (r.stderr or "")).strip()[-SORTIE_MAX:]
+
+
+def dossier_sur():
+    """Le dossier du serveur, qui doit être un vrai dossier (jamais un lien posé là pour détourner un `rm`)."""
+    if os.path.islink(DOSSIER):
+        refuser("%s est un lien symbolique : refusé" % DOSSIER)
+    return DOSSIER
+
+
+def meta():
+    try:
+        with open(os.path.join(DOSSIER, MARQUE)) as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def installe():
+    return os.path.exists(os.path.join(DOSSIER, MARQUE))
+
+
+def compose(args, delai=60):
+    return lancer(["docker", "compose", "-f", os.path.join(DOSSIER, "docker-compose.yml")] + args, delai)
+
+
+def conteneurs():
+    code, sortie = compose(["ps", "-a", "--format", "json"], 30)
+    if code != 0:
+        return []
+    out = []
+    for ligne in sortie.splitlines():
+        try:
+            c = json.loads(ligne)
+        except ValueError:
+            continue
+        for x in (c if isinstance(c, list) else [c]):
+            if isinstance(x, dict):
+                out.append({"service": str(x.get("Service") or x.get("Name") or "")[:60], "etat": str(x.get("State") or "")[:20], "image": str(x.get("Image") or "")[:100]})
+    return out
+
+
+def verbe_etat(a):
+    docker = shutil.which("docker") is not None
+    d = {"ok": True, "docker": docker, "jq": shutil.which("jq") is not None, "installe": installe(), "dossier": DOSSIER, "meta": meta(), "conteneurs": []}
+    if docker and d["installe"]:
+        d["conteneurs"] = conteneurs()
+    return d
+
+
+def verbe_telecharger(a):
+    if len(a) != 1:
+        refuser("usage : telecharger <version>")
+    v = verifier(a[0], VERSION, "version (v0.40.0 attendue : jamais « latest »)")
+    if installe():
+        refuser("un serveur est déjà posé dans %s : retire-le d'abord" % DOSSIER)
+    dossier_sur()
+    os.makedirs(DOSSIER, mode=0o700, exist_ok=True)
+    with ouvrir(URL_SCRIPT % v, timeout=30) as r:
+        corps = r.read(SCRIPT_MAX + 1)
+    if not corps or len(corps) > SCRIPT_MAX:
+        refuser("le script téléchargé est vide ou trop gros")
+    chemin = os.path.join(DOSSIER, SCRIPT)
+    with open(chemin, "wb") as f:
+        f.write(corps)
+    os.chmod(chemin, 0o600)
+    return {"ok": True, "version": v, "sha256": hashlib.sha256(corps).hexdigest(), "taille": len(corps), "url": URL_SCRIPT % v}
+
+
+def verbe_installer(a):
+    if len(a) != 5:
+        refuser("usage : installer <version> <sha256> <domaine> <email> <traefik|nginx|caddy>")
+    v, sha = verifier(a[0], VERSION, "version"), verifier(a[1], SHA, "empreinte SHA-256")
+    domaine, email = verifier(a[2].lower(), DOMAINE, "domaine"), verifier(a[3], EMAIL, "adresse e-mail")
+    if a[4] not in PROXYS:
+        refuser("proxy : traefik, nginx ou caddy")
+    if domaine.endswith(".example.com") or domaine == "netbird.example.com" or domaine.endswith(".example") or domaine.endswith(".test"):
+        refuser("un domaine d'exemple ne se joint pas : donne le vrai domaine qui pointe vers cette machine")
+    if installe() or os.path.exists(os.path.join(DOSSIER, "config.yaml")):
+        refuser("un serveur est déjà posé dans %s : il n'est jamais écrasé" % DOSSIER)
+    dossier_sur()
+    if shutil.which("docker") is None:
+        refuser("Docker n'est pas installé sur cette machine")
+    if shutil.which("jq") is None:
+        refuser("jq n'est pas installé (le script officiel l'exige) : apt install jq")
+    chemin = os.path.join(DOSSIER, SCRIPT)
+    try:
+        with open(chemin, "rb") as f:
+            reel = hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        refuser("le script n'est pas téléchargé : lance d'abord `telecharger %s`" % v)
+    if reel != sha:
+        refuser("l'empreinte du script sur le disque (%s…) n'est pas celle que tu as confirmée : il n'est pas exécuté" % reel[:12])
+    occupes = [("tcp", p) for p in ((80, 443) if a[4] == "traefik" else ()) if not port_libre("tcp", p)] + ([] if port_libre("udp", 3478) else [("udp", 3478)])
+    if occupes:
+        refuser("port déjà pris sur cette machine : %s. Un proxy existant (nginx) doit publier le serveur : choisis « nginx » ou « caddy »." % ", ".join("%d/%s" % (p, pr) for pr, p in occupes))
+    env = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "HOME": "/root", "LANG": "C.UTF-8", "NETBIRD_DOMAIN": domaine, "NETBIRD_NON_INTERACTIVE": "true", "NETBIRD_REVERSE_PROXY_TYPE": PROXYS[a[4]],
+           "NETBIRD_ENABLE_PROXY": "false", "NETBIRD_ENABLE_CROWDSEC": "false"}
+    if a[4] == "traefik":
+        env["NETBIRD_LETSENCRYPT_EMAIL"] = email
+    code, sortie = lancer(["bash", chemin], DELAI_INSTALL, env)
+    if code == 0:
+        with open(os.path.join(DOSSIER, MARQUE), "w") as f:
+            json.dump({"version": v, "sha256": sha, "domaine": domaine, "email": email, "proxy": a[4], "installe_le": time.strftime("%Y-%m-%d %H:%M:%S")}, f)
+    return {"ok": code == 0, "code": code, "sortie": sortie}
+
+
+def verbe_mettre_a_jour(a):
+    if a or not installe():
+        refuser("aucun serveur à mettre à jour" if not installe() else "mettre_a_jour n'a pas d'argument")
+    dossier_sur()
+    code, sortie = compose(["pull"], DELAI_INSTALL)
+    if code != 0:
+        return {"ok": False, "code": code, "sortie": sortie}
+    code, sortie = compose(["up", "-d"], DELAI_INSTALL)
+    return {"ok": code == 0, "code": code, "sortie": sortie}
+
+
+def verbe_commande(a):
+    if len(a) != 1 or a[0] not in ACTIONS:
+        refuser("commande : %s" % ", ".join(ACTIONS))
+    if not installe():
+        refuser("aucun serveur posé")
+    dossier_sur()
+    code, sortie = compose(ACTIONS[a[0]], 120)
+    return {"ok": code == 0, "code": code, "sortie": sortie}
+
+
+def verbe_nginx(a):
+    chemin = os.path.join(DOSSIER, "nginx-netbird.conf")
+    if not installe() or not os.path.isfile(chemin):
+        refuser("pas de conf nginx : le proxy choisi à l'installation n'est pas nginx")
+    with open(chemin, errors="replace") as f:
+        return {"ok": True, "conf": f.read(20000)}
+
+
+def verbe_retirer(a):
+    if not installe() or len(a) > 1 or (a and a[0] != "purger"):
+        refuser("aucun serveur posé" if not installe() else "usage : retirer [purger]")
+    dossier_sur()
+    purger = bool(a)
+    code, sortie = compose(["down"] + (["-v", "--remove-orphans"] if purger else []), 120)
+    if code == 0 and purger:
+        shutil.rmtree(DOSSIER)
+    return {"ok": code == 0, "code": code, "sortie": sortie, "purge": purger and code == 0}
+
+
+VERBES = {"etat": verbe_etat, "telecharger": verbe_telecharger, "installer": verbe_installer, "mettre_a_jour": verbe_mettre_a_jour, "commande": verbe_commande, "nginx": verbe_nginx, "retirer": verbe_retirer}
+
+
+def serveur(argv):
+    """Le verbe demandé, ou {"ok": False, "erreur": …}. Aucune exception ne sort d'ici."""
+    try:
+        if not argv or argv[0] not in VERBES:
+            refuser("verbe : %s" % ", ".join(VERBES))
+        return VERBES[argv[0]](list(argv[1:]))
+    except ValueError as e:
+        return {"ok": False, "erreur": str(e)}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "erreur": "délai dépassé"}
+    except OSError as e:
+        return {"ok": False, "erreur": "%s : %s" % (type(e).__name__, str(e)[:120])}
+
+
+def main():
+    d = serveur(sys.argv[1:])
+    print(json.dumps(d, ensure_ascii=False))
+    sys.exit(0 if d.get("ok") else 1)
+
+
+if __name__ == "__main__":
+    main()

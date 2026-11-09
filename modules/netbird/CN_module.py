@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a68b0f
+# VERSION CN : 0.1.0  #44ffe5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a68b0f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=44ffe5 ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -35,6 +35,8 @@ import re
 import subprocess
 import threading
 import time
+import urllib.error
+import urllib.request
 
 DELAI = 15
 NOM = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
@@ -50,6 +52,15 @@ _SSO = {"lien": "", "t": 0.0}                      # le dernier lien d'identific
 _TTL = 2.0                                         # secondes pendant lesquelles `etat` réutilise sa dernière lecture ; 0 : jamais
 _CACHE = {"t": 0.0, "val": None}
 _VERROU = threading.RLock()
+_SERVEUR = {"meta": None}                          # ce que la commande root `serveur` a dit du serveur NetBird posé (domaine, version…), pour savoir où est son API
+ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+NOM_API = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,62}$")
+VERSION_SERVEUR = re.compile(r"^v\d{1,3}\.\d{1,3}\.\d{1,3}$")
+DOMAINE = re.compile(r"^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
+EMAIL = re.compile(r"^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$")
+SHA = re.compile(r"^[0-9a-f]{64}$")
+JETON = re.compile(r"^[A-Za-z0-9_.-]{16,300}$")
+URL_API = re.compile(r"^(https://[A-Za-z0-9.-]{1,253}(:\d{1,5})?|http://(127\.0\.0\.1|localhost)(:\d{1,5})?)$", re.I)
 
 
 def _direct(args, delai=DELAI):
@@ -65,13 +76,38 @@ def _direct(args, delai=DELAI):
         return None, str(e)[:200]
 
 
-def _racine(verbe, args=(), entree=None, delai=30):
-    """Le courtier : {ok, …} de la commande root `piloter`, ou {ok: False, erreur} (commande absente, délai, courtier arrêté)."""
+def _racine(verbe, args=(), entree=None, delai=30, commande="piloter"):
+    """Le courtier : {ok, …} de la commande root `piloter` (le client) ou `serveur` (le serveur), ou {ok: False, erreur} (commande absente, délai, courtier arrêté)."""
     try:
-        r = _RACINE_CTX("piloter", [verbe] + [str(x) for x in args], entree, delai)
+        r = _RACINE_CTX(commande, [verbe] + [str(x) for x in args], entree, delai)
     except Exception as e:                          # noqa: BLE001
         return {"ok": False, "erreur": str(e)[:200], "courtier": False}
     return _REPONSE(r)
+
+
+class _SansRedirection(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):          # le jeton d'accès ne suit JAMAIS une redirection (vers un autre hôte, il serait donné)
+        return None
+
+
+def _http(methode, url, jeton, corps=None, delai=15):
+    """(code, JSON ou texte) d'une requête à l'API NetBird ; (None, raison) si le serveur ne répond pas."""
+    en_tetes = {"Accept": "application/json", "Content-Type": "application/json"}
+    if jeton:
+        en_tetes["Authorization"] = "Token " + jeton
+    req = urllib.request.Request(url, data=None if corps is None else json.dumps(corps).encode(), method=methode, headers=en_tetes)
+    try:
+        with urllib.request.build_opener(_SansRedirection).open(req, timeout=delai) as r:
+            code, brut = r.status, r.read(2000001)
+    except urllib.error.HTTPError as e:
+        code, brut = e.code, e.read(20000)
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        return None, str(getattr(e, "reason", e))[:200]
+    texte = brut.decode("utf-8", "replace")
+    try:
+        return code, json.loads(texte or "null")
+    except ValueError:
+        return code, texte[:300]
 
 
 def _json(sortie):
@@ -352,10 +388,299 @@ def brancher(ctx):
     def prouver_retire(c, res):
         return detecter(True)["conteneur"] == "absent"
 
+    # ---- le SERVEUR NetBird : posé et tenu par la commande root `serveur` (courtier) ; ADMINISTRÉ par l'API du serveur, sans root
+    def srv(verbe, args=(), entree=None, delai=60):
+        return _racine(verbe, args, entree, delai, "serveur")
+
+    def srv_ok(r):
+        if not r.get("ok"):
+            raise ValueError(erreur(r.get("erreur") or r.get("sortie") or "la commande root `serveur` ne répond pas : CN_install.sh --module netbird"))
+        return {k: v for k, v in r.items() if k != "ok"}
+
+    def serveur_etat(c):
+        r = srv("etat")
+        if not r.get("ok"):
+            return {"disponible": False, "erreur": str(r.get("erreur") or "la commande root `serveur` ne répond pas")[:200]}
+        d = dict(r, disponible=True)
+        _SERVEUR["meta"] = d.get("meta") or {}
+        if d["installe"] and d["meta"].get("domaine"):
+            code, i = _http("GET", "https://%s/api/instance" % d["meta"]["domaine"], None, None, 8)
+            d["api_joignable"] = code is not None and code < 500
+            d["setup_requis"] = bool(code == 200 and isinstance(i, dict) and i.get("setup_required"))      # le premier compte reste à créer (page /setup)
+        return d
+
+    def serveur_telecharger(c, version=""):
+        version = str(version or "").strip()
+        if not VERSION_SERVEUR.match(version):
+            raise ValueError("Version explicite attendue (v0.40.0) : jamais « latest »")
+        return srv_ok(srv("telecharger", [version], None, 60))
+
+    def serveur_installer(c, version="", sha256="", domaine="", email="", proxy="nginx"):
+        with _VERROU:
+            version, sha256, domaine, email = str(version or "").strip(), str(sha256 or "").strip().lower(), str(domaine or "").strip().lower(), str(email or "").strip()
+            if not VERSION_SERVEUR.match(version) or not SHA.match(sha256):
+                raise ValueError("Version (v0.40.0) et empreinte SHA-256 du script, telles que `serveur_telecharger` les a rendues, attendues")
+            if not DOMAINE.match(domaine):
+                raise ValueError("Domaine invalide : le nom (netbird.exemple.fr) qui pointe vers cette machine")
+            if not EMAIL.match(email):
+                raise ValueError("Adresse e-mail invalide (sert aux certificats Let's Encrypt)")
+            if proxy not in ("traefik", "nginx", "caddy"):
+                raise ValueError("Proxy : traefik (TLS intégré, ports 80 et 443 libres), nginx ou caddy (le proxy existant publie le serveur)")
+            r = srv_ok(srv("installer", [version, sha256, domaine, email, proxy], None, 295))
+            _SERVEUR["meta"] = None
+            return dict(serveur_etat(c), installation=r.get("sortie", "")[-600:])
+
+    def prouver_serveur_installe(c, res):
+        for _ in range(15):
+            e = serveur_etat(c)
+            if e.get("installe") and any(x.get("etat") == "running" for x in e.get("conteneurs") or []):
+                return True
+            time.sleep(2.0)
+        return False
+
+    def serveur_mettre_a_jour(c):
+        with _VERROU:
+            return dict(serveur_etat(c), mise_a_jour=srv_ok(srv("mettre_a_jour", [], None, 295)).get("sortie", "")[-600:])
+
+    def serveur_redemarrer(c):
+        with _VERROU:
+            srv_ok(srv("commande", ["restart"], None, 130))
+            return serveur_etat(c)
+
+    def serveur_journaux(c):
+        return {"journaux": srv_ok(srv("commande", ["logs"], None, 130)).get("sortie", "")}
+
+    def serveur_nginx(c):
+        return srv_ok(srv("nginx"))
+
+    def serveur_retirer(c, purger=False):
+        with _VERROU:
+            avant = serveur_etat(c)
+            if not avant.get("installe"):
+                raise ValueError("Aucun serveur NetBird posé par Cassandra")
+            srv_ok(srv("retirer", ["purger"] if purger else [], None, 130))
+            _SERVEUR["meta"] = None
+            return dict(serveur_etat(c), purge=bool(purger), domaine_retire=(avant.get("meta") or {}).get("domaine", ""))
+
+    def prouver_serveur_retire(c, res):
+        return not serveur_etat(c).get("conteneurs")
+
+    # ---- l'API de gestion du serveur (jeton d'accès personnel, secret `jeton_api`) : machines, clés d'installation, groupes, politiques
+    def base_api():
+        u = str(ctx.reglage("url_api", "") or "").strip().rstrip("/")
+        if not u:
+            meta = _SERVEUR["meta"] if _SERVEUR["meta"] is not None else (serveur_etat(None).get("meta") or {})
+            u = "https://" + meta["domaine"] if meta.get("domaine") else ""
+        if not URL_API.match(u):
+            raise ValueError("L'adresse de l'API NetBird n'est pas renseignée : réglage « url_api » (https://netbird.exemple.fr), ou installe le serveur depuis Cassandra")
+        return u
+
+    def api(methode, chemin, corps=None):
+        jeton = str(ctx.reglage("jeton_api", "") or "").strip()
+        if not JETON.match(jeton):
+            raise ValueError("Le jeton d'accès NetBird n'est pas enregistré : tableau de bord NetBird › Settings › Personal Access Tokens, puis le réglage « jeton_api »")
+        code, d = _http(methode, base_api() + "/api" + chemin, jeton, corps, 20)
+        if code is None:
+            raise ValueError("Le serveur NetBird ne répond pas : %s" % d)
+        if code in (401, 403):
+            raise ValueError("Le serveur NetBird refuse le jeton d'accès (HTTP %d) : expiré, révoqué, ou sans droit d'administrateur" % code)
+        if code >= 400:
+            raise ValueError("NetBird : %s (HTTP %d)" % ((d.get("message") if isinstance(d, dict) else str(d)) or "refus", code))
+        return d
+
+    def ident(v, quoi="identifiant"):
+        v = str(v or "").strip()
+        if not ID.match(v):
+            raise ValueError("%s illisible" % quoi.capitalize())
+        return v
+
+    def liste(chemin):
+        d = api("GET", chemin)
+        return d if isinstance(d, list) else []
+
+    def noms(x):
+        return [str(g.get("name") or g.get("id") or "")[:60] if isinstance(g, dict) else str(g)[:60] for g in (x or [])]
+
+    def api_verifier(c):
+        return {"ok": True, "adresse": base_api(), "machines": len(liste("/peers"))}
+
+    def api_machines(c):
+        return {"machines": [{"id": str(p.get("id") or ""), "nom": str(p.get("name") or ""), "ip": str(p.get("ip") or ""), "connecte": bool(p.get("connected")), "os": str(p.get("os") or "")[:60],
+                              "version": str(p.get("version") or ""), "groupes": noms(p.get("groups")), "vu": str(p.get("last_seen") or "")[:16].replace("T", " "), "ssh": bool(p.get("ssh_enabled")),
+                              "expiree": bool(p.get("login_expired")), "expiration": bool(p.get("login_expiration_enabled")), "inactivite": bool(p.get("inactivity_expiration_enabled")),
+                              "approbation": bool(p.get("approval_required"))} for p in liste("/peers")]}
+
+    def api_cles(c):
+        return {"cles": [{"id": str(k.get("id") or ""), "nom": str(k.get("name") or ""), "type": str(k.get("type") or ""), "valide": bool(k.get("valid")), "revoquee": bool(k.get("revoked")),
+                          "utilisations": int(k.get("used_times") or 0), "limite": int(k.get("usage_limit") or 0), "expire": str(k.get("expires") or "")[:10], "etat": str(k.get("state") or ""),
+                          "groupes": [str(x) for x in (k.get("auto_groups") or [])][:20], "ephemere": bool(k.get("ephemeral"))} for k in liste("/setup-keys")]}
+
+    def api_groupes(c):
+        return {"groupes": [{"id": str(g.get("id") or ""), "nom": str(g.get("name") or ""), "machines": int(g.get("peers_count") or 0), "emis": str(g.get("issued") or "")} for g in liste("/groups")]}
+
+    def api_politiques(c):
+        return {"politiques": [{"id": str(p.get("id") or ""), "nom": str(p.get("name") or ""), "actif": bool(p.get("enabled")),
+                                "regles": [{"nom": str(r.get("name") or ""), "actif": bool(r.get("enabled")), "action": str(r.get("action") or ""), "bidirectionnel": bool(r.get("bidirectional")),
+                                            "protocole": str(r.get("protocol") or ""), "sources": noms(r.get("sources")), "destinations": noms(r.get("destinations"))} for r in (p.get("rules") or [])]}
+                               for p in liste("/policies")]}
+
+    def trouver(chemin, i):
+        return next((x for x in liste(chemin) if str(x.get("id")) == i), None)
+
+    def corps_machine(p, nom=None, ssh=None, expiration=None):
+        return {"name": nom if nom else p.get("name"), "ssh_enabled": bool(p.get("ssh_enabled")) if ssh is None else bool(ssh),
+                "login_expiration_enabled": bool(p.get("login_expiration_enabled")) if expiration is None else bool(expiration), "inactivity_expiration_enabled": bool(p.get("inactivity_expiration_enabled"))}
+
+    def machine_modifier(c, id="", nom="", ssh=None, expiration=None):
+        i = ident(id, "identifiant de machine")
+        nom = str(nom or "").strip()
+        if nom and not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$", nom):
+            raise ValueError("Nom de machine invalide : lettres, chiffres, points et tirets")
+        p = api("GET", "/peers/" + i)
+        avant = corps_machine(p)
+        api("PUT", "/peers/" + i, corps_machine(p, nom, ssh, expiration))
+        return {"id": i, "avant": avant, "apres": corps_machine(api("GET", "/peers/" + i))}
+
+    def prouver_machine(c, res):
+        return corps_machine(api("GET", "/peers/" + res["id"])) == res["apres"]
+
+    def defaire_machine(c, res):
+        api("PUT", "/peers/" + res["id"], res["avant"])
+
+    def machine_supprimer(c, id=""):
+        i = ident(id, "identifiant de machine")
+        p = api("GET", "/peers/" + i)
+        api("DELETE", "/peers/" + i)
+        return {"id": i, "nom": str(p.get("name") or ""), "ip": str(p.get("ip") or "")}
+
+    def absent(chemin):
+        try:
+            api("GET", chemin)
+            return False
+        except ValueError as e:
+            return "HTTP 404" in str(e)
+
+    def cle_creer(c, nom="", type="reusable", jours=30, groupes=None, limite=0, ephemere=False):
+        nom = str(nom or "").strip()
+        if not NOM_API.match(nom):
+            raise ValueError("Nom de clé invalide : lettres, chiffres, espaces, points et tirets")
+        if type not in ("one-off", "reusable"):
+            raise ValueError("Type de clé : one-off (un seul usage) ou reusable")
+        try:
+            jours, limite = int(jours), int(limite)
+        except (TypeError, ValueError):
+            raise ValueError("Durée (jours) et limite d'usage : des nombres") from None
+        if not 1 <= jours <= 365 or not 0 <= limite <= 10000:
+            raise ValueError("Durée de 1 à 365 jours ; limite d'usage de 0 (illimitée) à 10000")
+        ids = [ident(g, "identifiant de groupe") for g in (groupes if isinstance(groupes, (list, tuple)) else [x for x in str(groupes or "").split(",") if x.strip()])][:20]
+        d = api("POST", "/setup-keys", {"name": nom, "type": type, "expires_in": jours * 86400, "auto_groups": ids, "usage_limit": limite, "ephemeral": bool(ephemere)})
+        # La clé complète n'est rendue qu'ici, une seule fois : elle va à l'écran (`cle_secrete`, champ masqué du journal du noyau) et ne se relit jamais ensuite.
+        return {"id": str((d or {}).get("id") or ""), "nom": nom, "type": type, "expire": str((d or {}).get("expires") or "")[:10], "groupes": ids, "cle_secrete": str((d or {}).get("key") or "")}
+
+    def prouver_cle(c, res):
+        return trouver("/setup-keys", res["id"]) is not None
+
+    def defaire_cle(c, res):
+        api("DELETE", "/setup-keys/" + res["id"])
+
+    def cle_revoquer(c, id="", revoquer=True):
+        i = ident(id, "identifiant de clé")
+        k = trouver("/setup-keys", i)
+        if k is None:
+            raise ValueError("Clé inconnue")
+        avant = bool(k.get("revoked"))
+        api("PUT", "/setup-keys/" + i, {"revoked": bool(revoquer), "auto_groups": [str(x) for x in (k.get("auto_groups") or [])]})
+        return {"id": i, "nom": str(k.get("name") or ""), "revoquee": bool(revoquer), "avant": avant}
+
+    def prouver_revocation(c, res):
+        k = trouver("/setup-keys", res["id"])
+        return k is not None and bool(k.get("revoked")) == res["revoquee"]
+
+    def defaire_revocation(c, res):
+        cle_revoquer(c, res["id"], res["avant"])
+
+    def cle_supprimer(c, id=""):
+        i = ident(id, "identifiant de clé")
+        k = trouver("/setup-keys", i)
+        if k is None:
+            raise ValueError("Clé inconnue")
+        api("DELETE", "/setup-keys/" + i)
+        return {"id": i, "nom": str(k.get("name") or "")}
+
+    def groupe_creer(c, nom=""):
+        nom = str(nom or "").strip()
+        if not NOM_API.match(nom):
+            raise ValueError("Nom de groupe invalide : lettres, chiffres, espaces, points et tirets")
+        d = api("POST", "/groups", {"name": nom})
+        return {"id": str((d or {}).get("id") or ""), "nom": nom}
+
+    def prouver_groupe(c, res):
+        return trouver("/groups", res["id"]) is not None
+
+    def defaire_groupe(c, res):
+        api("DELETE", "/groups/" + res["id"])
+
+    def groupe_supprimer(c, id=""):
+        i = ident(id, "identifiant de groupe")
+        g = trouver("/groups", i)
+        if g is None:
+            raise ValueError("Groupe inconnu")
+        api("DELETE", "/groups/" + i)
+        return {"id": i, "nom": str(g.get("name") or "")}
+
+    def politique_creer(c, nom="", sources=None, destinations=None, bidirectionnel=True, protocole="all", action="accept"):
+        nom = str(nom or "").strip()
+        if not NOM_API.match(nom):
+            raise ValueError("Nom de politique invalide : lettres, chiffres, espaces, points et tirets")
+        if protocole not in ("all", "tcp", "udp", "icmp") or action not in ("accept", "drop"):
+            raise ValueError("Protocole : all, tcp, udp ou icmp ; action : accept ou drop")
+        src = [ident(g, "identifiant de groupe") for g in (sources if isinstance(sources, (list, tuple)) else [x for x in str(sources or "").split(",") if x.strip()])][:20]
+        dst = [ident(g, "identifiant de groupe") for g in (destinations if isinstance(destinations, (list, tuple)) else [x for x in str(destinations or "").split(",") if x.strip()])][:20]
+        if not src or not dst:
+            raise ValueError("Au moins un groupe source et un groupe destination")
+        d = api("POST", "/policies", {"name": nom, "description": "créée depuis Cassandra", "enabled": True, "rules": [
+            {"name": nom, "description": "", "enabled": True, "action": action, "bidirectional": bool(bidirectionnel), "protocol": protocole, "sources": src, "destinations": dst}]})
+        return {"id": str((d or {}).get("id") or ""), "nom": nom, "sources": src, "destinations": dst}
+
+    def prouver_politique(c, res):
+        return trouver("/policies", res["id"]) is not None
+
+    def defaire_politique(c, res):
+        api("DELETE", "/policies/" + res["id"])
+
+    def politique_activer(c, id="", actif=True):
+        i = ident(id, "identifiant de politique")
+        p = trouver("/policies", i)
+        if p is None:
+            raise ValueError("Politique inconnue")
+        avant, regles = bool(p.get("enabled")), []
+        for r in (p.get("rules") or []):
+            regles.append({k: v for k, v in dict(r, sources=[g.get("id") if isinstance(g, dict) else g for g in (r.get("sources") or [])],
+                                                 destinations=[g.get("id") if isinstance(g, dict) else g for g in (r.get("destinations") or [])]).items() if k in
+                           ("id", "name", "description", "enabled", "action", "bidirectional", "protocol", "ports", "port_ranges", "sources", "destinations")})
+        api("PUT", "/policies/" + i, {"name": p.get("name"), "description": p.get("description") or "", "enabled": bool(actif), "source_posture_checks": p.get("source_posture_checks") or [], "rules": regles})
+        return {"id": i, "nom": str(p.get("name") or ""), "actif": bool(actif), "avant": avant}
+
+    def prouver_activation(c, res):
+        p = trouver("/policies", res["id"])
+        return p is not None and bool(p.get("enabled")) == res["actif"]
+
+    def defaire_activation(c, res):
+        politique_activer(c, res["id"], res["avant"])
+
+    def politique_supprimer(c, id=""):
+        i = ident(id, "identifiant de politique")
+        p = trouver("/policies", i)
+        if p is None:
+            raise ValueError("Politique inconnue")
+        api("DELETE", "/policies/" + i)
+        return {"id": i, "nom": str(p.get("name") or "")}
+
     # ---- le journal : chaque geste qui écrit est noté (quand, qui, quoi, ce qu'il a rendu) pour pouvoir être défait depuis l'écran
     def noter(nom, args, res):
         """Ne fait JAMAIS échouer le geste : un journal qui casse ne doit pas défaire ce qui a marché."""
         try:
+            res = {k: v for k, v in res.items() if k != "cle_secrete"} if isinstance(res, dict) else res        # une clé d'installation créée ne va JAMAIS au journal
             db.ecrire("INSERT INTO gestes(ts, capacite, compte, args, res) VALUES (?,?,?,?,?)", (horodate(), nom, str(ctx.compte or ""), json.dumps(args, default=str)[:2000], json.dumps(res, default=str)[:20000]))
             db.ecrire("DELETE FROM gestes WHERE id NOT IN (SELECT id FROM gestes ORDER BY id DESC LIMIT 200)")
         except Exception:                           # noqa: BLE001
@@ -369,15 +694,23 @@ def brancher(ctx):
             return res
         return enveloppe
 
-    DEFAIRE = {"connecter": defaire_connecter, "deconnecter": defaire_deconnecter, "installer_docker": defaire_installer}
+    DEFAIRE = {"connecter": defaire_connecter, "deconnecter": defaire_deconnecter, "installer_docker": defaire_installer, "machine_modifier": defaire_machine, "cle_creer": defaire_cle, "cle_revoquer": defaire_revocation,
+               "groupe_creer": defaire_groupe, "politique_creer": defaire_politique, "politique_activer": defaire_activation}
 
     def libelle_geste(cap, args, res):
         if cap == "installer_docker":
             return "NetBird installé dans Docker (conteneur %s, image %s)" % (res.get("docker_conteneur", "?"), res.get("docker_tag", args.get("tag", "latest")))
         if cap == "retirer_docker":
             return "Conteneur NetBird retiré" + (" avec son volume (identité perdue)" if res.get("docker_purge") else "")
+        n = res.get("nom") or args.get("nom") or res.get("id") or ""
         return {"connecter": "Connexion à NetBird" + (" par clé" if args.get("avec_cle") else " (lien d'identification)"), "deconnecter": "NetBird coupé",
-                "annuler": "Connexion en attente abandonnée"}.get(cap, cap)
+                "annuler": "Connexion en attente abandonnée", "serveur_telecharger": "Script du serveur téléchargé (%s)" % res.get("version", args.get("version", "?")),
+                "serveur_installer": "Serveur NetBird installé (%s, %s)" % ((res.get("meta") or {}).get("domaine", args.get("domaine", "?")), args.get("proxy", "nginx")), "serveur_mettre_a_jour": "Serveur NetBird mis à jour",
+                "serveur_redemarrer": "Serveur NetBird redémarré", "serveur_retirer": "Serveur NetBird retiré" + (" avec ses données (comptes et machines perdus)" if res.get("purge") else ""),
+                "machine_modifier": "Machine « %s » modifiée" % n, "machine_supprimer": "Machine « %s » supprimée du réseau" % n, "cle_creer": "Clé d'installation « %s » créée" % n,
+                "cle_revoquer": "Clé d'installation « %s » %s" % (n, "révoquée" if res.get("revoquee", True) else "rétablie"), "cle_supprimer": "Clé d'installation « %s » supprimée" % n,
+                "groupe_creer": "Groupe « %s » créé" % n, "groupe_supprimer": "Groupe « %s » supprimé" % n, "politique_creer": "Politique d'accès « %s » créée" % n,
+                "politique_activer": "Politique d'accès « %s » %s" % (n, "activée" if res.get("actif", True) else "désactivée"), "politique_supprimer": "Politique d'accès « %s » supprimée" % n}.get(cap, cap)
 
     def journal(c, limite=20):
         limite = max(1, min(int(limite or 20), 100))
@@ -422,6 +755,31 @@ def brancher(ctx):
     ctx.implementer("installer_docker", journaliser("installer_docker", installer_docker), prouver_installe, defaire_installer,
                     simuler=lambda x, tag="latest", **_: "installerait le client NetBird dans un conteneur Docker (netbirdio/netbird:%s)" % tag)
     ctx.implementer("retirer_docker", journaliser("retirer_docker", retirer_docker), prouver_retire, lambda c, res: None, simuler=lambda x, purger=False, **_: "retirerait le conteneur NetBird" + (" et son volume" if purger else ""))
+    ctx.implementer("serveur_etat", serveur_etat)
+    ctx.implementer("serveur_journaux", serveur_journaux)
+    ctx.implementer("serveur_nginx", serveur_nginx)
+    ctx.implementer("serveur_telecharger", journaliser("serveur_telecharger", serveur_telecharger), lambda c, res: bool(SHA.match(str(res.get("sha256", "")))), lambda c, res: None,
+                    simuler=lambda x, version="", **_: "téléchargerait le script d'installation du serveur NetBird %s et en donnerait l'empreinte" % version)
+    ctx.implementer("serveur_installer", journaliser("serveur_installer", serveur_installer), prouver_serveur_installe, lambda c, res: None,
+                    simuler=lambda x, domaine="", proxy="nginx", **_: "installerait un serveur NetBird auto-hébergé pour %s (proxy %s)" % (domaine, proxy))
+    ctx.implementer("serveur_mettre_a_jour", journaliser("serveur_mettre_a_jour", serveur_mettre_a_jour), lambda c, res: True, lambda c, res: None, simuler=lambda x, **_: "mettrait à jour les images du serveur NetBird")
+    ctx.implementer("serveur_redemarrer", journaliser("serveur_redemarrer", serveur_redemarrer), lambda c, res: True, lambda c, res: None, simuler=lambda x, **_: "redémarrerait le serveur NetBird")
+    ctx.implementer("serveur_retirer", journaliser("serveur_retirer", serveur_retirer), prouver_serveur_retire, lambda c, res: None, simuler=lambda x, purger=False, **_: "retirerait le serveur NetBird" + (" et ses données" if purger else ""))
+    ctx.implementer("api_verifier", api_verifier)
+    ctx.implementer("api_machines", api_machines)
+    ctx.implementer("api_cles", api_cles)
+    ctx.implementer("api_groupes", api_groupes)
+    ctx.implementer("api_politiques", api_politiques)
+    ctx.implementer("machine_modifier", journaliser("machine_modifier", machine_modifier), prouver_machine, defaire_machine, simuler=lambda x, id="", **_: "modifierait la machine %s du réseau NetBird" % id)
+    ctx.implementer("machine_supprimer", journaliser("machine_supprimer", machine_supprimer), lambda c, res: absent("/peers/" + res["id"]), lambda c, res: None, simuler=lambda x, id="", **_: "supprimerait la machine %s du réseau NetBird" % id)
+    ctx.implementer("cle_creer", journaliser("cle_creer", cle_creer), prouver_cle, defaire_cle, simuler=lambda x, nom="", **_: "créerait la clé d'installation « %s »" % nom)
+    ctx.implementer("cle_revoquer", journaliser("cle_revoquer", cle_revoquer), prouver_revocation, defaire_revocation, simuler=lambda x, id="", **_: "révoquerait la clé d'installation %s" % id)
+    ctx.implementer("cle_supprimer", journaliser("cle_supprimer", cle_supprimer), lambda c, res: trouver("/setup-keys", res["id"]) is None, lambda c, res: None, simuler=lambda x, id="", **_: "supprimerait la clé d'installation %s" % id)
+    ctx.implementer("groupe_creer", journaliser("groupe_creer", groupe_creer), prouver_groupe, defaire_groupe, simuler=lambda x, nom="", **_: "créerait le groupe « %s »" % nom)
+    ctx.implementer("groupe_supprimer", journaliser("groupe_supprimer", groupe_supprimer), lambda c, res: trouver("/groups", res["id"]) is None, lambda c, res: None, simuler=lambda x, id="", **_: "supprimerait le groupe %s" % id)
+    ctx.implementer("politique_creer", journaliser("politique_creer", politique_creer), prouver_politique, defaire_politique, simuler=lambda x, nom="", **_: "créerait la politique d'accès « %s »" % nom)
+    ctx.implementer("politique_activer", journaliser("politique_activer", politique_activer), prouver_activation, defaire_activation, simuler=lambda x, id="", actif=True, **_: "%s la politique d'accès %s" % ("activerait" if actif else "désactiverait", id))
+    ctx.implementer("politique_supprimer", journaliser("politique_supprimer", politique_supprimer), lambda c, res: trouver("/policies", res["id"]) is None, lambda c, res: None, simuler=lambda x, id="", **_: "supprimerait la politique d'accès %s" % id)
     ctx.implementer("defaire_geste", defaire_geste, prouver_defait, lambda c, res: None, simuler=lambda x, id=0, **_: "défairait le geste n°%s du journal" % id)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
