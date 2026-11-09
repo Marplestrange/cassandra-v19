@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d21706
+# VERSION CN : 0.1.0  #cc0a45
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module tailscale : le client est simulé (un faux `tailscale` qui répond comme le vrai), le reste tourne dans un vrai noyau.
 # MÉTHODE    : on remplace `_lancer` du module ; on vérifie les états, le lien d'identification, la clé qui ne traîne nulle part, et les refus dits en clair.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d21706 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cc0a45 ▼▼▼
 """Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."""
 import json
 import shutil
@@ -82,6 +82,13 @@ class Monde(unittest.TestCase):
         cle = args[0]
         if cle in self.reponses:
             return self.reponses[cle]
+        if args == ["up"] and getattr(self, "identification_requise", False):
+            return None, "pas de réponse de tailscaled"         # le `up` seul attend une identification qui ne vient pas
+        if args == ["up"] and self.etat.get("BackendState") == "Stopped":
+            self.etat = CONNECTE                              # `up` seul : la machine enregistrée reprend sa configuration
+            return 0, ""
+        if cle == "up" and any(x == "--timeout=15m" or x.startswith("--timeout") for x in args) and self.etat.get("BackendState") == "Stopped" and not [x for x in args if x.startswith("--reset")]:
+            return 1, "changing settings via 'tailscale up' requires mentioning all non-default flags"       # ce que le vrai client dit (constaté sur argos)
         if cle == "up":
             f = [x for x in args if x.startswith("--auth-key=file:")]
             if f:
@@ -202,15 +209,24 @@ class Corrections(Monde):
         ctx.reglage = lambda nom, defaut="": CLE if nom == "cle_auth" else defaut
 
     def test_reconnecter_une_machine_coupee_ne_remet_rien_a_zero(self):
-        self.cle()
         self.etat = statut("Stopped")
-        r = self.lire("connecter", nom="argos", ssh=True, avec_cle=True)
+        r = self.lire("connecter", nom="argos", ssh=True)
         self.assertEqual(r["etat"], "connecte")
-        up = [a for a in self.appels if a[0] == "up"][0]
-        self.assertNotIn("--reset", up, "--reset effacerait routes, nœud de sortie et DNS de la machine")
-        self.assertFalse([x for x in up if x.startswith("--hostname") or x == "--ssh"])
+        self.assertEqual([a for a in self.appels if a[0] == "up"], [["up"]],
+                         "aucun drapeau : ni --reset (efface routes, nœud de sortie, DNS), ni --timeout (le client refuse tout `up` avec drapeau quand un réglage n'est pas celui par défaut)")
         self.assertIn(["set", "--hostname=argos"], self.appels)
         self.assertIn(["set", "--ssh=true"], self.appels)
+
+    def test_une_machine_coupee_dont_l_identite_est_a_refaire_repart_comme_une_premiere_connexion(self):
+        self.cle()
+        self.etat = statut("Stopped")
+        self.identification_requise = True
+        r = self.lire("connecter", avec_cle=True)
+        self.assertEqual(r["etat"], "connecte")
+        ups = [a for a in self.appels if a[0] == "up"]
+        self.assertEqual(ups[0], ["up"])
+        self.assertIn("--reset", ups[1])
+        self.assertTrue([x for x in ups[1] if x.startswith("--operator=")])
 
     def test_une_machine_a_approuver_n_est_pas_defaite(self):
         self.cle()

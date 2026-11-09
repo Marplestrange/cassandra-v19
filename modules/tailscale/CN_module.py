@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.3  #e05402
+# VERSION CN : 0.1.4  #cadbb4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=e05402 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=cadbb4 ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -254,6 +254,11 @@ def brancher(ctx):
         nom = str(nom or "").strip().lower()
         if nom and not NOM.match(nom):
             raise ValueError("Nom de machine invalide : lettres, chiffres et tirets seulement")
+        cle = ""
+        if avec_cle:                                  # refusée avant tout appel, même si la machine n'en aura pas besoin
+            cle = str(ctx.reglage("cle_auth", "") or "").strip()
+            if not CLE.match(cle):
+                raise ValueError("La clé d'authentification doit ressembler à tskey-auth-… (créée sur login.tailscale.com › Settings › Keys)")
         etat_avant = resume(d)["etat"]
         if etat_avant == "connecte":
             regler(nom, ssh)                         # déjà connectée : ce qu'on demande (nom, SSH) s'applique quand même, sans rien relancer
@@ -261,22 +266,27 @@ def brancher(ctx):
         abandonner_attente()
         ancien_lien = resume(d)["lien"]
         if etat_avant == "deconnecte":
-            # Machine déjà enregistrée, seulement coupée : `up` SANS option reprend sa configuration gardée (opérateur, routes, nœud de sortie, DNS). `--reset` les effacerait.
-            args = ["up"]
-            reglages_apres = (nom, ssh)
-        else:
-            # Première connexion (ou après un retrait) : rien à garder. --reset remet TOUT à zéro, l'opérateur compris : sans --operator, la connexion réussit une fois
-            # puis Cassandra n'a plus le droit de rien piloter.
-            args = ["up", "--reset", "--operator=" + utilisateur()]
-            if nom:
-                args.append("--hostname=" + nom)
-            if ssh:
-                args.append("--ssh")
-            reglages_apres = ("", False)
+            # Machine déjà enregistrée, seulement coupée : `up` SANS AUCUN drapeau reprend sa configuration gardée (opérateur, routes, nœud de sortie, DNS). `--reset` les effacerait ;
+            # et tout autre drapeau, même `--timeout`, fait refuser le `up` par le client dès qu'un réglage n'est pas celui par défaut (« requires mentioning all non-default flags »,
+            # constaté sur argos). Le délai est donc celui du processus, pas du client.
+            code, sortie = _lancer(["up"], 30)
+            if code not in (0, None):
+                raise ValueError(_erreur(sortie))
+            r = attendre({"connecte", "a_approuver"}, 8) if code == 0 else None
+            if r is not None and r["etat"] in ("connecte", "a_approuver"):
+                if r["etat"] == "connecte":
+                    regler(nom, ssh)                 # nom et SSH demandés : par `set`, qui ne remet rien à zéro
+                return dict(etat(c), avant="deconnecte")
+            # Pas reconnectée sans identification (clé expirée…) : elle repart comme une première connexion, ci-dessous.
+        # Première connexion (ou après un retrait, ou identité à refaire) : rien à garder. --reset remet TOUT à zéro, l'opérateur compris : sans --operator, la connexion réussit
+        # une fois puis Cassandra n'a plus le droit de rien piloter.
+        args = ["up", "--reset", "--operator=" + utilisateur()]
+        if nom:
+            args.append("--hostname=" + nom)
+        if ssh:
+            args.append("--ssh")
+        reglages_apres = ("", False)
         if avec_cle:
-            cle = str(ctx.reglage("cle_auth", "") or "").strip()
-            if not CLE.match(cle):
-                raise ValueError("La clé d'authentification doit ressembler à tskey-auth-… (créée sur login.tailscale.com › Settings › Keys)")
             fd, chemin = tempfile.mkstemp(prefix="ts-")                # mkstemp crée le fichier en 0600 : lisible par l'utilisateur de Cassandra seul
             try:
                 try:

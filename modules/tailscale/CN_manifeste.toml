@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.3  #bbbbe7
+# VERSION CN : 0.1.4  #7ae1f9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale.
 # MÉTHODE    : le client `tailscale` local, par son socket ; l'installateur donne à l'utilisateur de Cassandra le droit de le piloter (--operator), jamais de root.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=bbbbe7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=7ae1f9 ▼▼▼
 [module]
 id = "tailscale"
 nom = "Tailscale"
-version = "0.1.3"
+version = "0.1.4"
 noyau_min = "0.1.0"
 description = "Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale."
 confiance = "interne"

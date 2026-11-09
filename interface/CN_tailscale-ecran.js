@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #870e68
+// VERSION CN : 0.1.0  #ac6a50
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=870e68 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ac6a50 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -53,6 +53,7 @@
     [/advertising routes but --accept-routes is false/i, "D’autres machines proposent des routes que celle-ci n’accepte pas (--accept-routes coupé) : normal pour un serveur ; à activer seulement pour joindre ces réseaux."],
     [/not connected to the (control|coordination) server|unable to connect to the (control|coordination) server/i, "Tailscale ne joint pas son serveur de coordination : vérifie la connexion Internet de la machine."],
     [/(no|not) (reachable|connected).*(DERP|relay)|DERP.*(unreachable|not connected)/i, "Aucun relais Tailscale (DERP) joignable : les connexions directes marchent, pas celles qui passent par un relais."],
+    [/Tailscale is stopped/i, "Tailscale est arrêté sur cette machine : « Se connecter » le relance."],
     [/(update|upgrade) (is )?available|new version/i, "Une mise à jour de Tailscale est disponible."],
     [/key (will )?expire|expired/i, "La clé de cette machine expire ou a expiré : reconnecte-la ou désactive l’expiration dans la console Tailscale."],
   ];
