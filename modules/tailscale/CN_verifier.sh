@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.2  #4184cc
+# VERSION CN : 0.1.3  #4184cc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Vérifie que le client Tailscale existe, que tailscaled répond et que l'utilisateur de Cassandra en est l'opérateur.
 # MÉTHODE    : lit les préférences de tailscaled ; l'opérateur est ce qui permet de piloter sans root.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=4184cc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=4184cc ▼▼▼
 set -u
 U="${CASSANDRA_UTILISATEUR:-cassandra}"
 command -v tailscale >/dev/null 2>&1 || { echo "tailscale : le client est absent" >&2; exit 3; }

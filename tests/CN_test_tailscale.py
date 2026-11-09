@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #78728f
+# VERSION CN : 0.1.0  #d21706
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module tailscale : le client est simulé (un faux `tailscale` qui répond comme le vrai), le reste tourne dans un vrai noyau.
 # MÉTHODE    : on remplace `_lancer` du module ; on vérifie les états, le lien d'identification, la clé qui ne traîne nulle part, et les refus dits en clair.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=78728f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d21706 ▼▼▼
 """Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."""
 import json
 import shutil
@@ -67,6 +67,7 @@ class Monde(unittest.TestCase):
         self.g["_lancer"] = self.faux_client
         self.g["utilisateur"] = lambda: "cassandra"          # le compte qui pilote : fixé, le banc ne dépend pas de celui qui le lance
         self.apres_cle = CONNECTE
+        self.g["_PROC"] = str(base / "pas-de-proc")            # le banc ne regarde pas les vrais processus de la machine
         self.bruit_avant = self.bruit_apres = ""
         self.g["time"] = types.SimpleNamespace(time=time.time, sleep=lambda s: None)
 
@@ -266,6 +267,21 @@ class Corrections(Monde):
         self.etat = dict(CONNECTE, Peer=pairs)
         noms = sorted(p["nom"] for p in self.lire("etat")["pairs"])
         self.assertEqual(len(set(noms)), 3, noms)
+
+    def test_un_up_d_avant_un_redemarrage_est_vu_et_abandonne(self):
+        from unittest import mock
+        proc = Path(self.tmp.name) / "proc"
+        for pid, cmd in (("4242", ["/usr/bin/tailscale", "up", "--reset", "--operator=cassandra", "--timeout=15m"]), ("77", ["/usr/bin/tailscale", "status"]), ("x", ["rien"])):
+            (proc / pid).mkdir(parents=True)
+            (proc / pid / "cmdline").write_bytes(b"\0".join(c.encode() for c in cmd) + b"\0")
+        self.g["_PROC"] = str(proc)
+        self.etat = statut("NeedsLogin", AuthURL="https://login.tailscale.com/a/abc123")
+        self.assertTrue(self.lire("etat")["en_attente"], "un `up` encore en attente doit se voir, sinon un second s'ajoute au premier")
+        self.assertEqual(self.g["orphelins"](), [4242])
+        with mock.patch.object(__import__("os"), "kill") as tuer:
+            self.lire("annuler")
+        tuer.assert_called_once()
+        self.assertEqual(tuer.call_args[0][0], 4242)
 
 
 if __name__ == "__main__":

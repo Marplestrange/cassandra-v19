@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #36c22f
+// VERSION CN : 0.1.0  #870e68
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=36c22f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=870e68 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -48,6 +48,15 @@
     ".sh-scene:has(>.sh-corps>.ts)>.sh-titre{display:none}" +
     "@media (max-width:820px){.ts .pair{grid-template-columns:auto minmax(0,1fr) auto}.ts .pair .ip{grid-column:2 / -1}}";
 
+  // Ce que le client Tailscale dit de sa santé arrive en anglais : les messages connus sont traduits, les autres restent tels quels (le texte d'origine reste en infobulle).
+  const SANTE = [
+    [/advertising routes but --accept-routes is false/i, "D’autres machines proposent des routes que celle-ci n’accepte pas (--accept-routes coupé) : normal pour un serveur ; à activer seulement pour joindre ces réseaux."],
+    [/not connected to the (control|coordination) server|unable to connect to the (control|coordination) server/i, "Tailscale ne joint pas son serveur de coordination : vérifie la connexion Internet de la machine."],
+    [/(no|not) (reachable|connected).*(DERP|relay)|DERP.*(unreachable|not connected)/i, "Aucun relais Tailscale (DERP) joignable : les connexions directes marchent, pas celles qui passent par un relais."],
+    [/(update|upgrade) (is )?available|new version/i, "Une mise à jour de Tailscale est disponible."],
+    [/key (will )?expire|expired/i, "La clé de cette machine expire ou a expiré : reconnecte-la ou désactive l’expiration dans la console Tailscale."],
+  ];
+  const sante = (t) => { const s = String(t || ""); const m = SANTE.find((x) => x[0].test(s)); return '<span class="sante" title="' + esc(s) + '">' + esc(m ? m[1] : s) + "</span>"; };
   const age = (s) => { if (!s) return "jamais vue"; const d = new Date(String(s).replace(" ", "T") + ":00Z"); if (isNaN(d)) return s; const m = Math.max(0, Math.round((Date.now() - d) / 60000)); return m < 2 ? "à l’instant" : m < 90 ? "il y a " + m + " min" : m < 2160 ? "il y a " + Math.round(m / 60) + " h" : "il y a " + Math.round(m / 1440) + " j"; };
   const ETAT = { connecte: ["ok", "Connectée"], deconnecte: ["mu", "Déconnectée"], a_identifier: ["al", "En attente d’identification"], a_approuver: ["al", "À approuver par l’administrateur du réseau"],
     demarrage: ["al", "Démarrage…"], absent: ["dg", "Non installé"], arrete: ["dg", "tailscaled ne répond pas"] };
@@ -134,7 +143,7 @@
             : '<p class="note">Sur la machine : <span class="mono">sudo systemctl enable --now tailscaled</span>, puis recharge cet écran.</p>') + '<div class="acts"><button class="btn" data-a="relire">Relire</button></div></div>';
         racine.innerHTML = h; lier(); return;
       }
-      h += '<div class="carte"><div class="hero"><div><span class="lib">État</span>' + pastille(e) + (e.sante && e.sante.length ? '<span class="sante">' + esc(e.sante[0]) + "</span>" : "") + "</div>" +
+      h += '<div class="carte"><div class="hero"><div><span class="lib">État</span>' + pastille(e) + (e.sante && e.sante.length ? e.sante.slice(0, 3).map(sante).join("") : "") + "</div>" +
         (e.etat === "connecte" ? '<div><span class="lib">Cette machine</span><span class="gros">' + esc(e.nom || "—") + '</span><span class="note mono">' + esc(e.dns) + "</span></div>" +
           '<div><span class="lib">Adresse</span><span class="gros">' + esc(e.ip4 || "—") + '</span><span class="note mono">' + esc(e.ip6) + "</span></div>" +
           '<div><span class="lib">Réseau</span><span class="gros" style="font-size:16px">' + esc(e.reseau || "—") + '</span><span class="note">client ' + esc(e.version) + "</span></div>" : "") + "</div></div>";

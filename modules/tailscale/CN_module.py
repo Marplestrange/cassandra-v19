@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.2  #7e850f
+# VERSION CN : 0.1.3  #e05402
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=7e850f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=e05402 ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import subprocess
 import tempfile
 import threading
@@ -37,6 +38,7 @@ DELAI = 10
 CLE = re.compile(r"^tskey-[A-Za-z0-9_-]{8,200}$")
 NOM = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
 _EN_ATTENTE = {"proc": None, "err": None}          # le `tailscale up` sans clé, en attente d'identification ; `err` : le fichier où va sa sortie d'erreur (jamais un tube : personne ne le vide)
+_PROC = "/proc"                                    # où chercher un `up` en attente d'avant un redémarrage de Cassandra (Linux ; ailleurs, rien à trouver)
 _VERROU = threading.RLock()                        # un seul geste à la fois sur la connexion : deux `up` en même temps laisseraient un processus orphelin
 
 
@@ -116,6 +118,27 @@ def resume(d):
     return _appeler_point("resume", {"d": d})["valeur"]
 
 
+def orphelins():
+    """Les `tailscale up --timeout=15m` encore en attente d'identification et que ce processus ne suit plus (Cassandra a redémarré depuis : le `up` est parti dans sa propre
+    session). Sans eux, l'écran dit « pas de connexion en attente » et un nouveau `up` s'ajoute à l'ancien. Rend la liste des pid ; vide hors Linux."""
+    pids = []
+    try:
+        noms = os.listdir(_PROC)
+    except OSError:
+        return pids
+    for n in noms:
+        if not n.isdigit() or int(n) == os.getpid():
+            continue
+        try:
+            with open(os.path.join(_PROC, n, "cmdline"), "rb") as f:
+                a = [x.decode("utf-8", "replace") for x in f.read().split(b"\0") if x]
+        except OSError:
+            continue
+        if len(a) >= 2 and os.path.basename(a[0]) == "tailscale" and a[1] == "up" and "--timeout=15m" in a:
+            pids.append(int(n))
+    return pids
+
+
 def lire_prefs():
     """Les préférences du client (`debug prefs`) ou None : elles disent SSH (`RunSSH`) et qui est l'opérateur (`OperatorUser`), le statut non."""
     code, sortie = _lancer(["debug", "prefs"])
@@ -151,7 +174,7 @@ def brancher(ctx):
         else:
             r["ssh"], r["operateur"], r["pilotable"] = None, "", None
         p = _EN_ATTENTE["proc"]
-        r["en_attente"] = bool(p and p.poll() is None)
+        r["en_attente"] = bool(p and p.poll() is None) or (r["etat"] == "a_identifier" and bool(orphelins()))
         r["cle_enregistree"] = bool(str(ctx.reglage("cle_auth", "") or "").strip())
         return r
 
@@ -190,6 +213,11 @@ def brancher(ctx):
             try:
                 err.close()
             except OSError:
+                pass
+        for pid in orphelins():                     # un `up` d'avant un redémarrage : même sort que celui qu'on suit
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except (OSError, AttributeError):
                 pass
 
     def sortie_attente():
