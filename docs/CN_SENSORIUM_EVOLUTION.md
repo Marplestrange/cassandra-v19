@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=05e5fa ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=8903ea ▼▼▼ -->
 # Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées
 
 Statut : note de conception, rédigée AVANT le code (09-11-2026). Chaque point porte un statut : **[décidé]** (je l'implémente, c'est écrit ici pourquoi),
@@ -157,6 +157,51 @@ a("sensorium.mesure_suivre", cle="dns.latence_locale", motif="la page Résolutio
 
 Un nœud Kino fera de même par l'API avec SON compte machine (droit `sensorium.alimenter`) : son espace (`kino-lyon.*`) lui appartient seul. **Limite assumée** : tous les modules du noyau agissent sous le même compte système
 « noyau » ; deux modules du noyau peuvent donc se marcher sur un espace. Tant qu'un module installé tourne dans le processus avec ses droits, ce n'est pas une frontière de sécurité de plus.
+
+## 15. Spécification du contrat, indépendante du langage (en vue d'un portage possible)
+
+Statut : **[décidé] pour les formats ci-dessous, qui décrivent ce que le code Python rend AUJOURD'HUI** ; **[proposé]** pour tout ce qui est marqué ainsi. Rien de Go n'est écrit ni décidé : cette section fixe la forme, pas l'implémentation.
+Transport : chaque message est un objet JSON (UTF-8). Aujourd'hui le « canal » est une capacité du noyau (`sensorium.<nom>`, arguments = champs de la requête, résultat = la réponse) ; un collecteur ou un nœud distant parlera
+le même JSON par un autre transport (à définir avec le Kino). Les instants sont des secondes Unix (nombre) ; les durées des secondes. Les clés : `^[a-z0-9][a-z0-9_.:/-]{0,119}$` ; l'espace est ce qui précède le premier `.` ou `:`.
+
+**Versions** [proposé] : aucune réponse ne porte encore de champ `version` ; ajouter `"v": 1` à chaque message est additif. Règle de compatibilité : un lecteur ignore les champs inconnus ; un champ n'est jamais retiré ni changé de sens dans une même version.
+
+**Erreurs** : une faute de l'émetteur n'est JAMAIS une erreur de transport (sinon la capacité serait rétrogradée pour tous) : la réponse porte `ok: false` + `refuse` (texte), ou, par lecture, `refusees: [{cle, motif}]`. Motifs de lecture refusée :
+`trop_vite` (plus d'une lecture par seconde et par clé), `capteur non déclaré`, `capteur d'un autre compte`, `lecture illisible`, `plus de 50 lectures par appel`. Les erreurs de transport/droit (`refuse`, `echec`) restent celles de l'exécuteur.
+
+| Requête | Champs (obligatoire*) | Réponse |
+|---|---|---|
+| `capteur_declarer` | `cle*`, `libelle`, `unite`, `fraicheur_s` (5 à 604800, déf. 300), `alerte`, `critique`, `pire` (`haut`\|`bas`), `confiance_min` (0 à 1) | `{ok, cle, espace, nouveau, espace_nouveau}` ou `{ok:false, refuse, cle}` |
+| `capteur_alimenter` | `lectures*` : liste (≤ 50) de `{cle*, valeur*, gravite (ok\|warning\|critical), observe_a, confiance (0..1), detail (≤ 500)}` | `{ok, acceptees:[cle], refusees:[{cle, motif}], t}` |
+| `capteur_retirer` | `cle*` | `{ok, cle, avant}` ou `{ok:false, refuse}` |
+| `mesure_suivre` / `mesure_ne_plus_suivre` | `cle*`, `motif` | `{ok, cle, nouveau}` / `{ok, cle, avant}` |
+| `mesure_publier` | `cle*`, `visibilite*` (`instance`\|`toutes`\|`societes:<id>[,<id>…]`), `libelle` | `{ok, cle, visibilite, avant}` |
+| `mesure_etat` | `cle*` | `{cle, libelle, etat, depuis, raison}` |
+| `vue_minimale` | `cles` (≤ 100, sinon tout ce qui est visible) | `{mesures:[{cle, libelle, etat, depuis, raison}], maintenant}` |
+| `mesure_detail` | `cle*` | `{cle, libelle, unite, etat, raison, age_s, depuis, valeur, gravite, observe_a, recu_a, confiance, decalage_s, detail, capteur, visibilite, suivie_par}` |
+| `prevision_mesure` | `cle*`, `niveau` (`alerte`\|`critique`) | `{conclu, raison, jours_avant_seuil?, pente_par_jour?, r2?, cle, niveau, seuil, points}` |
+| `lien_poser` / `lien_retirer` | `de*`, `relation` (`depend_de`,`heberge_par`,`certifie_par`,`resout_par`,`decrit`), `vers*` | `{ok, de, relation, vers, nouveau}` |
+| `impact` / `liens` | `objet*` (`impact` : `profondeur` ≤ 6) | `{depart, touches:[{objet, via, relation, distance}], tronque}` / `{objet, depend_de, dependants}` |
+
+**Événement** `mesure.change` (un par suiveur) : `{cle, avant, apres, depuis, raison, suiveur}` ; `avant`/`apres` ∈ `ok`,`alerte`,`inconnu` ; `avant` vaut `inconnu` avant la première lecture.
+
+**Sémantique normative (portable)** — c'est ce qu'un autre collecteur doit reproduire à l'identique :
+1. État : `inconnu` si aucune lecture, ou horloge locale < 2025-01-01, ou lecture datée de plus de 300 s dans le futur, ou `maintenant − recu_a > fraicheur_s`, ou `confiance < confiance_min` ; sinon `alerte` si la gravité est `warning`/`critical`, sinon `ok`.
+2. La fraîcheur se juge sur `recu_a` (l'horloge du récepteur), jamais sur `observe_a`. `decalage_s = observe_a − recu_a` ; au-delà de 300 s la confiance est plafonnée à 0,5.
+3. Gravité par seuils (si l'émetteur n'en donne pas) : `pire = haut` : `critical` si valeur ≥ critique, `warning` si ≥ alerte ; `bas` : mêmes comparaisons avec ≤. Une valeur non numérique ne déclenche aucun seuil.
+4. `depuis` = l'instant du dernier CHANGEMENT d'état (pour un silence : `recu_a + fraicheur_s`).
+5. Annonce : seulement pour une clé suivie ; ne se répète pas ; au plus une par 30 s et par clé (le retour attend la lecture suivante passée la fusion).
+6. Historique : un point numérique au plus toutes les 300 s (ou à chaque changement d'état), 2000 points, 14 jours. Prévision : régression linéaire (point `pente`, ≥ 6 points, r² ≥ 0,5), jamais de date si la pente s'éloigne du seuil.
+7. Plafonds : 200 capteurs (50 par compte), 500 clés suivies (50 par suiveur), 1 lecture/s/clé, 50 lectures/appel, 5000 liens (500 par auteur).
+8. Visibilité : un non-privilégié ne voit que `toutes` ou `societes:` contenant la société de l'acte ; une clé inconnue et une clé invisible répondent identiquement (`etat: inconnu`, libellé et raison vides).
+
+**Noyau portable / collecteurs propres au système** (la séparation à respecter) :
+* Portable : tout ce qui précède (protocole, états, fraîcheur, confiance, seuils, historique, tendance, fusion, plafonds, visibilité). Aujourd'hui `CN_mesures_etat.py` (pur, sans entrée/sortie) en est la référence exécutable ; `CN_capteurs.py` y ajoute le stockage.
+* Propre au système : les collecteurs du modèle du monde (`systemd`, `dig`, `chronyc`, DSM, Windows) qui produisent des lectures. Interface commune [proposé] : un collecteur est une fonction `() -> [lecture]` avec la forme de `capteur_alimenter.lectures[]` ; il ne connaît ni les seuils d'affichage, ni les droits, ni le bus.
+  Le collecteur Python actuel (~6 700 lignes, `GET_*` sur socket Unix) n'est PAS conforme à cette forme et n'est pas réécrit : un pont lui ferait émettre des lectures `monde.*` (déjà le cas pour les clés suivies, voir `ingerer_monde`).
+
+**Tests de contrat** : `tests/CN_test_sensorium_contrat.py` vérifie, par le seul canal de la requête (l'exécuteur, comme un client distant), que chaque réponse porte les champs et types de la table ci-dessus et que la sémantique 1 à 8 tient sur des cas fixes. Il prend une fonction `appeler(nom, **champs) -> réponse` :
+pour brancher une autre implémentation (Go), on remplace cette seule fonction par un client du protocole. **[proposé]** : la comparaison « mesure par mesure » entre le collecteur Python (étalon) et un futur collecteur sur la même machine se fera sur les lectures `monde.*` (clé, état, gravité) ; elle n'existe pas encore.
 
 ## 14. Ce qui n'est pas fait ici
 
