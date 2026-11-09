@@ -15,6 +15,11 @@ Verbes :
   docker_installer <conteneur> <tag> [--management-url=U] [--hostname=H]
                                                  crée le conteneur officiel (netbirdio/netbird:<tag>) avec ce qu'il lui faut ; clé facultative sur l'entrée standard
   docker_maj <conteneur> [tag]                  télécharge l’image (la même étiquette, ou <tag>) et, si elle a changé, recrée le conteneur avec son volume : l’identité est gardée
+  docker_revenir <conteneur> <sha256:…>         remet l'image d'avant (son identifiant, rendu par docker_maj) et recrée le conteneur avec son volume
+  natif_installer                               installe le paquet officiel du client (dépôt apt ou dnf de pkgs.netbird.io) et démarre son service
+  natif_maj                                     met le paquet à jour par le gestionnaire de paquets (apt ou dnf)
+  natif_revenir <version>                       remet une version précise du paquet
+  natif_retirer                                 désinstalle le paquet (la configuration de la machine est gardée)
   docker_retirer <conteneur> [purger]           retire le conteneur (et, si « purger », son volume : l'identité de la machine dans NetBird)
 
 Un conteneur n'est touché que s'il est une image netbirdio/netbird : ce programme ne retire ni ne pilote jamais le conteneur d'un autre service.
@@ -27,6 +32,7 @@ import signal
 import subprocess
 import sys
 import time
+import urllib.request
 
 IMAGE = "netbirdio/netbird"
 EST_IMAGE = re.compile(r"(^|/)netbirdio/netbird$")           # « evilnetbirdio/netbird » n'en est pas une
@@ -36,12 +42,24 @@ TAG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 NOM = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
 URL = re.compile(r"^https?://[A-Za-z0-9.-]{1,253}(:\d{1,5})?(/[A-Za-z0-9._~/-]{0,100})?$")
 RESEAU = re.compile(r"^[A-Za-z0-9._:/-]{1,100}$")
+ID_IMAGE = re.compile(r"^sha256:[0-9a-f]{64}$")
 CLE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
 LIEN = re.compile(r"https?://[^\s\"'<>]+")
 SORTIE_MAX = 60000
 ATTENTE_LIEN = 25
 
-executer = subprocess.run                                   # remplaçable : les bancs n'ont ni Docker ni NetBird
+OS_RELEASE = "/etc/os-release"
+CLE_APT = "https://pkgs.netbird.io/debian/public.key"
+TROUSSEAU = "/usr/share/keyrings/netbird-archive-keyring.gpg"
+LISTE_APT = "/etc/apt/sources.list.d/netbird.list"
+DEPOT_APT = "deb [signed-by=/usr/share/keyrings/netbird-archive-keyring.gpg] https://pkgs.netbird.io/debian stable main" + chr(10)
+DEPOT_RPM = "/etc/yum.repos.d/netbird.repo"
+CONTENU_RPM = chr(10).join(["[netbird]", "name=netbird", "baseurl=https://pkgs.netbird.io/yum/", "enabled=1", "gpgcheck=1", "gpgkey=https://pkgs.netbird.io/yum/repodata/repomd.xml.key", "repo_gpgcheck=1"]) + chr(10)
+VERSION_PAQUET = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}$")
+ENV_PAQUETS = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8", "DEBIAN_FRONTEND": "noninteractive"}
+
+executer = subprocess.run                                   # remplaçables : les bancs n'ont ni Docker, ni NetBird, ni réseau
+ouvrir = urllib.request.urlopen
 
 
 def refuser(raison):
@@ -315,8 +333,31 @@ def verbe_docker_maj(a, entree):
         return {"ok": False, "code": code, "sortie": sortie, "erreur": "le nouveau conteneur n'a pas démarré (%s) : %s" % (rep, sortie[:160])}
     if etat in ("exited", "created"):
         lancer(["docker", "stop", c], delai=30)                                        # un conteneur arrêté à dessein le reste
-    return {"ok": True, "change": True, "code": 0, "sortie": sortie}
+    return {"ok": True, "change": True, "code": 0, "sortie": sortie, "avant": actuel if ID_IMAGE.match(actuel) else "", "ref": cible}
 
+
+def verbe_docker_revenir(a, entree):
+    if len(a) != 2:
+        refuser("usage : docker_revenir <conteneur> <sha256:…>")
+    c = verifier_nom(a[0], CONTENEUR, "nom de conteneur")
+    ident = verifier_nom(a[1], ID_IMAGE, "identifiant d'image")
+    image, etat = conteneur_netbird(c)
+    code, sortie = lancer(["docker", "image", "inspect", "-f", "{{.Id}}", ident], delai=20)
+    if code != 0:
+        refuser("l'image d'avant n'est plus sur cette machine : elle ne peut pas être remise")
+    _, vu = lancer(["docker", "container", "inspect", "-f", "{{.Config.Hostname}}", c], delai=20)
+    nom = vu.strip() if NOM.match(vu.strip()) else c
+    url = url_du_conteneur(c)
+    code, sortie = lancer(["docker", "tag", ident, image], delai=30)                  # la référence repointe vers l'ancienne image : le conteneur garde son nom d'image NetBird
+    if code != 0:
+        return {"ok": False, "code": code, "sortie": sortie}
+    code, sortie = lancer(["docker", "rm", "-f", c], delai=30)
+    if code != 0:
+        return {"ok": False, "code": code, "sortie": sortie}
+    code, sortie = lancer(commande_run(c, nom, image, False, url), delai=60)
+    if code == 0 and etat in ("exited", "created"):
+        lancer(["docker", "stop", c], delai=30)
+    return {"ok": code == 0, "code": code, "sortie": sortie}
 
 
 def verbe_docker_retirer(a, entree):
@@ -330,7 +371,127 @@ def verbe_docker_retirer(a, entree):
     return {"ok": code == 0, "code": code, "sortie": sortie}
 
 
-VERBES = {"etat": verbe_etat, "cli": verbe_cli, "sso": verbe_sso, "sso_annuler": verbe_sso_annuler, "docker_installer": verbe_docker_installer, "docker_maj": verbe_docker_maj, "docker_retirer": verbe_docker_retirer}
+# ---- le client natif : le paquet officiel de NetBird
+def famille():
+    """apt (Debian, Ubuntu…) ou rpm (RHEL, Fedora…), d'après /etc/os-release ; sinon refus."""
+    try:
+        with open(OS_RELEASE) as f:
+            d = dict(l.strip().split("=", 1) for l in f if "=" in l and not l.startswith("#"))
+    except OSError:
+        refuser("/etc/os-release illisible : la distribution n'est pas reconnue")
+    ids = set((d.get("ID", "").strip('"') + " " + d.get("ID_LIKE", "").strip('"')).lower().split())
+    if ids & {"debian", "ubuntu"}:
+        return "apt"
+    if ids & {"rhel", "fedora", "centos", "rocky", "almalinux", "amzn"}:
+        return "rpm"
+    refuser("distribution non prise en charge (apt ou dnf/yum attendus) : installe le client à la main, ou dans Docker")
+
+
+def gestionnaire_rpm():
+    return "dnf" if shutil.which("dnf") else "yum"
+
+
+def version_native():
+    code, sortie = lancer(["netbird", "version"], delai=15)
+    m = re.search(r"\d+\.\d+\.\d+", sortie) if code == 0 else None
+    return m.group(0) if m else ""
+
+
+def sans_conteneur():
+    """Un seul client par machine : un conteneur NetBird déjà là interdit le paquet."""
+    if shutil.which("docker") is not None and autres_clients(""):
+        refuser("un conteneur NetBird existe déjà sur cette machine : un seul client par machine ; retire-le d'abord")
+
+
+def poser_depot_apt():
+    with ouvrir(CLE_APT, timeout=30) as r:
+        cle = r.read(100001)
+    if not cle or len(cle) > 100000:
+        refuser("la clé du dépôt NetBird est vide ou trop grosse")
+    code, sortie = lancer(["gpg", "--dearmor", "--yes", "--output", TROUSSEAU], entree=cle.decode("ascii", "replace"), delai=30)
+    if code != 0:
+        refuser("la clé du dépôt n'a pas pu être posée : %s" % sortie[-120:])
+    with open(LISTE_APT, "w") as f:
+        f.write(DEPOT_APT)
+
+
+def paquet(action, f, version=""):
+    """La commande du gestionnaire de paquets pour netbird : install, upgrade, downgrade ou remove."""
+    if f == "apt":
+        base = {"install": ["install", "-y", "netbird"], "upgrade": ["install", "-y", "--only-upgrade", "netbird"], "downgrade": ["install", "-y", "--allow-downgrades", "netbird=" + version], "remove": ["remove", "-y", "netbird"]}[action]
+        return ["apt-get"] + base
+    base = {"install": ["install", "-y", "netbird"], "upgrade": ["upgrade", "-y", "netbird"], "downgrade": ["downgrade", "-y", "netbird-" + version], "remove": ["remove", "-y", "netbird"]}[action]
+    return [gestionnaire_rpm()] + base
+
+
+def verbe_natif_installer(a, entree):
+    if a:
+        refuser("natif_installer n'a pas d'argument")
+    if shutil.which("netbird") is not None:
+        refuser("un client NetBird est déjà installé sur cette machine : un seul client par machine")
+    sans_conteneur()
+    f = famille()
+    if f == "apt":
+        poser_depot_apt()
+        code, sortie = lancer(["apt-get", "update"], delai=180, env=ENV_PAQUETS)
+        if code != 0:
+            return {"ok": False, "code": code, "sortie": sortie}
+    else:
+        with open(DEPOT_RPM, "w") as d:
+            d.write(CONTENU_RPM)
+    code, sortie = lancer(paquet("install", f), delai=240, env=ENV_PAQUETS)
+    if code != 0:
+        return {"ok": False, "code": code, "sortie": sortie}
+    lancer(["netbird", "service", "install"], delai=30)                              # sans effet si le paquet l'a déjà fait
+    lancer(["netbird", "service", "start"], delai=30)
+    return {"ok": True, "code": 0, "sortie": sortie, "famille": f, "version": version_native()}
+
+
+def verbe_natif_maj(a, entree):
+    if a:
+        refuser("natif_maj n'a pas d'argument")
+    if shutil.which("netbird") is None:
+        refuser("aucun client natif à mettre à jour")
+    f = famille()
+    avant = version_native()
+    if f == "apt":
+        code, sortie = lancer(["apt-get", "update"], delai=180, env=ENV_PAQUETS)
+        if code != 0:
+            return {"ok": False, "code": code, "sortie": sortie}
+    code, sortie = lancer(paquet("upgrade", f), delai=240, env=ENV_PAQUETS)
+    if code != 0:
+        return {"ok": False, "code": code, "sortie": sortie}
+    apres = version_native()
+    if apres != avant:
+        lancer(["netbird", "service", "restart"], delai=30)
+    return {"ok": True, "code": 0, "sortie": sortie, "avant": avant, "apres": apres, "change": apres != avant}
+
+
+def verbe_natif_revenir(a, entree):
+    if len(a) != 1:
+        refuser("usage : natif_revenir <version>")
+    v = verifier_nom(a[0], VERSION_PAQUET, "version (0.40.0 attendue)")
+    if shutil.which("netbird") is None:
+        refuser("aucun client natif")
+    f = famille()
+    code, sortie = lancer(paquet("downgrade", f, v), delai=240, env=ENV_PAQUETS)
+    if code == 0:
+        lancer(["netbird", "service", "restart"], delai=30)
+    return {"ok": code == 0, "code": code, "sortie": sortie, "version": version_native()}
+
+
+def verbe_natif_retirer(a, entree):
+    if a:
+        refuser("natif_retirer n'a pas d'argument")
+    if shutil.which("netbird") is None:
+        refuser("aucun client natif à désinstaller")
+    code, sortie = lancer(paquet("remove", famille()), delai=180, env=ENV_PAQUETS)
+    return {"ok": code == 0, "code": code, "sortie": sortie}
+
+
+
+VERBES = {"etat": verbe_etat, "cli": verbe_cli, "sso": verbe_sso, "sso_annuler": verbe_sso_annuler, "docker_installer": verbe_docker_installer, "docker_maj": verbe_docker_maj, "docker_revenir": verbe_docker_revenir, "docker_retirer": verbe_docker_retirer,
+          "natif_installer": verbe_natif_installer, "natif_maj": verbe_natif_maj, "natif_revenir": verbe_natif_revenir, "natif_retirer": verbe_natif_retirer}
 
 
 def piloter(argv, entree=""):

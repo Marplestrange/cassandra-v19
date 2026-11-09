@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4c709d
+# VERSION CN : 0.1.0  #d8ea06
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `piloter` du module netbird : ce que le courtier lance À ROOT. Ni Docker ni NetBird ici : `executer` est remplacé, chaque commande qui serait lancée est enregistrée, et l'on vérifie surtout ce qui est REFUSÉ (argum
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4c709d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d8ea06 ▼▼▼
 """Bancs de la commande root `piloter` du module netbird : ce que le courtier lance À ROOT. Ni Docker ni NetBird ici : `executer` est remplacé, chaque commande qui serait lancée est
 enregistrée, et l'on vérifie surtout ce qui est REFUSÉ (arguments hors table, conteneur d'un autre service, clé en ligne de commande)."""
 import importlib.machinery
@@ -218,7 +218,42 @@ class Docker(Monde):
         self.assertEqual(run[run.index("--hostname") + 1], "argos", "le nom de la machine est gardé")
         self.assertEqual(run[-1], "netbirdio/netbird:latest")
 
+    def test_maj_rend_l_identifiant_d_avant_pour_pouvoir_revenir(self):
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
+        self.sorties["docker container inspect"] = (0, "sha256:" + "a" * 64 + "|argos")
+        self.sorties["docker image inspect"] = (0, "sha256:" + "b" * 64)
+        r = self.lance("docker_maj", "netbird")
+        self.assertEqual((r["avant"], r["ref"]), ("sha256:" + "a" * 64, "netbirdio/netbird:latest"))
+
+    def test_revenir_repointe_la_reference_puis_recree_avec_le_meme_volume(self):
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
+        self.sorties["docker container inspect -f {{json .Config.Env}}"] = (0, '["NB_MANAGEMENT_URL=https://netbird.exemple.fr:443"]')
+        self.sorties["docker container inspect"] = (0, "argos")
+        ancienne = "sha256:" + "a" * 64
+        self.sorties["docker image inspect"] = (0, ancienne)
+        r = self.lance("docker_revenir", "netbird", ancienne)
+        self.assertTrue(r["ok"], r)
+        lances = self.lances()
+        self.assertIn(["docker", "tag", ancienne, "netbirdio/netbird:latest"], lances, "la référence redevient l'ancienne image : le conteneur garde un nom d'image NetBird")
+        run = [c for c in lances if c[:2] == ["docker", "run"]][0]
+        self.assertEqual(run[-1], "netbirdio/netbird:latest")
+        self.assertIn("netbird-donnees:/var/lib/netbird", run)
+        self.assertIn("NB_MANAGEMENT_URL=https://netbird.exemple.fr:443", run)
+        self.assertFalse([c for c in lances if c[:2] == ["docker", "volume"]], "le volume, donc l'identité, n'est jamais touché")
+
+    def test_revenir_refuse_ce_qui_est_suspect_ou_une_image_disparue(self):
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
+        self.conteneurs["vaultwarden"] = ("vaultwarden/server:latest", "running")
+        bonne = "sha256:" + "a" * 64
+        for argv in (("docker_revenir", "netbird"), ("docker_revenir", "netbird", "latest"), ("docker_revenir", "netbird", "sha256:abc"), ("docker_revenir", "vaultwarden", bonne), ("docker_revenir", "a b", bonne)):
+            self.assertFalse(self.lance(*argv)["ok"], argv)
+        self.assertFalse([c for c in self.lances() if c[:2] in (["docker", "rm"], ["docker", "run"], ["docker", "tag"])])
+        self.sorties["docker image inspect"] = (1, "No such image")
+        self.assertIn("plus sur cette machine", self.lance("docker_revenir", "netbird", bonne)["erreur"])
+        self.assertFalse([c for c in self.lances() if c[:2] in (["docker", "rm"], ["docker", "run"])], "sans l'image d'avant, le conteneur actuel n'est pas touché")
+
     def test_maj_ne_touche_a_rien_quand_l_image_n_a_pas_change(self):
+
         self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
         self.sorties["docker container inspect"] = (0, "sha256:meme|argos")
         self.sorties["docker image inspect"] = (0, "sha256:meme")
@@ -290,6 +325,117 @@ class Docker(Monde):
             r = self.lance(*argv)
             self.assertFalse(r["ok"])
             self.assertIn("Docker n'est pas installé", r["erreur"])
+
+
+class Natif(Monde):
+    def setUp(self):
+        super().setUp()
+        self.natif = False
+        d = Path(self.tmp.name)
+        self.p.OS_RELEASE = str(d / "os-release")
+        self.p.TROUSSEAU, self.p.LISTE_APT, self.p.DEPOT_RPM = str(d / "trousseau.gpg"), str(d / "netbird.list"), str(d / "netbird.repo")
+        Path(self.p.OS_RELEASE).write_text('ID=ubuntu\nID_LIKE=debian\n')
+        self.urls = []
+
+        class Reponse:
+            def __enter__(s):
+                return s
+
+            def __exit__(s, *a):
+                return False
+
+            def read(s, n=-1):
+                return b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nabc\n-----END PGP PUBLIC KEY BLOCK-----\n"
+        self.p.ouvrir = lambda url, timeout=0: (self.urls.append(url), Reponse())[1]
+        self.sorties["netbird version"] = (0, "0.40.0")
+
+    def test_installer_sur_debian_pose_le_depot_signe_puis_le_paquet(self):
+        r = self.lance("natif_installer")
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(self.urls, ["https://pkgs.netbird.io/debian/public.key"])
+        self.assertEqual(Path(self.p.LISTE_APT).read_text(), "deb [signed-by=/usr/share/keyrings/netbird-archive-keyring.gpg] https://pkgs.netbird.io/debian stable main\n")
+        cmds = [c for c in self.lances() if c[:2] != ["docker", "ps"]]
+        self.assertEqual(cmds[0], ["gpg", "--dearmor", "--yes", "--output", self.p.TROUSSEAU])
+        self.assertIn("BEGIN PGP", self.entrees[self.cmds.index(cmds[0])], "la clé arrive par l'entrée standard")
+        self.assertEqual(cmds[1], ["apt-get", "update"])
+        self.assertEqual(cmds[2], ["apt-get", "install", "-y", "netbird"])
+        self.assertIn(["netbird", "service", "start"], cmds)
+        self.assertEqual(self.envs[self.cmds.index(["apt-get", "install", "-y", "netbird"])]["DEBIAN_FRONTEND"], "noninteractive")
+
+    def test_installer_sur_rhel_pose_le_depot_rpm_puis_dnf(self):
+        Path(self.p.OS_RELEASE).write_text('ID="rocky"\nID_LIKE="rhel centos fedora"\n')
+        r = self.lance("natif_installer")
+        self.assertTrue(r["ok"], r)
+        rpm = Path(self.p.DEPOT_RPM).read_text()
+        self.assertIn("baseurl=https://pkgs.netbird.io/yum/", rpm)
+        self.assertIn("gpgcheck=1", rpm)
+        self.assertIn("repo_gpgcheck=1", rpm)
+        self.assertEqual([c for c in self.lances() if c[:2] != ["docker", "ps"]][0], ["dnf", "install", "-y", "netbird"])
+        self.assertFalse(self.urls, "pas de clé téléchargée ici : dnf la prend à gpgkey, et vérifie")
+
+    def test_installer_refuse_un_second_client_ou_une_distribution_inconnue(self):
+        self.natif = True
+        self.assertIn("déjà installé", self.lance("natif_installer")["erreur"])
+        self.natif = False
+        self.sorties["docker ps"] = (0, "netbird|netbirdio/netbird:latest")
+        self.assertIn("conteneur NetBird", self.lance("natif_installer")["erreur"])
+        self.sorties.clear()
+        Path(self.p.OS_RELEASE).write_text("ID=arch\n")
+        self.assertIn("non prise en charge", self.lance("natif_installer")["erreur"])
+        Path(self.p.OS_RELEASE).unlink()
+        self.assertFalse(self.lance("natif_installer")["ok"])
+        self.assertFalse([c for c in self.lances() if c[0] in ("apt-get", "dnf", "yum", "gpg")], "rien n'est installé")
+
+    def test_installer_dit_ce_qui_a_echoue(self):
+        self.sorties["apt-get update"] = (100, "Err: dépôt injoignable")
+        r = self.lance("natif_installer")
+        self.assertFalse(r["ok"])
+        self.assertIn("injoignable", r["sortie"])
+        self.assertFalse([c for c in self.lances() if c[:2] == ["apt-get", "install"]], "pas d'installation si le dépôt n'a pas répondu")
+
+    def test_maj_dit_si_la_version_a_change_et_redemarre_le_service_alors(self):
+        self.natif = True
+        versions = iter(["0.40.0", "0.41.0"])
+        self.p.version_native = lambda: next(versions)
+        r = self.lance("natif_maj")
+        self.assertEqual((r["ok"], r["avant"], r["apres"], r["change"]), (True, "0.40.0", "0.41.0", True))
+        self.assertEqual(self.lances(), [["apt-get", "update"], ["apt-get", "install", "-y", "--only-upgrade", "netbird"], ["netbird", "service", "restart"]])
+        self.cmds.clear()
+        self.p.version_native = lambda: "0.41.0"
+        r = self.lance("natif_maj")
+        self.assertFalse(r["change"])
+        self.assertNotIn(["netbird", "service", "restart"], self.lances(), "rien à redémarrer s'il n'y a rien de nouveau")
+
+    def test_maj_et_retrait_sans_client_natif_sont_refuses(self):
+        self.natif = False
+        for verbe in ("natif_maj", "natif_retirer"):
+            self.assertFalse(self.lance(verbe)["ok"], verbe)
+        self.assertFalse(self.lance("natif_revenir", "0.40.0")["ok"])
+        self.assertFalse(self.lances())
+
+    def test_revenir_remet_une_version_precise_apt_et_dnf(self):
+        self.natif = True
+        self.assertTrue(self.lance("natif_revenir", "0.40.0")["ok"])
+        self.assertIn(["apt-get", "install", "-y", "--allow-downgrades", "netbird=0.40.0"], self.lances())
+        self.cmds.clear()
+        Path(self.p.OS_RELEASE).write_text("ID=fedora\n")
+        self.assertTrue(self.lance("natif_revenir", "0.40.0")["ok"])
+        self.assertIn(["dnf", "downgrade", "-y", "netbird-0.40.0"], self.lances())
+        self.cmds.clear()
+        for mauvais in ("latest", "0.40", "0.40.0;id", "", "../x"):
+            self.assertFalse(self.lance("natif_revenir", mauvais)["ok"], mauvais)
+        self.assertFalse(self.lances())
+
+    def test_retirer_desinstalle_le_paquet(self):
+        self.natif = True
+        self.assertTrue(self.lance("natif_retirer")["ok"])
+        self.assertEqual(self.lances(), [["apt-get", "remove", "-y", "netbird"]])
+
+    def test_aucun_argument_en_trop(self):
+        self.natif = True
+        for argv in (("natif_installer", "x"), ("natif_maj", "x"), ("natif_retirer", "x")):
+            self.assertFalse(self.lance(*argv)["ok"], argv)
+
 
 
 class Sso(Monde):
