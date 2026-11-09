@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ac6a50
+// VERSION CN : 0.1.0  #dec193
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ac6a50 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=dec193 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -100,14 +100,21 @@
           : '<p class="note" style="color:var(--danger)">Le lien reçu ne vient pas de Tailscale : il n’est pas proposé. Annule et recommence.</p><div class="acts"><button class="btn" data-a="annuler">Annuler</button></div>') + "</div>";
     }
 
+    // Le retrait du réseau (`tailscale logout`) efface aussi le droit d'opérateur : Cassandra ne peut plus reconnecter la machine, le client exige alors root. On le dit au lieu de proposer
+    // un bouton qui échoue (constaté sur argos).
+    function avisOperateur(e) {
+      return e.pilotable === false ? '<div class="carte" style="color:var(--warn)">Cassandra n’a plus le droit de piloter Tailscale sur cette machine (le retrait du réseau l’efface). Pour reconnecter d’ici, ' +
+        'lance d’abord sur la machine : <span class="mono">sudo tailscale set --operator=cassandra</span> ; ou connecte-la directement : <span class="mono">sudo tailscale up --operator=cassandra</span>.</div>' : "";
+    }
+
     function carteConnexion(e) {
-      return '<div class="carte"><h2 style="font:650 16px Inter,system-ui,sans-serif">Connecter cette machine à ton réseau Tailscale</h2>' +
+      return avisOperateur(e) + '<div class="carte"><h2 style="font:650 16px Inter,system-ui,sans-serif">Connecter cette machine à ton réseau Tailscale</h2>' +
         '<p class="note">Tailscale relie tes machines entre elles par un réseau privé chiffré : plus besoin d’ouvrir de ports pour y accéder.</p>' +
         '<div class="champs"><label class="ch"><b>Nom de la machine</b><span class="note">Facultatif ; celui du système par défaut.</span><input type="text" id="ts-nom" value="' + esc(S.nom) + '" placeholder="argos" autocomplete="off" spellcheck="false"></label>' +
         '<label class="coche"><input type="checkbox" id="ts-ssh"' + (S.ssh ? " checked" : "") + '><span><b>SSH par Tailscale</b><br><span class="note">Entrer sur cette machine depuis ton réseau privé, sans clé SSH.</span></span></label></div>' +
-        '<div class="acts"><button class="btn pri" data-a="connecter"' + (S.occupe ? " disabled" : "") + ">" + (S.occupe ? "Un instant…" : "Se connecter") + "</button></div>" +
+        '<div class="acts"><button class="btn pri" data-a="connecter"' + (S.occupe || e.pilotable === false ? " disabled" : "") + ">" + (S.occupe ? "Un instant…" : "Se connecter") + "</button></div>" +
         '<details><summary>J’ai une clé d’authentification</summary><p class="note" style="margin-bottom:8px">Créée sur login.tailscale.com › Settings › Keys. Elle sert une fois, n’est gardée nulle part et l’écran l’efface aussitôt.</p>' +
-        '<div class="acts"><input type="password" id="ts-cle" placeholder="tskey-auth-…" autocomplete="off" spellcheck="false" style="flex:1 1 260px"><button class="btn" data-a="cle"' + (S.occupe ? " disabled" : "") + ">Se connecter avec la clé</button></div></details></div>";
+        '<div class="acts"><input type="password" id="ts-cle" placeholder="tskey-auth-…" autocomplete="off" spellcheck="false" style="flex:1 1 260px"><button class="btn" data-a="cle"' + (S.occupe || e.pilotable === false ? " disabled" : "") + ">Se connecter avec la clé</button></div></details></div>";
     }
 
     function carteReseau(e) {
@@ -129,7 +136,7 @@
         '<button class="btn" data-a="ssh" data-v="' + (ssh ? "0" : "1") + '"' + (bloque || e.ssh == null ? " disabled" : "") + ">" + (ssh ? "Couper" : "Activer") + "</button></div>" +
         '<div class="acts">' + (S.couper ? '<span class="confirme">Couper Tailscale sur cette machine ? Si tu t’y connectes par Tailscale, tu perdras l’accès. <button class="btn dng" data-a="deconnecter-oui">Oui, couper</button><button class="btn" data-a="deconnecter-non">Non</button></span>'
           : '<button class="btn" data-a="deconnecter"' + (bloque ? " disabled" : "") + ">Déconnecter</button>") +
-        (S.quitter ? '<span class="confirme">Retirer cette machine du réseau ? Il faudra s’identifier à nouveau. <button class="btn dng" data-a="quitter-oui">Oui, la retirer</button><button class="btn" data-a="quitter-non">Non</button></span>'
+        (S.quitter ? '<span class="confirme">Retirer cette machine du réseau ? Il faudra s’identifier à nouveau, et Cassandra perdra aussi son droit de piloter Tailscale (à rendre sur la machine : sudo tailscale set --operator=cassandra). <button class="btn dng" data-a="quitter-oui">Oui, la retirer</button><button class="btn" data-a="quitter-non">Non</button></span>'
           : '<button class="btn dng" data-a="quitter"' + (bloque ? " disabled" : "") + ">Retirer du réseau…</button>") + "</div></div>";
     }
 

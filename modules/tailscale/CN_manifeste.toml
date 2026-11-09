@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.4  #7ae1f9
+# VERSION CN : 0.1.5  #822842
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale.
 # MÉTHODE    : le client `tailscale` local, par son socket ; l'installateur donne à l'utilisateur de Cassandra le droit de le piloter (--operator), jamais de root.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.4 empreinte=7ae1f9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.5 empreinte=822842 ▼▼▼
 [module]
 id = "tailscale"
 nom = "Tailscale"
-version = "0.1.4"
+version = "0.1.5"
 noyau_min = "0.1.0"
 description = "Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale."
 confiance = "interne"
@@ -95,7 +95,7 @@ risque = "eleve"
 droit = "administrer"
 perimetre = ["la connexion Tailscale de cette machine"]
 preuve = "l'état du client demande une nouvelle identification"
-retour = "se reconnecter : une nouvelle identification est demandée (la machine peut changer d'adresse dans le réseau)"
+retour = "se reconnecter : une nouvelle identification est demandée (la machine peut changer d'adresse dans le réseau). Le retrait efface AUSSI le droit d'opérateur de Cassandra : avant de reconnecter depuis l'interface, sur la machine, `sudo tailscale set --operator=cassandra`"
 
 [[capacites]]
 id = "ssh_regler"
