@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #43ca9e
+# VERSION CN : 0.1.0  #624ac5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=43ca9e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=624ac5 ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -32,6 +32,7 @@ import datetime
 import functools
 import json
 import re
+import socket
 import subprocess
 import threading
 import time
@@ -41,6 +42,9 @@ import urllib.request
 DELAI = 15
 NOM = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
 CONTENEUR = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$")
+VERSION_NUM = re.compile(r"v?(\d{1,3})\.(\d{1,3})\.(\d{1,3})")
+URL_VERSIONS = "https://api.github.com/repos/netbirdio/netbird/releases/latest"
+ID_SAUVEGARDE = re.compile(r"^\d{8}-\d{6}$")
 TAG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 URL = re.compile(r"^https?://[A-Za-z0-9.-]{1,253}(:\d{1,5})?(/[A-Za-z0-9._~/-]{0,100})?$")
 CLE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
@@ -63,7 +67,9 @@ PORTS = [
     {"port": 8084, "proto": "tcp", "public": False, "modes": ["nginx", "caddy"], "ancien": True, "usage": "Relais : /relay (ancienne pile, avant v0.65.0)"},
     {"port": 10000, "proto": "tcp", "public": False, "modes": ["nginx", "caddy"], "ancien": True, "usage": "Signal en gRPC : /signalexchange.SignalExchange (ancienne pile, avant v0.65.0)"},
 ]
-_SERVEUR = {"meta": None}                          # ce que la commande root `serveur` a dit du serveur NetBird posé (domaine, version…), pour savoir où est son API
+_SERVEUR = {"meta": None}
+_VERSIONS = {"t": 0.0, "val": ""}
+_resoudre = lambda nom: socket.getaddrinfo(nom, None, socket.AF_INET)         # remplaçable : les bancs n'ont pas de DNS                          # ce que la commande root `serveur` a dit du serveur NetBird posé (domaine, version…), pour savoir où est son API
 ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 NOM_API = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,62}$")
 VERSION_SERVEUR = re.compile(r"^v\d{1,3}\.\d{1,3}\.\d{1,3}$")
@@ -402,19 +408,112 @@ def brancher(ctx):
             if tag and not TAG.match(tag):
                 raise ValueError("Étiquette d'image invalide (latest, 0.30.0…)")
             info = detecter(True)
+            avant_version = str((_etat(c, True)).get("version") or "")
             if info["conteneur"] not in ("en_marche", "arrete"):
-                if info["natif"]:
-                    raise ValueError("Le client NetBird est installé directement sur cette machine, pas dans Docker : sa mise à jour passe par le gestionnaire de paquets de la machine (apt, dnf…), Cassandra n'y touche pas.")
-                raise ValueError("Il n'y a pas de conteneur NetBird « %s » à mettre à jour" % conteneur())
+                if not info["natif"]:
+                    raise ValueError("Il n'y a pas de client NetBird à mettre à jour : ni conteneur « %s », ni paquet" % conteneur())
+                r = _racine("natif_maj", [], None, 380)                           # le paquet : par le gestionnaire de paquets, sans tag
+                if not r.get("ok"):
+                    raise ValueError(erreur(r.get("erreur") or r.get("sortie")))
+                _MODE["val"] = None
+                _CACHE["val"] = None
+                avant, apres = str(r.get("avant") or avant_version), str(r.get("apres") or "")
+                return dict(_etat(c, True), maj_change=bool(r.get("change")), maj_mode="natif", version_avant=avant, version_apres=apres, revenir={"mode": "natif", "version": avant} if r.get("change") and avant else {})
             r = _racine("docker_maj", [conteneur()] + ([tag] if tag else []), None, 480)
             if not r.get("ok"):
                 raise ValueError(erreur(r.get("erreur") or r.get("sortie")))
             _MODE["val"] = None
             _CACHE["val"] = None
-            return dict(_etat(c, True), maj_change=bool(r.get("change")))
+            apres = dict(_etat(c, True), maj_change=bool(r.get("change")), maj_mode="docker", version_avant=avant_version)
+            apres["version_apres"] = str(apres.get("version") or "")
+            apres["revenir"] = {"mode": "docker", "avant": r["avant"]} if r.get("change") and r.get("avant") else {}
+            return apres
+
+    def defaire_maj_client(c, res):
+        with _VERROU:
+            v = res.get("revenir") or {}
+            r = _racine("docker_revenir", [conteneur(), v.get("avant", "")], None, 180) if v.get("mode") == "docker" else _racine("natif_revenir", [v.get("version", "")], None, 300)
+            if not r.get("ok"):
+                raise ValueError(erreur(r.get("erreur") or r.get("sortie")))
+            _MODE["val"] = None
+            _CACHE["val"] = None
+
+    def installer_natif(c):
+        with _VERROU:
+            info = detecter(True)
+            if info["natif"]:
+                raise ValueError("Un client NetBird est déjà installé sur cette machine : un seul client par machine.")
+            if info["conteneur"] in ("en_marche", "arrete", "autre"):
+                raise ValueError("Un conteneur « %s » existe déjà : un seul client par machine (deux se disputeraient l'interface wt0 et le port 51820). Retire-le d'abord." % conteneur())
+            if not info["courtier"]:
+                raise ValueError("Le courtier ne répond pas ou la commande root du module est absente : CN_install.sh --module netbird")
+            r = _racine("natif_installer", [], None, 420)
+            if not r.get("ok"):
+                raise ValueError(erreur(r.get("erreur") or r.get("sortie")))
+            _MODE["val"] = None
+            _CACHE["val"] = None
+            return dict(_etat(c, True), natif_version=str(r.get("version") or ""), famille=str(r.get("famille") or ""))
+
+    def prouver_natif_installe(c, res):
+        return bool(detecter(True)["natif"])
+
+    def prouver_maj_client(c, res):
+        return prouver_natif_installe(c, res) if res.get("maj_mode") == "natif" else prouver_installe(c, res)
+
+    def retirer_natif_effet():
+        r = _racine("natif_retirer", [], None, 240)
+        if not r.get("ok"):
+            raise ValueError(erreur(r.get("erreur") or r.get("sortie")))
+        _MODE["val"] = None
+        _CACHE["val"] = None
+
+    def defaire_installer_natif(c, res):
+        with _VERROU:
+            retirer_natif_effet()
+
+    def retirer_natif(c):
+        with _VERROU:
+            if not detecter(True)["natif"]:
+                raise ValueError("Il n'y a pas de client natif à désinstaller")
+            retirer_natif_effet()
+            return _etat(c, True)
+
+    def prouver_natif_retire(c, res):
+        return not detecter(True)["natif"]
+
 
     def prouver_retire(c, res):
         return detecter(True)["conteneur"] == "absent"
+
+    # ---- les versions : ce qui est installé, et la dernière publiée par NetBird (GitHub, une demande par heure au plus)
+    def nombres(v):
+        m = VERSION_NUM.search(str(v or ""))
+        return tuple(int(x) for x in m.groups()) if m else None
+
+    def plus_recente(installee, derniere):
+        """True : la dernière est plus récente ; False : non ; None : on ne sait pas (une des deux versions est illisible)."""
+        a, b = nombres(installee), nombres(derniere)
+        return None if a is None or b is None else b > a
+
+    def derniere_version():
+        """(tag de la dernière publication de NetBird, raison de l'échec). Une réponse récente est gardée ; si GitHub ne répond pas, la dernière connue est rendue."""
+        if _VERSIONS["val"] and time.time() - _VERSIONS["t"] < 3600:
+            return _VERSIONS["val"], ""
+        code, d = _http("GET", URL_VERSIONS, None, None, 10)
+        tag = str(d.get("tag_name") or "") if code == 200 and isinstance(d, dict) else ""
+        if VERSION_SERVEUR.match(tag):
+            _VERSIONS.update(t=time.time(), val=tag)
+            return tag, ""
+        return _VERSIONS["val"], "GitHub ne répond pas (%s)" % (code if code else str(d)[:80])
+
+    def versions(c):
+        derniere, erreur_v = derniere_version()
+        client = str(_etat(c, False).get("version") or "")
+        e = srv("etat")
+        serveur = str(((e.get("meta") or {}) if e.get("ok") and e.get("installe") else {}).get("version") or "")
+        return {"derniere": derniere, "client": client, "client_a_jour": None if not client else (None if plus_recente(client, derniere) is None else not plus_recente(client, derniere)),
+                "serveur": serveur, "serveur_a_jour": None if not serveur else (None if plus_recente(serveur, derniere) is None else not plus_recente(serveur, derniere)),
+                "erreur": erreur_v, "source": "github.com/netbirdio/netbird/releases"}
 
     # ---- le SERVEUR NetBird : posé et tenu par la commande root `serveur` (courtier) ; ADMINISTRÉ par l'API du serveur, sans root
     def srv(verbe, args=(), entree=None, delai=60):
@@ -514,9 +613,86 @@ def brancher(ctx):
             time.sleep(2.0)
         return False
 
-    def serveur_mettre_a_jour(c):
+    def serveur_mettre_a_jour(c, sauvegarde=True):
         with _VERROU:
-            return dict(serveur_etat(c), mise_a_jour=srv_ok(srv("mettre_a_jour", [], None, 295)).get("sortie", "")[-600:])
+            avant = str(((serveur_etat(c).get("meta")) or {}).get("version") or "")
+            sauv = srv_ok(srv("sauvegarder", ["avant_maj"], None, 400)).get("id", "") if sauvegarde else ""       # sans copie, la mise à jour ne se défait pas
+            derniere, _ = derniere_version()
+            r = srv_ok(srv("mettre_a_jour", [derniere] if derniere and plus_recente(avant, derniere) else [], None, 295))
+            e = serveur_etat(c)
+            return dict(e, mise_a_jour=r.get("sortie", "")[-600:], sauvegarde=sauv, version_avant=avant, version_apres=str((e.get("meta") or {}).get("version") or ""))
+
+    def defaire_serveur_maj(c, res):
+        with _VERROU:
+            srv_ok(srv("restaurer", [res.get("sauvegarde", ""), "images"], None, 450))                # les données, la config ET les images d'avant
+            _SERVEUR["meta"] = None
+
+    def serveur_sauvegarder(c):
+        with _VERROU:
+            return srv_ok(srv("sauvegarder", ["manuelle"], None, 400))
+
+    def serveur_sauvegardes(c):
+        return srv_ok(srv("sauvegardes"))
+
+    def serveur_restaurer(c, id="", images=False):
+        with _VERROU:
+            ident = str(id or "").strip()
+            if not ID_SAUVEGARDE.match(ident):
+                raise ValueError("Identifiant de sauvegarde attendu, tel que la liste le donne (20261109-143200)")
+            r = srv_ok(srv("restaurer", [ident] + (["images"] if images else []), None, 450))
+            _SERVEUR["meta"] = None
+            return dict(serveur_etat(c), restauree=ident, securite=str(r.get("securite") or ""), images_remises=int(r.get("images_remises") or 0))
+
+    def prouver_restauration(c, res):
+        for _ in range(15):
+            if any(x.get("etat") == "running" for x in serveur_etat(c).get("conteneurs") or []):
+                return True
+            time.sleep(2.0)
+        return False
+
+    def defaire_restauration(c, res):
+        with _VERROU:
+            srv_ok(srv("restaurer", [res.get("securite", "")], None, 450))                              # remet ce qui était là avant la restauration
+            _SERVEUR["meta"] = None
+
+    # ---- le pare-feu : les ports publics de NetBird, ouverts et refermés par la commande root
+    def proxy_du_serveur(proxy=""):
+        p = str(proxy or (_SERVEUR.get("meta") or {}).get("proxy") or "nginx")
+        return p if p in ("traefik", "nginx", "caddy") else "nginx"
+
+    def pare_feu_etat(c, proxy=""):
+        p = proxy_du_serveur(proxy)
+        r = srv_ok(srv("pare_feu"))
+        return dict(r, proxy=p, publics=(["80/tcp"] if p == "traefik" else []) + ["443/tcp", "3478/udp"])
+
+    def pare_feu_ouvrir(c, proxy=""):
+        with _VERROU:
+            p = proxy_du_serveur(proxy)
+            r = srv_ok(srv("pare_feu_ouvrir", [p]))
+            return dict(r, proxy=p)
+
+    def prouver_pare_feu(c, res):
+        e = srv_ok(srv("pare_feu"))
+        return all(p in e.get("ouverts", []) for p in (res.get("ouverts_par_nous") or []) + (res.get("deja_ouverts") or []))
+
+    def defaire_pare_feu(c, res):
+        with _VERROU:
+            ports = [p for p in (res.get("ouverts_par_nous") or []) if p in ("80/tcp", "443/tcp", "3478/udp")]       # seulement ce que ce geste a ouvert : le reste était déjà là
+            if ports:
+                srv_ok(srv("pare_feu_fermer", ports))
+
+    def serveur_ip(c):
+        return srv_ok(srv("ip"))
+
+    def serveur_dns_verifier(c, domaine="", ip=""):
+        d, attendue = str(domaine or "").strip().lower(), str(ip or "").strip()
+        if not DOMAINE.match(d):
+            raise ValueError("Domaine invalide : le nom (netbird.exemple.fr) du serveur")
+        try:
+            adresses = sorted({x[4][0] for x in _resoudre(d)})
+        except OSError:
+            adresses = []
+        return {"domaine": d, "adresses": adresses, "attendue": attendue, "resolu": bool(adresses), "correspond": (attendue in adresses) if attendue else bool(adresses)}
 
     def serveur_redemarrer(c):
         with _VERROU:
@@ -534,10 +710,13 @@ def brancher(ctx):
             avant = serveur_etat(c)
             if not avant.get("installe"):
                 raise ValueError("Aucun serveur NetBird posé par Cassandra")
+            sauv = ""
+            if purger and not avant.get("partiel"):
+                sauv = srv_ok(srv("sauvegarder", ["avant_retrait"], None, 400)).get("id", "")          # les données vont partir : on les copie d'abord, et sans copie on ne purge pas
             r = srv_ok(srv("retirer", ["purger"] if purger else [], None, 130))
             _SERVEUR["meta"] = None
             # `purge` : ce que la commande root a vraiment fait (une installation inachevée, sans pile, part toujours en entier) ; `avertissement` : un dossier qui a résisté.
-            return dict(serveur_etat(c), purge=bool(r.get("purge", purger)), avertissement=str(r.get("avertissement") or ""), domaine_retire=(avant.get("meta") or {}).get("domaine", ""))
+            return dict(serveur_etat(c), purge=bool(r.get("purge", purger)), avertissement=str(r.get("avertissement") or ""), sauvegarde=sauv, domaine_retire=(avant.get("meta") or {}).get("domaine", ""))
 
     def prouver_serveur_retire(c, res):
         return not serveur_etat(c).get("conteneurs")
@@ -772,7 +951,11 @@ def brancher(ctx):
         return enveloppe
 
     DEFAIRE = {"connecter": defaire_connecter, "deconnecter": defaire_deconnecter, "installer_docker": defaire_installer, "machine_modifier": defaire_machine, "cle_creer": defaire_cle, "cle_revoquer": defaire_revocation,
-               "groupe_creer": defaire_groupe, "politique_creer": defaire_politique, "politique_activer": defaire_activation}
+               "groupe_creer": defaire_groupe, "politique_creer": defaire_politique, "politique_activer": defaire_activation,
+               "serveur_mettre_a_jour": defaire_serveur_maj, "mettre_a_jour_client": defaire_maj_client, "serveur_restaurer": defaire_restauration, "pare_feu_ouvrir": defaire_pare_feu,
+               "installer_natif": defaire_installer_natif}
+    PEUT_DEFAIRE = {"serveur_mettre_a_jour": lambda r: bool(r.get("sauvegarde")), "mettre_a_jour_client": lambda r: bool(r.get("revenir")), "serveur_restaurer": lambda r: bool(r.get("securite")),
+                    "pare_feu_ouvrir": lambda r: bool(r.get("ouverts_par_nous"))}
 
     def libelle_geste(cap, args, res):
         if cap == "installer_docker":
@@ -781,11 +964,27 @@ def brancher(ctx):
             return "Conteneur NetBird retiré" + (" avec son volume (identité perdue)" if res.get("docker_purge") else "")
         n = res.get("nom") or args.get("nom") or res.get("id") or ""
         if cap == "mettre_a_jour_client":
-            return "Client NetBird mis à jour (conteneur recréé, identité gardée)" if res.get("maj_change") else "Client NetBird déjà à jour"
+            if not res.get("maj_change"):
+                return "Client NetBird déjà à jour"
+            de = " : %s → %s" % (res.get("version_avant") or "?", res.get("version_apres") or "?") if res.get("version_avant") != res.get("version_apres") else ""
+            return "Client NetBird mis à jour%s (%s)" % (de, "paquet" if res.get("maj_mode") == "natif" else "conteneur recréé, identité gardée")
+        if cap == "serveur_mettre_a_jour":
+            de = " : %s → %s" % (res.get("version_avant") or "?", res.get("version_apres") or "?") if res.get("version_avant") != res.get("version_apres") else ""
+            return "Serveur NetBird mis à jour%s%s" % (de, " (sauvegarde %s)" % res["sauvegarde"] if res.get("sauvegarde") else " (sans sauvegarde)")
+        if cap == "serveur_sauvegarder":
+            return "Sauvegarde du serveur NetBird faite (%s)" % res.get("id", "?")
+        if cap == "serveur_restaurer":
+            return "Serveur NetBird restauré depuis la sauvegarde %s" % res.get("restauree", "?")
+        if cap == "pare_feu_ouvrir":
+            return "Ports NetBird ouverts dans le pare-feu (%s)" % (", ".join(res.get("ouverts_par_nous") or []) or "déjà tous ouverts")
+        if cap == "installer_natif":
+            return "Client NetBird natif installé (paquet officiel%s)" % (", version %s" % res["natif_version"] if res.get("natif_version") else "")
+        if cap == "retirer_natif":
+            return "Client NetBird natif désinstallé"
         return {"connecter": "Connexion à NetBird" + (" par clé" if args.get("avec_cle") else " (lien d'identification)"), "deconnecter": "NetBird coupé",
                 "annuler": "Connexion en attente abandonnée", "serveur_telecharger": "Script du serveur téléchargé (%s)" % res.get("version", args.get("version", "?")),
                 "serveur_installer": "Serveur NetBird installé (%s, %s)%s" % ((res.get("meta") or {}).get("domaine", args.get("domaine", "?")), args.get("proxy", "nginx"), " : domaine hors Cassandra" if res.get("domaine_hors_cassandra") else ""), "serveur_mettre_a_jour": "Serveur NetBird mis à jour",
-                "serveur_redemarrer": "Serveur NetBird redémarré", "serveur_retirer": "Serveur NetBird retiré" + (" avec ses données (comptes et machines perdus)" if res.get("purge") else ""),
+                "serveur_redemarrer": "Serveur NetBird redémarré", "serveur_retirer": "Serveur NetBird retiré" + (" avec ses données (comptes et machines perdus%s)" % (" ; sauvegarde " + res["sauvegarde"] if res.get("sauvegarde") else "") if res.get("purge") else ""),
                 "machine_modifier": "Machine « %s » modifiée" % n, "machine_supprimer": "Machine « %s » supprimée du réseau" % n, "cle_creer": "Clé d'installation « %s » créée" % n,
                 "cle_revoquer": "Clé d'installation « %s » %s" % (n, "révoquée" if res.get("revoquee", True) else "rétablie"), "cle_supprimer": "Clé d'installation « %s » supprimée" % n,
                 "groupe_creer": "Groupe « %s » créé" % n, "groupe_supprimer": "Groupe « %s » supprimé" % n, "politique_creer": "Politique d'accès « %s » créée" % n,
@@ -800,7 +999,7 @@ def brancher(ctx):
             except ValueError:
                 args, res = {}, {}
             gestes.append({"id": g["id"], "ts": g["ts"], "capacite": g["capacite"], "compte": g["compte"], "libelle": libelle_geste(g["capacite"], args, res), "defait": bool(g["defait"]),
-                           "defait_ts": g["defait_ts"] or "", "defaisable": g["capacite"] in DEFAIRE and not g["defait"]})
+                           "defait_ts": g["defait_ts"] or "", "defaisable": g["capacite"] in DEFAIRE and not g["defait"] and PEUT_DEFAIRE.get(g["capacite"], lambda r: True)(res)})
         return {"gestes": gestes}
 
     def defaire_geste(c, id=0):
@@ -817,6 +1016,8 @@ def brancher(ctx):
                 res = json.loads(g["res"] or "{}")
             except ValueError:
                 raise ValueError("Le résultat noté de ce geste est illisible : il ne peut pas être défait") from None
+            if not PEUT_DEFAIRE.get(g["capacite"], lambda r: True)(res):
+                raise ValueError("Ce geste ne se défait pas : rien n'a été gardé pour revenir en arrière (pas de sauvegarde, pas d'ancienne version)")
             DEFAIRE[g["capacite"]](c, res)
             db.ecrire("UPDATE gestes SET defait=1, defait_ts=? WHERE id=?", (horodate(), int(g["id"])))
             return dict(_etat(c, True), geste_defait=int(g["id"]))
@@ -833,8 +1034,11 @@ def brancher(ctx):
     ctx.implementer("deconnecter", journaliser("deconnecter", deconnecter), prouver_pas_connecte, defaire_deconnecter, simuler=lambda x, **_: "couperait NetBird sur cette machine")
     ctx.implementer("installer_docker", journaliser("installer_docker", installer_docker), prouver_installe, defaire_installer,
                     simuler=lambda x, tag="latest", **_: "installerait le client NetBird dans un conteneur Docker (netbirdio/netbird:%s)" % tag)
-    ctx.implementer("mettre_a_jour_client", journaliser("mettre_a_jour_client", mettre_a_jour_client), prouver_installe, lambda c, res: None,
+    ctx.implementer("mettre_a_jour_client", journaliser("mettre_a_jour_client", mettre_a_jour_client), prouver_maj_client, lambda c, res: None,
                     simuler=lambda x, tag="", **_: "mettrait à jour le client NetBird (image netbirdio/netbird" + (":" + tag if tag else ", même étiquette") + ", conteneur recréé, volume gardé)")
+    ctx.implementer("installer_natif", journaliser("installer_natif", installer_natif), prouver_natif_installe, defaire_installer_natif, simuler=lambda x, **_: "installerait le client NetBird natif (paquet officiel, apt ou dnf)")
+    ctx.implementer("retirer_natif", journaliser("retirer_natif", retirer_natif), prouver_natif_retire, lambda c, res: None, simuler=lambda x, **_: "désinstallerait le client NetBird natif")
+    ctx.implementer("versions", versions)
     ctx.implementer("retirer_docker", journaliser("retirer_docker", retirer_docker), prouver_retire, lambda c, res: None, simuler=lambda x, purger=False, **_: "retirerait le conteneur NetBird" + (" et son volume" if purger else ""))
     ctx.implementer("serveur_etat", serveur_etat)
     ctx.implementer("serveur_journaux", serveur_journaux)
@@ -845,7 +1049,14 @@ def brancher(ctx):
                     simuler=lambda x, version="", **_: "téléchargerait le script d'installation du serveur NetBird %s et en donnerait l'empreinte" % version)
     ctx.implementer("serveur_installer", journaliser("serveur_installer", serveur_installer), prouver_serveur_installe, lambda c, res: None,
                     simuler=lambda x, domaine="", proxy="nginx", **_: "installerait un serveur NetBird auto-hébergé pour %s (proxy %s)" % (domaine, proxy))
-    ctx.implementer("serveur_mettre_a_jour", journaliser("serveur_mettre_a_jour", serveur_mettre_a_jour), lambda c, res: True, lambda c, res: None, simuler=lambda x, **_: "mettrait à jour les images du serveur NetBird")
+    ctx.implementer("serveur_mettre_a_jour", journaliser("serveur_mettre_a_jour", serveur_mettre_a_jour), lambda c, res: True, defaire_serveur_maj, simuler=lambda x, **_: "mettrait à jour les images du serveur NetBird")
+    ctx.implementer("serveur_sauvegarder", journaliser("serveur_sauvegarder", serveur_sauvegarder), lambda c, res: bool(ID_SAUVEGARDE.match(str(res.get("id", "")))), lambda c, res: None, simuler=lambda x, **_: "sauvegarderait le serveur NetBird (volumes et dossier, serveur arrêté le temps de la copie)")
+    ctx.implementer("serveur_sauvegardes", serveur_sauvegardes)
+    ctx.implementer("serveur_restaurer", journaliser("serveur_restaurer", serveur_restaurer), prouver_restauration, defaire_restauration, simuler=lambda x, id="", **_: "restaurerait la sauvegarde %s du serveur NetBird (après une sauvegarde de sécurité)" % id)
+    ctx.implementer("pare_feu_etat", pare_feu_etat)
+    ctx.implementer("pare_feu_ouvrir", journaliser("pare_feu_ouvrir", pare_feu_ouvrir), prouver_pare_feu, defaire_pare_feu, simuler=lambda x, proxy="", **_: "ouvrirait dans le pare-feu les ports publics de NetBird (proxy %s)" % (proxy or "du serveur"))
+    ctx.implementer("serveur_ip", serveur_ip)
+    ctx.implementer("serveur_dns_verifier", serveur_dns_verifier)
     ctx.implementer("serveur_redemarrer", journaliser("serveur_redemarrer", serveur_redemarrer), lambda c, res: True, lambda c, res: None, simuler=lambda x, **_: "redémarrerait le serveur NetBird")
     ctx.implementer("serveur_retirer", journaliser("serveur_retirer", serveur_retirer), prouver_serveur_retire, lambda c, res: None, simuler=lambda x, purger=False, **_: "retirerait le serveur NetBird" + (" et ses données" if purger else ""))
     ctx.implementer("api_verifier", api_verifier)

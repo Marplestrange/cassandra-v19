@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e4667a
+# VERSION CN : 0.1.0  #686c86
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (l'installer dans Docker, le connecter, le couper) ET, au besoin, un serveur NetBird auto-hébergé (l'installer, le tenir à jour, administrer ses machines, clés, groupes et politiques).
 # MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e4667a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=686c86 ▼▼▼
 [module]
 id = "netbird"
 nom = "NetBird"
@@ -55,8 +55,8 @@ libelle = "Un serveur NetBird auto-hébergé et son réseau"
 stockage = true
 racine = true
 lectures = true
-reseau = ["le client NetBird local (son socket) ou son conteneur Docker ; le serveur de gestion NetBird (api.netbird.io par défaut, ou le vôtre) et ses relais, par ce client", "Docker Hub (netbirdio/netbird) quand le conteneur est installé", "github.com (le script officiel getting-started.sh, d'une version et d'une empreinte confirmées) et les images du serveur NetBird quand un serveur est installé", "l'API du serveur NetBird administré (réglage url_api, ou le domaine du serveur posé par Cassandra), avec le jeton d'accès enregistré : jamais ailleurs, sans suivre de redirection"]
-privileges = ["installer : la commande /usr/libexec/cassandra/netbird/piloter, lancée en root par le courtier : une table fermée de verbes, jamais un shell, jamais le conteneur d'un autre service", "serveur : la commande /usr/libexec/cassandra/netbird/serveur, lancée en root par le courtier : installe le script officiel de la version confirmée dans /opt/netbird-serveur seulement, et pilote docker compose de ce dossier seulement"]
+reseau = ["le client NetBird local (son socket) ou son conteneur Docker ; le serveur de gestion NetBird (api.netbird.io par défaut, ou le vôtre) et ses relais, par ce client", "Docker Hub (netbirdio/netbird) quand le conteneur est installé", "github.com (le script officiel getting-started.sh, d'une version et d'une empreinte confirmées ; api.github.com pour la dernière version publiée, une demande par heure au plus) et les images du serveur NetBird quand un serveur est installé", "pkgs.netbird.io (le dépôt apt ou dnf du paquet officiel, quand le client natif est installé ou mis à jour : clé du dépôt, puis le paquet signé)", "l'API du serveur NetBird administré (réglage url_api, ou le domaine du serveur posé par Cassandra), avec le jeton d'accès enregistré : jamais ailleurs, sans suivre de redirection"]
+privileges = ["installer : la commande /usr/libexec/cassandra/netbird/piloter, lancée en root par le courtier : une table fermée de verbes, jamais un shell, jamais le conteneur d'un autre service", "serveur : la commande /usr/libexec/cassandra/netbird/serveur, lancée en root par le courtier : installe le script officiel de la version confirmée dans /opt/netbird-serveur seulement, et pilote docker compose de ce dossier seulement ; sauvegarde et restaure ses volumes dans /var/backups/cassandra/netbird ; ouvre et referme seulement 80/tcp, 443/tcp et 3478/udp dans ufw ou firewalld", "paquet : pose le dépôt apt ou dnf de NetBird et installe, met à jour ou retire le paquet netbird, par apt-get ou dnf, rien d'autre"]
 
 [[racine]]
 id = "piloter"
@@ -171,12 +171,12 @@ retour = "réinstaller le conteneur (avec son volume gardé, la machine retrouve
 
 [[capacites]]
 id = "mettre_a_jour_client"
-libelle = "Mettre à jour le client NetBird installé dans Docker : télécharge l'image (même étiquette, ou celle demandée) et, si elle a changé, recrée le conteneur avec son volume ; la machine est coupée quelques secondes, son identité est gardée. Le client natif se met à jour par le gestionnaire de paquets de la machine"
+libelle = "Mettre à jour le client NetBird : dans Docker, télécharge l'image (même étiquette, ou celle demandée) et, si elle a changé, recrée le conteneur avec son volume ; en natif, met le paquet à jour par apt ou dnf. La machine est coupée quelques secondes, son identité est gardée"
 risque = "eleve"
 droit = "administrer"
-perimetre = ["le conteneur nommé par le réglage « conteneur », s'il est bien une image netbirdio/netbird", "par le courtier : pull, puis recréation seulement si l'image a changé"]
+perimetre = ["le conteneur nommé par le réglage « conteneur », s'il est bien une image netbirdio/netbird, ou le paquet netbird du gestionnaire de paquets", "par le courtier : pull puis recréation seulement si l'image a changé ; apt-get ou dnf pour le paquet"]
 preuve = "relire `docker inspect` : le conteneur tourne après la mise à jour"
-retour = "aucun geste d'annulation ; réinstaller l'ancienne version depuis la page Client (le volume garde l'identité)"
+retour = "remettre la version d'avant : l'ancienne image (si elle est encore sur la machine) avec le même volume, ou la version précédente du paquet"
 
 [[capacites]]
 id = "serveur_etat"
@@ -228,12 +228,87 @@ retour = "retirer le serveur (ses données sont gardées sauf demande contraire)
 
 [[capacites]]
 id = "serveur_mettre_a_jour"
-libelle = "Mettre à jour les images du serveur NetBird (docker compose pull puis up), sans changer sa configuration"
+libelle = "Mettre à jour le serveur NetBird (docker compose pull puis up), sans changer sa configuration ; une sauvegarde est faite avant, sauf si on la refuse"
 risque = "moyen"
 droit = "serveur"
 perimetre = ["les conteneurs de /opt/netbird-serveur"]
 preuve = "les conteneurs tournent après la mise à jour"
-retour = "remettre l'ancienne version du script et relancer (les données sont gardées)"
+retour = "restaurer la sauvegarde faite juste avant : données, configuration et images d'alors (sans sauvegarde, la mise à jour ne se défait pas)"
+
+[[capacites]]
+id = "versions"
+libelle = "Les versions de NetBird : celle du client et du serveur installés, et la dernière publiée (GitHub, une demande par heure au plus)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "serveur_sauvegarder"
+libelle = "Sauvegarder le serveur NetBird : ses volumes et son dossier sont copiés dans /var/backups/cassandra/netbird (le serveur est arrêté le temps de la copie) ; les 10 plus récentes sont gardées"
+risque = "moyen"
+droit = "serveur"
+perimetre = ["le dossier du serveur et les volumes de sa pile", "écrit seulement dans /var/backups/cassandra/netbird, lisible par root seul"]
+preuve = "la sauvegarde figure dans la liste avec sa date et sa taille"
+retour = "supprimer la sauvegarde (elle ne change rien au serveur)"
+
+[[capacites]]
+id = "serveur_sauvegardes"
+libelle = "Les sauvegardes du serveur NetBird : date, raison, version, taille"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "serveur_restaurer"
+libelle = "Restaurer une sauvegarde du serveur NetBird : données et configuration remplacées (une sauvegarde de sécurité est faite avant) ; avec « images », les images d'alors reviennent aussi"
+risque = "eleve"
+droit = "serveur"
+perimetre = ["une sauvegarde de la liste, par son identifiant", "archive refusée si un chemin ou un lien sort de son dossier ; seuls les volumes de la pile sont remplacés"]
+preuve = "les conteneurs du serveur tournent après la restauration"
+retour = "restaurer la sauvegarde de sécurité faite juste avant"
+
+[[capacites]]
+id = "pare_feu_etat"
+libelle = "Le pare-feu de la machine (ufw ou firewalld) : actif ou non, et lesquels des ports publics de NetBird sont ouverts"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "pare_feu_ouvrir"
+libelle = "Ouvrir dans le pare-feu les ports publics du serveur NetBird : 443/tcp et 3478/udp, et 80/tcp avec traefik ; ceux qui le sont déjà ne sont pas touchés"
+risque = "eleve"
+droit = "serveur"
+perimetre = ["80/tcp, 443/tcp et 3478/udp seulement", "ufw ou firewalld, par le courtier"]
+preuve = "relire le pare-feu : ces ports y sont ouverts"
+retour = "refermer seulement les ports que ce geste a ouverts (ceux qui l'étaient déjà restent ouverts)"
+
+[[capacites]]
+id = "serveur_ip"
+libelle = "L'adresse de cette machine telle que le système la voit (pour l'enregistrement DNS du serveur), et si elle est privée"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "serveur_dns_verifier"
+libelle = "Vérifier que le domaine du serveur NetBird se résout, et vers quelle adresse"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "installer_natif"
+libelle = "Installer le client NetBird natif par le paquet officiel : dépôt apt ou dnf de pkgs.netbird.io (clé et paquet signés), puis son service. Un seul client par machine"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["le paquet netbird et le dépôt de pkgs.netbird.io, rien d'autre", "refusé si un client existe déjà (natif ou conteneur)", "par le courtier : apt-get ou dnf"]
+preuve = "relire l'état : le client natif est installé et son service répond"
+retour = "désinstaller le paquet (la configuration de la machine est gardée)"
+
+[[capacites]]
+id = "retirer_natif"
+libelle = "Désinstaller le client NetBird natif (le paquet) : la machine reste enregistrée dans le réseau et peut se reconnecter"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["le paquet netbird seulement", "par le courtier : apt-get ou dnf"]
+preuve = "relire l'état : plus de client natif"
+retour = "réinstaller le paquet depuis la page Client"
 
 [[capacites]]
 id = "serveur_redemarrer"

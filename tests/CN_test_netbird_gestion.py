@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6d5ce1
+# VERSION CN : 0.1.0  #3bef38
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de ce que le module netbird sait faire d'un serveur NetBird auto-hébergé : l'installer (par la commande root, simulée) et l'administrer par son API (simulée : un faux serveur qui répond comme lui). Rien n'est installé, aucun réseau n'est touché.
 # MÉTHODE    : un vrai noyau, une fausse commande root `serveur`, une fausse API NetBird ; on vérifie les garde-fous, le secret qui ne traîne nulle part et le retour de chaque geste.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6d5ce1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3bef38 ▼▼▼
 """Bancs de la gestion d'un serveur NetBird : commande root et API NetBird SIMULÉES, noyau réel."""
 import copy
 import json
@@ -86,6 +86,18 @@ class Gestion(Monde):
         self.g["_http"] = self.api
         self.valeurs.update(url_api="https://netbird.exemple.fr", jeton_api=JETON)
         self.installe, self.conteneurs, self.occupes = False, [], []
+        self.sauvegardes, self.sauvegarde_echoue, self.pf_ouverts, self.version_serveur = [], False, [], "v0.40.0"
+        self.github = {"tag_name": "v0.41.0"}
+        faux_netbird = self.api
+
+        def http(methode, url, jeton, corps=None, delai=15):
+            if "api.github.com" in url:
+                self.urls_github.append(url)
+                return (200, self.github) if self.github else (None, "Connection refused")
+            return faux_netbird(methode, url, jeton, corps, delai)
+        self.urls_github = []
+        self.g["_http"] = http
+        self.g["_VERSIONS"].update(t=0.0, val="")
         self.panneau = {"fastpanel.sites": [{"domaine": "netbird.exemple.fr"}, {"domaine": "Boutique.exemple.fr"}], "fastpanel.dns": [{"zone": "exemple.fr", "nom": "@", "type": "A", "valeur": "1.2.3.4"}, {"zone": "autre.org", "nom": "@", "type": "A", "valeur": "1.2.3.4"}]}
 
         def lecture(cap, **a):
@@ -102,7 +114,7 @@ class Gestion(Monde):
             self.racines.append(("serveur:" + verbe, list(args), entree))
             if verbe == "etat":
                 return {"ok": True, "docker": True, "jq": True, "installe": self.installe, "dossier": "/opt/netbird-serveur",
-                        "meta": {"domaine": "netbird.exemple.fr", "version": "v0.40.0", "proxy": "nginx"} if self.installe else {}, "conteneurs": self.conteneurs,
+                        "meta": {"domaine": "netbird.exemple.fr", "version": self.version_serveur, "proxy": "nginx"} if self.installe else {}, "conteneurs": self.conteneurs,
                         **({} if self.installe else {"occupes": self.occupes})}
             if verbe == "telecharger":
                 return {"ok": True, "version": args[0], "sha256": SHA, "taille": 1234, "url": "https://github.com/…"}
@@ -118,7 +130,29 @@ class Gestion(Monde):
             if verbe == "nginx":
                 return {"ok": True, "conf": "server {}"}
             if verbe == "mettre_a_jour":
+                if args:
+                    self.version_serveur = args[0]
                 return {"ok": True, "code": 0, "sortie": "à jour"}
+            if verbe == "sauvegarder":
+                if self.sauvegarde_echoue:
+                    return {"ok": False, "erreur": "disque plein"}
+                self.sauvegardes.append("2026110%d-143200" % len(self.sauvegardes))
+                return {"ok": True, "id": self.sauvegardes[-1], "raison": args[0] if args else "manuelle", "volumes": 1, "taille": 1234}
+            if verbe == "sauvegardes":
+                return {"ok": True, "sauvegardes": [{"id": i, "quand": "2026-11-09 14:32:00", "raison": "manuelle", "version": "v0.40.0", "taille": 1234, "volumes": 1} for i in reversed(self.sauvegardes)], "dossier": "/var/backups/cassandra/netbird", "garde": 10}
+            if verbe == "restaurer":
+                return {"ok": True, "code": 0, "sortie": "", "id": args[0], "securite": "20261109-999999", "volumes": 1, "images_remises": 1 if "images" in args else 0}
+            if verbe == "pare_feu":
+                return {"ok": True, "outil": "ufw", "actif": True, "ouverts": list(self.pf_ouverts)}
+            if verbe == "pare_feu_ouvrir":
+                neufs = [p for p in (["80/tcp"] if args[0] == "traefik" else []) + ["443/tcp", "3478/udp"] if p not in self.pf_ouverts]
+                self.pf_ouverts += neufs
+                return {"ok": True, "outil": "ufw", "ouverts_par_nous": neufs, "deja_ouverts": []}
+            if verbe == "pare_feu_fermer":
+                self.pf_ouverts = [p for p in self.pf_ouverts if p not in args]
+                return {"ok": True, "outil": "ufw", "fermes": list(args)}
+            if verbe == "ip":
+                return {"ok": True, "ip": "93.184.216.34", "privee": False}
             return {"ok": False, "erreur": "verbe inconnu"}
         self.g["_racine"] = racine
 
@@ -273,7 +307,147 @@ class Serveur(Gestion):
         self.assertIn("commande absente", str(q.exception))
 
 
+class Maintenance(Gestion):
+    def setUp(self):
+        super().setUp()
+        self.installe, self.conteneurs = True, [{"service": "management", "etat": "running", "image": "x"}]
+
+    def test_la_derniere_version_est_lue_chez_github_et_gardee_une_heure(self):
+        r = self.lire("versions")
+        self.assertEqual((r["derniere"], r["serveur"], r["serveur_a_jour"], r["erreur"]), ("v0.41.0", "v0.40.0", False, ""))
+        self.lire("versions")
+        self.assertEqual(len(self.urls_github), 1, "une seule demande : GitHub limite les appels sans compte")
+        self.assertEqual(self.urls_github[0], "https://api.github.com/repos/netbirdio/netbird/releases/latest")
+
+    def test_a_jour_inconnu_et_github_muet(self):
+        self.github = {"tag_name": "v0.40.0"}
+        self.assertTrue(self.lire("versions")["serveur_a_jour"])
+        self.g["_VERSIONS"].update(t=0.0, val="")
+        self.github = None
+        r = self.lire("versions")
+        self.assertEqual((r["derniere"], r["serveur_a_jour"], r["client_a_jour"]), ("", None, None), "on ne sait pas : ni oui ni non")
+        self.assertIn("GitHub ne répond pas", r["erreur"])
+        self.github = {"tag_name": "pas-une-version"}
+        self.assertEqual(self.lire("versions")["derniere"], "", "une réponse illisible n'est pas retenue")
+
+    def test_github_muet_apres_une_reponse_rend_la_derniere_connue(self):
+        self.lire("versions")
+        self.g["_VERSIONS"]["t"] = 0.0
+        self.github = None
+        r = self.lire("versions")
+        self.assertEqual(r["derniere"], "v0.41.0")
+        self.assertIn("GitHub", r["erreur"])
+
+    def test_mettre_a_jour_sauvegarde_d_abord_puis_se_defait_par_la_restauration(self):
+        r = self.lire("serveur_mettre_a_jour")
+        verbes = [x[0] for x in self.racines if x[0] in ("serveur:sauvegarder", "serveur:mettre_a_jour")]
+        self.assertEqual(verbes, ["serveur:sauvegarder", "serveur:mettre_a_jour"], "la copie est faite AVANT")
+        self.assertIn(("serveur:sauvegarder", ["avant_maj"], None), self.racines)
+        self.assertIn(("serveur:mettre_a_jour", ["v0.41.0"], None), self.racines, "la version qu'on installe est celle de la dernière publication")
+        self.assertEqual((r["version_avant"], r["version_apres"]), ("v0.40.0", "v0.41.0"))
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual(g["libelle"], "Serveur NetBird mis à jour : v0.40.0 → v0.41.0 (sauvegarde %s)" % r["sauvegarde"])
+        self.assertTrue(g["defaisable"])
+        self.lire("defaire_geste", id=g["id"])
+        self.assertIn(("serveur:restaurer", [r["sauvegarde"], "images"], None), self.racines, "les données, la config ET les images d'avant")
+
+    def test_une_mise_a_jour_sans_sauvegarde_ne_se_defait_pas(self):
+        self.lire("serveur_mettre_a_jour", sauvegarde=False)
+        self.assertFalse([x for x in self.racines if x[0] == "serveur:sauvegarder"])
+        g = self.lire("journal")["gestes"][0]
+        self.assertFalse(g["defaisable"])
+        self.assertIn("sans sauvegarde", g["libelle"])
+        with self.assertRaises(Echec) as q:
+            self.lire("defaire_geste", id=g["id"])
+        self.assertIn("rien n'a été gardé", str(q.exception))
+
+    def test_une_sauvegarde_qui_echoue_arrete_la_mise_a_jour(self):
+        self.sauvegarde_echoue = True
+        with self.assertRaises(Echec) as q:
+            self.lire("serveur_mettre_a_jour")
+        self.assertIn("disque plein", str(q.exception))
+        self.assertFalse([x for x in self.racines if x[0] == "serveur:mettre_a_jour"], "pas de mise à jour sans la copie promise")
+
+    def test_purger_sauvegarde_d_abord_et_sans_copie_ne_purge_pas(self):
+        r = self.lire("serveur_retirer", purger=True)
+        self.assertEqual([x[0] for x in self.racines if x[0] in ("serveur:sauvegarder", "serveur:retirer")], ["serveur:sauvegarder", "serveur:retirer"])
+        self.assertIn(("serveur:sauvegarder", ["avant_retrait"], None), self.racines)
+        self.assertTrue(r["sauvegarde"])
+        self.assertIn("sauvegarde " + r["sauvegarde"], self.lire("journal")["gestes"][0]["libelle"])
+        self.installe, self.conteneurs = True, [{"service": "management", "etat": "running", "image": "x"}]
+        self.sauvegarde_echoue = True
+        self.racines.clear()
+        with self.assertRaises(Echec):
+            self.lire("serveur_retirer", purger=True)
+        self.assertFalse([x for x in self.racines if x[0] == "serveur:retirer"], "les données ne sont pas détruites sans copie")
+        self.sauvegarde_echoue = False
+        self.racines.clear()
+        self.lire("serveur_retirer")                                                           # sans purge : rien à sauvegarder, les données restent
+        self.assertFalse([x for x in self.racines if x[0] == "serveur:sauvegarder"])
+
+    def test_sauvegarder_lister_restaurer(self):
+        a = self.lire("serveur_sauvegarder")
+        self.assertIn(("serveur:sauvegarder", ["manuelle"], None), self.racines)
+        liste = self.lire("serveur_sauvegardes")
+        self.assertEqual((liste["sauvegardes"][0]["id"], liste["garde"]), (a["id"], 10))
+        r = self.lire("serveur_restaurer", id=a["id"])
+        self.assertEqual((r["restauree"], r["securite"]), (a["id"], "20261109-999999"))
+        g = self.lire("journal")["gestes"][0]
+        self.assertTrue(g["defaisable"])
+        self.lire("defaire_geste", id=g["id"])
+        self.assertIn(("serveur:restaurer", ["20261109-999999"], None), self.racines, "défaire une restauration remet ce qui était là avant")
+
+    def test_restaurer_refuse_un_identifiant_suspect(self):
+        for mauvais in ("", "../x", "20261109", "20261109-143200;ls", 5):
+            with self.assertRaises(Echec, msg=mauvais):
+                self.lire("serveur_restaurer", id=mauvais)
+        self.assertFalse([x for x in self.racines if x[0] == "serveur:restaurer"])
+
+    def test_pare_feu_etat_ouvrir_et_defaire_ne_ferme_que_ce_qu_on_a_ouvert(self):
+        self.pf_ouverts = ["443/tcp"]
+        e = self.lire("pare_feu_etat")
+        self.assertEqual((e["outil"], e["publics"], e["ouverts"], e["proxy"]), ("ufw", ["443/tcp", "3478/udp"], ["443/tcp"], "nginx"))
+        r = self.lire("pare_feu_ouvrir")
+        self.assertEqual(r["ouverts_par_nous"], ["3478/udp"])
+        g = self.lire("journal")["gestes"][0]
+        self.assertIn("3478/udp", g["libelle"])
+        self.lire("defaire_geste", id=g["id"])
+        self.assertIn(("serveur:pare_feu_fermer", ["3478/udp"], None), self.racines)
+        self.assertEqual(self.pf_ouverts, ["443/tcp"], "le 443, déjà ouvert avant nous, reste ouvert")
+
+    def test_ouvrir_sans_rien_de_neuf_n_a_rien_a_defaire(self):
+        self.pf_ouverts = ["443/tcp", "3478/udp"]
+        self.lire("pare_feu_ouvrir")
+        self.assertFalse(self.lire("journal")["gestes"][0]["defaisable"])
+
+    def test_l_adresse_de_la_machine_et_la_verification_du_dns(self):
+        self.assertEqual(self.lire("serveur_ip")["ip"], "93.184.216.34")
+        self.g["_resoudre"] = lambda nom: [(2, 1, 6, "", ("93.184.216.34", 0))]
+        r = self.lire("serveur_dns_verifier", domaine="Netbird.Exemple.fr", ip="93.184.216.34")
+        self.assertEqual((r["domaine"], r["adresses"], r["resolu"], r["correspond"]), ("netbird.exemple.fr", ["93.184.216.34"], True, True))
+        self.assertFalse(self.lire("serveur_dns_verifier", domaine="netbird.exemple.fr", ip="10.0.0.1")["correspond"])
+        def muet(nom):
+            raise OSError("pas de résolution")
+        self.g["_resoudre"] = muet
+        r = self.lire("serveur_dns_verifier", domaine="netbird.exemple.fr")
+        self.assertEqual((r["adresses"], r["resolu"], r["correspond"]), ([], False, False))
+        with self.assertRaises(Echec):
+            self.lire("serveur_dns_verifier", domaine="pas un domaine")
+
+    def test_ces_gestes_demandent_le_droit_serveur_et_l_installation_native_le_droit_administrer(self):
+        manifeste = (RACINE / "modules" / "netbird" / "CN_manifeste.toml").read_text(encoding="utf-8")
+        import tomllib
+        m = tomllib.loads(manifeste.split("# ▼▼▼ BORNE CN", 1)[1].split("\n", 1)[1])
+        droits = {c["id"]: c["droit"] for c in m["capacites"]}
+        for cap in ("serveur_sauvegarder", "serveur_sauvegardes", "serveur_restaurer", "pare_feu_etat", "pare_feu_ouvrir", "serveur_ip", "serveur_dns_verifier"):
+            self.assertEqual(droits[cap], "serveur", cap)
+        for cap in ("installer_natif", "retirer_natif"):
+            self.assertEqual(droits[cap], "administrer", cap)
+        self.assertEqual(droits["versions"], "utiliser", "lire la dernière version ne demande aucun droit particulier")
+
+
 class Administration(Gestion):
+
     def test_sans_jeton_rien_ne_part(self):
         self.valeurs["jeton_api"] = ""
         with self.assertRaises(Echec) as q:

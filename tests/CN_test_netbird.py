@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8c1b2b
+# VERSION CN : 0.1.0  #d69c84
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module netbird : le client NetBird, Docker et le courtier sont SIMULÉS (un faux monde qui répond comme eux), le reste tourne dans un vrai noyau. On vérifie les états, la voie choisie (natif direct, natif par le courtier, conteneur)
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8c1b2b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d69c84 ▼▼▼
 """Bancs du module netbird : le client NetBird, Docker et le courtier sont SIMULÉS (un faux monde qui répond comme eux), le reste tourne dans un vrai noyau.
 On vérifie les états, la voie choisie (natif direct, natif par le courtier, conteneur), la clé qui ne traîne nulle part, l'installation et le retrait du conteneur, le journal et le retour."""
 import json
@@ -139,7 +139,21 @@ class Monde(unittest.TestCase):
             if self.maj_echoue:
                 return {"ok": False, "code": 1, "sortie": "pull access denied"}
             self.conteneur = "en_marche"
-            return {"ok": True, "change": self.maj_change, "code": 0, "sortie": ""}
+            return {"ok": True, "change": self.maj_change, "code": 0, "sortie": "", "avant": "sha256:" + "a" * 64, "ref": "netbirdio/netbird:latest"}
+        if verbe == "docker_revenir":
+            return {"ok": not self.maj_echoue, "code": 0, "sortie": ""}
+        if verbe == "natif_installer":
+            if self.natif or self.conteneur != "absent":
+                return {"ok": False, "erreur": "un seul client par machine"}
+            self.natif, self.etat = True, statut("NeedsLogin")
+            return {"ok": True, "code": 0, "sortie": "", "famille": "apt", "version": "0.40.0"}
+        if verbe == "natif_maj":
+            return {"ok": True, "code": 0, "sortie": "", "avant": "0.40.0", "apres": "0.41.0" if self.maj_change else "0.40.0", "change": self.maj_change}
+        if verbe == "natif_revenir":
+            return {"ok": True, "code": 0, "sortie": "", "version": args[0]}
+        if verbe == "natif_retirer":
+            self.natif = False
+            return {"ok": True, "code": 0, "sortie": ""}
         if verbe == "docker_retirer":
             self.conteneur = "absent"
             return {"ok": True, "code": 0, "sortie": ""}
@@ -433,11 +447,11 @@ class Docker(Monde):
         self.assertEqual(len([x for x in self.racines if x[0] == "docker_maj"]), 1, "une étiquette suspecte n'arrive pas au courtier")
 
     def test_mettre_a_jour_le_client_natif_renvoie_au_gestionnaire_de_paquets(self):
-        self.natif = True
+        self.natif, self.conteneur = False, "absent"
         with self.assertRaises(Echec) as q:
             self.lire("mettre_a_jour_client")
-        self.assertIn("gestionnaire de paquets", str(q.exception))
-        self.assertFalse([x for x in self.racines if x[0] == "docker_maj"])
+        self.assertIn("ni conteneur", str(q.exception))
+        self.assertFalse([x for x in self.racines if x[0] in ("docker_maj", "natif_maj")])
 
     def test_mettre_a_jour_sans_conteneur_ou_si_le_pull_echoue_est_refuse(self):
         with self.assertRaises(Echec):
@@ -446,6 +460,60 @@ class Docker(Monde):
         self.maj_echoue = True
         with self.assertRaises(Echec):
             self.lire("mettre_a_jour_client")
+
+    def test_mettre_a_jour_le_client_docker_se_defait_avec_l_ancienne_image(self):
+        self.conteneur = "en_marche"
+        r = self.lire("mettre_a_jour_client")
+        self.assertEqual(r["revenir"], {"mode": "docker", "avant": "sha256:" + "a" * 64})
+        g = self.lire("journal")["gestes"][0]
+        self.assertTrue(g["defaisable"])
+        self.lire("defaire_geste", id=g["id"])
+        self.assertEqual([x for x in self.racines if x[0] == "docker_revenir"][0][1], ["netbird", "sha256:" + "a" * 64])
+
+    def test_une_mise_a_jour_sans_rien_de_nouveau_n_a_rien_a_defaire(self):
+        self.conteneur = "en_marche"
+        self.maj_change = False
+        self.lire("mettre_a_jour_client")
+        self.assertFalse(self.lire("journal")["gestes"][0]["defaisable"])
+
+    def test_mettre_a_jour_le_client_natif_par_le_paquet_et_revenir(self):
+        self.natif, self.conteneur = True, "absent"
+        self.maj_change = True
+        r = self.lire("mettre_a_jour_client")
+        self.assertEqual((r["maj_mode"], r["version_avant"], r["version_apres"]), ("natif", "0.40.0", "0.41.0"))
+        self.assertFalse([x for x in self.racines if x[0] == "docker_maj"], "pas de Docker pour un paquet")
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual(g["libelle"], "Client NetBird mis à jour : 0.40.0 → 0.41.0 (paquet)")
+        self.lire("defaire_geste", id=g["id"])
+        self.assertEqual([x for x in self.racines if x[0] == "natif_revenir"][0][1], ["0.40.0"])
+
+    def test_installer_le_client_natif_puis_le_defaire(self):
+        self.natif = False
+        r = self.lire("installer_natif")
+        self.assertEqual((r["natif_version"], r["famille"], r["natif"]), ("0.40.0", "apt", True))
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual(g["libelle"], "Client NetBird natif installé (paquet officiel, version 0.40.0)")
+        self.assertTrue(g["defaisable"])
+        self.lire("defaire_geste", id=g["id"])
+        self.assertEqual(len([x for x in self.racines if x[0] == "natif_retirer"]), 1)
+
+    def test_installer_le_client_natif_respecte_un_seul_client_par_machine(self):
+        self.natif = True
+        with self.assertRaises(Echec) as q:                                                       # natif déjà là
+            self.lire("installer_natif")
+        self.assertIn("un seul client par machine", str(q.exception))
+        self.natif, self.conteneur = False, "en_marche"
+        with self.assertRaises(Echec) as q:
+            self.lire("installer_natif")
+        self.assertIn("Retire-le d'abord", str(q.exception))
+        self.assertFalse([x for x in self.racines if x[0] == "natif_installer"], "refusé avant d'appeler le courtier")
+
+    def test_retirer_le_client_natif(self):
+        self.natif = True
+        self.lire("retirer_natif")
+        self.assertFalse(self.lire("etat")["natif"])
+        with self.assertRaises(Echec):
+            self.lire("retirer_natif")
 
     def test_retirer_sans_conteneur_est_refuse(self):
 

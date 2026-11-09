@@ -258,13 +258,16 @@ def verbe_installer(a):
 
 
 def verbe_mettre_a_jour(a):
-    if a or not installe():
-        refuser("aucun serveur à mettre à jour" if not installe() else "mettre_a_jour n'a pas d'argument")
+    if len(a) > 1 or not installe():
+        refuser("aucun serveur à mettre à jour" if not installe() else "usage : mettre_a_jour [version]")
+    version = verifier(a[0], VERSION, "version") if a else ""
     dossier_sur()
     code, sortie = compose(["pull"], DELAI_INSTALL)
     if code != 0:
         return {"ok": False, "code": code, "sortie": sortie}
     code, sortie = compose(["up", "-d"], DELAI_INSTALL)
+    if code == 0 and version:
+        marquer(dict(meta(), version=version), "ok")                          # la dernière publication est installée : NetBird les publie sous la même étiquette
     return {"ok": code == 0, "code": code, "sortie": sortie}
 
 
@@ -490,8 +493,9 @@ def verbe_restaurer(a):
         cibles.append((v["nom"], os.path.join(src, v["fichier"])))
     if not os.path.isfile(os.path.join(src, "dossier.tar.gz")):
         refuser("la sauvegarde est incomplète : dossier.tar.gz manque")
+    securite = ""
     if installe() and os.path.exists(os.path.join(DOSSIER, "docker-compose.yml")):
-        verbe_sauvegarder(["avant_restauration"])                   # on ne remplace rien sans avoir copié ce qui est là
+        securite = verbe_sauvegarder(["avant_restauration"])["id"]   # on ne remplace rien sans avoir copié ce qui est là
         code, sortie = compose(["down"], 120)
         if code != 0:
             refuser("le serveur n'a pas pu être arrêté : %s" % sortie[-160:])
@@ -507,7 +511,7 @@ def verbe_restaurer(a):
         marquer({"version": f.get("version", ""), "domaine": f.get("domaine", ""), "proxy": f.get("proxy", ""), "installe_le": time.strftime("%Y-%m-%d %H:%M:%S")}, "ok")
     remises = remettre_images(f) if len(a) == 2 else 0
     code, sortie = compose(["up", "-d"] + (["--force-recreate"] if len(a) == 2 else []), DELAI_INSTALL)
-    return {"ok": code == 0, "code": code, "sortie": sortie, "id": ident, "volumes": len(cibles), "images_remises": remises}
+    return {"ok": code == 0, "code": code, "sortie": sortie, "id": ident, "securite": securite, "volumes": len(cibles), "images_remises": remises}
 
 
 # ---- pare-feu
