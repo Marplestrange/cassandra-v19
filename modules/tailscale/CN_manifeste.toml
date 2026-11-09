@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.5  #822842
+# VERSION CN : 0.2.0  #e8ec2a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale.
 # MÉTHODE    : le client `tailscale` local, par son socket ; l'installateur donne à l'utilisateur de Cassandra le droit de le piloter (--operator), jamais de root.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.5 empreinte=822842 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=e8ec2a ▼▼▼
 [module]
 id = "tailscale"
 nom = "Tailscale"
-version = "0.1.5"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale."
 confiance = "interne"
@@ -105,6 +105,21 @@ droit = "administrer"
 perimetre = ["l'option SSH du client Tailscale de cette machine"]
 preuve = "relire les préférences du client : RunSSH a la valeur demandée"
 retour = "remettre l'option à sa valeur précédente"
+
+[[capacites]]
+id = "regler"
+libelle = "Changer un réglage du client Tailscale sans toucher aux autres : accepter les routes des autres machines, le DNS du réseau, le bouclier (refuser les connexions entrantes), le nom de la machine, les routes qu'elle annonce, la sortie Internet qu'elle offre, la sortie Internet qu'elle utilise"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["un réglage du client Tailscale de cette machine, parmi une liste fermée", "`tailscale set` : jamais `up --reset`, les autres réglages ne bougent pas"]
+preuve = "relire les préférences du client : le réglage a la valeur demandée"
+retour = "remettre le réglage à sa valeur précédente"
+
+[[capacites]]
+id = "ping"
+libelle = "Joindre une machine du réseau Tailscale et dire par quel chemin (direct ou relais) et en combien de temps"
+risque = "lecture"
+droit = "utiliser"
 
 [[ecrans]]
 id = "vue_tailscale"

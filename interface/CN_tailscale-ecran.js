@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #dec193
+// VERSION CN : 0.1.0  #3c394d
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=dec193 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=3c394d ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -69,7 +69,7 @@
     const st = document.createElement("style"); st.id = "ts-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "ts"; corps.appendChild(racine);
 
-    const S = { e: null, occupe: false, erreur: "", quitter: false, couper: false, nom: "", ssh: false };
+    const S = { e: null, occupe: false, erreur: "", quitter: false, couper: false, nom: "", ssh: false, ping: {} };
     let minuterie = null;
 
     async function charger(silencieux) {
@@ -120,9 +120,45 @@
     function carteReseau(e) {
       const pairs = e.pairs || [];
       let h = '<div class="carte"><div class="acts" style="justify-content:space-between"><h2 style="font:650 16px Inter,system-ui,sans-serif">Les machines du réseau <span class="note">(' + e.en_ligne + " en ligne sur " + pairs.length + ")</span></h2></div>";
-      h += pairs.length ? '<div class="pairs">' + pairs.map((p) => '<div class="pair"><span class="pt' + (p.en_ligne ? " on" : "") + '"></span><span class="nom">' + esc(p.nom) + (p.sortie ? ' <span class="pastille al">sortie</span>' : "") + '</span><span class="mono ip note">' + esc(p.ip) + "</span><span class=\"note\">" + (p.en_ligne ? "en ligne" : age(p.vu)) + "</span></div>").join("") + "</div>"
+      h += pairs.length ? '<div class="pairs">' + pairs.map((p) => '<div class="pair"><span class="pt' + (p.en_ligne ? " on" : "") + '"></span><span class="nom">' + esc(p.nom) + (p.sortie ? ' <span class="pastille al">sortie</span>' : "") + '</span><span class="mono ip note">' + esc(p.ip) + "</span><span class=\"note\">" + (p.en_ligne ? "en ligne" : age(p.vu)) + (p.en_ligne ? ' <button class="btn" data-a="ping" data-m="' + esc(p.nom) + '" style="padding:2px 8px;font-size:11px;margin-left:6px"' + (S.ping[p.nom] === "…" ? " disabled" : "") + ">Ping</button>" : "") +
+        (S.ping[p.nom] && S.ping[p.nom] !== "…" ? '<br><span class="mono">' + esc(S.ping[p.nom]) + "</span>" : "") + "</span></div>").join("") + "</div>"
         : '<p class="note">Aucune autre machine sur ce réseau pour l’instant. Installe Tailscale ailleurs et connecte-la au même compte.</p>';
       return h + "</div>";
+    }
+
+    // Une clé qui expire fait tomber la machine du réseau sans prévenir : on le dit 14 jours avant.
+    function avisExpiration(e) {
+      let h = "";
+      const x = e.expiration;
+      if (x && x.jours <= 14) {
+        h += '<div class="carte" style="color:var(--warn)">La clé de cette machine ' + (x.jours < 0 ? "a expiré le " : "expire le ") + esc(x.date) + (x.jours >= 0 ? " (dans " + x.jours + " j)" : "") +
+          " : reconnecte-la, ou désactive l’expiration dans la console Tailscale (Machines › ⋯ › Disable key expiry).</div>";
+      }
+      if (e.expirent && e.expirent.length) {
+        h += '<div class="carte"><span class="sante">Clés de machines qui expirent : ' + e.expirent.map((y) => esc(y.nom) + (y.jours < 0 ? " (expirée)" : " (" + y.jours + " j)")).join(", ") + "</span></div>";
+      }
+      return h;
+    }
+
+    function carteReglages(e) {
+      const g = e.reglages;
+      if (!g) return "";
+      const bloque = S.occupe || e.pilotable === false;
+      const bool = (cle, titre, aide) => '<div class="coche"><span style="flex:1"><b>' + titre + '</b> <span class="pastille ' + (g[cle] ? "ok" : "mu") + '">' + (g[cle] ? "activé" : "coupé") + "</span>" +
+        '<br><span class="note">' + aide + '</span></span><button class="btn" data-a="regler" data-c="' + cle + '" data-v="' + (g[cle] ? "0" : "1") + '"' + (bloque ? " disabled" : "") + ">" + (g[cle] ? "Couper" : "Activer") + "</button></div>";
+      const dis = bloque ? " disabled" : "";
+      const sorties = (e.pairs || []).filter((p) => p.offre_sortie);
+      const titre = 'font:650 16px Inter,system-ui,sans-serif';
+      return '<div class="carte"><h2 style="' + titre + '">Réglages avancés</h2>' +
+        bool("accept_routes", "Accepter les routes des autres machines", "Joindre les réseaux (192.168…) que d’autres machines annoncent. Inutile pour un simple serveur.") +
+        bool("accept_dns", "Utiliser le DNS du réseau (MagicDNS)", "Résoudre les noms des machines du réseau.") +
+        bool("shields_up", "Bouclier : refuser les connexions entrantes", "Cette machine joint les autres, mais personne ne la joint par Tailscale (SSH par Tailscale compris).") +
+        bool("advertise_exit_node", "Offrir la sortie Internet de cette machine", "Les autres machines peuvent passer par elle pour sortir sur Internet ; l’administrateur doit l’approuver.") +
+        '<div class="champs"><label class="ch"><b>Nom de la machine</b><span class="note">Lettres, chiffres et tirets. Change son adresse DNS dans le réseau.</span><input type="text" id="ts-r-nom" value="' + esc(g.hostname) + '"></label>' +
+        '<label class="ch"><b>Routes annoncées</b><span class="note">Réseaux joignables par cette machine, séparés par des virgules (192.168.1.0/24).</span><input type="text" id="ts-r-routes" value="' + esc((g.advertise_routes || []).join(", ")) + '"></label>' +
+        '<label class="ch"><b>Sortie Internet utilisée</b><span class="note">' + (sorties.length ? "Tout le trafic de cette machine passera par la machine choisie." : "Aucune machine du réseau n’offre de sortie.") + '</span><select id="ts-r-sortie"><option value="">aucune</option>' +
+        sorties.map((p) => '<option value="' + esc(p.ip) + '"' + (p.ip === g.exit_node ? " selected" : "") + ">" + esc(p.nom) + "</option>").join("") + "</select></label></div>" +
+        '<div class="acts"><button class="btn" data-a="regler-nom"' + dis + '>Renommer</button><button class="btn" data-a="regler-routes"' + dis + '>Annoncer ces routes</button><button class="btn" data-a="regler-sortie"' + dis + ">Appliquer la sortie</button></div></div>";
     }
 
     function carteGestes(e) {
@@ -157,7 +193,7 @@
           '<div><span class="lib">Réseau</span><span class="gros" style="font-size:16px">' + esc(e.reseau || "—") + '</span><span class="note">client ' + esc(e.version) + "</span></div>" : "") + "</div></div>";
       if (e.en_attente) h += e.lien ? carteLien(e) : '<div class="carte attente">Tailscale prépare le lien de connexion…</div>';
       else if (e.etat === "a_approuver") h += '<div class="carte"><p>La machine est identifiée mais l’administrateur de ton réseau Tailscale doit l’approuver (login.tailscale.com › Machines).</p></div>';
-      else if (e.etat === "connecte") h += carteReseau(e) + carteGestes(e);
+      else if (e.etat === "connecte") h += avisExpiration(e) + carteReseau(e) + carteGestes(e) + carteReglages(e);
       else h += carteConnexion(e);
       racine.innerHTML = h; lier();
     }
@@ -179,6 +215,26 @@
       if (a === "deconnecter-non") { S.couper = false; dessiner(); return; }
       if (a === "deconnecter-oui") return faire(() => agir("tailscale.deconnecter"), "Tailscale est coupé sur cette machine.");
       if (a === "annuler") return faire(() => agir("tailscale.annuler"), "Connexion abandonnée.");
+      if (a === "ping") {
+        const m = b.dataset.m;
+        S.ping[m] = "…"; dessiner();
+        try { const r = await agir("tailscale.ping", { machine: m }); S.ping[m] = r.ok ? (r.chemin === "direct" ? "direct" : "par un relais") + " · " + r.ms + " ms" : "pas de réponse"; }
+        catch (err) { S.ping[m] = err.message || String(err); }
+        dessiner(); return;
+      }
+      if (a === "regler") {
+        const cle = b.dataset.c, val = b.dataset.v === "1";
+        if (val && cle === "shields_up" && !confirm("Le bouclier refuse toutes les connexions entrantes par Tailscale, SSH compris. Continuer ?")) return;
+        if (val && cle === "advertise_exit_node" && !confirm("Offrir la sortie Internet de cette machine au réseau : l’administrateur devra l’approuver. Continuer ?")) return;
+        return faire(() => agir("tailscale.regler", { cle: cle, valeur: val }), "Réglage appliqué.");
+      }
+      if (a === "regler-nom") return faire(() => agir("tailscale.regler", { cle: "hostname", valeur: String((racine.querySelector("#ts-r-nom") || {}).value || "").trim() }), "Nom changé.");
+      if (a === "regler-routes") return faire(() => agir("tailscale.regler", { cle: "advertise_routes", valeur: String((racine.querySelector("#ts-r-routes") || {}).value || "") }), "Routes annoncées.");
+      if (a === "regler-sortie") {
+        const v = String((racine.querySelector("#ts-r-sortie") || {}).value || "");
+        if (v && !confirm("Tout le trafic de cette machine passera par la machine choisie : si tu t’y connectes par Tailscale, tu peux perdre l’accès. Continuer ?")) return;
+        return faire(() => agir("tailscale.regler", { cle: "exit_node", valeur: v }), v ? "Sortie Internet changée." : "Sortie Internet remise à la normale.");
+      }
       if (a === "ssh") return faire(() => agir("tailscale.ssh_regler", { actif: b.dataset.v === "1" }), b.dataset.v === "1" ? "SSH par Tailscale activé." : "SSH par Tailscale coupé.");
       if (a === "connecter") {
         const nom = String((racine.querySelector("#ts-nom") || {}).value || "").trim();

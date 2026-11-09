@@ -7,14 +7,20 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.5  #0e7e0b
+# VERSION CN : 0.2.0  #3eb9be
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Retire le droit de pilotage donné à l'utilisateur de Cassandra. Ne déconnecte PAS la machine et ne désinstalle PAS Tailscale : le réseau privé est à l'administrateur.
 # MÉTHODE    : `tailscale set --operator=` (vide).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.5 empreinte=0e7e0b ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=3eb9be ▼▼▼
 set -u
+# la minuterie d'abord : sinon elle rendrait aussitôt le droit qu'on retire
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl disable --now cassandra-tailscale-operateur.timer >/dev/null 2>&1 || true
+  rm -f /etc/systemd/system/cassandra-tailscale-operateur.timer /etc/systemd/system/cassandra-tailscale-operateur.service /usr/local/sbin/cassandra-tailscale-operateur
+  systemctl daemon-reload >/dev/null 2>&1 || true
+fi
 if command -v tailscale >/dev/null 2>&1; then tailscale set --operator= >/dev/null 2>&1 || true; fi
 echo "tailscale : droit de pilotage retiré (la machine reste connectée)"
 exit 0

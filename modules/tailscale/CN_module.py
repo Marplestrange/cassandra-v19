@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.5  #cadbb4
+# VERSION CN : 0.2.0  #d0b0ea
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.5 empreinte=cadbb4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=d0b0ea ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -25,6 +25,8 @@ Rien ne se fait en root : l'installateur donne à l'utilisateur de Cassandra le 
 Rien n'est inventé : un client absent, un tailscaled arrêté, une identification en attente sont des ÉTATS distincts, pas des « hors ligne » interchangeables."""
 from __future__ import annotations
 
+import datetime
+import ipaddress
 import json
 import os
 import re
@@ -39,6 +41,9 @@ CLE = re.compile(r"^tskey-[A-Za-z0-9_-]{8,200}$")
 NOM = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
 _EN_ATTENTE = {"proc": None, "err": None}          # le `tailscale up` sans clé, en attente d'identification ; `err` : le fichier où va sa sortie d'erreur (jamais un tube : personne ne le vide)
 _PROC = "/proc"                                    # où chercher un `up` en attente d'avant un redémarrage de Cassandra (Linux ; ailleurs, rien à trouver)
+_SOCKET = os.environ.get("CASSANDRA_TAILSCALE_SOCKET", "")   # un tailscaled qui n'écoute pas sur le socket par défaut (et le banc contre un vrai tailscaled)
+_TTL = 2.0                                         # secondes pendant lesquelles `etat` réutilise la dernière lecture (statut + préférences) ; 0 : jamais
+_CACHE = {"t": 0.0, "val": None}
 _VERROU = threading.RLock()                        # un seul geste à la fois sur la connexion : deux `up` en même temps laisseraient un processus orphelin
 
 
@@ -61,10 +66,14 @@ def _appeler_point(point, entree):
     return _REFERENCES[point](entree)
 
 
+def _commande(args):
+    return ["tailscale"] + (["--socket=" + _SOCKET] if _SOCKET else []) + list(args)
+
+
 def _lancer(args, delai=DELAI):
     """(code, sortie) ; (None, raison) si le client est absent ou n'a pas répondu à temps."""
     try:
-        r = subprocess.run(["tailscale"] + list(args), capture_output=True, text=True, timeout=delai, errors="replace")
+        r = subprocess.run(_commande(args), capture_output=True, text=True, timeout=delai, errors="replace")
         return r.returncode, ((r.stdout or "") + (r.stderr or "")).strip()
     except FileNotFoundError:
         return None, "absent"
@@ -82,14 +91,11 @@ def _erreur(sortie, cle=''):
 
 
 def _json(sortie):
-    """Le JSON d'une sortie du client. `_lancer` joint stdout et stderr : un avertissement du client (version différente de tailscaled…) avant ou après le JSON ne doit pas
-    faire croire que tailscaled est arrêté. Lève ValueError s'il n'y a pas de JSON."""
+    """Le JSON d'une sortie du client, avertissements de stderr avant ou après compris (ValueError s'il n'y en a pas)."""
     i = str(sortie or "").find("{")
-    if i < 0:
-        raise ValueError("pas de JSON")
-    obj, _ = json.JSONDecoder().raw_decode(sortie[i:])
+    obj = json.JSONDecoder().raw_decode(sortie[i:])[0] if i >= 0 else None
     if not isinstance(obj, dict):
-        raise ValueError("pas un objet JSON")
+        raise ValueError("pas d'objet JSON")
     return obj
 
 
@@ -134,7 +140,12 @@ def orphelins():
                 a = [x.decode("utf-8", "replace") for x in f.read().split(b"\0") if x]
         except OSError:
             continue
-        if len(a) >= 2 and os.path.basename(a[0]) == "tailscale" and a[1] == "up" and "--timeout=15m" in a:
+        if len(a) < 2 or os.path.basename(a[0]) != "tailscale":
+            continue
+        sockets = [x for x in a[1:] if x.startswith("--socket=")]
+        reste = [x for x in a[1:] if not x.startswith("--socket=")]
+        # le même client que le nôtre : un `up` sur un autre socket est celui d'un autre tailscaled (jamais le sien à abandonner)
+        if reste[:1] == ["up"] and "--timeout=15m" in a and sockets == (["--socket=" + _SOCKET] if _SOCKET else []):
             pids.append(int(n))
     return pids
 
@@ -156,44 +167,132 @@ def lire_ssh():
     return None if p is None else bool(p.get("RunSSH"))
 
 
+class Veilleur:
+    """Le flux d'événements du client (`tailscale debug watch-ipn`) : chaque ligne réveille l'attente, qui relit alors l'état. L'ÉTAT reste lu par `status --json` (la source de vérité) ;
+    le flux ne fait que cadencer, au lieu d'un sommeil fixe. Sans flux (client absent, ancien client), `attendre` dort comme avant : rien ne dépend de lui."""
+
+    def __init__(self, commande=None):
+        self.ev = threading.Event()
+        self.proc = None
+        try:
+            self.proc = subprocess.Popen(commande or _commande(["debug", "watch-ipn"]), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, errors="replace")
+        except (OSError, ValueError):
+            return
+        threading.Thread(target=self._lire, daemon=True).start()
+
+    def _lire(self):
+        try:
+            for _ in self.proc.stdout:
+                self.ev.set()
+        except (OSError, ValueError, AttributeError):
+            pass
+
+    def attendre(self, delai):
+        """Rend après `delai` au plus, ou dès qu'un événement arrive. Sans flux : un simple sommeil."""
+        if self.proc is None:
+            time.sleep(delai)
+            return False
+        vu = self.ev.wait(delai)
+        self.ev.clear()
+        if vu:
+            time.sleep(0.2)                         # le temps que le démon ait fini de changer d'état, et pas plus d'une relecture par instant
+        return vu
+
+    def fermer(self):
+        p, self.proc = self.proc, None
+        if p is not None:
+            try:
+                p.terminate()
+                p.wait(2)
+            except Exception:                       # noqa: BLE001
+                try:
+                    p.kill()
+                except Exception:                   # noqa: BLE001
+                    pass
+
+
 def brancher(ctx):
     global _point
     _point = ctx.point
-    def etat(c):
-        d, raison = lire_statut()
-        if d is None:
-            if raison == "absent":
-                return {"etat": "absent", "texte": "Tailscale n'est pas installé sur cette machine.", "en_attente": False}
-            return {"etat": "arrete", "texte": raison or "tailscaled ne répond pas", "en_attente": False}
+    def _jours(iso):
+        """Jours avant une date d'expiration (négatif : déjà expirée), ou None."""
+        try:
+            d = datetime.datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return None
+        if d.year < 2000:                            # « 0001-01-01 » : pas d'expiration
+            return None
+        return (d - datetime.datetime.now(datetime.timezone.utc)).days
+
+    def expirations(d):
+        """La clé de cette machine et celles des pairs qui expirent dans 14 jours (ou ont expiré) : sinon une machine tombe du réseau sans prévenir."""
+        moi = d.get("Self") or {}
+        j = _jours(moi.get("KeyExpiry"))
+        out = {"expiration": None if j is None else {"date": str(moi.get("KeyExpiry"))[:10], "jours": j}, "expirent": []}
+        for p in (d.get("Peer") or {}).values():
+            jp = _jours(p.get("KeyExpiry"))
+            if jp is not None and jp <= 14:
+                out["expirent"].append({"nom": p.get("HostName") or str(p.get("DNSName") or "").split(".")[0], "jours": jp})
+        out["expirent"].sort(key=lambda x: x["jours"])
+        return out
+
+    def reglages_de(prefs):
+        """Les réglages que l'écran propose, lus dans les préférences (la source de vérité)."""
+        routes = list(prefs.get("AdvertiseRoutes") or [])
+        return {"accept_routes": bool(prefs.get("RouteAll")), "accept_dns": bool(prefs.get("CorpDNS")), "shields_up": bool(prefs.get("ShieldsUp")), "hostname": str(prefs.get("Hostname") or ""),
+                "advertise_routes": sorted(x for x in routes if x not in ("0.0.0.0/0", "::/0")), "advertise_exit_node": "0.0.0.0/0" in routes, "exit_node": str(prefs.get("ExitNodeIP") or "")}
+
+    def _etat(c, frais):
+        """`frais` : relire le client. Sinon la dernière lecture de moins de _TTL secondes sert (l'écran et `flotte` relisent souvent) ; tout geste qui écrit relit à neuf."""
+        maintenant_t = time.time()
+        if not frais and _TTL > 0 and _CACHE["val"] is not None and maintenant_t - _CACHE["t"] < _TTL:
+            d, prefs = _CACHE["val"]
+        else:
+            d, raison = lire_statut()
+            if d is None:
+                _CACHE["val"] = None
+                if raison == "absent":
+                    return {"etat": "absent", "texte": "Tailscale n'est pas installé sur cette machine.", "en_attente": False}
+                return {"etat": "arrete", "texte": raison or "tailscaled ne répond pas", "en_attente": False}
+            prefs = lire_prefs()                     # une seule lecture : SSH, opérateur et réglages
+            _CACHE.update(t=maintenant_t, val=(d, prefs))
         r = resume(d)
-        prefs = lire_prefs()                         # une seule lecture : SSH et opérateur
+        r.update(expirations(d))
         if prefs is not None:
             r["ssh"] = bool(prefs.get("RunSSH"))
             r["operateur"] = str(prefs.get("OperatorUser") or "")
             r["pilotable"] = r["operateur"] == utilisateur()      # faux : les gestes seraient refusés, l'écran le dit au lieu de proposer des boutons qui échouent
+            r["reglages"] = reglages_de(prefs)
         else:
-            r["ssh"], r["operateur"], r["pilotable"] = None, "", None
+            r["ssh"], r["operateur"], r["pilotable"], r["reglages"] = None, "", None, None
         p = _EN_ATTENTE["proc"]
         r["en_attente"] = bool(p and p.poll() is None) or (r["etat"] == "a_identifier" and bool(orphelins()))
         r["cle_enregistree"] = bool(str(ctx.reglage("cle_auth", "") or "").strip())
         return r
 
+    def etat(c):
+        return _etat(c, False)
+
     def attendre(etats, delai, sauf_lien=""):
-        """Relit l'état jusqu'à l'un des `etats`. `sauf_lien` : un lien d'identification déjà là AVANT le geste est celui d'une tentative abandonnée ; le nouveau le remplace
-        quelques secondes plus tard, et c'est lui que la personne doit ouvrir."""
+        """Relit l'état jusqu'à l'un des `etats`, au rythme des événements du client (ou d'un sommeil s'il n'a pas de flux). `sauf_lien` : un lien d'identification déjà là AVANT le geste
+        est celui d'une tentative abandonnée ; le nouveau le remplace quelques secondes plus tard, et c'est lui que la personne doit ouvrir."""
         fin = time.time() + delai
         r = None
-        while time.time() < fin:
-            d, _ = lire_statut()
-            if d is not None:
-                r = resume(d)
-                if r["etat"] == "connecte" and "connecte" in etats:
-                    return r
-                if r["etat"] == "a_identifier" and r["lien"] and r["lien"] != sauf_lien and "a_identifier" in etats:
-                    return r
-                if r["etat"] == "a_approuver" and "a_approuver" in etats:      # identifiée : il ne reste que l'approbation de l'administrateur, inutile d'attendre davantage
-                    return r
-            time.sleep(0.7)
+        veille = Veilleur()
+        try:
+            while time.time() < fin:
+                d, _ = lire_statut()
+                if d is not None:
+                    r = resume(d)
+                    if r["etat"] == "connecte" and "connecte" in etats:
+                        return r
+                    if r["etat"] == "a_identifier" and r["lien"] and r["lien"] != sauf_lien and "a_identifier" in etats:
+                        return r
+                    if r["etat"] == "a_approuver" and "a_approuver" in etats:      # identifiée : il ne reste que l'approbation de l'administrateur, inutile d'attendre davantage
+                        return r
+                veille.attendre(min(2.0, max(0.1, fin - time.time())) if veille.proc is not None else 0.7)
+        finally:
+            veille.fermer()
         return r
 
     def abandonner_attente():
@@ -232,7 +331,7 @@ def brancher(ctx):
         except (OSError, ValueError):
             return ""
 
-    def regler(nom, ssh):
+    def regler_nom_ssh(nom, ssh):
         """Applique nom et SSH à une machine DÉJÀ enregistrée : `set` les change sans rien remettre à zéro (`up --reset` effacerait routes, nœud de sortie, DNS…)."""
         if nom:
             code, sortie = _lancer(["set", "--hostname=" + nom])
@@ -261,8 +360,8 @@ def brancher(ctx):
                 raise ValueError("La clé d'authentification doit ressembler à tskey-auth-… (créée sur login.tailscale.com › Settings › Keys)")
         etat_avant = resume(d)["etat"]
         if etat_avant == "connecte":
-            regler(nom, ssh)                         # déjà connectée : ce qu'on demande (nom, SSH) s'applique quand même, sans rien relancer
-            return dict(etat(c), avant="connecte")
+            regler_nom_ssh(nom, ssh)                         # déjà connectée : ce qu'on demande (nom, SSH) s'applique quand même, sans rien relancer
+            return dict(_etat(c, True), avant="connecte")
         abandonner_attente()
         ancien_lien = resume(d)["lien"]
         if etat_avant == "deconnecte":
@@ -275,8 +374,8 @@ def brancher(ctx):
             r = attendre({"connecte", "a_approuver"}, 8) if code == 0 else None
             if r is not None and r["etat"] in ("connecte", "a_approuver"):
                 if r["etat"] == "connecte":
-                    regler(nom, ssh)                 # nom et SSH demandés : par `set`, qui ne remet rien à zéro
-                return dict(etat(c), avant="deconnecte")
+                    regler_nom_ssh(nom, ssh)                 # nom et SSH demandés : par `set`, qui ne remet rien à zéro
+                return dict(_etat(c, True), avant="deconnecte")
             # Pas reconnectée sans identification (clé expirée…) : elle repart comme une première connexion, ci-dessous.
         # Première connexion (ou après un retrait, ou identité à refaire) : rien à garder. --reset remet TOUT à zéro, l'opérateur compris : sans --operator, la connexion réussit
         # une fois puis Cassandra n'a plus le droit de rien piloter.
@@ -303,11 +402,11 @@ def brancher(ctx):
                 raise ValueError(_erreur(sortie, cle))
             r = attendre({"connecte", "a_approuver"}, 8)
             if r is not None and r["etat"] == "connecte":
-                regler(*reglages_apres)
-            return dict(etat(c), avant="deconnecte")
+                regler_nom_ssh(*reglages_apres)
+            return dict(_etat(c, True), avant="deconnecte")
         err = tempfile.TemporaryFile()                                 # la sortie d'erreur du `up` en attente va dans un fichier : un tube que personne ne lit finirait par le bloquer
         try:
-            _EN_ATTENTE["proc"] = subprocess.Popen(["tailscale"] + args + ["--timeout=15m"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=err,
+            _EN_ATTENTE["proc"] = subprocess.Popen(_commande(args + ["--timeout=15m"]), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=err,
                                                    start_new_session=True)
             _EN_ATTENTE["err"] = err
         except FileNotFoundError:
@@ -322,7 +421,7 @@ def brancher(ctx):
         if r is None or (r["etat"] not in ("connecte", "a_approuver") and not r["lien"]):
             raise ValueError("Tailscale n'a pas donné de lien de connexion : réessaie dans un instant")
         if r["etat"] == "connecte":
-            regler(*reglages_apres)
+            regler_nom_ssh(*reglages_apres)
         return dict(r, en_attente=r["etat"] == "a_identifier", avant="deconnecte")
 
     def maintenant():
@@ -341,6 +440,7 @@ def brancher(ctx):
         return False
 
     def defaire_connecter(c, res):
+        _CACHE["val"] = None
         with _VERROU:
             abandonner_attente()
             if res.get("avant") != "connecte":
@@ -351,9 +451,9 @@ def brancher(ctx):
             m = maintenant()
             abandonner_attente()
             if m is not None and m["etat"] == "connecte":
-                return dict(etat(c), avant="connecte")        # rien à abandonner : `down` couperait une connexion qui marche (et peut-être la session qui pilote la machine)
+                return dict(_etat(c, True), avant="connecte")        # rien à abandonner : `down` couperait une connexion qui marche (et peut-être la session qui pilote la machine)
             _lancer(["down"])
-            return dict(etat(c), avant="en_attente")
+            return dict(_etat(c, True), avant="en_attente")
 
     def deconnecter(c):
         with _VERROU:
@@ -362,7 +462,7 @@ def brancher(ctx):
             code, sortie = _lancer(["down"])
             if code != 0:
                 raise ValueError(_erreur(sortie))
-            return dict(etat(c), avant=avant)
+            return dict(_etat(c, True), avant=avant)
 
     def defaire_deconnecter(c, res):
         if res.get("avant") == "connecte":
@@ -377,14 +477,14 @@ def brancher(ctx):
             code, sortie = _lancer(["logout"], 20)
             if code != 0:
                 raise ValueError(_erreur(sortie))
-            return dict(etat(c), avant=avant)
+            return dict(_etat(c, True), avant=avant)
 
     def ssh_regler(c, actif=True):
         avant = lire_ssh()
         code, sortie = _lancer(["set", "--ssh=" + ("true" if actif else "false")])
         if code != 0:
             raise ValueError(_erreur(sortie))
-        return dict(etat(c), ssh_avant=avant, ssh_demande=bool(actif))
+        return dict(_etat(c, True), ssh_avant=avant, ssh_demande=bool(actif))
 
     def prouver_pas_connecte(c, res):
         m = maintenant()
@@ -394,11 +494,123 @@ def brancher(ctx):
         if res.get("ssh_avant") is not None:
             _lancer(["set", "--ssh=" + ("true" if res["ssh_avant"] else "false")])
 
+    # --- les réglages du client, un geste pour tous : chaque réglage a sa validation, sa preuve (relire les préférences) et son retour (la valeur d'avant)
+    BOOLEENS = {"accept_routes": "--accept-routes", "accept_dns": "--accept-dns", "shields_up": "--shields-up", "advertise_exit_node": "--advertise-exit-node"}
+    CLES_REGLAGE = tuple(BOOLEENS) + ("hostname", "advertise_routes", "exit_node")
+
+    def valider(cle, valeur, d):
+        """La valeur demandée, mise en forme ; ValueError si elle n'a pas de sens ou serait dangereuse."""
+        if cle in BOOLEENS:
+            if isinstance(valeur, str):
+                v = valeur.strip().lower()
+                if v in ("1", "true", "oui", "vrai", "on"):
+                    return True
+                if v in ("0", "false", "non", "faux", "off"):
+                    return False
+                raise ValueError("Oui ou non attendu pour %s" % cle)
+            return bool(valeur)
+        if cle == "hostname":
+            v = str(valeur or "").strip().lower()
+            if not NOM.match(v):
+                raise ValueError("Nom de machine invalide : lettres, chiffres et tirets seulement")
+            return v
+        if cle == "advertise_routes":
+            items = valeur if isinstance(valeur, (list, tuple)) else str(valeur or "").split(",")
+            sortie = set()
+            for x in items:
+                x = str(x).strip()
+                if not x:
+                    continue
+                try:
+                    reseau = ipaddress.ip_network(x, strict=False)
+                except ValueError:
+                    raise ValueError("Route invalide : %s (attendu : 192.168.1.0/24)" % x[:60]) from None
+                if reseau.prefixlen == 0:
+                    raise ValueError("0.0.0.0/0 et ::/0 s'annoncent par « advertise_exit_node », pas comme une route")
+                sortie.add(str(reseau))
+            if len(sortie) > 32:
+                raise ValueError("32 routes au plus")
+            return sorted(sortie)
+        if cle == "exit_node":
+            v = str(valeur or "").strip()
+            if not v:
+                return ""
+            try:
+                ipaddress.ip_address(v)
+            except ValueError:
+                raise ValueError("Une adresse Tailscale (100.x.y.z) attendue pour le nœud de sortie") from None
+            if not any(p["ip"] == v and p["offre_sortie"] for p in resume(d)["pairs"]):
+                raise ValueError("Cette machine n'offre pas de sortie Internet sur le réseau : elle doit l'annoncer et l'administrateur l'approuver")
+            return v
+        raise ValueError("Réglage inconnu : %s (parmi %s)" % (str(cle)[:40], ", ".join(CLES_REGLAGE)))
+
+    def appliquer(cle, valeur, prefs):
+        """`tailscale set` : change CE réglage sans toucher aux autres (`up --reset` remettrait tout à zéro)."""
+        if cle in BOOLEENS:
+            args = ["%s=%s" % (BOOLEENS[cle], "true" if valeur else "false")]
+        elif cle == "hostname":
+            args = ["--hostname=" + valeur]
+        elif cle == "exit_node":
+            args = ["--exit-node=" + valeur]
+        else:                                        # advertise_routes : la sortie Internet annoncée est une route comme les autres pour le client ; on la garde telle quelle
+            gardees = [x for x in (prefs or {}).get("AdvertiseRoutes") or [] if x in ("0.0.0.0/0", "::/0")]
+            args = ["--advertise-routes=" + ",".join(list(valeur) + gardees)]
+        code, sortie = _lancer(["set"] + args)
+        if code != 0:
+            raise ValueError(_erreur(sortie))
+
+    def regler(c, cle="", valeur=None):
+        with _VERROU:
+            d, raison = lire_statut()
+            if d is None:
+                raise ValueError("Tailscale n'est pas utilisable : %s" % raison)
+            prefs = lire_prefs()
+            if prefs is None:
+                raise ValueError("Les préférences du client sont illisibles : rien n'est changé")
+            cle = str(cle or "").strip()
+            demande = valider(cle, valeur, d)
+            avant = reglages_de(prefs).get(cle)
+            appliquer(cle, demande, prefs)
+            return dict(_etat(c, True), reglage_cle=cle, reglage_avant=avant, reglage_demande=demande)
+
+    def prouver_regler(c, res):
+        p = lire_prefs()
+        return p is not None and reglages_de(p).get(res.get("reglage_cle")) == res.get("reglage_demande")
+
+    def defaire_regler(c, res):
+        with _VERROU:
+            _CACHE["val"] = None
+            if res.get("reglage_cle") in CLES_REGLAGE and res.get("reglage_avant") is not None:
+                appliquer(res["reglage_cle"], res["reglage_avant"], lire_prefs())
+
+    def ping(c, machine=""):
+        """Joindre une machine du réseau : par un chemin direct ou par un relais, et en combien de temps. La cible doit être une machine DU RÉSEAU (jamais un argument libre pour le client)."""
+        d, raison = lire_statut()
+        if d is None:
+            raise ValueError("Tailscale n'est pas utilisable : %s" % raison)
+        machine = str(machine or "").strip()
+        cible = next((p for p in resume(d)["pairs"] if machine and machine in (p["nom"], p["ip"])), None)
+        if cible is None or not cible["ip"]:
+            raise ValueError("Machine inconnue du réseau Tailscale : %s" % machine[:60])
+        code, sortie = _lancer(["ping", "-c", "3", "--timeout", "2s", cible["ip"]], 15)
+        reponses = []
+        for ligne in sortie.splitlines():
+            m = re.search(r"pong from .*? via (\S+) in ([0-9.]+)\s*(µs|us|ms|s)\b", ligne)
+            if m:
+                ms = float(m.group(2)) * {"µs": 0.001, "us": 0.001, "ms": 1.0, "s": 1000.0}[m.group(3)]
+                reponses.append({"chemin": "relais" if m.group(1).upper().startswith("DERP") else "direct", "via": m.group(1), "ms": round(ms, 1)})
+        if not reponses:
+            return {"machine": cible["nom"], "ip": cible["ip"], "ok": False, "reponses": 0, "detail": (sortie.splitlines() or ["pas de réponse"])[-1][:200]}
+        return {"machine": cible["nom"], "ip": cible["ip"], "ok": True, "reponses": len(reponses), "chemin": reponses[-1]["chemin"], "via": reponses[-1]["via"],
+                "ms": round(sum(x["ms"] for x in reponses) / len(reponses), 1)}
+
     ctx.implementer("etat", etat)
+    ctx.implementer("ping", ping)
     ctx.implementer("connecter", connecter, prouver_connecter, defaire_connecter, simuler=lambda x, nom="", ssh=False, avec_cle=False, **_: "connecterait la machine à Tailscale" + (" avec la clé enregistrée" if avec_cle else " (lien d'identification)"))
     ctx.implementer("annuler", annuler, lambda c, res: not res.get("en_attente"), lambda c, res: None, simuler=lambda x, **_: "abandonnerait la connexion en attente")
     ctx.implementer("deconnecter", deconnecter, prouver_pas_connecte, defaire_deconnecter, simuler=lambda x, **_: "couperait Tailscale sur cette machine")
     ctx.implementer("quitter", quitter, prouver_pas_connecte, lambda c, res: connecter(c), simuler=lambda x, **_: "retirerait la machine du réseau Tailscale")
+    ctx.implementer("regler", regler, prouver_regler, defaire_regler, simuler=lambda x, cle="", valeur=None, **_: "changerait le réglage Tailscale « %s »" % cle)
     ctx.implementer("ssh_regler", ssh_regler, lambda c, res: lire_ssh() == res.get("ssh_demande"), defaire_ssh, simuler=lambda x, actif=True, **_: "%s SSH par Tailscale" % ("activerait" if actif else "couperait"))
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
