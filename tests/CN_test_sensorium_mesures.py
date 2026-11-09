@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9ac3ca
+# VERSION CN : 0.1.0  #6753fb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9ac3ca ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6753fb ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -705,6 +705,24 @@ class SuiviEtVisibilite(Mesures):
         self.assertTrue(simple and admin)
         self.assertEqual(simple[-1]["donnees"]["raison"], "muette")
         self.assertRegex(admin[-1]["donnees"]["raison"], r"muette depuis \d+ s \(attendue toutes les \d+ s\)")
+
+    def test_le_droit_suivre_retire_arrete_les_evenements_sans_retirer_le_suivi(self):
+        self.ok("mesure_publier", ADMIN, cle="infra.cert", visibilite="toutes")
+        self.assertTrue(self.ok("mesure_suivre", SIMPLE, cle="infra.cert")["ok"])
+        self.n.droits.regler("compte", SIMPLE, "sensorium.suivre", None)           # l'administrateur retire le droit
+        self.h.avance(40)
+        self.alimenter("infra.cert", 99)
+        self.assertEqual(self.pour(SIMPLE), [], "un compte sans le droit suivre reçoit encore des événements")
+        self.n.droits.regler("compte", SIMPLE, "sensorium.suivre", "accorde")     # rendu : le suivi n'avait pas été perdu
+        self.h.avance(40)
+        self.alimenter("infra.cert", 1)
+        self.assertEqual([e["donnees"]["apres"] for e in self.pour(SIMPLE)], ["ok"])
+
+    def test_un_administrateur_ou_un_compte_systeme_n_a_pas_besoin_du_droit_suivre(self):
+        self.ok("mesure_suivre", ADMIN, cle="infra.cert")
+        self.h.avance(40)
+        self.alimenter("infra.cert", 99)
+        self.assertEqual([e["donnees"]["apres"] for e in self.pour(ADMIN)][-1], "alerte")
 
     def test_un_suiveur_d_une_autre_societe_ne_recoit_que_si_sa_societe_est_publiee(self):
         db = self.n.executeur.contextes["sensorium"].stockage

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.3  #d4c426
+# VERSION CN : 0.2.3  #9081a6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.3 empreinte=d4c426 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.3 empreinte=9081a6 ▼▼▼
 """Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 
 Tout vit dans la base du module (migration 004) : le noyau, le registre et le collecteur root ne changent pas. Le calcul de l'état est pur (CN_mesures_etat.py) ; ici, l'accès à la base,
@@ -118,9 +118,20 @@ def _suiveur_prive(ctx, suiveur) -> bool:
     return suiveur in SYSTEMES or bool(ctx.est_admin(suiveur))
 
 
+def _suiveur_a_le_droit(ctx, suiveur) -> bool:
+    """Ce suiveur a-t-il ENCORE le droit `suivre` ? Un administrateur ou un compte système n'en a pas besoin. Au moindre doute (service des droits injoignable), non : mieux vaut se taire que parler à tort."""
+    if _suiveur_prive(ctx, suiveur):
+        return True
+    try:
+        return bool(ctx._intro["droits"].a(suiveur, "sensorium.suivre", ctx.societe_de(suiveur)))
+    except Exception as ex:
+        log.warning("droit suivre non vérifiable pour %s : %s", suiveur, ex)
+        return False
+
+
 def _suiveur_voit(ctx, db, suiveur, cle) -> bool:
-    """Ce suiveur voit-il ENCORE cette clé (publication courante, société de son compte) ? Revérifié à chaque annonce : un suivi accepté hier ne vaut pas droit de regard aujourd'hui."""
-    return me.visible_pour(_visibilite(db, cle), ctx.societe_de(suiveur), _suiveur_prive(ctx, suiveur))
+    """Ce suiveur voit-il ENCORE cette clé (publication courante, société de son compte) et a-t-il toujours le droit de suivre ? Revérifié à chaque annonce : un suivi accepté hier ne vaut ni droit de regard ni droit de suivre aujourd'hui."""
+    return _suiveur_a_le_droit(ctx, suiveur) and me.visible_pour(_visibilite(db, cle), ctx.societe_de(suiveur), _suiveur_prive(ctx, suiveur))
 
 
 def _annoncer(ctx, db, cle, lec_etat, calcul, depuis, annonce, annonce_a, maintenant):
