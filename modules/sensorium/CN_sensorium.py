@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.0  #4b7433
+# VERSION CN : 0.2.1  #f00222
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=4b7433 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.1 empreinte=f00222 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -4729,6 +4729,100 @@ def collect_dns_local() -> list:
         len(noms), "s" if len(noms) > 1 else "", "s" if len(noms) > 1 else "", attendu, " et ".join(ecoutes)))]
 
 
+# ── L'HORLOGE ET LA RÉSOLUTION DNS (docs/CN_SENSORIUM_EVOLUTION.md §10) ──────────────────────────────────────────────────────────────────────────────
+# Une machine sans horloge matérielle (Raspberry Pi sans pile) repart d'une date fausse tant que le réseau n'a pas répondu ; un DNS d'opérateur qui « filtre » répond 127.0.0.1
+# ou 0.0.0.0 à la place de la vraie adresse. Ni l'un ni l'autre ne se voit sans mesure. Rien ici n'écrit : on lit ce que chrony et dig disent, et on le compare.
+_RESOLV_CONF = os.environ.get("SENSORIUM_RESOLV_CONF") or "/etc/resolv.conf"
+_RTC_DIR = os.environ.get("SENSORIUM_RTC_DIR") or "/sys/class/rtc"
+_DNS_NOMS = tuple((os.environ.get("SENSORIUM_DNS_NOMS") or "iana.org example.com").split())[:2]
+_DNS_PUBLICS = ("1.1.1.1", "9.9.9.9")
+_IPV4 = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
+_HORLOGE_MIN = 1735689600                    # 2025-01-01 UTC : avant, l'heure de la machine n'a jamais été réglée
+
+
+def _chrony_ecart(texte: str):
+    """(écart en secondes — positif : la machine est EN AVANCE —, synchronisée ?) d'après `chronyc tracking`, ou (None, None) si le texte n'est pas lisible."""
+    m = re.search(r"(?m)^System time\s*:\s*([0-9.eE+-]+) seconds (fast|slow) of NTP time", texte or "")
+    sync = re.search(r"(?m)^Leap status\s*:\s*(.+)$", texte or "")
+    if not m:
+        return None, None
+    ecart = float(m.group(1)) * (1 if m.group(2) == "fast" else -1)
+    return ecart, bool(sync) and sync.group(1).strip().lower() == "normal"
+
+
+def collect_horloge() -> list:
+    """Synchronisation et dérive de l'horloge (chrony), présence d'une horloge matérielle. Sans chrony ni timedatectl : rien, jamais un « ok » inventé."""
+    rows = []
+    maintenant = time.time()
+    td = run_cmd(["timedatectl", "show", "-p", "NTPSynchronized"], timeout=5) if _qui("timedatectl") else ""
+    ntp = "yes" in td.lower() if td else None
+    ecart, sync = _chrony_ecart(run_cmd(["chronyc", "tracking"], timeout=8)) if _qui("chronyc") else (None, None)
+    if maintenant < _HORLOGE_MIN:
+        rows.append(_mesure("horloge.synchronisation", "horloge", "HORLOGE NON RÉGLÉE : la machine croit être en %d" % datetime.fromtimestamp(maintenant, timezone.utc).year, sev="warning"))
+    elif ecart is not None:
+        if not sync:
+            rows.append(_mesure("horloge.synchronisation", "horloge", "NON SYNCHRONISÉE (chrony) · écart estimé %+.3f s" % ecart, sev="warning"))
+        elif abs(ecart) > 0.5:
+            rows.append(_mesure("horloge.synchronisation", "horloge", "DÉRIVE de %+.3f s par rapport au temps réseau (chrony)" % ecart, sev="warning"))
+        else:
+            rows.append(_mesure("horloge.synchronisation", "horloge", "synchronisée · écart %+.3f s (chrony)" % ecart))
+    elif ntp is not None:
+        rows.append(_mesure("horloge.synchronisation", "horloge", "synchronisée (NTP)" if ntp else "NON SYNCHRONISÉE (NTP)", sev="info" if ntp else "warning"))
+    if os.path.isdir(_RTC_DIR):
+        if not any(n.startswith("rtc") for n in os.listdir(_RTC_DIR)):
+            rows.append(_mesure("horloge.materielle", "horloge", "aucune horloge matérielle : l'heure d'après un redémarrage dépend du réseau", sev="warning" if ntp is False else "info"))
+    return rows
+
+
+def _dns_adresses(nom: str, serveur: str):
+    """(adresses IPv4 reçues, durée en ms) d'une question à UN serveur ; ([], ms) s'il n'a rien répondu."""
+    t0 = time.perf_counter()
+    sortie = run_cmd(["dig", "+short", "+time=2", "+tries=1", "A", nom, "@" + serveur], timeout=6) or ""
+    return [a for a in sortie.split() if _IPV4.match(a)], int((time.perf_counter() - t0) * 1000)
+
+
+def _dns_puits(adresses) -> bool:
+    """Une réponse « puits » : uniquement 127.x ou 0.0.0.0 (un filtre, un DNS d'opérateur qui détourne, un résolveur local qui refuse)."""
+    return bool(adresses) and all(a.startswith("127.") or a == "0.0.0.0" for a in adresses)
+
+
+def collect_dns_sante() -> list:
+    """La résolution vue de cette machine : le résolveur configuré répond-il, vite, et juste ? Sa réponse est comparée à celle d'un résolveur public QUAND elle est vide ou « puits ».
+    Une différence d'adresses seule n'est pas une panne (les réseaux de diffusion répondent selon le lieu). Le serve-stale d'un résolveur ne se mesure pas d'ici."""
+    if not _qui("dig"):
+        return []
+    try:
+        with open(_RESOLV_CONF, encoding="utf-8") as f:
+            locaux = re.findall(r"(?m)^nameserver\s+(\S+)", f.read())[:1]
+    except Exception:
+        locaux = []
+    locaux = [a for a in locaux if _IPV4.match(a)]
+    if not locaux or not _DNS_NOMS:
+        return []
+    srv, ms_max, pb = locaux[0], 0, []
+    for nom in _DNS_NOMS:
+        loc, ms = _dns_adresses(nom, srv)
+        ms_max = max(ms_max, ms)
+        if loc and not _dns_puits(loc):
+            continue
+        pub = []
+        for p in _DNS_PUBLICS:
+            pub, _ = _dns_adresses(nom, p)
+            if pub:
+                break
+        if not pub:
+            pb.append(("aucun résolveur ne répond pour %s : Internet est peut-être coupé" % nom, "info"))
+        elif not loc:
+            pb.append(("le résolveur %s ne répond pas pour %s (le public répond %s)" % (srv, nom, pub[0]), "warning"))
+        else:
+            pb.append(("PUITS : le résolveur %s répond %s pour %s alors que le public répond %s (DNS d'opérateur ou filtre)" % (srv, loc[0], nom, pub[0]), "warning"))
+    if any(sev == "warning" for _, sev in pb):
+        return [_mesure("dns.sante", "dns", " ; ".join(t for t, _ in pb), sev="warning")]
+    if pb:
+        return [_mesure("dns.sante", "dns", pb[0][0], sev="info")]
+    return [_mesure("dns.sante", "dns", "le résolveur %s répond juste (%d ms)" % (srv, ms_max), sev="warning" if ms_max > 1500 else "info")]
+
+
 def collect_outils_securite() -> list:
     """LES OUTILS DE SÉCURITÉ (10-10) — Lynis, Trivy, ClamAV, CrowdSec, s'ils sont installés : ce qu'ils ont
     trouvé à leur dernier passage (<données>/securite/<outil>.json, écrit par tools/cassandra_securite_outils.py).
@@ -5070,7 +5164,7 @@ def collect_box() -> list:
 
 # Les préfixes de mesures_diverses que le modèle du monde relit : une clé d'un autre préfixe est relevée, stockée, et jamais montrée (Argos, 03-11 : noyau., store., code. et courtier. manquaient).
 PREFIXES_DIVERSES = ("courriel.", "ssh.", "conteneur_ressources.", "certbot.", "journaux.", "trafic.", "mysql.", "cassandra.", "box.", "tailnet.", "prison.", "domaine_courriel.", "image.", "dns_local",
-                     "outil_secu.", "noyau.", "store.", "code.", "courtier.", "temoin.")
+                     "outil_secu.", "noyau.", "store.", "code.", "courtier.", "temoin.", "dns.", "horloge.")
 
 
 def collect_mesures_diverses() -> list:
@@ -5080,7 +5174,7 @@ def collect_mesures_diverses() -> list:
         threading.Thread(target=collect_securite_historique, daemon=True, name="secu-historique").start()
     for fn in (collect_file_courriel, collect_ssh_echecs, collect_docker_ressources, collect_certbot, collect_journaux_poids,
                collect_sante_applicative, collect_box, collect_tailnet, collect_fail2ban_prisons,
-               collect_courriel_domaines, collect_images_docker, collect_dns_local, collect_outils_securite):
+               collect_courriel_domaines, collect_images_docker, collect_dns_local, collect_horloge, collect_dns_sante, collect_outils_securite):
         try:
             rows.extend(fn() or [])
         except Exception as e:

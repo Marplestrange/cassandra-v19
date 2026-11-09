@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.0  #c16817
+# VERSION CN : 0.2.1  #922c61
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La lecture du Sensorium, sans contexte : le nom d'une mesure en français, son domaine et son objet, les alertes acceptées, les fenêtres de maintenance.
 # MÉTHODE    : des fonctions pures sur des listes de lignes {wkey, value, severity…} : le module (CN_module.py) leur donne les lignes du collecteur et les lignes de sa base ; rien ici ne touche au disque, au réseau ni à l'horloge.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=c16817 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.1 empreinte=922c61 ▼▼▼
 """La lecture du Sensorium : tout ce que l'écran dit d'une mesure vient d'ici, et rien ici n'a d'effet de bord.
 
 Une ligne du collecteur est {wkey, value, severity, observed_at, detail}. Sa clé (« ssl.exemple.org », « service.nginx ») dit sa famille ; la famille dit son domaine ;
@@ -22,11 +22,11 @@ import re
 
 # La famille d'une mesure : (identifiant, libellé, préfixes de clé). L'ordre est celui de l'écran.
 FAMILLES = (
-    ("system", "Système", ("system.",)), ("ressources", "Ressources", ("cpu.", "ram.", "swap.", "load.", "disk.", "montage.")),
+    ("system", "Système", ("system.", "horloge.")), ("ressources", "Ressources", ("cpu.", "ram.", "swap.", "load.", "disk.", "montage.")),
     ("service", "Services", ("service.", "systemd.")), ("docker", "Conteneurs", ("docker.", "conteneur_ressources.", "image.")),
     ("web", "Sites", ("web.",)), ("controle", "Contrôles de bout en bout", ("controle.",)), ("ssl", "Certificats", ("ssl.",)),
     ("sauvegarde", "Sauvegardes", ("sauvegarde.",)), ("prevision", "Ce qui va arriver", ("prevision.",)), ("flotte", "Flotte", ("fleet.", "machine.")),
-    ("config", "Config de Cassandra", ("config.",)), ("logiciel", "Logiciels", ("logiciel.",)), ("reseau", "Réseau", ("interface.", "port.")),
+    ("config", "Config de Cassandra", ("config.",)), ("logiciel", "Logiciels", ("logiciel.",)), ("reseau", "Réseau", ("interface.", "port.", "dns.")),
     ("stockage", "Stockage", ("stockage.",)), ("securite", "Sécurité", ("security.",)), ("maj", "Mises à jour", ("maj.",)),
     ("courriel", "Courriel", ("courriel.", "domaine_courriel.")), ("acces", "Accès et pare-feu", ("ssh.", "cle_ssh.", "pare_feu.", "fail2ban.", "prison.")),
     ("cron", "Tâches planifiées", ("cron.",)), ("fastpanel", "FastPanel", ("fastpanel.",)), ("erreurs", "Erreurs des journaux", ("erreurs.", "journaux.")),
@@ -95,7 +95,8 @@ EXACTS = {"noyau.service": "Noyau — service", "noyau.http": "Noyau — répons
           "courtier.etat": "Courtier — déclencheur", "courtier.file": "Courtier — demandes en attente", "store.total": "Bases de Cassandra — total",
           "store.noyau": "Base du noyau", "store.rejeu": "Base du rejeu", "store.evolution": "Base d'Évolution", "store.societes": "Bases de sociétés",
           "store.utilisateurs": "Bases d'utilisateurs", "temoin.exterieur": "Témoin extérieur — dernier signe de vie", "config.fichier": "Réglages — fichier de configuration", "health.score": "Santé — score",
-          "system.tailscale": "Tailscale — connexion de la machine", "sauvegarde.hors_machine": "Sauvegarde hors de la machine"}
+          "system.tailscale": "Tailscale — connexion de la machine", "dns.sante": "DNS — santé de la résolution", "horloge.synchronisation": "Horloge — synchronisation",
+          "horloge.materielle": "Horloge — pile matérielle", "sauvegarde.hors_machine": "Sauvegarde hors de la machine"}
 
 
 def libelle(wkey) -> str:
