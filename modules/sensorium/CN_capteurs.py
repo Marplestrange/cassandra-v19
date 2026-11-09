@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.2  #f07b22
+# VERSION CN : 0.2.2  #4ada00
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.2 empreinte=f07b22 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.2 empreinte=4ada00 ▼▼▼
 """Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 
 Tout vit dans la base du module (migration 004) : le noyau, le registre et le collecteur root ne changent pas. Le calcul de l'état est pur (CN_mesures_etat.py) ; ici, l'accès à la base,
@@ -114,9 +114,13 @@ def _peut_voir(ctx, db, cle, vue=None) -> bool:
 
 
 # ---------------------------------------------------------------------- l'enregistrement d'une lecture (capteur ou monde)
+def _suiveur_prive(ctx, suiveur) -> bool:
+    return suiveur in SYSTEMES or bool(ctx.est_admin(suiveur))
+
+
 def _suiveur_voit(ctx, db, suiveur, cle) -> bool:
     """Ce suiveur voit-il ENCORE cette clé (publication courante, société de son compte) ? Revérifié à chaque annonce : un suivi accepté hier ne vaut pas droit de regard aujourd'hui."""
-    return me.visible_pour(_visibilite(db, cle), ctx.societe_de(suiveur), suiveur in SYSTEMES or bool(ctx.est_admin(suiveur)))
+    return me.visible_pour(_visibilite(db, cle), ctx.societe_de(suiveur), _suiveur_prive(ctx, suiveur))
 
 
 def _annoncer(ctx, db, cle, lec_etat, calcul, depuis, annonce, annonce_a, maintenant):
@@ -136,7 +140,8 @@ def _annoncer(ctx, db, cle, lec_etat, calcul, depuis, annonce, annonce_a, mainte
             continue
         try:
             ctx.emettre("mesure.change", objet=("mesure", cle), compte=s,
-                        donnees={"cle": cle, "avant": avant, "apres": lec_etat, "depuis": depuis, "raison": calcul["raison"], "suiveur": s})
+                        donnees={"cle": cle, "avant": avant, "apres": lec_etat, "depuis": depuis, "suiveur": s,
+                                 "raison": calcul["raison"] if _suiveur_prive(ctx, s) else me.raison_courte(calcul["raison"])})
         except Exception as ex:                                  # un bus en panne ne fait pas perdre la lecture
             log.warning("mesure.change non émis (%s) : %s", cle, ex)
             compter(db, "evenements_en_echec")

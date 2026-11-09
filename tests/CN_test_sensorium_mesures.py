@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e46992
+# VERSION CN : 0.1.0  #f6608f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e46992 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f6608f ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -684,6 +684,19 @@ class SuiviEtVisibilite(Mesures):
         self.h.avance(40)
         self.alimenter("infra.cert", 99)
         self.assertEqual([e["donnees"]["apres"] for e in self.pour(SIMPLE)][-1], "alerte")
+
+    def test_fuite_les_chiffres_de_la_raison_ne_vont_qu_aux_suiveurs_privilegies(self):
+        self.ok("mesure_publier", ADMIN, cle="infra.cert", visibilite="societes:1")
+        self.ok("mesure_suivre", SIMPLE, cle="infra.cert")
+        self.ok("mesure_suivre", ADMIN, cle="infra.cert")
+        self.h.avance(61)
+        self.n.lancer("sensorium.suivi_mesures")
+        self.h.avance(700)
+        self.n.lancer("sensorium.suivi_mesures")
+        simple, admin = self.pour(SIMPLE), self.pour(ADMIN)
+        self.assertTrue(simple and admin)
+        self.assertEqual(simple[-1]["donnees"]["raison"], "muette")
+        self.assertRegex(admin[-1]["donnees"]["raison"], r"muette depuis \d+ s \(attendue toutes les \d+ s\)")
 
     def test_un_suiveur_d_une_autre_societe_ne_recoit_que_si_sa_societe_est_publiee(self):
         db = self.n.executeur.contextes["sensorium"].stockage

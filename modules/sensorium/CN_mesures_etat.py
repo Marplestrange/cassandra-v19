@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.2  #cd407f
+# VERSION CN : 0.2.2  #9d96fe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'état d'une mesure, calculé sans rien lire ni écrire : fonctions pures (l'heure arrive en paramètre).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.2 empreinte=cd407f ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.2 empreinte=9d96fe ▼▼▼
 """L'état d'une mesure, calculé sans rien lire ni écrire : fonctions pures (l'heure arrive en paramètre).
 
 Le silence n'est jamais un « ok » : une mesure est `ok`, `alerte` ou `inconnu`. Une lecture trop ancienne, de confiance trop basse, ou jugée avec une horloge qui n'est pas fiable donne `inconnu`.
@@ -129,9 +129,14 @@ def visibilite_valide(v) -> bool:
     return isinstance(v, str) and bool(re.match(r"^societes:[A-Za-z0-9_\-]{1,40}(,[A-Za-z0-9_\-]{1,40}){0,19}$", v))
 
 
+def raison_courte(raison) -> str:
+    """La raison sans chiffres (« muette », « confiance insuffisante ») : la fraîcheur attendue et les niveaux de confiance sont de l'infrastructure."""
+    return str(raison or "").split(" (")[0].split(" depuis")[0]
+
+
 def minimal(cle, libelle, calcul, depuis) -> dict:
     """Ce qu'un utilisateur ordinaire voit : jamais la valeur, le détail, l'unité, l'hôte ni la confiance."""
-    raison = calcul["raison"].split(" (")[0].split(" depuis")[0] if calcul["etat"] == "inconnu" else ""        # « muette », jamais les chiffres (fraîcheur attendue, confiance)
+    raison = raison_courte(calcul["raison"]) if calcul["etat"] == "inconnu" else ""        # « muette », jamais les chiffres (fraîcheur attendue, confiance)
     return {"cle": cle, "libelle": libelle, "etat": calcul["etat"], "depuis": depuis, "raison": raison}
 
 
