@@ -1,0 +1,229 @@
+# ══════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module NetBird
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : netbird
+# ZONE       : CN
+# VERSION CN : 0.1.0  #268847
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : voir où il en est, l'installer (sur la machine ou dans Docker), le connecter (par un lien à ouvrir ou par une clé d'installation), le couper.
+# MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
+# ══════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=268847 ▼▼▼
+[module]
+id = "netbird"
+nom = "NetBird"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Le réseau privé NetBird de la machine, piloté depuis l'interface : voir où il en est et les machines du réseau, le connecter (par un lien à ouvrir ou par une clé d'installation), le couper, et l'installer au besoin dans Docker."
+confiance = "interne"
+famille = "reseau"
+groupe = "parc"
+proprietaire = "cassandra"
+importance = "optionnel"
+sans = "Plus de pilotage de NetBird depuis l'interface : il faudra le faire en ligne de commande (netbird up) ou avec docker."
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Voir l'état de NetBird sur cette machine"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Connecter ou couper la machine du réseau NetBird, installer ou retirer son conteneur Docker"
+sensible = true
+
+[[objets]]
+type = "reseau_prive_netbird"
+libelle = "La connexion NetBird de la machine"
+
+[permissions]
+stockage = true
+racine = true
+reseau = ["le client NetBird local (son socket) ou son conteneur Docker ; le serveur de gestion NetBird (api.netbird.io par défaut, ou le vôtre) et ses relais, par ce client", "Docker Hub (netbirdio/netbird) quand le conteneur est installé"]
+privileges = ["installer : la commande /usr/libexec/cassandra/netbird/piloter, lancée en root par le courtier : une table fermée de verbes, jamais un shell, jamais le conteneur d'un autre service"]
+
+[[racine]]
+id = "piloter"
+libelle = "Piloter NetBird À ROOT : le client posé sur la machine ou son conteneur Docker (état, connexion, coupure), créer ou retirer le conteneur officiel netbirdio/netbird. La clé d'installation passe par l'entrée standard."
+
+[[reglages]]
+id = "cle_install"
+libelle = "Clé d'installation NetBird (setup key), le temps d'une connexion : l'écran l'efface aussitôt"
+type = "secret"
+
+[[reglages]]
+id = "url_gestion"
+libelle = "Adresse du serveur de gestion NetBird (vide : NetBird Cloud). Pour un NetBird auto-hébergé : https://netbird.exemple.fr:443"
+type = "texte"
+defaut = ""
+
+[[reglages]]
+id = "conteneur"
+libelle = "Nom du conteneur Docker du client NetBird"
+type = "texte"
+defaut = "netbird"
+
+[[reglages]]
+id = "mode"
+libelle = "Où est le client : auto (le module le trouve), natif (installé sur la machine) ou docker (dans le conteneur)"
+type = "choix"
+defaut = "auto"
+choix = ["auto", "natif", "docker"]
+
+[installation]
+script = "CN_installer.sh"
+verification = "CN_verifier.sh"
+retrait = "CN_retirer.sh"
+
+[[capacites]]
+id = "etat"
+libelle = "Où en est NetBird sur cette machine : client ou conteneur, connecté ou non, lien d'identification en attente, adresse, nom, machines du réseau, serveurs de gestion et relais"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "journal"
+libelle = "Les derniers gestes faits sur NetBird depuis Cassandra : quand, par qui, quoi, et ce qui peut encore se défaire"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "connecter"
+libelle = "Connecter la machine à un réseau NetBird : sans clé, rend un lien à ouvrir pour s'identifier ; avec la clé d'installation enregistrée, se connecte seule"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["la connexion NetBird de cette machine", "le client local seulement, jamais le tableau de bord NetBird"]
+preuve = "l'état du client est « connecté » (netbird status), ou un lien d'identification attend"
+retour = "abandonner l'attente (aucune identification n'a eu lieu), ou couper la connexion (netbird down)"
+
+[[capacites]]
+id = "annuler"
+libelle = "Abandonner une connexion commencée et jamais terminée (le lien ouvert reste sans effet)"
+risque = "faible"
+droit = "administrer"
+perimetre = ["une connexion commencée et pas terminée"]
+preuve = "plus aucune connexion en attente"
+retour = "relancer la connexion (aucune identification n'a eu lieu)"
+
+[[capacites]]
+id = "deconnecter"
+libelle = "Couper NetBird sur cette machine sans l'oublier : elle se reconnecte d'un clic, sans nouvelle identification"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["la connexion NetBird de cette machine"]
+preuve = "l'état du client n'est plus « connecté »"
+retour = "reconnecter la machine (netbird up, sans option) : elle garde son identité"
+
+[[capacites]]
+id = "installer_docker"
+libelle = "Installer le client NetBird dans un conteneur Docker officiel (netbirdio/netbird) : redémarre avec la machine, réseau de la machine, aucun autre conteneur touché. Avec la clé d'installation enregistrée, il se connecte seul"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["un conteneur nommé par le réglage « conteneur », image netbirdio/netbird seulement", "par le courtier : Cassandra n'a jamais accès à Docker"]
+preuve = "relire `docker inspect` : le conteneur existe et tourne"
+retour = "retirer le conteneur (son volume, donc l'identité de la machine, est gardé)"
+
+[[capacites]]
+id = "retirer_docker"
+libelle = "Retirer le conteneur Docker du client NetBird (et, sur demande, son volume : la machine perd son identité dans NetBird)"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["le conteneur nommé par le réglage « conteneur », s'il est bien une image netbirdio/netbird"]
+preuve = "relire `docker inspect` : le conteneur n'existe plus"
+retour = "réinstaller le conteneur (avec son volume gardé, la machine retrouve son identité ; purgé, il faut une nouvelle identification)"
+
+[[capacites]]
+id = "defaire_geste"
+libelle = "Défaire un geste du journal NetBird : reconnecter après une coupure, couper une connexion que l'on vient d'ouvrir, retirer le conteneur que l'on vient d'installer"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["un geste noté au journal de ce module, une seule fois", "le même retour que celui du geste d'origine"]
+preuve = "le geste est marqué défait au journal"
+retour = "refaire le geste"
+
+[[ecrans]]
+id = "n_vue"
+libelle = "Vue d'ensemble"
+domaine = "reseau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "n_machines"
+libelle = "Machines"
+domaine = "reseau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "n_installation"
+libelle = "Installation"
+domaine = "reseau"
+gabarit = "libre"
+
+[[ecrans]]
+id = "n_historique"
+libelle = "Historique"
+domaine = "reseau"
+gabarit = "libre"
+
+[theme]
+accent = "#f68330"
+
+[[menus]]
+id = "netbird"
+libelle = "NetBird"
+ordre = 25
+role = "admin"
+icone = "shield"
+
+[[menus]]
+id = "n_vue"
+libelle = "Vue d’ensemble"
+ecran = "n_vue"
+parent = "netbird"
+ordre = 10
+role = "admin"
+icone = "panorama"
+droit = "utiliser"
+
+[[menus]]
+id = "n_machines"
+libelle = "Machines"
+ecran = "n_machines"
+parent = "netbird"
+ordre = 20
+role = "admin"
+icone = "server"
+droit = "utiliser"
+
+[[menus]]
+id = "n_installation"
+libelle = "Installation"
+ecran = "n_installation"
+parent = "netbird"
+ordre = 30
+role = "admin"
+icone = "puzzle"
+droit = "utiliser"
+
+[[menus]]
+id = "n_historique"
+libelle = "Historique"
+ecran = "n_historique"
+parent = "netbird"
+ordre = 40
+role = "admin"
+icone = "journal"
+droit = "utiliser"
+
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : le manifeste ci-dessus (capacités, droits, réglages, écrans, menus) est du nexus
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : commandes/CN_piloter, CN_module.py, interface/CN_netbird-ecran.js

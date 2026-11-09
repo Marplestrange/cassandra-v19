@@ -1,0 +1,289 @@
+#!/usr/bin/env python3
+"""Pilote NetBird À ROOT, par le courtier : le client posé sur la machine, ou son conteneur Docker. Usage : piloter <verbe> [arguments]
+
+Le noyau n'est pas root et n'a pas le droit de parler à Docker : il demande ici, par le courtier, un VERBE d'une table fermée. Ce programme ne fait confiance à rien
+de ce qu'on lui passe : chaque argument est vérifié par une expression bornée, rien ne passe par un shell, et la clé d'installation (setup key) arrive par l'ENTRÉE
+STANDARD, jamais en ligne de commande (visible dans /proc et dans `docker ps`).
+
+Verbes :
+  etat <conteneur>                              ce qui est là : le client natif, Docker, le conteneur (absent, arrêté, en marche)
+  cli natif <conteneur> -- ARGS…                le client NetBird : une sous-commande et des options d'une table fermée (status, up, down, login, networks, version)
+  cli docker <conteneur> -- ARGS…               la même chose DANS le conteneur
+  sso natif|docker <conteneur> [--management-url=U] [--hostname=H]
+                                                 `netbird up --no-browser` en arrière-plan : rend le lien d'identification, et laisse l'attente se poursuivre
+  sso_annuler natif|docker <conteneur>          abandonne cette attente et coupe la connexion
+  docker_installer <conteneur> <tag> [--management-url=U] [--hostname=H]
+                                                 crée le conteneur officiel (netbirdio/netbird:<tag>) avec ce qu'il lui faut ; clé facultative sur l'entrée standard
+  docker_retirer <conteneur> [purger]           retire le conteneur (et, si « purger », son volume : l'identité de la machine dans NetBird)
+
+Un conteneur n'est touché que s'il est une image netbirdio/netbird : ce programme ne retire ni ne pilote jamais le conteneur d'un autre service.
+Rend UNE ligne de JSON : {"ok": true, …} ou {"ok": false, "erreur": "…"} ; le code de sortie est 0 si ok."""
+import json
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+
+IMAGE = "netbirdio/netbird"
+EST_IMAGE = re.compile(r"(^|/)netbirdio/netbird$")           # « evilnetbirdio/netbird » n'en est pas une
+RUN = "/run/cassandra-netbird"
+CONTENEUR = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$")
+TAG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
+NOM = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
+URL = re.compile(r"^https?://[A-Za-z0-9.-]{1,253}(:\d{1,5})?(/[A-Za-z0-9._~/-]{0,100})?$")
+RESEAU = re.compile(r"^[A-Za-z0-9._:/-]{1,100}$")
+CLE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
+LIEN = re.compile(r"https?://[^\s\"'<>]+")
+SORTIE_MAX = 60000
+ATTENTE_LIEN = 25
+
+executer = subprocess.run                                   # remplaçable : les bancs n'ont ni Docker ni NetBird
+
+
+def refuser(raison):
+    raise ValueError(raison)
+
+
+def verifier_nom(valeur, motif, quoi):
+    if not isinstance(valeur, str) or not motif.match(valeur):
+        refuser("%s illisible" % quoi)
+    return valeur
+
+
+def options(restes, autorisees):
+    """Les options `--management-url=U` et `--hostname=H` (et seulement elles), vérifiées une à une."""
+    out = []
+    for o in restes:
+        cle, sep, val = o.partition("=")
+        if cle not in autorisees or not sep:
+            refuser("option refusée : %s" % o[:60])
+        if cle == "--management-url":
+            verifier_nom(val, URL, "adresse de gestion")
+        elif cle == "--hostname":
+            verifier_nom(val, NOM, "nom de machine")
+        out.append(o)
+    return out
+
+
+def sous_commande(args):
+    """Une sous-commande NetBird d'une table fermée, ses options vérifiées. Rend la liste à lancer après « netbird »."""
+    if not args:
+        refuser("sous-commande manquante")
+    sc, reste = args[0], list(args[1:])
+    if sc in ("version", "down"):
+        if reste:
+            refuser("%s n'a pas d'option" % sc)
+        return [sc]
+    if sc == "status":
+        if any(o not in ("--json", "-j", "--detail", "-d", "--yaml", "-y") for o in reste):
+            refuser("options de status : --json, --detail, --yaml")
+        return [sc] + reste
+    if sc in ("up", "login"):
+        simples = [o for o in reste if o in ("--no-browser", "--allow-server-ssh", "--allow-server-ssh=true", "--allow-server-ssh=false")]
+        autres = [o for o in reste if o not in simples]
+        return [sc] + simples + options(autres, ("--management-url", "--hostname"))
+    if sc == "networks":
+        if not reste or reste[0] not in ("list", "select", "deselect"):
+            refuser("networks : list, select ou deselect")
+        if reste[0] == "list":
+            if len(reste) != 1:
+                refuser("networks list n'a pas d'argument")
+        else:
+            noms = reste[1:]
+            if not noms or len(noms) > 20 or any(not RESEAU.match(n) for n in noms):
+                refuser("noms de réseaux illisibles")
+        return [sc] + reste
+    refuser("sous-commande refusée : %s" % sc[:40])
+
+
+def lancer(commande, entree=None, delai=60, env=None):
+    r = executer(commande, input=entree, capture_output=True, text=True, timeout=delai, env=env)
+    return r.returncode, ((r.stdout or "") + (r.stderr or "")).strip()[:SORTIE_MAX]
+
+
+def image_du_conteneur(c):
+    """L'image du conteneur, ou None s'il n'existe pas."""
+    code, sortie = lancer(["docker", "inspect", "-f", "{{.Config.Image}}|{{.State.Status}}", c], delai=20)
+    if code != 0:
+        return None
+    image, _, etat = sortie.partition("|")
+    return image.strip(), etat.strip()
+
+
+def est_netbird(image):
+    sans_digest = str(image).split("@")[0]
+    nom = sans_digest.rsplit(":", 1)[0] if ":" in sans_digest.rsplit("/", 1)[-1] else sans_digest      # sans l'étiquette (un « : » de port de registre reste)
+    return bool(EST_IMAGE.search(nom))
+
+
+def conteneur_netbird(c):
+    """(image, état) d'un conteneur qui EST NetBird ; ValueError sinon (absent, ou celui d'un autre service)."""
+    if shutil.which("docker") is None:
+        refuser("Docker n'est pas installé sur cette machine")
+    info = image_du_conteneur(c)
+    if info is None:
+        refuser("le conteneur « %s » n'existe pas" % c)
+    if not est_netbird(info[0]):
+        refuser("« %s » n'est pas un conteneur NetBird (image %s) : il n'est pas touché" % (c, info[0][:60]))
+    return info
+
+
+def commande_client(cible, conteneur, args, cle=False):
+    """La commande complète : le client natif, ou `docker exec` dans le conteneur. La clé, si elle est là, passe par l'environnement (`-e NB_SETUP_KEY`, valeur prise ici)."""
+    if cible == "docker":
+        conteneur_netbird(conteneur)
+        return ["docker", "exec"] + (["-e", "NB_SETUP_KEY"] if cle else []) + [conteneur, "netbird"] + args
+    if cible != "natif":
+        refuser("cible : natif ou docker")
+    if shutil.which("netbird") is None:
+        refuser("le client NetBird n'est pas installé sur cette machine")
+    return ["netbird"] + args
+
+
+def lire_cle(entree):
+    cle = (entree or "").strip()
+    if not cle:
+        return ""
+    verifier_nom(cle, CLE, "clé d'installation")
+    return cle
+
+
+def env_avec(cle):
+    env = dict(os.environ)
+    if cle:
+        env["NB_SETUP_KEY"] = cle
+    return env
+
+
+def verbe_etat(a, entree):
+    c = verifier_nom(a[0] if a else "", CONTENEUR, "nom de conteneur")
+    docker = shutil.which("docker") is not None
+    sortie = {"ok": True, "natif": shutil.which("netbird") is not None, "docker": docker, "conteneur": "absent", "image": ""}
+    if docker:
+        info = image_du_conteneur(c)
+        if info is not None:
+            sortie["image"] = info[0]
+            sortie["conteneur"] = ("en_marche" if info[1] == "running" else "arrete") if est_netbird(info[0]) else "autre"
+    return sortie
+
+
+def verbe_cli(a, entree):
+    if len(a) < 4 or a[2] != "--":
+        refuser("usage : cli natif|docker <conteneur> -- ARGS")
+    cible, c = a[0], verifier_nom(a[1], CONTENEUR, "nom de conteneur")
+    args = sous_commande(a[3:])
+    cle = lire_cle(entree) if args[0] in ("up", "login") else ""
+    code, sortie = lancer(commande_client(cible, c, args, bool(cle)), delai=120, env=env_avec(cle))
+    return {"ok": code == 0, "code": code, "sortie": sortie}
+
+
+def verbe_sso(a, entree):
+    if len(a) < 2:
+        refuser("usage : sso natif|docker <conteneur> [options]")
+    cible, c = a[0], verifier_nom(a[1], CONTENEUR, "nom de conteneur")
+    cmd = commande_client(cible, c, ["up", "--no-browser"] + options(a[2:], ("--management-url", "--hostname")))
+    os.makedirs(RUN, mode=0o700, exist_ok=True)
+    journal, pid = os.path.join(RUN, "sso.log"), os.path.join(RUN, "sso.pid")
+    arreter(cible, c, pid, silencieux=True)                      # une attente d'avant : on la remplace
+    with open(journal, "w") as f:
+        os.chmod(journal, 0o600)
+        p = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=f, stderr=subprocess.STDOUT, start_new_session=True)
+    with open(pid, "w") as f:
+        f.write(str(p.pid))
+    fin = time.time() + ATTENTE_LIEN
+    while time.time() < fin:
+        texte = open(journal, errors="replace").read()
+        m = LIEN.search(texte)
+        if m:
+            return {"ok": True, "lien": m.group(0), "pid": p.pid}
+        if p.poll() is not None:                                  # fini sans lien : déjà identifiée (et connectée), ou refus
+            return {"ok": p.returncode == 0, "lien": "", "code": p.returncode, "sortie": texte[-600:], "connecte": p.returncode == 0}
+        time.sleep(0.5)
+    return {"ok": False, "erreur": "NetBird n'a pas donné de lien en %d s : %s" % (ATTENTE_LIEN, open(journal, errors="replace").read()[-300:].strip() or "rien sur sa sortie")}
+
+
+def arreter(cible, c, pid, silencieux=False):
+    """Abandonne l'attente d'identification en cours (le processus et son groupe) ; l'attente d'un autre démarrage ne doit pas survivre."""
+    try:
+        n = int(open(pid).read().strip())
+        os.killpg(os.getpgid(n), signal.SIGTERM)
+    except (OSError, ValueError, ProcessLookupError):
+        if not silencieux:
+            return False
+    try:
+        os.remove(pid)
+    except OSError:
+        pass
+    return True
+
+
+def verbe_sso_annuler(a, entree):
+    if len(a) != 2:
+        refuser("usage : sso_annuler natif|docker <conteneur>")
+    cible, c = a[0], verifier_nom(a[1], CONTENEUR, "nom de conteneur")
+    arreter(cible, c, os.path.join(RUN, "sso.pid"), silencieux=True)
+    code, sortie = lancer(commande_client(cible, c, ["down"]), delai=60)
+    return {"ok": code == 0, "code": code, "sortie": sortie}
+
+
+def verbe_docker_installer(a, entree):
+    if len(a) < 2:
+        refuser("usage : docker_installer <conteneur> <tag> [options]")
+    c, tag = verifier_nom(a[0], CONTENEUR, "nom de conteneur"), verifier_nom(a[1], TAG, "étiquette d'image")
+    opts = options(a[2:], ("--management-url", "--hostname"))
+    cle = lire_cle(entree)
+    if shutil.which("docker") is None:
+        refuser("Docker n'est pas installé sur cette machine")
+    if image_du_conteneur(c) is not None:
+        refuser("un conteneur « %s » existe déjà" % c)
+    d = dict(o.split("=", 1) for o in opts)
+    cmd = ["docker", "run", "-d", "--name", c, "--hostname", d.get("--hostname", c), "--restart", "unless-stopped", "--network", "host",
+           "--cap-add=NET_ADMIN", "--cap-add=SYS_ADMIN", "--cap-add=SYS_RESOURCE", "--device", "/dev/net/tun", "-v", "%s-donnees:/var/lib/netbird" % c]
+    if cle:
+        cmd += ["-e", "NB_SETUP_KEY"]
+    if "--management-url" in d:
+        cmd += ["-e", "NB_MANAGEMENT_URL=" + d["--management-url"]]
+    code, sortie = lancer(cmd + ["%s:%s" % (IMAGE, tag)], delai=240, env=env_avec(cle))
+    return {"ok": code == 0, "code": code, "sortie": sortie}
+
+
+def verbe_docker_retirer(a, entree):
+    if not a or len(a) > 2 or (len(a) == 2 and a[1] != "purger"):
+        refuser("usage : docker_retirer <conteneur> [purger]")
+    c = verifier_nom(a[0], CONTENEUR, "nom de conteneur")
+    conteneur_netbird(c)
+    code, sortie = lancer(["docker", "rm", "-f", c], delai=60)
+    if code == 0 and len(a) == 2:
+        code, sortie = lancer(["docker", "volume", "rm", "%s-donnees" % c], delai=30)
+    return {"ok": code == 0, "code": code, "sortie": sortie}
+
+
+VERBES = {"etat": verbe_etat, "cli": verbe_cli, "sso": verbe_sso, "sso_annuler": verbe_sso_annuler, "docker_installer": verbe_docker_installer, "docker_retirer": verbe_docker_retirer}
+
+
+def piloter(argv, entree=""):
+    """Le verbe demandé, ou {"ok": False, "erreur": …}. Aucune exception ne sort d'ici."""
+    try:
+        if not argv or argv[0] not in VERBES:
+            refuser("verbe : %s" % ", ".join(VERBES))
+        return VERBES[argv[0]](list(argv[1:]), entree)
+    except ValueError as e:
+        return {"ok": False, "erreur": str(e)}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "erreur": "délai dépassé"}
+    except OSError as e:
+        return {"ok": False, "erreur": "%s : %s" % (type(e).__name__, str(e)[:120])}
+
+
+def main():
+    entree = "" if sys.stdin is None or sys.stdin.isatty() else sys.stdin.read(70000)
+    d = piloter(sys.argv[1:], entree)
+    print(json.dumps(d, ensure_ascii=False))
+    sys.exit(0 if d.get("ok") else 1)
+
+
+if __name__ == "__main__":
+    main()

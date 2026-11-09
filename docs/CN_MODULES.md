@@ -12,7 +12,7 @@
 <!-- RÔLE       : Les modules -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=bdcfb9 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=b35c2c ▼▼▼ -->
 # Les modules
 
 Ce catalogue est **généré** depuis les manifestes (`python outils/CN_catalogue_modules.py`) ; un banc vérifie qu'il est à jour. Chaque module est un dossier
@@ -22,7 +22,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 - **instance** : n'existe que dans la société principale (sécurité, observabilité, sauvegardes, gestion des modules…).
 - **base par société** : les données du module sont séparées société par société.
 
-49 modules.
+50 modules.
 
 ## Socle
 
@@ -72,6 +72,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 |---|---|---|
 | `flotte` — Flotte | important | Le parc de machines : le registre déclaré, Tailscale et les relevés SSH côte à côte, la présence mesurée, la disponibilité, le verdict d'ouverture, les commandes nommées… |
 | `dns` — Zones DNS | optionnel | Relève les zones suivies auprès de leur serveur de noms faisant foi, garde une référence versionnée (rien n'est écrasé), signale la dérive, l'adresse publique qui a… |
+| `netbird` — NetBird | optionnel | Le réseau privé NetBird de la machine, piloté depuis l'interface : voir où il en est et les machines du réseau, le connecter (par un lien à ouvrir ou par une clé… |
 | `tailscale` — Tailscale | optionnel | Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH… |
 | `web` — Web | optionnel | La porte du dehors : chercher sur le web (par un moteur compatible SearXNG que l'administrateur configure) et lire une page en texte seul. |
 
