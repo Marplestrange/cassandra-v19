@@ -268,16 +268,30 @@ def verbe_docker_installer(a, entree):
     return {"ok": code == 0, "code": code, "sortie": sortie}
 
 
+def url_du_conteneur(c):
+    """NB_MANAGEMENT_URL du conteneur, si elle est lisible : sans elle, le client recréé pourrait retomber sur le serveur par défaut (NetBird Cloud)."""
+    code, sortie = lancer(["docker", "container", "inspect", "-f", "{{json .Config.Env}}", c], delai=20)
+    try:
+        env = json.loads(sortie) if code == 0 else []
+    except ValueError:
+        return None
+    for e in env if isinstance(env, list) else []:
+        if isinstance(e, str) and e.startswith("NB_MANAGEMENT_URL="):
+            u = e.split("=", 1)[1]
+            return u if URL.match(u) else None
+    return None
+
+
 def verbe_docker_maj(a, entree):
     if not a or len(a) > 2:
         refuser("usage : docker_maj <conteneur> [tag]")
     c = verifier_nom(a[0], CONTENEUR, "nom de conteneur")
     tag = verifier_nom(a[1], TAG, "étiquette d'image") if len(a) == 2 else None
-    image, _ = conteneur_netbird(c)
+    image, etat = conteneur_netbird(c)
     if tag is None and "@" in image:
         refuser("l'image du conteneur est épinglée par empreinte : elle ne se met pas à jour ; indique une étiquette")
     cible = "%s:%s" % (IMAGE, tag) if tag else image
-    code, sortie = lancer(["docker", "pull", cible], delai=280)
+    code, sortie = lancer(["docker", "pull", cible], delai=240)
     if code != 0:
         return {"ok": False, "code": code, "sortie": sortie}                          # rien n'est touché tant que l'image n'est pas là
     _, vu = lancer(["docker", "container", "inspect", "-f", "{{.Image}}|{{.Config.Hostname}}", c], delai=20)
@@ -285,13 +299,24 @@ def verbe_docker_maj(a, entree):
     _, neuf = lancer(["docker", "image", "inspect", "-f", "{{.Id}}", cible], delai=20)
     if actuel and actuel == neuf and cible == image:
         return {"ok": True, "change": False, "code": 0, "sortie": sortie}             # déjà à jour : le conteneur n'est pas recréé
-    code, sortie = lancer(["docker", "rm", "-f", c], delai=60)
+    nom = nom.strip() if NOM.match(nom.strip()) else c
+    url = url_du_conteneur(c)
+    code, sortie = lancer(["docker", "rm", "-f", c], delai=30)
     if code != 0:
         return {"ok": False, "code": code, "sortie": sortie}
-    code, sortie = lancer(commande_run(c, nom.strip() if NOM.match(nom.strip()) else c, cible), delai=240)
+    code, sortie = lancer(commande_run(c, nom, cible, False, url), delai=60)
     if code != 0:
-        return {"ok": False, "code": code, "sortie": sortie, "erreur": "le nouveau conteneur n'a pas démarré (l'ancien est retiré, son volume est intact : réinstalle le client) : " + sortie[:200]}
+        # L'ancien conteneur est retiré : on relance l'ancienne image (son identifiant est encore là), pour ne pas laisser la machine sans client.
+        if re.match(r"^sha256:[0-9a-f]{64}$", actuel):
+            repli, _ = lancer(commande_run(c, nom, actuel, False, url), delai=60)
+            rep = "l'ancienne version a été relancée" if repli == 0 else "l'ancienne version n'a pas pu être relancée non plus : réinstalle le client, son volume est intact"
+        else:
+            rep = "l'ancienne image n'est pas connue : réinstalle le client, son volume est intact"
+        return {"ok": False, "code": code, "sortie": sortie, "erreur": "le nouveau conteneur n'a pas démarré (%s) : %s" % (rep, sortie[:160])}
+    if etat in ("exited", "created"):
+        lancer(["docker", "stop", c], delai=30)                                        # un conteneur arrêté à dessein le reste
     return {"ok": True, "change": True, "code": 0, "sortie": sortie}
+
 
 
 def verbe_docker_retirer(a, entree):

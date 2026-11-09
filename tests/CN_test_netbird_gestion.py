@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0775cf
+# VERSION CN : 0.1.0  #6d5ce1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de ce que le module netbird sait faire d'un serveur NetBird auto-hébergé : l'installer (par la commande root, simulée) et l'administrer par son API (simulée : un faux serveur qui répond comme lui). Rien n'est installé, aucun réseau n'est touché.
 # MÉTHODE    : un vrai noyau, une fausse commande root `serveur`, une fausse API NetBird ; on vérifie les garde-fous, le secret qui ne traîne nulle part et le retour de chaque geste.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0775cf ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6d5ce1 ▼▼▼
 """Bancs de la gestion d'un serveur NetBird : commande root et API NetBird SIMULÉES, noyau réel."""
 import copy
 import json
@@ -246,6 +246,20 @@ class Serveur(Gestion):
         self.lire("serveur_retirer", purger=True)
         self.assertIn(("serveur:retirer", ["purger"], None), self.racines)
         self.assertIn("comptes et machines perdus", self.lire("journal")["gestes"][0]["libelle"])
+
+    def test_retirer_rend_ce_que_la_commande_root_a_fait(self):
+        self.installe, self.conteneurs = True, [{"service": "management", "etat": "running", "image": "x"}]
+        racine = self.g["_racine"]
+
+        def avec_avertissement(verbe, args=(), entree=None, delai=30, commande="piloter"):
+            if commande == "serveur" and verbe == "retirer":
+                self.conteneurs = []
+                return {"ok": True, "code": 0, "sortie": "", "purge": True, "avertissement": "le dossier n'a pas pu être effacé"}
+            return racine(verbe, args, entree, delai, commande)
+        self.g["_racine"] = avec_avertissement
+        r = self.lire("serveur_retirer")                                            # sans « purger » : la commande a purgé quand même (installation inachevée)
+        self.assertTrue(r["purge"])
+        self.assertIn("pas pu être effacé", r["avertissement"])
 
     def test_retirer_sans_serveur_est_refuse(self):
         with self.assertRaises(Echec):

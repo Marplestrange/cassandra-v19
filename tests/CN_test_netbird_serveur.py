@@ -6,19 +6,22 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #28d36f
+# VERSION CN : 0.1.0  #245ae6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`, `port_libre` et `shutil` sont remplacés ; le dossier du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=28d36f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=245ae6 ▼▼▼
 """Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`,
 `port_libre` et `shutil` sont remplacés ; le dossier du serveur est un dossier temporaire. On vérifie surtout ce qui est REFUSÉ et que le script n'est lancé que s'il est celui qu'on a confirmé."""
 import hashlib
 import importlib.machinery
 import importlib.util
 import json
+import socket
+import sys
+import subprocess
 import os
 import tempfile
 import types
@@ -161,7 +164,10 @@ class Installer(Monde):
         self.telecharge()
         r = self.lance(*self.ARGS, "nginx")
         self.assertTrue(r["ok"], r)
-        self.assertEqual(self.cmds, [["bash", str(Path(self.dossier, "getting-started.sh"))]])
+        self.assertEqual(len(self.cmds), 1)
+        self.assertEqual(self.cmds[0][0], "bash")
+        self.assertTrue(self.cmds[0][1].startswith(os.path.join(self.dossier, ".installer-")), "une copie neuve de ce qui a été haché, pas le fichier que bash rouvrirait")
+        self.assertFalse(Path(self.cmds[0][1]).exists(), "la copie est effacée après le lancement")
         env = self.envs[0]
         self.assertEqual((env["NETBIRD_DOMAIN"], env["NETBIRD_NON_INTERACTIVE"], env["NETBIRD_REVERSE_PROXY_TYPE"], env["NETBIRD_ENABLE_PROXY"], env["NETBIRD_ENABLE_CROWDSEC"]),
                          ("netbird.exemple.fr", "true", "2", "false", "false"))
@@ -211,16 +217,99 @@ class Installer(Monde):
         self.assertIn("jamais écrasé", self.lance(*self.ARGS, "nginx")["erreur"])
         self.assertFalse(self.cmds)
 
-    def test_un_script_qui_echoue_ne_laisse_pas_de_marque(self):
+    def test_un_script_qui_echoue_laisse_une_marque_qui_permet_de_le_retirer(self):
         self.telecharge()
         self.sorties["bash"] = (1, "Error: Docker socket not readable")
         r = self.lance(*self.ARGS, "nginx")
         self.assertFalse(r["ok"])
         self.assertIn("Docker socket", r["sortie"])
-        self.assertFalse(Path(self.dossier, "cassandra.json").exists(), "rien ne dit « installé » quand le script a échoué")
+        self.assertEqual(json.loads(Path(self.dossier, "cassandra.json").read_text())["etat"], "echec")
+        e = self.lance("etat")
+        self.assertTrue(e["installe"] and e["partiel"], "l'état dit qu'une installation est inachevée")
+        self.assertIn("inachevée", self.lance(*self.ARGS, "nginx")["erreur"], "on ne réinstalle pas par-dessus")
+        Path(self.dossier, "config.yaml").write_text("x")                                      # ce que le script avait eu le temps de poser
+        r = self.lance("retirer", "purger")
+        self.assertTrue(r["ok"] and r["purge"], r)
+        self.assertFalse(Path(self.dossier).exists(), "plus rien ne bloque une nouvelle installation")
+
+    def test_un_reste_sans_pile_se_retire_meme_sans_docker_compose(self):
+        self.telecharge()
+        self.sorties["bash"] = (1, "Error")
+        self.lance(*self.ARGS, "nginx")
+        self.cmds.clear()
+        r = self.lance("retirer")                                                              # même sans « purger » : il n'y a rien à garder
+        self.assertTrue(r["ok"] and r["purge"], r)
+        self.assertFalse([c for c in self.cmds if c[:2] == ["docker", "compose"]], "pas de docker-compose.yml : rien à arrêter")
+
+    def test_un_delai_depasse_laisse_aussi_une_marque(self):
+        self.telecharge()
+
+        def lent(commande, **kw):
+            raise subprocess.TimeoutExpired(commande, 1)
+        self.m.executer = lent
+        r = self.lance(*self.ARGS, "nginx")
+        self.assertEqual(r["erreur"], "délai dépassé")
+        self.assertEqual(json.loads(Path(self.dossier, "cassandra.json").read_text())["etat"], "echec")
+        self.assertFalse(list(Path(self.dossier).glob(".installer-*")), "la copie du script ne traîne pas")
+
+    def test_la_marque_d_un_succes_dit_ok_et_une_marque_ancienne_vaut_ok(self):
+        self.telecharge()
+        self.assertTrue(self.lance(*self.ARGS, "nginx")["ok"])
+        self.assertEqual(json.loads(Path(self.dossier, "cassandra.json").read_text())["etat"], "ok")
+        self.assertFalse(self.lance("etat")["partiel"])
+        self.poser()                                                                           # sans « etat » : posée avant ce réglage
+        self.assertFalse(self.lance("etat")["partiel"])
+
+    def test_derriere_nginx_ou_caddy_les_ports_8080_et_8081_doivent_etre_libres(self):
+        self.telecharge()
+        self.occupes = {("tcp", 8080)}
+        for proxy in ("nginx", "caddy"):
+            r = self.lance(*self.ARGS, proxy)
+            self.assertFalse(r["ok"], proxy)
+            self.assertIn("8080/tcp", r["erreur"])
+            self.assertIn("127.0.0.1", r["erreur"])
+        self.assertFalse(self.cmds, "rien n'est lancé : on ne laisse pas une pile à moitié posée")
+        self.occupes = {("tcp", 8080)}
+        self.assertTrue(self.lance(*self.ARGS, "traefik")["ok"], "avec traefik, 8080 ne gêne pas")
+
+    def test_les_tld_punycode_passent_et_les_domaines_reserves_non(self):
+        self.telecharge()
+        for ok in ("netbird.exemple.xn--p1ai", "netbird.exemple.fr"):
+            self.assertTrue(self.m.DOMAINE.match(ok), ok)
+        for mauvais in ("netbird.local", "x.invalid", "x.localhost", "x.example.org", "example.org"):
+            r = self.lance("installer", "v0.40.0", SHA, mauvais, "admin@exemple.fr", "nginx")
+            self.assertFalse(r["ok"], mauvais)
+            self.assertFalse(self.cmds, mauvais)
+
+
+
+class PortsReels(unittest.TestCase):
+    @unittest.skipIf(sys.platform == "win32", "SO_REUSEADDR n'a pas le même sens sous Windows : le banc vise la machine du serveur")
+    def test_un_port_en_ecoute_est_pris_ipv4_ou_ipv6_et_un_port_libre_ne_l_est_pas(self):
+        m = charger()
+        v4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.addCleanup(v4.close)
+        v4.bind(("0.0.0.0", 0))
+        v4.listen(1)
+        self.assertFalse(m.port_libre("tcp", v4.getsockname()[1]), "écoute IPv4")
+        try:
+            v6 = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        except OSError:
+            self.skipTest("pas d'IPv6 ici")
+        self.addCleanup(v6.close)
+        v6.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+        v6.bind(("::", 0))
+        v6.listen(1)
+        self.assertFalse(m.port_libre("tcp", v6.getsockname()[1]), "écoute IPv6 seule")
+        libre = socket.socket()
+        libre.bind(("0.0.0.0", 0))
+        port = libre.getsockname()[1]
+        libre.close()                                                                          # le port vient d'être fermé : en TIME_WAIT ou non, il est libre
+        self.assertTrue(m.port_libre("tcp", port))
 
 
 class Exploitation(Monde):
+
     def test_etat_sans_serveur_et_avec(self):
         r = self.lance("etat")
         self.assertEqual((r["installe"], r["docker"], r["jq"], r["conteneurs"]), (False, True, True, []))
@@ -241,7 +330,16 @@ class Exploitation(Monde):
         self.assertNotIn("occupes", r)
         self.assertEqual(r["conteneurs"][0]["ports"], ["127.0.0.1:8081->80/tcp"])
 
+    def test_etat_garde_tous_les_services_meme_quand_la_sortie_est_longue(self):
+        self.poser()
+        etiquettes = {"com.docker.compose.%d" % i: "x" * 80 for i in range(8)}
+        lignes = [json.dumps({"Service": "svc%d" % i, "State": "running", "Image": "img:%d" % i, "Labels": etiquettes}) for i in range(7)]
+        self.sorties["docker compose"] = (0, "\n".join(lignes))
+        self.assertGreater(len("\n".join(lignes)), 4000, "la sortie dépasse la limite des autres commandes")
+        self.assertEqual([c["service"] for c in self.lance("etat")["conteneurs"]], ["svc%d" % i for i in range(7)])
+
     def test_etat_lit_aussi_un_tableau_json(self):
+
         self.poser()
         self.sorties["docker compose"] = (0, '[{"Service":"traefik","State":"running","Image":"traefik:v3"}]')
         self.assertEqual([c["service"] for c in self.lance("etat")["conteneurs"]], ["traefik"])
@@ -296,7 +394,19 @@ class Exploitation(Monde):
             self.assertFalse(self.lance(*argv)["ok"], argv)
         self.assertFalse(self.cmds)
 
+    def test_une_purge_dont_le_dossier_resiste_le_dit_sans_echouer(self):
+        self.poser()
+
+        def refuse(chemin):
+            raise PermissionError("verrouillé")
+        self.m.shutil = types.SimpleNamespace(which=self.m.shutil.which, rmtree=refuse)
+        r = self.lance("retirer", "purger")
+        self.assertTrue(r["ok"] and r["purge"], "les volumes sont détruits : le retrait a eu lieu")
+        self.assertIn("à retirer à la main", r["avertissement"])
+        self.assertFalse(Path(self.dossier, "cassandra.json").exists(), "plus de marque : le serveur n'est plus donné pour posé")
+
     def test_un_retrait_qui_echoue_ne_supprime_rien(self):
+
         self.poser()
         self.sorties["docker compose"] = (1, "Cannot connect to the Docker daemon")
         r = self.lance("retirer", "purger")

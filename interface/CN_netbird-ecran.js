@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #645903
+// VERSION CN : 0.1.0  #73e346
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=645903 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=73e346 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -283,7 +283,8 @@
     }
     function carteServeur(s) {
       const m = s.meta || {}, url = m.domaine ? "https://" + m.domaine : "";
-      let h = '<div class="carte"><div class="hero"><div><span class="lib">Serveur</span><span class="pastille ' + (s.conteneurs.some((c) => c.etat === "running") ? "ok" : "al") + '">' + (s.conteneurs.some((c) => c.etat === "running") ? "En marche" : "Arrêté") + "</span></div>" +
+      const avisPartiel = s.partiel ? '<div class="carte" role="alert" style="color:var(--warn)"><b>Installation inachevée.</b> Le script d’installation a échoué ou n’a pas eu le temps de finir : la pile est à moitié posée. Retire-la avec ses données (en bas de page), puis recommence l’installation.</div>' : "";
+      let h = avisPartiel + '<div class="carte"><div class="hero"><div><span class="lib">Serveur</span><span class="pastille ' + (s.conteneurs.some((c) => c.etat === "running") ? "ok" : "al") + '">' + (s.conteneurs.some((c) => c.etat === "running") ? "En marche" : "Arrêté") + "</span></div>" +
         fiche("Domaine", esc(m.domaine || "—")) + fiche("Version", esc(m.version || "—")) + fiche("Proxy", esc(m.proxy || "—")) + fiche("API", s.api_joignable ? "joignable ✓" : "ne répond pas ✗") + "</div>" +
         (s.conteneurs.length ? '<div class="pairs">' + s.conteneurs.map((c) => '<div class="pair" style="grid-template-columns:auto minmax(0,1fr) minmax(0,auto)"><span class="pt' + (c.etat === "running" ? " on" : "") + '"></span><span class="nom">' + esc(c.service) + '</span><span class="note" style="overflow-wrap:anywhere">' + esc(c.etat) + " · " + esc(c.image) + "</span></div>").join("") + "</div>" : "") + "</div>";
       if (s.setup_requis && url) h += '<div class="lien"><h2 ' + H2 + ">Dernier pas : crée le premier compte administrateur</h2><p class=\"note\">Ouvre la page d’installation de NetBird et crée toi-même ton compte : Cassandra ne choisit ni ne garde aucun mot de passe. Puis, dans le tableau de bord, crée un jeton d’accès personnel (Settings › Personal Access Tokens) et donne-le à Cassandra depuis la page <b>Administration</b>.</p><div class=\"acts\"><a class=\"btn pri\" href=\"" + esc(url) + '/setup" target="_blank" rel="noopener noreferrer">Ouvrir la page de création du compte</a></div></div>';
@@ -436,7 +437,7 @@
       if (a === "srv-journaux") return faire(async () => { S.txt = { titre: "Journaux du serveur (80 dernières lignes)", texte: (await agir("netbird.serveur_journaux")).journaux || "(vide)" }; }, "");
       if (a === "srv-nginx") return faire(async () => { S.txt = { titre: "Configuration nginx à publier", texte: (await agir("netbird.serveur_nginx")).conf || "" }; }, "");
       if (a === "srv-retirer") { S.couper = true; dessiner(); return; }
-      if (a === "srv-retirer-oui") { const purger = !!(racine.querySelector("#nb-s-purge") || {}).checked; return faire(() => agir("netbird.serveur_retirer", { purger: purger }), purger ? "Serveur et données retirés." : "Serveur retiré (données gardées)."); }
+      if (a === "srv-retirer-oui") { const purger = !!(racine.querySelector("#nb-s-purge") || {}).checked; return faire(async () => { const r = await agir("netbird.serveur_retirer", { purger: purger }); if (r && r.avertissement) dire(r.avertissement, "err"); else dire(r && r.purge ? "Serveur et données retirés." : "Serveur retiré (données gardées)."); }, ""); }
       // ---- le réseau
       if (a === "m-renommer") { S.edit = b.dataset.id; dessiner(); return; }
       if (a === "m-non") { S.edit = ""; dessiner(); return; }

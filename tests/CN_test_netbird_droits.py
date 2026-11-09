@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #6aeab9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des droits du module netbird : qui peut installer et administrer un serveur NetBird, et qui voit ses menus.
 # MÉTHODE    : un vrai noyau avec les modules droits et menus ; on attribue le droit « netbird.serveur » comme le ferait l'administrateur, on vérifie ce qui passe et ce qui est refusé.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6aeab9 ▼▼▼
 """Bancs des droits du module netbird : le droit « netbird.serveur » est sensible, jamais accordé d'office, et ouvre l'installation du serveur, son administration et leurs menus."""
 import shutil
 import sys
@@ -109,3 +109,9 @@ class DroitsNetBird(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : DroitsNetBird (le droit « serveur », ses refus, ses accords, ses menus)
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : modules/netbird/CN_manifeste.toml, noyau/CN_droits.py, tests/CN_test_netbird_gestion.py

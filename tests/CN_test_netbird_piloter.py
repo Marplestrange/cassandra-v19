@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3f7049
+# VERSION CN : 0.1.0  #4c709d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `piloter` du module netbird : ce que le courtier lance À ROOT. Ni Docker ni NetBird ici : `executer` est remplacé, chaque commande qui serait lancée est enregistrée, et l'on vérifie surtout ce qui est REFUSÉ (argum
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3f7049 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4c709d ▼▼▼
 """Bancs de la commande root `piloter` du module netbird : ce que le courtier lance À ROOT. Ni Docker ni NetBird ici : `executer` est remplacé, chaque commande qui serait lancée est
 enregistrée, et l'on vérifie surtout ce qui est REFUSÉ (arguments hors table, conteneur d'un autre service, clé en ligne de commande)."""
 import importlib.machinery
@@ -238,7 +238,45 @@ class Docker(Monde):
         self.assertFalse(self.lance("docker_maj", "netbird")["ok"])
         self.assertFalse([c for c in self.lances() if c[:2] in (["docker", "rm"], ["docker", "run"])], "tant que l'image n'est pas là, le conteneur reste")
 
+    def test_maj_garde_l_adresse_du_serveur_de_gestion(self):
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
+        self.sorties["docker container inspect -f {{json .Config.Env}}"] = (0, '["PATH=/bin", "NB_MANAGEMENT_URL=https://netbird.exemple.fr:443", "NB_SETUP_KEY=secret"]')
+        self.sorties["docker container inspect"] = (0, "sha256:" + "a" * 64 + "|argos")
+        self.sorties["docker image inspect"] = (0, "sha256:" + "b" * 64)
+        self.assertTrue(self.lance("docker_maj", "netbird")["change"])
+        run = [c for c in self.lances() if c[:2] == ["docker", "run"]][0]
+        self.assertIn("NB_MANAGEMENT_URL=https://netbird.exemple.fr:443", run, "sans elle le client recréé pourrait retomber sur NetBird Cloud")
+        self.assertFalse([x for x in run if "secret" in x or "NB_SETUP_KEY" in x], "la clé d'installation n'est jamais reportée")
+        self.cmds.clear()
+        self.sorties["docker container inspect -f {{json .Config.Env}}"] = (0, '["NB_MANAGEMENT_URL=ftp://pas-ici; rm"]')
+        self.lance("docker_maj", "netbird")
+        self.assertFalse([x for x in [c for c in self.lances() if c[:2] == ["docker", "run"]][0] if x.startswith("NB_MANAGEMENT_URL")], "une adresse illisible n'est pas reportée")
+
+    def test_maj_si_la_recreation_echoue_l_ancienne_image_est_relancee(self):
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
+        ancienne = "sha256:" + "a" * 64
+        self.sorties["docker container inspect"] = (0, ancienne + "|argos")
+        self.sorties["docker image inspect"] = (0, "sha256:" + "b" * 64)
+        self.sorties["docker run -d --name netbird --hostname argos --restart unless-stopped --network host --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --cap-add=SYS_RESOURCE --device /dev/net/tun -v netbird-donnees:/var/lib/netbird netbirdio/netbird:latest"] = (125, "invalid image")
+        r = self.lance("docker_maj", "netbird")
+        self.assertFalse(r["ok"])
+        self.assertIn("ancienne version a été relancée", r["erreur"])
+        runs = [c for c in self.lances() if c[:2] == ["docker", "run"]]
+        self.assertEqual([c[-1] for c in runs], ["netbirdio/netbird:latest", ancienne], "la nouvelle image d'abord, puis le repli sur l'ancienne")
+
+    def test_maj_un_conteneur_arrete_a_dessein_le_reste(self):
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "exited")
+        self.sorties["docker container inspect"] = (0, "sha256:" + "a" * 64 + "|argos")
+        self.sorties["docker image inspect"] = (0, "sha256:" + "b" * 64)
+        self.assertTrue(self.lance("docker_maj", "netbird")["change"])
+        self.assertEqual(self.lances()[-1], ["docker", "stop", "netbird"])
+        self.cmds.clear()
+        self.conteneurs["netbird"] = ("netbirdio/netbird:latest", "running")
+        self.lance("docker_maj", "netbird")
+        self.assertFalse([c for c in self.lances() if c[:2] == ["docker", "stop"]], "un conteneur qui tournait continue de tourner")
+
     def test_maj_refuse_ce_qui_n_est_pas_netbird_ou_suspect(self):
+
         self.conteneurs["vaultwarden"] = ("vaultwarden/server:latest", "running")
         self.conteneurs["netbird"] = ("netbirdio/netbird@sha256:abc", "running")
         for argv in (("docker_maj", "vaultwarden"), ("docker_maj", "netbird"), ("docker_maj", "netbird", "x;id"), ("docker_maj", "a b"), ("docker_maj",), ("docker_maj", "netbird", "1", "2")):

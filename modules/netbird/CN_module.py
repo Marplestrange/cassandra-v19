@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ab0e40
+# VERSION CN : 0.1.0  #43ca9e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ab0e40 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=43ca9e ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -67,7 +67,7 @@ _SERVEUR = {"meta": None}                          # ce que la commande root `se
 ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 NOM_API = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,62}$")
 VERSION_SERVEUR = re.compile(r"^v\d{1,3}\.\d{1,3}\.\d{1,3}$")
-DOMAINE = re.compile(r"^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
+DOMAINE = re.compile(r"^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})$")
 EMAIL = re.compile(r"^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$")
 SHA = re.compile(r"^[0-9a-f]{64}$")
 JETON = re.compile(r"^[A-Za-z0-9_.-]{16,300}$")
@@ -406,7 +406,7 @@ def brancher(ctx):
                 if info["natif"]:
                     raise ValueError("Le client NetBird est installé directement sur cette machine, pas dans Docker : sa mise à jour passe par le gestionnaire de paquets de la machine (apt, dnf…), Cassandra n'y touche pas.")
                 raise ValueError("Il n'y a pas de conteneur NetBird « %s » à mettre à jour" % conteneur())
-            r = _racine("docker_maj", [conteneur()] + ([tag] if tag else []), None, 320)
+            r = _racine("docker_maj", [conteneur()] + ([tag] if tag else []), None, 480)
             if not r.get("ok"):
                 raise ValueError(erreur(r.get("erreur") or r.get("sortie")))
             _MODE["val"] = None
@@ -534,9 +534,10 @@ def brancher(ctx):
             avant = serveur_etat(c)
             if not avant.get("installe"):
                 raise ValueError("Aucun serveur NetBird posé par Cassandra")
-            srv_ok(srv("retirer", ["purger"] if purger else [], None, 130))
+            r = srv_ok(srv("retirer", ["purger"] if purger else [], None, 130))
             _SERVEUR["meta"] = None
-            return dict(serveur_etat(c), purge=bool(purger), domaine_retire=(avant.get("meta") or {}).get("domaine", ""))
+            # `purge` : ce que la commande root a vraiment fait (une installation inachevée, sans pile, part toujours en entier) ; `avertissement` : un dossier qui a résisté.
+            return dict(serveur_etat(c), purge=bool(r.get("purge", purger)), avertissement=str(r.get("avertissement") or ""), domaine_retire=(avant.get("meta") or {}).get("domaine", ""))
 
     def prouver_serveur_retire(c, res):
         return not serveur_etat(c).get("conteneurs")
