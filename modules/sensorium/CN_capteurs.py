@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.2  #7d30c6
+# VERSION CN : 0.2.2  #f07b22
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.2 empreinte=7d30c6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.2 empreinte=f07b22 ▼▼▼
 """Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 
 Tout vit dans la base du module (migration 004) : le noyau, le registre et le collecteur root ne changent pas. Le calcul de l'état est pur (CN_mesures_etat.py) ; ici, l'accès à la base,
@@ -114,6 +114,11 @@ def _peut_voir(ctx, db, cle, vue=None) -> bool:
 
 
 # ---------------------------------------------------------------------- l'enregistrement d'une lecture (capteur ou monde)
+def _suiveur_voit(ctx, db, suiveur, cle) -> bool:
+    """Ce suiveur voit-il ENCORE cette clé (publication courante, société de son compte) ? Revérifié à chaque annonce : un suivi accepté hier ne vaut pas droit de regard aujourd'hui."""
+    return me.visible_pour(_visibilite(db, cle), ctx.societe_de(suiveur), suiveur in SYSTEMES or bool(ctx.est_admin(suiveur)))
+
+
 def _annoncer(ctx, db, cle, lec_etat, calcul, depuis, annonce, annonce_a, maintenant):
     """Annonce au bus un changement d'état d'une clé SUIVIE : un événement par suiveur (portée = son compte), fusionné si la clé a déjà parlé il y a moins de 30 s."""
     suiveurs = [r["suiveur"] for r in db.lire("SELECT suiveur FROM sensorium_suivies WHERE cle=?", (cle,))]
@@ -126,6 +131,9 @@ def _annoncer(ctx, db, cle, lec_etat, calcul, depuis, annonce, annonce_a, mainte
             compter(db, "evenements_fusionnes")
         return
     for s in suiveurs:
+        if not _suiveur_voit(ctx, db, s, cle):                  # le suivi reste (il redevient actif si la clé est republiée), mais RIEN ne part vers qui ne voit plus la mesure
+            compter(db, "evenements_masques")
+            continue
         try:
             ctx.emettre("mesure.change", objet=("mesure", cle), compte=s,
                         donnees={"cle": cle, "avant": avant, "apres": lec_etat, "depuis": depuis, "raison": calcul["raison"], "suiveur": s})

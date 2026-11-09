@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1a23d5
+# VERSION CN : 0.1.0  #e46992
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1a23d5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e46992 ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -642,6 +642,56 @@ class ViaUnModule(Mesures):
                 ctx.agir("sensorium.mesure_publier", {"cle": "dns.x", "visibilite": "toutes"}, acteur="cassandra")
         finally:
             ctx._en_moteur.valeur = False
+
+
+class SuiviEtVisibilite(Mesures):
+    """Un suiveur ne reçoit des événements que pour ce qu'il peut encore voir (docs/CN_SENSORIUM_EVOLUTION.md §4 bis)."""
+
+    def setUp(self):
+        super().setUp()
+        self.n.droits.regler("compte", SIMPLE, "sensorium.suivre", "accorde")
+        self.addCleanup(self.n.droits.regler, "compte", SIMPLE, "sensorium.suivre", None)
+        self.declarer("infra.cert", KINO, fraicheur_s=600, alerte=50)
+        self.alimenter("infra.cert", 1)
+
+    def pour(self, compte):
+        return [e for e in self.evenements() if e["compte"] == compte]
+
+    def test_fuite_un_suiveur_depublie_ne_recoit_plus_rien(self):
+        self.ok("mesure_publier", ADMIN, cle="infra.cert", visibilite="toutes")
+        self.assertTrue(self.ok("mesure_suivre", SIMPLE, cle="infra.cert")["ok"])
+        self.ok("mesure_publier", ADMIN, cle="infra.cert", visibilite="instance")
+        self.assertEqual(self.vue_pour(SIMPLE, "1", cle="infra.cert")["etat"], "inconnu")
+        self.h.avance(40)
+        self.alimenter("infra.cert", 99)                       # le capteur passe en alerte
+        self.assertEqual(self.pour(SIMPLE), [], "l'événement est parti vers un compte qui ne voit plus la mesure")
+        self.assertGreater(self.ok("autoobservation", ADMIN)["compteurs"].get("evenements_masques", 0), 0)
+
+    def test_republier_rend_les_evenements_sans_re_suivre(self):
+        self.ok("mesure_publier", ADMIN, cle="infra.cert", visibilite="toutes")
+        self.ok("mesure_suivre", SIMPLE, cle="infra.cert")
+        self.ok("mesure_publier", ADMIN, cle="infra.cert", visibilite="instance")
+        self.h.avance(40)
+        self.alimenter("infra.cert", 99)
+        self.ok("mesure_publier", ADMIN, cle="infra.cert", visibilite="toutes")
+        self.h.avance(40)
+        self.alimenter("infra.cert", 1)
+        self.assertEqual([e["donnees"]["apres"] for e in self.pour(SIMPLE)], ["ok"], "le suivi n'a jamais été retiré : il était muet")
+
+    def test_un_suiveur_qui_voit_toujours_recoit(self):
+        self.ok("mesure_publier", ADMIN, cle="infra.cert", visibilite="societes:1")
+        self.ok("mesure_suivre", SIMPLE, cle="infra.cert")
+        self.h.avance(40)
+        self.alimenter("infra.cert", 99)
+        self.assertEqual([e["donnees"]["apres"] for e in self.pour(SIMPLE)][-1], "alerte")
+
+    def test_un_suiveur_d_une_autre_societe_ne_recoit_que_si_sa_societe_est_publiee(self):
+        db = self.n.executeur.contextes["sensorium"].stockage
+        db.ecrire("INSERT INTO sensorium_suivies(cle, suiveur, motif, cree_le) VALUES ('infra.cert', ?, '', 0)", (AUTRE,))
+        self.ok("mesure_publier", ADMIN, cle="infra.cert", visibilite="societes:1")
+        self.h.avance(40)
+        self.alimenter("infra.cert", 99)
+        self.assertEqual(self.pour(AUTRE), [])
 
 
 class Privilege(Mesures):
