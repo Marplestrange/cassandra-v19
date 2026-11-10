@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7f3488
+# VERSION CN : 0.1.0  #586efe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7f3488 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=586efe ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -46,6 +46,10 @@ class _Acteur(threading.local):
     valeur = ""
 
 
+class _Appelant(threading.local):
+    valeur = ""            # le module dont un MOTEUR a demandé l'acte en cours (posé par l'exécuteur, jamais par un module ni par une entrée extérieure)
+
+
 from .CN_stockage import StockageParSociete
 
 
@@ -65,6 +69,7 @@ class Contexte:
         self._cause = _Fil()
         self._compte = _Compte()
         self._acteur = _Acteur()
+        self._appelant = _Appelant()
         self._societe = _Societe()
         self._en_moteur = _EnMoteur()
 
@@ -103,6 +108,12 @@ class Contexte:
     def acteur(self) -> str:
         """Qui agit (humain, compte, agent, itare, cassandra, anonyme) le temps de la capacité en cours : un module s'en sert pour ce qu'il montre à un modèle."""
         return self._acteur.valeur
+
+    @property
+    def appelant(self) -> str:
+        """Le module dont un moteur a demandé la capacité en cours par `ctx.agir`, sous le compte système « noyau » ('' dans tous les autres cas).
+        Le compte « noyau » est commun à tous les moteurs : c'est `appelant` qui dit LEQUEL agit. Posé par le noyau seul ; aucun compte ne peut le prétendre."""
+        return self._appelant.valeur
 
     # ---- ce que le noyau sait de lui-même (module de menus, de supervision) ----
     def _exiger_introspection(self) -> None:
@@ -241,7 +252,9 @@ class Contexte:
             # La liste du manifeste est l'étendue d'un moteur : hors d'elle, rien ne part, et la tentative est journalisée.
             self._bus.emettre("moteur.hors_liste", source=self.module, acteur="noyau", objet=("capacite", capacite), compte="noyau", donnees={"acteur_demande": acteur})
             raise PermissionError("le module « %s » n'a pas déclaré « %s » dans [permissions] agir_moteur : un moteur n'agit que dans sa liste" % (self.module, capacite))
-        return self._intro["agir"](capacite, dict(args or {}), compte, acteur, cause, essai, self.societe if compte == "noyau" else "")
+        if compte == "noyau" and not self.compte:               # un moteur : le noyau dit à la capacité appelée QUEL module agit sous le compte commun
+            return self._intro["agir"](capacite, dict(args or {}), compte, acteur, cause, essai, self.societe, appelant=self.module)
+        return self._intro["agir"](capacite, dict(args or {}), compte, acteur, cause, essai, "")
 
     def defaire_acte(self, fait: int, demandeur: str = "") -> dict:
         """Le retour arrière d'un acte d'agent déjà fait et journalisé (l'id de son `capacite.faite`). L'exécuteur le joue et le raconte ; le module qui le demande a vérifié à qui est l'acte

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d4e093
+# VERSION CN : 0.1.0  #51d4d8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements, plafonds, cloisonnement entre comptes et sociétés, vu
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d4e093 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=51d4d8 ▼▼▼
 """Bancs des mesures de première classe du Sensorium, sur un vrai noyau monté : capteurs enfichables (avec un faux émetteur), état à trois valeurs, capteur muet, clés suivies et événements,
 plafonds, cloisonnement entre comptes et sociétés, vue minimale sans fuite, relations et impact, prévision, auto-observation. Aucun socket, aucun service réel : le collecteur est simulé."""
 import json
@@ -768,24 +768,60 @@ def brancher(ctx):
     ctx.moteur("pousser", pousser)
     ctx.etat_essai = etat
 """
+MANIFESTE_INTRUS = MANIFESTE_EMETTEUR.replace('id = "emetteur"', 'id = "intrus"').replace("Émetteur d'essai", "Intrus d'essai")
+CODE_INTRUS = """
+def brancher(ctx):
+    def pousser(ctx):
+        a = lambda cap, **args: ctx.agir(cap, args, acteur="cassandra")
+        etat["declare"] = a("sensorium.capteur_declarer", cle="dns.autre", fraicheur_s=120)
+        etat["alimente"] = a("sensorium.capteur_alimenter", lectures=[{"cle": "dns.latence_locale", "valeur": 7}])
+        etat["chez_soi"] = a("sensorium.capteur_declarer", cle="intrus.x", fraicheur_s=120)
+    etat = {}
+    ctx.moteur("pousser", pousser)
+    ctx.etat_essai = etat
+"""
 
 
 class ViaUnModule(Mesures):
     """La voie prévue pour le Serveur DNS : un module du noyau, depuis son moteur, par ctx.agir (compte système « noyau », acteur « cassandra »)."""
-    MODULES = ("droits", "modules", "sensorium", "emetteur")
+    MODULES = ("droits", "modules", "sensorium", "emetteur", "intrus")
 
     @classmethod
     def poser_modules_d_essai(cls, mods):
-        (mods / "emetteur").mkdir(parents=True)
-        (mods / "emetteur" / "CN_manifeste.toml").write_text(MANIFESTE_EMETTEUR, encoding="utf-8")
-        (mods / "emetteur" / "CN_module.py").write_text(CODE_EMETTEUR, encoding="utf-8")
+        for nom, manifeste, code in (("emetteur", MANIFESTE_EMETTEUR, CODE_EMETTEUR), ("intrus", MANIFESTE_INTRUS, CODE_INTRUS)):
+            (mods / nom).mkdir(parents=True)
+            (mods / nom / "CN_manifeste.toml").write_text(manifeste, encoding="utf-8")
+            (mods / nom / "CN_module.py").write_text(code, encoding="utf-8")
+
+    def test_un_module_du_noyau_ne_prend_pas_l_espace_d_un_autre(self):
+        """Deux modules du noyau agissent sous le même compte « noyau » : l'espace est au MODULE qui l'a pris (docs/CN_SENSORIUM_EVOLUTION.md §14)."""
+        self.n.executeur.contextes["emetteur"].etat_essai["valeur"] = 42
+        self.assertEqual(self.n.lancer("emetteur.pousser").get("statut"), "fait")
+        self.assertEqual(self.n.lancer("intrus.pousser").get("statut"), "fait")
+        etat = self.n.executeur.contextes["intrus"].etat_essai
+        self.assertEqual(etat["declare"]["resultat"].get("refuse"), "cet espace appartient à un autre compte", etat)
+        self.assertEqual(etat["alimente"]["resultat"]["acceptees"], [], etat)
+        self.assertEqual([x["motif"] for x in etat["alimente"]["resultat"]["refusees"]], ["capteur d'un autre compte"])
+        self.assertTrue(etat["chez_soi"]["resultat"]["ok"], etat)
+        d = self.ok("mesure_detail", ADMIN, cle="dns.latence_locale")
+        self.assertEqual((d["valeur"], d["capteur"]["proprietaire"]), (42.0, "noyau:emetteur"))
+        self.assertEqual(self.ok("mesure_detail", ADMIN, cle="intrus.x")["capteur"]["proprietaire"], "noyau:intrus")
+        self.assertEqual(self.n.executeur.contextes["sensorium"].appelant, "", "l'appelant ne survit pas à l'acte")
+
+    def test_un_compte_ne_se_fait_pas_passer_pour_un_module(self):
+        """`appelant` n'est posé que par le noyau, pour un moteur : un compte ordinaire qui déclare reste propriétaire sous son nom."""
+        self.declarer("faux.x", KINO, fraicheur_s=60)
+        self.assertEqual(self.ok("mesure_detail", ADMIN, cle="faux.x")["capteur"]["proprietaire"], KINO)
+        r = self.n.executeur.executer("sensorium.capteur_declarer", "compte", dict(cle="faux2.x", fraicheur_s=60), compte=KINO, appelant="emetteur")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual(self.ok("mesure_detail", ADMIN, cle="faux2.x")["capteur"]["proprietaire"], KINO)
 
     def test_un_module_declare_alimente_et_suit_depuis_son_moteur(self):
         self.assertEqual(self.n.lancer("emetteur.pousser").get("statut"), "fait")
         etat = self.n.executeur.contextes["emetteur"].etat_essai
         self.assertEqual((etat["declare"]["statut"], etat["alimente"]["statut"], etat["suit"]["statut"]), ("faite", "faite", "faite"), etat)
         d = self.ok("mesure_detail", ADMIN, cle="dns.latence_locale")
-        self.assertEqual((d["etat"], d["valeur"], d["capteur"]["proprietaire"]), ("ok", 42.0, "noyau"))
+        self.assertEqual((d["etat"], d["valeur"], d["capteur"]["proprietaire"]), ("ok", 42.0, "noyau:emetteur"))
         self.assertEqual(d["suivie_par"], ["noyau"])
         self.h.avance(2)
         self.n.executeur.contextes["emetteur"].etat_essai["valeur"] = 900

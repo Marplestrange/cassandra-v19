@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d3e266 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0222d3 ▼▼▼ -->
 # Évolution du Sensorium : des mesures de première classe, enfichables, cloisonnées
 
 Statut : note de conception, rédigée AVANT le code (09-11-2026). Chaque point porte un statut : **[décidé]** (je l'implémente, c'est écrit ici pourquoi),
@@ -96,7 +96,7 @@ retirer ce droit à un compte n'arrête pas un suivi existant tant que la clé r
 
 Un capteur se **déclare** (`capteur_declarer` : clé, libellé, unité, `fraicheur_s`, seuils `alerte`/`critique`, sens `pire` haut ou bas, `confiance_min`) puis **s'alimente** (`capteur_alimenter` : jusqu'à 50 lectures par appel).
 Le collecteur root n'est pas touché. Propriété : la clé commence par un **espace** (`dns`, `kino-lyon`…) lié au **compte** qui l'a déclaré en premier ; un autre compte ne peut ni déclarer ni alimenter cet espace.
-Pour un module du noyau l'appelant est le compte système « noyau » (partagé) : un module installé tourne déjà dans le processus avec ses droits (`docs/CN_MODULES_DEVELOPPEUR.md`). **L'isolation réelle viendra avec un compte machine par
+Pour un module du noyau le compte est le compte système « noyau » (commun), et le propriétaire de l'espace est « noyau:<module> » (§14) ; un module installé tourne de toute façon dans le processus avec ses droits (`docs/CN_MODULES_DEVELOPPEUR.md`). **L'isolation réelle viendra avec un compte machine par
 nœud Kino** : chaque nœud aura son compte, donc son espace. Droits `alimenter` (sensible). Plafonds : 200 capteurs, 50 par compte, 1 lecture par seconde et par clé (les autres sont comptées « refusées »),
 500 points d'historique par clé et 14 jours. Le protocole d'un nœud Kino est défini au §16 : il appelle ce contrat par la passerelle HTTP du noyau.
 
@@ -119,7 +119,7 @@ nœud Kino** : chaque nœud aura son compte, donc son espace. Droits `alimenter`
 |---|---|---|---|
 | lecture inter-modules faite par un moteur (`ctx.executer_lecture` hors capacité) | tout module | lit en privilégié ; **s'il travaille pour quelqu'un il DOIT passer `pour`** (un compte, ou `*` = personne) et ne regarde alors jamais plus que lui | `Privilege` |
 | relecture de la Mémoire (`entretien`) | module Mémoire | lit au nom du PROPRIÉTAIRE du souvenir (`compte:x` -> x ; `partage`, `itare`, `cassandra` -> privilégié, un administrateur l'a écrit ; autre -> `*`) | `test_fuite_la_relecture…` (échouait avant) |
-| `ctx.agir` depuis un moteur | module déclarant `agir_moteur` | agit sous le compte `noyau` : privilégié ; l'étendue est la liste `agir_moteur` du manifeste | `ViaUnModule` |
+| `ctx.agir` depuis un moteur | module déclarant `agir_moteur` | agit sous le compte `noyau` : privilégié ; l'étendue est la liste `agir_moteur` du manifeste ; ses capteurs sont à « noyau:<module> » (§14) | `ViaUnModule` |
 | capacité appelée par un utilisateur | tout compte | JAMAIS privilégié sauf administrateur ; `pour` ignoré | `Privilege` |
 | futur module Bibliothèque | à définir | mêmes règles : s'il lit depuis un moteur (page qui se périme), il passe `pour` = l'auteur de la page ; sinon une page « vivante » montrerait à tous ce que son auteur seul voit | — |
 
@@ -198,8 +198,8 @@ a("sensorium.capteur_alimenter", lectures=[{"cle": "dns.latence_locale", "valeur
 a("sensorium.mesure_suivre", cle="dns.latence_locale", motif="la page Résolution en dépend")      # puis ctx.ecouter("mesure.change", ...) (à déclarer dans evenements.ecoute)
 ```
 
-Un nœud Kino fera de même par l'API avec SON compte machine (droit `sensorium.alimenter`) : son espace (`kino-lyon.*`) lui appartient seul. **Limite assumée** : tous les modules du noyau agissent sous le même compte système
-« noyau » ; deux modules du noyau peuvent donc se marcher sur un espace. Tant qu'un module installé tourne dans le processus avec ses droits, ce n'est pas une frontière de sécurité de plus.
+Un nœud Kino fera de même par l'API avec SON compte machine (droit `sensorium.alimenter`) : son espace (`kino-lyon.*`) lui appartient seul. Les modules du noyau agissent tous sous le même compte système
+« noyau », mais l'espace est au MODULE qui l'a pris (propriétaire « noyau:<module> », §14) : un module du noyau ne déclare ni n'alimente l'espace d'un autre.
 
 ## 15. Spécification du contrat, indépendante du langage (en vue d'un portage possible)
 
@@ -270,10 +270,12 @@ pour brancher une autre implémentation (Go), on remplace cette seule fonction p
 
 ## 14. Ce qui n'est pas fait ici
 
-**Le compte système `noyau` partage tous les espaces : proposition, rien d'appliqué.** Tous les modules du noyau qui agissent depuis un moteur le font sous le même compte `noyau` ; l'espace d'un capteur est au compte, pas au module. Un module du noyau pourrait
-donc déclarer ou alimenter l'espace d'un autre. Le Sensorium ne sait pas QUEL module appelle : l'exécuteur ne le lui dit pas. La seule vraie correction est dans le noyau (~15 lignes : un fil local `_appelant` posé par `ctx.agir` à côté de `_compte`, exposé en `ctx.appelant`,
-puis le Sensorium indexe la propriété sur `(compte, appelant)`), mais elle touche `noyau/CN_contexte.py`, `noyau/CN_executeur.py` et `CN_main.py`, et les trois tests qui simulent `agir`. Je ne l'ai pas faite sans votre accord. Aujourd'hui, ce risque ne vaut que pour du code du noyau déjà de confiance ;
-les nœuds satellites et les comptes ordinaires ont chacun leur propre espace (bancs).
+**Le compte système `noyau` ne partage plus les espaces. [fait, accord donné]** Tous les modules du noyau qui agissent depuis un moteur le font sous le même compte `noyau` ; l'exécuteur ne disait pas au Sensorium QUEL module appelait, un module pouvait donc
+déclarer ou alimenter l'espace d'un autre (banc vu en échec avant la correction : l'« intrus » déclarait `dns.autre` dans l'espace de l'« émetteur »). Correction dans le noyau : `ctx.agir`, pour un moteur, passe le nom de SON module ; l'exécuteur le pose le temps de l'acte
+dans un fil local du contexte appelé (`ctx.appelant`, rendu ensuite) et l'ignore pour tout compte autre que `noyau` ; la passerelle HTTP ne le transmet jamais. Le Sensorium range alors le propriétaire d'un capteur de moteur sous « noyau:<module> »
+(`CN_capteurs.emetteur`) : déclarer, alimenter et retirer se jugent sur lui. Un compte est une adresse ou « agent:<nom> » : aucun ne peut s'appeler « noyau:… ». Le suivi et les événements restent au compte `noyau`. Fichiers : `noyau/CN_contexte.py`, `noyau/CN_executeur.py`,
+`CN_main.py`, `modules/sensorium/CN_capteurs.py`. Bancs : `ViaUnModule` (4). **Limites** : un espace déjà pris sous l'ancien propriétaire « noyau » (aucun en service : aucun module ne nourrit encore le Sensorium depuis un moteur) ne serait repris par personne, il faudrait le retirer à la main ;
+ce n'est pas une frontière contre du code hostile : un module installé tourne dans le processus du noyau avec ses droits, il s'agit d'empêcher qu'un module en écrase un autre par erreur ou par nom mal choisi.
 
 Le logiciel d'un nœud Kino (le protocole est défini au §16) ; des relations avec cascade au registre ; toute modification de l'interface (écrans) ; l'exercice des écrans existants avec un compte ordinaire.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->

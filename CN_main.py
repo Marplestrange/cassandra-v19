@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c23dd9
+# VERSION CN : 0.1.0  #d6def8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c23dd9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d6def8 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -233,9 +233,9 @@ class Noyau:
         r = self.executeur.executer(cle, "cassandra", args, compte=compte, interne=True, societe=societe)
         return r.get("resultat") if r["statut"] == "faite" else None
 
-    def _agir(self, cle: str, args: dict, compte: str, acteur: str, cause=None, essai: bool = False, societe: str = "") -> dict:
-        """Un acte d'agent pour le compte d'un module : par l'exécuteur ordinaire, jamais `interne`."""
-        return self.executeur.executer(cle, acteur, args, cause=cause, essai=essai, compte=compte, societe=societe)
+    def _agir(self, cle: str, args: dict, compte: str, acteur: str, cause=None, essai: bool = False, societe: str = "", appelant: str = "") -> dict:
+        """Un acte d'agent pour le compte d'un module : par l'exécuteur ordinaire, jamais `interne`. `appelant` : le module d'un moteur (voir Contexte.agir)."""
+        return self.executeur.executer(cle, acteur, args, cause=cause, essai=essai, compte=compte, societe=societe, appelant=appelant)
 
     def _outils(self, compte: str, acteur: str) -> list:
         """Les outils d'un agent, dérivés du catalogue : rien à écrire à la main, un outil de plus = une capacité de plus."""

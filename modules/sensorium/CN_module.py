@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.4  #4ddd01
+# VERSION CN : 0.2.5  #4ddd01
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.4 empreinte=4ddd01 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.5 empreinte=4ddd01 ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse

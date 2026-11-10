@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.4  #924ba2
+# VERSION CN : 0.2.5  #275970
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.4 empreinte=924ba2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.5 empreinte=275970 ▼▼▼
 """Les mesures de première classe du Sensorium : capteurs enfichables, état à trois valeurs, clés suivies, vue minimale cloisonnée, relations, prévision, auto-observation.
 
 Tout vit dans la base du module (migration 004) : le noyau, le registre et le collecteur root ne changent pas. Le calcul de l'état est pur (CN_mesures_etat.py) ; ici, l'accès à la base,
@@ -59,6 +59,14 @@ def privilegie(ctx) -> bool:
     """Qui voit tout : un moteur (sans compte), un compte système, un administrateur. Les autres ne voient que ce qui leur est publié."""
     c = ctx.compte
     return (not c) or c in SYSTEMES or bool(ctx.est_admin(c))
+
+
+def emetteur(ctx) -> str:
+    """À qui est un capteur : au compte qui agit ; pour un moteur du noyau (compte commun « noyau »), au MODULE qui agit : « noyau:<module> ».
+    Un compte est une adresse ou « agent:<nom> » : il ne peut pas s'appeler « noyau:… ». Sans appelant connu (ancien noyau), on reste à « noyau »."""
+    c = ctx.compte
+    a = getattr(ctx, "appelant", "") if c == "noyau" else ""
+    return "noyau:%s" % a if a else c
 
 
 def _un(db, sql, params=()):
@@ -263,7 +271,7 @@ def tour_suivi(ctx):
 # ---------------------------------------------------------------------- capteurs : déclarer, retirer, alimenter
 def capteur_declarer(ctx, cle="", libelle="", unite="", fraicheur_s=300, alerte=None, critique=None, pire="haut", confiance_min=0):
     """Déclare (ou met à jour) un capteur. Ne lève JAMAIS pour une erreur de l'appelant : un échec répété ferait rétrograder la capacité pour tous ; le refus se dit dans la réponse."""
-    db, qui = _db(ctx), ctx.compte
+    db, qui = _db(ctx), emetteur(ctx)
     refus = lambda m: {"ok": False, "refuse": m, "cle": str(cle)[:120]}
     if not me.cle_valide(cle):
         return refus("clé illisible")
@@ -318,7 +326,7 @@ def capteur_retirer(ctx, cle=""):
     db = _db(ctx)
     with _VERROU:
         cap = _un(db, "SELECT * FROM sensorium_capteurs WHERE cle=?", (str(cle),))
-        if not cap or cap["proprietaire"] != ctx.compte:
+        if not cap or cap["proprietaire"] != emetteur(ctx):
             return {"ok": False, "refuse": "capteur inconnu ou d'un autre compte", "cle": str(cle)[:120]}
         db.ecrire("DELETE FROM sensorium_capteurs WHERE cle=?", (cap["cle"],))
         db.ecrire("DELETE FROM sensorium_lectures WHERE cle=?", (cap["cle"],))
@@ -339,7 +347,7 @@ def retire_defait(ctx, res):
 
 def capteur_alimenter(ctx, lectures=None):
     """Jusqu'à 50 lectures d'un coup. Chacune est acceptée ou refusée avec son motif ; l'appel, lui, ne lève pas pour la faute d'un émetteur (voir capteur_declarer)."""
-    db, qui = _db(ctx), ctx.compte
+    db, qui = _db(ctx), emetteur(ctx)
     if not isinstance(lectures, list):
         return {"ok": False, "refuse": "« lectures » : une liste", "acceptees": [], "refusees": [], "t": _maintenant()}
     acceptees, refusees = [], []

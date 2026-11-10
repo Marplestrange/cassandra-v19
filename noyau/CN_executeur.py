@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9191fa
+# VERSION CN : 0.1.0  #8e337f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9191fa ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e337f ▼▼▼
 """L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 
 Le contrat de souveraineté tient ici, en un seul endroit :
@@ -59,8 +59,9 @@ class Executeur:
     def _evt(self, type, e, acteur, cause, donnees=None, compte=""):
         return self.bus.emettre(type, source=e.module, acteur=acteur, objet=("capacite", e.cle), cause=cause, donnees=donnees or {}, compte=compte)
 
-    def executer(self, cle: str, acteur: str, args=None, cause=None, essai: bool = False, compte: str = "", interne: bool = False, societe: str = "") -> dict:
-        """`interne` : réservé au code du noyau lui-même (détecteurs, lectures d'un module pour un autre, reprise). Aucune entrée extérieure ne le pose."""
+    def executer(self, cle: str, acteur: str, args=None, cause=None, essai: bool = False, compte: str = "", interne: bool = False, societe: str = "", appelant: str = "") -> dict:
+        """`interne` : réservé au code du noyau lui-même (détecteurs, lectures d'un module pour un autre, reprise). Aucune entrée extérieure ne le pose.
+        `appelant` : le module dont un moteur agit sous le compte système « noyau » (posé par `ctx.agir`) ; ignoré pour tout autre compte."""
         args = dict(args or {})
         e = self.catalogue.get(cle)
         if e is None:
@@ -121,8 +122,9 @@ class Executeur:
 
         demande = self._evt("capacite.demandee", e, acteur, cause, {"args": self._masquer(args, c.masque), "essai": essai}, compte)
         ctx = self.contextes.get(e.module)
-        avant_ctx = (None, "", "", "")
+        avant_ctx, avant_appelant = (None, "", "", ""), ""
         if ctx is not None:
+            avant_appelant, ctx._appelant.valeur = ctx._appelant.valeur, (str(appelant or "") if compte == "noyau" else "")
             avant_ctx = (ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur)       # une capacité qui en appelle une autre du MÊME module la retrouve, elle, intacte au retour
             ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur = demande, compte, acteur, soc
         try:
@@ -151,6 +153,7 @@ class Executeur:
             return self._ecrire(e, acteur, args, demande, ctx, compte)
         finally:
             if ctx is not None:
+                ctx._appelant.valeur = avant_appelant
                 ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur = avant_ctx
 
     def _ecrire(self, e, acteur, args, demande, ctx, compte) -> dict:
