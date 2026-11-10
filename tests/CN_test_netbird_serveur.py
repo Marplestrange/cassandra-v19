@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #333eec
+# VERSION CN : 0.1.0  #8507c6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`, `port_libre` et `shutil` sont remplacés ; le dossier du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=333eec ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8507c6 ▼▼▼
 """Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`,
 `port_libre` et `shutil` sont remplacés ; le dossier du serveur est un dossier temporaire. On vérifie surtout ce qui est REFUSÉ et que le script n'est lancé que s'il est celui qu'on a confirmé."""
 import hashlib
@@ -703,6 +703,28 @@ class Compose(Monde):
         self.poser()
         self.assertTrue(self.lance("commande", "restart")["ok"])
         self.assertEqual(self.cmds[-1][:3], ["docker-compose", "-f", os.path.join(self.dossier, "docker-compose.yml")])
+
+    def test_avec_l_ancien_compose_les_conteneurs_se_lisent_par_docker_ps(self):
+        # trouvé sur argos : docker-compose 1.x n'a pas `ps --format json`, la liste restait vide et l'installation était annulée faute de preuve
+        self.plugin.unlink()
+        self.legacy = True
+        self.poser()
+        ligne = lambda nom, etat, ports: json.dumps({"Names": "netbird-" + nom + "-1", "Image": "netbirdio/" + nom + ":latest", "State": etat, "Ports": ports, "Labels": "com.docker.compose.project=x,com.docker.compose.service=" + nom + ",org.opencontainers.image.description=un, deux"})
+        self.sorties["docker ps -a --filter label=com.docker.compose.project.working_dir=" + self.dossier] = (0, ligne("netbird-server", "running", "127.0.0.1:8081->80/tcp, 0.0.0.0:3478->3478/udp") + chr(10) + ligne("dashboard", "exited", "80/tcp"))
+        r = self.lance("etat")
+        self.assertEqual([(c["service"], c["etat"]) for c in r["conteneurs"]], [("netbird-server", "running"), ("dashboard", "exited")])
+        self.assertEqual(r["conteneurs"][0]["ports"], ["0.0.0.0:3478->3478/udp", "127.0.0.1:8081->80/tcp"])
+        self.assertEqual(r["conteneurs"][1]["ports"], [], "80/tcp seul n'est pas publié")
+        self.assertFalse([c for c in self.cmds if c[:3] == ["docker-compose", "-f", os.path.join(self.dossier, "docker-compose.yml")] and "ps" in c], "jamais `docker-compose ps --format`")
+
+    def test_avec_l_ancien_compose_la_sauvegarde_trouve_les_conteneurs_par_docker_ps(self):
+        vol = monde_pile(self)
+        self.plugin.unlink()
+        self.legacy = True
+        self.sorties["docker ps -a -q --filter label=com.docker.compose.project.working_dir=" + self.dossier] = (0, "abc123def456")
+        self.sorties["docker ps -a --filter label=com.docker.compose.project.working_dir=" + self.dossier] = (0, json.dumps({"Names": "s", "Image": "i", "State": "running", "Ports": "", "Labels": ""}))
+        r = self.lance("sauvegarder")
+        self.assertTrue(r["ok"] and r["volumes"] == 1, r)
 
     def test_le_greffon_est_prefere_a_l_ancien_binaire(self):
         self.legacy = True

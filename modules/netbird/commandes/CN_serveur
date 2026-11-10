@@ -170,9 +170,30 @@ def compose(args, delai=60, garder=SORTIE_MAX):
     return lancer(base + ["-f", os.path.join(DOSSIER, "docker-compose.yml")] + args, delai, None, garder)
 
 
+FILTRE_PILE = "label=com.docker.compose.project.working_dir="            # le dossier du serveur, posé par Compose sur chacun de ses conteneurs (v1 comme v2)
+
+
+def conteneurs_docker():
+    """Les conteneurs de la pile lus par `docker ps` : l'ancien docker-compose (1.x) n'a pas `ps --format json`."""
+    code, sortie = lancer(["docker", "ps", "-a", "--filter", FILTRE_PILE + DOSSIER, "--format", "{{json .}}"], 30, None, SORTIE_LISTE)
+    out = []
+    for ligne in (sortie.splitlines() if code == 0 else []):
+        try:
+            x = json.loads(ligne)
+        except ValueError:
+            continue
+        if isinstance(x, dict):
+            m = re.search(r"com\.docker\.compose\.service=([^,]+)", str(x.get("Labels") or ""))
+            ports = sorted({p.strip()[:60] for p in str(x.get("Ports") or "").split(",") if "->" in p})
+            out.append({"service": (m.group(1) if m else str(x.get("Names") or ""))[:60], "etat": str(x.get("State") or "")[:20], "image": str(x.get("Image") or "")[:100], "ports": ports[:8]})
+    return out
+
+
 def conteneurs():
     if compose_cmd() is None:
         return []                                                  # sans Docker Compose, il n'y a rien à lister : l'état se rend quand même
+    if compose_cmd() == ["docker-compose"]:
+        return conteneurs_docker()
     code, sortie = compose(["ps", "-a", "--format", "json"], 30, SORTIE_LISTE)
     if code != 0:
         return []
@@ -348,7 +369,10 @@ def inspecter(ids):
 
 def fiches():
     """Les conteneurs de la pile : leurs volumes (nom et dossier sur la machine) et leurs images (référence et identifiant)."""
-    code, sortie = compose(["ps", "-a", "-q"], 30)
+    if compose_cmd() == ["docker-compose"]:
+        code, sortie = lancer(["docker", "ps", "-a", "-q", "--filter", FILTRE_PILE + DOSSIER], 30)
+    else:
+        code, sortie = compose(["ps", "-a", "-q"], 30)
     ids = [x for x in sortie.split() if re.match(r"^[0-9a-f]{6,64}$", x)] if code == 0 else []
     volumes, images, vus = [], [], set()
     for f in inspecter(ids):
