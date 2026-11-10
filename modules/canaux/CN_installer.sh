@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : canaux
 # ZONE       : CN
-# VERSION CN : 0.1.0  #355b76
+# VERSION CN : 0.2.0  #355b76
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Canaux pose, À ROOT : la commande de connexion Telegram que le courtier peut lancer.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=355b76 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=355b76 ▼▼▼
 # Canaux pose, À ROOT : la commande de connexion Telegram que le courtier peut lancer.
 set -eu
 D="${CASSANDRA_MODULE_DIR:?le dossier du module}"

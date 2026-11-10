@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notifications
 # ZONE       : CN
-# VERSION CN : 0.3.0  #39c92c
+# VERSION CN : 0.4.0  #0c4114
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le Centre de notifications, portée de la V18 (notif, notif_resoudre, notif_vu, notif_acquitter, _nt_filtre_dest, _nt_expiration).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=39c92c ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=0c4114 ▼▼▼
 """Le Centre de notifications, portée de la V18 (notif, notif_resoudre, notif_vu, notif_acquitter, _nt_filtre_dest, _nt_expiration).
 
 Ce qui change, et pourquoi :
@@ -20,8 +20,11 @@ Ce qui change, et pourquoi :
   - une notification liée à un détecteur n'a plus besoin d'une « sonde » rejouée pour savoir si elle tient encore : le constat se résout, la
     notification se referme avec lui ;
   - la gravité d'une notification n'est JAMAIS déduite de son titre (leçon de la V18 : un mot dans un titre déclenchait de fausses alertes de sécurité) ;
-  - les canaux (courriel, Telegram, webhook, digest) ne sont pas ici : le module des canaux écoute « notification.emise ».
+  - les canaux (courriel, Telegram, webhook, digest) ne sont pas ici : le module des canaux écoute « notification.emise » et porte. Ce module-ci reste
+    seul juge de la POLITIQUE : il la dit au moteur des canaux par la lecture « livraison » (qui doit recevoir quoi, par où, et ce qui le retient),
+    qu'aucun compte ne peut appeler : personne ne lit ainsi les préférences d'un autre.
 """
+import datetime
 import json
 import re
 import time
@@ -31,6 +34,7 @@ NATURES = ("etat", "evenement", "decision")
 SYSTEME = ("cassandra", "itare", "noyau", "operateur")        # les comptes dont la vue n'est pas cloisonnée (comme « sans compte » en V18)
 RE_SOURCE = re.compile(r"^[a-z][a-z0-9_]{1,30}$")
 JOURS_INFO, JOURS_AUTRES = 7, 30
+GRACE_MIN = 5                                                 # la grâce du démarrage : les canaux se taisent le temps que les services se réveillent (la cloche, elle, reçoit)
 
 
 def brancher(ctx):
@@ -102,10 +106,14 @@ def brancher(ctx):
                         (now, now, source, niveau, titre, corps, cle or "", sujet or "", nature, json.dumps(dests), expire, auteur, provenance))
         return {"id": nid, "repete": False, "avant": None, "escalade": False}
 
-    def dire_emise(r, source, niveau, titre, dests, nature):
+    def dire_emise(r, source, niveau, titre, dests, nature, essai=""):
+        """Une notification déjà ouverte qui se répète ne se redit PAS (elle compte) : c'est ce qui empêche les canaux de sonner à chaque passe d'un détecteur.
+        `essai` : le canal que la personne essaie depuis ses réglages ; le module des canaux le porte alors sans regarder la politique."""
         if (not r["repete"]) or r["escalade"]:
-            ctx.emettre("notification.emise", objet=("notification", r["id"]),
-                        donnees={"id": r["id"], "source": source, "niveau": niveau, "titre": titre, "destinataires": dests, "nature": nature, "repetee": r["repete"]})
+            donnees = {"id": r["id"], "source": source, "niveau": niveau, "titre": titre, "destinataires": dests, "nature": nature, "repetee": r["repete"]}
+            if essai:
+                donnees["essai"] = essai
+            ctx.emettre("notification.emise", objet=("notification", r["id"]), donnees=donnees)
 
     def emettre(ctx, titre="", corps="", source="", niveau="avoir", sujet="", cle="", nature="evenement", dest=None, expire_jours=0):
         auteur = ctx.compte
@@ -424,6 +432,63 @@ def brancher(ctx):
         if res["avant"]:
             db.ecrire("INSERT INTO notif_sourdines(compte, portee, cible, fin) VALUES(?,?,?,?)", (res["compte"], res["portee"], res["cible"], res["avant"]))
 
+    # ------------------------------------------------------------------ ce que le moteur des canaux a le droit de savoir
+    def en_sourdine(compte, r, now):
+        for s in db.lire("SELECT portee, cible FROM notif_sourdines WHERE compte=? AND fin>?", (compte, now)):
+            if (s["portee"] == "source" and s["cible"] == r["source"]) or (s["portee"] == "notif" and s["cible"] in (str(r["id"]), r["cle"])):
+                return True
+        return False
+
+    def calme_jusqua(compte, niveau, now):
+        """La fin des heures calmes en cours de ce compte (0 : rien ne le retient). Seule une critique réveille : elle n'est jamais retenue.
+        L'heure est celle du fuseau que la personne a déclaré ; sans fuseau (ou sur une machine sans la base des fuseaux), celle du serveur."""
+        if niveau == "critique":
+            return 0.0
+        p = prefs_de(compte)
+        if not p["calmes"] or p["calme_debut"] == p["calme_fin"]:
+            return 0.0
+        zone = None
+        if p["fuseau"]:
+            try:
+                from zoneinfo import ZoneInfo
+                zone = ZoneInfo(p["fuseau"])
+            except Exception:
+                zone = None
+        ici = datetime.datetime.fromtimestamp(now, zone)
+        minute, debut, fin = (ici.hour * 60 + ici.minute), *(int(h[:2]) * 60 + int(h[3:]) for h in (p["calme_debut"], p["calme_fin"]))
+        dedans = (debut <= minute < fin) if debut < fin else (minute >= debut or minute < fin)           # 22:00 → 08:00 enjambe minuit
+        return (now - ici.second + ((fin - minute) % 1440) * 60) if dedans else 0.0
+
+    def livraison(c, id=0):
+        """Pour UNE notification, ce qu'il faut pour la porter hors de la cloche, et rien d'autre : son texte, si elle tient encore, et par destinataire RÉEL
+        (« admins » développé en comptes) les canaux que sa politique demande pour ce niveau et ce qui les retient (sourdine, heures calmes, déjà lue).
+        Réservée aux moteurs : dès qu'un compte agit, elle se refuse, sinon chacun lirait les préférences des autres."""
+        if c.compte not in ("", "noyau"):
+            raise PermissionError("réservée aux moteurs : un compte ne lit pas la politique d'un autre")
+        r = lire_une(int(id or 0))
+        if r is None or r["supprimee"]:
+            return {"connue": False}
+        now = time.time()
+        comptes = []
+        for d in json.loads(r["destinataires"]):
+            for x in (dr.etat()["admins"] if d == "admins" else [d]):
+                if x not in comptes and x not in SYSTEME:
+                    comptes.append(x)
+        plan = []
+        for compte in comptes:
+            e = etat_dest(r["id"], compte)
+            plan.append({"compte": compte, "canaux": [x for x in politique_de(compte)[r["niveau"]] if x != "cloche"], "sourdine": en_sourdine(compte, r, now),
+                         "calme_jusqua": calme_jusqua(compte, r["niveau"], now), "lu": bool(e and e["vu_le"])})
+        return {"connue": True, "id": r["id"], "source": r["source"], "niveau": r["niveau"], "titre": r["titre"], "corps": r["corps"], "sujet": r["sujet"], "nature": r["nature"],
+                "n": r["n"], "resolue": bool(r["resolue"]), "grace_min": GRACE_MIN, "destinataires": plan}
+
+    def portes_des_canaux():
+        """Ce que le module des canaux sait porter pour le compte qui agit (None s'il n'est pas actif). Ce module-ci ne connaît aucun canal : il le demande."""
+        try:
+            return ctx.executer_lecture("canaux.portes")
+        except Exception:
+            return None
+
     def essais():
         return {r["canal"]: {"ts": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(r["ts"])), "ok": bool(r["ok"]), "detail": r["detail"]} for r in db.lire("SELECT * FROM notif_essais")}
 
@@ -438,12 +503,17 @@ def brancher(ctx):
         compte = (c.compte or "").strip().lower()
         admin = est_admin(compte) or compte in SYSTEME
         perso = bool(compte) and compte not in SYSTEME
-        canaux = {"mail": {"declare": False}, "telegram": {"declare": False}, "cloche": {"declare": True}, "essais": essais(),
+        p = portes_des_canaux() or {}
+        tg = p.get("telegram") or {}
+        faits = essais()
+        if tg.get("essai"):                                                # le sort d'un essai Telegram est celui que le moteur des canaux a constaté, pas ce qu'on a espéré en le lançant
+            faits["telegram"] = tg["essai"]
+        canaux = {"mail": {"declare": False}, "telegram": {"declare": bool(tg.get("declare")), "detail": str(tg.get("detail") or "")}, "cloche": {"declare": True}, "essais": faits,
                   "webhook": webhook_lu() if admin else {"declare": False},
-                  "portes": "les canaux (courriel, Telegram, webhook) n'envoient pas encore : la politique est enregistrée pour eux"}
+                  "portes": str(p.get("portes") or "seule la cloche reçoit : le module des canaux n'est pas actif, la politique est enregistrée pour lui")}
         return {"moi": politique_de(compte) if perso else {k: list(v) for k, v in DEFAUT.items()}, "machine": politique_de(MACHINE), "defaut": DEFAUT,
                 "prefs": prefs_de(compte) if perso else {"fuseau": "", "calme_debut": "22:00", "calme_fin": "08:00", "calmes": True},
-                "canaux": canaux, "sourdines": sourdines_de(compte) if perso else [], "grace_min": 5, "admin": bool(admin)}
+                "canaux": canaux, "sourdines": sourdines_de(compte) if perso else [], "grace_min": GRACE_MIN, "admin": bool(admin)}
 
     def sources(c):
         compte = (c.compte or "").strip().lower()
@@ -480,11 +550,25 @@ def brancher(ctx):
             db.ecrire("UPDATE notif_webhook SET actif=?, url_chiffree=?, modele=? WHERE id=1", (a["actif"], a["url_chiffree"], a["modele"]))
 
     def essai(c, canal="cloche"):
-        """L'essai prouve UN canal et écrit son résultat. Seule la cloche part pour l'instant : les autres le disent, au lieu de faire croire qu'ils ont envoyé."""
+        """L'essai prouve UN canal et écrit son résultat. La cloche part d'ici. Telegram part par le vrai chemin (une notification, le moteur des canaux, le robot du
+        compte) : l'essai dit seulement qu'elle est confiée, et c'est le moteur qui écrit ensuite si elle est arrivée. Le courriel et le webhook disent qu'ils
+        n'envoient pas, au lieu de faire croire qu'ils ont envoyé."""
         compte = (c.compte or "").strip().lower()
         canal = canal if canal in CANAUX else "cloche"
         ok, detail, nid = False, "", None
-        if canal == "cloche":
+        if canal == "telegram":
+            if not compte or compte in SYSTEME:
+                raise ValueError("l'essai de Telegram s'adresse à une personne")
+            tg = (portes_des_canaux() or {}).get("telegram") or {}
+            if not tg.get("declare"):
+                detail = str(tg.get("detail") or "le module des canaux n'est pas actif : rien ne part vers Telegram")
+            else:
+                titre = "Essai — cette notification vient des réglages"
+                r = ecrire_notif("systeme", "info", titre, "Émise par %s pour vérifier que Telegram reçoit. Acquittez-la, elle n'a aucune autre raison d'exister." % compte,
+                                 "essai:telegram:%s:%d" % (compte, int(time.time() * 1000)), "essai", "evenement", [compte], compte, "essai")      # une clé neuve à chaque essai : une notification déjà ouverte ne se redit pas
+                dire_emise(r, "systeme", "info", titre, [compte], "evenement", essai="telegram")
+                ok, detail, nid = True, "ligne #%s confiée au moteur des canaux : elle arrive sur Telegram en une minute environ, et son sort s'écrit ici" % r["id"], r["id"]
+        elif canal == "cloche":
             if not compte or compte in SYSTEME:
                 raise ValueError("l'essai de la cloche s'adresse à une personne")
             titre = "Essai — cette notification vient des réglages"
@@ -493,7 +577,8 @@ def brancher(ctx):
             dire_emise(r, "systeme", "info", titre, [compte], "evenement")
             ok, detail, nid = True, "ligne #%s" % r["id"], r["id"]
         else:
-            detail = "ce canal n'envoie pas encore en V19 (la politique est enregistrée, l'envoi viendra avec le module des canaux)"
+            detail = ("le courriel n'envoie pas encore : il manque à l'instance un serveur d'envoi qui ne soit pas la boîte d'une personne" if canal == "mail"
+                      else "le webhook n'envoie pas encore : son adresse est enregistrée, il lui manque le moteur qui poste")
         db.ecrire("INSERT INTO notif_essais(canal, ts, ok, detail) VALUES(?,?,?,?) ON CONFLICT(canal) DO UPDATE SET ts=excluded.ts, ok=excluded.ok, detail=excluded.detail", (canal, time.time(), 1 if ok else 0, detail))
         return {"ok": ok, "canal": canal, "detail": detail, "notif": nid, "repete": bool(nid) and r["repete"]}
 
@@ -516,6 +601,7 @@ def brancher(ctx):
     ctx.implementer("resoudre", resoudre, prouver_resolue, defaire_resolue)
     ctx.implementer("supprimer", supprimer, prouver_supprimee, defaire_supprimee)
     ctx.implementer("politique", politique)
+    ctx.implementer("livraison", livraison)
     ctx.implementer("sources", sources)
     ctx.implementer("prefs", prefs, prouver_prefs, defaire_prefs)
     ctx.implementer("politique_ecrire", politique_ecrire, prouver_politique, defaire_politique)

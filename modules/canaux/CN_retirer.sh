@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : canaux
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bc2c92
+# VERSION CN : 0.2.0  #bc2c92
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Canaux retire, À ROOT : la commande de connexion posée par l'installation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bc2c92 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=bc2c92 ▼▼▼
 # Canaux retire, À ROOT : la commande de connexion posée par l'installation.
 set -eu
 rm -f "/usr/libexec/cassandra/canaux/connecter"

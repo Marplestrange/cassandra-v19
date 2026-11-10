@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : telegram
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1a5b50
+# VERSION CN : 0.2.0  #1a5b50
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 002_jeton_en_reglage.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

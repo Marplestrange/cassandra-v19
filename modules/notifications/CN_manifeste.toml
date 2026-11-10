@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notifications
 # ZONE       : CN
-# VERSION CN : 0.3.0  #9a3103
+# VERSION CN : 0.4.0  #65c208
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le Centre de notifications : ce qui mérite l'attention de quelqu'un. Une notification ouverte par clé (elle se répète, elle ne s'empile pas), lue et prise en compte PAR PERSONNE, cloisonnée par compte, qui se referme seule quand la cause disparaît.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=9a3103 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=65c208 ▼▼▼
 [module]
 id = "notifications"
 nom = "Notifications"
-version = "0.3.0"
+version = "0.4.0"
 noyau_min = "0.1.0"
 description = "Le Centre de notifications : ce qui mérite l'attention de quelqu'un. Une notification ouverte par clé (elle se répète, elle ne s'empile pas), lue et prise en compte PAR PERSONNE, cloisonnée par compte, qui se referme seule quand la cause disparaît."
 confiance = "interne"
@@ -42,8 +42,9 @@ sensible = true
 type = "notification"
 libelle = "Une notification : source, niveau, destinataires, état par personne"
 
-# Les canaux (courriel, Telegram, webhook, digest du matin) viennent du module des canaux : il écoute « notification.emise »
-# et applique la politique de chacun (calme, sourdines, urgence). Ce module-ci ne sait rien d'eux.
+# Les canaux (courriel, Telegram, webhook, digest du matin) viennent du module des canaux : il écoute « notification.emise » et porte.
+# La politique de chacun (niveau, heures calmes, sourdines) reste jugée ICI : le moteur des canaux la demande par la lecture « livraison ».
+# Ce module-ci ne connaît aucun canal : ce qui est branché pour un compte, il le demande à « canaux.portes ».
 [evenements]
 emet = ["notification.emise", "notification.resolue", "notification.supprimee"]
 ecoute = ["constat.ouvert", "constat.resolu", "droit.change", "compte.nouvel_appareil"]
@@ -159,6 +160,12 @@ libelle = "Les réglages de la cloche : ma politique de canaux par gravité, cel
 risque = "lecture"
 
 [[capacites]]
+id = "livraison"
+libelle = "Pour une notification : son texte, si elle tient encore, et par destinataire réel les canaux que sa politique demande et ce qui les retient (sourdine, heures calmes, déjà lue). Réservée au moteur des canaux : dès qu'un compte agit, elle se refuse, personne ne lit ainsi les préférences d'un autre"
+risque = "lecture"
+qui = ["cassandra"]
+
+[[capacites]]
 id = "sources"
 libelle = "Les sources qui ont écrit dans la cloche : dernier cri, lignes, ouvertes (administrateur)"
 risque = "lecture"
@@ -207,7 +214,7 @@ qui = ["humain", "compte"]
 
 [[capacites]]
 id = "essai"
-libelle = "Essayer un canal et écrire son résultat ; seule la cloche part pour l'instant, les autres canaux disent qu'ils n'envoient pas encore"
+libelle = "Essayer un canal et écrire son résultat : la cloche part d'ici, Telegram est confié au moteur des canaux (qui écrit ensuite s'il est arrivé), le courriel et le webhook disent qu'ils n'envoient pas encore"
 risque = "faible"
 perimetre = ["une notification d'essai pour moi", "une ligne notif_essais"]
 preuve = "le résultat de l'essai est écrit"
@@ -225,6 +232,7 @@ stockage = true
 droits = true
 introspection = true
 secrets = true
+lectures = true          # une seule : « canaux.portes », pour dire à la personne ce qui est branché pour elle
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

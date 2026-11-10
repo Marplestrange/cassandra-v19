@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #1ec270
+// VERSION CN : 0.1.0  #e81209
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Centre de notifications : /api/notifs, /api/notif/* (V18) -> capacités notifications.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=1ec270 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e81209 ▼▼▼
 /* Centre de notifications : /api/notifs, /api/notif/* (V18) -> capacités notifications.* du noyau.
    Le noyau a le cœur (lire, vu, acquitter, résoudre, supprimer, compteurs) ; politique, sourdines, préférences et canaux ne sont pas encore portés. */
 (function () {
@@ -39,7 +39,7 @@
   P("/api/notif/resoudre", null, { faire: chaque("notifications.resoudre") });
   P("/api/notif/supprimer", null, { faire: chaque("notifications.supprimer") });
 
-  // ── Les réglages : politique de canaux, heures calmes, sourdines, essai, webhook. Les canaux eux-mêmes n'envoient pas encore ; ce qui est réglé ici les attend.
+  // ── Les réglages : politique de canaux, heures calmes, sourdines, essai, webhook. Telegram est porté par le module des canaux ; le courriel et le webhook n'envoient pas encore, ce qui est réglé ici les attend.
   const wh = (w) => ({ enabled: !!w.declare, declare: !!w.declare, url: w.url || "", payload_template: w.modele || "", headers: {} });
   P("/api/notif/politique", null, {
     faire: async (req, agir) => {

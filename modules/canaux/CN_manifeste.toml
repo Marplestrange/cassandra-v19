@@ -6,25 +6,26 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : canaux
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f80f50
+# VERSION CN : 0.2.0  #a362ab
 # VERSION EC : néant
 # EC LIÉES   : néant
-# RÔLE       : Les canaux Telegram : l'état du client et le miroir (porter ses conversations sur Telegram, par compte). Le miroir est ÉTEINT PAR DÉFAUT, délibérément : relier Telegram pour recevoir des alertes n'est pas consentir à y voir surgir ses conversations. Différé : la connexion MTProto/Telethon et la session (qui ne vit QUE dans le coffre), l'envoi et la réception.
+# RÔLE       : Les canaux : porter une notification hors de la cloche quand la politique de son destinataire le demande (Telegram aujourd'hui ; le courriel et le webhook disent ce qu'il leur manque), et le miroir Telegram (ses conversations répétées sur Telegram, par compte). Le miroir est ÉTEINT PAR DÉFAUT, délibérément : relier Telegram pour recevoir des alertes n'est pas consentir à y voir surgir ses conversations. Différé : la connexion MTProto/Telethon et la session (qui ne vit QUE dans le coffre).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f80f50 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=a362ab ▼▼▼
 [module]
 id = "canaux"
 nom = "Canaux"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
-description = "Les canaux Telegram : l'état du client et le miroir (porter ses conversations sur Telegram, par compte). Le miroir est ÉTEINT PAR DÉFAUT, délibérément : relier Telegram pour recevoir des alertes n'est pas consentir à y voir surgir ses conversations. Différé : la connexion MTProto/Telethon et la session (qui ne vit QUE dans le coffre), l'envoi et la réception."
+description = "Les canaux : porter une notification hors de la cloche quand la politique de son destinataire le demande (Telegram aujourd'hui ; le courriel et le webhook disent ce qu'il leur manque), et le miroir Telegram (ses conversations répétées sur Telegram, par compte). Le miroir est ÉTEINT PAR DÉFAUT, délibérément : relier Telegram pour recevoir des alertes n'est pas consentir à y voir surgir ses conversations. Différé : la connexion MTProto/Telethon et la session (qui ne vit QUE dans le coffre)."
 confiance = "interne"
 famille = "canaux"
 groupe = "parametres"
 proprietaire = "cassandra"
 importance = "optionnel"
-sans = "Plus de miroir des conversations sur Telegram ; l'état du client n'est plus suivi."
+sans = "Les notifications ne sortent plus de la cloche : plus d'alerte sur Telegram, même critique. Plus de miroir des conversations."
+requiert = ["notifications"]             # il écoute « notification.emise » et lui demande la politique ; telegram, lui, reste facultatif (sans lui, rien ne part et la file le dit)
 
 [[droits]]
 id = "utiliser"
@@ -40,9 +41,38 @@ sensible = true
 type = "canal_pref"
 libelle = "Une préférence de canal"
 
+[[objets]]
+type = "livraison"
+libelle = "Une notification à porter à un compte par un canal : en attente (et pourquoi), livrée, tue ou en échec"
+
+# La politique (niveau, heures calmes, sourdines) est jugée par notifications : ce module la demande (« notifications.livraison ») et porte.
+[evenements]
+emet = ["livraison.faite", "livraison.echouee"]
+ecoute = ["notification.emise"]
+
+# Deux moteurs, parce qu'un moteur sur événement tourne au nom du compte de l'événement : il ne pourrait écrire qu'à celui-là.
+# « noter » range ; « livrer », périodique, agit sous le compte « noyau » et porte à chacun. La file porte aussi ce qui doit attendre.
+[[moteurs]]
+id = "noter"
+libelle = "Range chaque notification émise dans la file des livraisons (n'envoie rien)"
+mode = "evenement"
+sur = ["notification.emise"]
+duree_max_s = 20
+asynchrone = true                        # en file : deux notifications émises au même instant sont rangées toutes les deux (un moteur synchrone déjà occupé laisserait passer la seconde)
+
+[[moteurs]]
+id = "livrer"
+libelle = "Porte ce qui est dû : demande à notifications qui reçoit quoi et ce qui le retient, puis confie le message au robot Telegram du destinataire"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 120
+
 [permissions]
 stockage = true
 racine = true
+lectures = true                          # « notifications.livraison » (la politique, par notification) et « telegram.etat » (mon robot est-il prêt ?)
+agir = true
+agir_moteur = ["telegram.prevenir"]      # la seule chose que le moteur fait sortir, par la porte que telegram lui réserve
 
 [[racine]]
 id = "connecter"
@@ -62,6 +92,17 @@ droit = "utiliser"
 [[capacites]]
 id = "etat"
 libelle = "L'état du canal : le client est-il connecté, et le miroir est-il allumé pour ce compte"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "portes"
+libelle = "Pour mon compte : quels canaux portent vraiment mes notifications, ce qui est branché pour moi, ce qu'il manque aux autres, et le sort de mon dernier essai"
+risque = "lecture"
+
+[[capacites]]
+id = "livraisons"
+libelle = "Ce qui est parti hors de la cloche, ce qui attend et pourquoi, ce qui a échoué : mes livraisons, ou toutes pour un administrateur"
 risque = "lecture"
 droit = "utiliser"
 

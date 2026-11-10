@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : telegram
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ac7464
+# VERSION CN : 0.2.0  #6b5011
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le robot Telegram d'un compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ac7464 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=6b5011 ▼▼▼
 """Le robot Telegram d'un compte.
 
 Porté de la V18 (`tg_*`), avec ses leçons :
@@ -28,6 +28,9 @@ Porté de la V18 (`tg_*`), avec ses leçons :
   - un échec d'envoi est un RÉSULTAT ({ok: false}), jamais une exception : l'apprentissage des paliers compte les échecs d'une capacité, et le refus d'un seul
     robot ne doit pas faire redescendre l'envoi de tous les comptes ;
   - le jeton ne sort jamais (ni de l'état, ni du journal, ni d'un message d'erreur).
+
+Deux portes vers le même robot : « envoyer » (une personne par son propre robot, ou un agent qui le RACONTE d'abord) et « prevenir » (le moteur des canaux, qui
+porte une notification que la politique du destinataire demande ; elle part seule, et rien d'autre que ce moteur ne peut l'appeler).
 """
 from __future__ import annotations
 
@@ -255,6 +258,10 @@ def brancher(ctx):
         t = str(texte or "").strip()
         if not t:
             raise ValueError("message vide")
+        return porter(c, cible_compte, t)
+
+    def porter(c, cible_compte, t):
+        """Le seul chemin vers Telegram, pour « envoyer » comme pour « prevenir » : le robot de CE compte, son destinataire, et un résultat, jamais une exception."""
         l = lien(cible_compte)
         if not l or not l["actif"]:
             return {"ok": False, "cause": "sans-robot", "erreur": "Telegram n'est pas configuré pour ce compte : il faut créer un robot et brancher son jeton.", "compte": cible_compte}
@@ -270,6 +277,20 @@ def brancher(ctx):
         db.ecrire("INSERT INTO messages(compte, chat_id, sens, corps, expediteur, message_id, ts) VALUES (?,?,'envoye',?,?,?,?)", (cible_compte, dest, t[:TAILLE_MAX], cible_compte, mid, time.time()))
         c.emettre("telegram.envoye", objet=("telegram", cible_compte), donnees={"compte": cible_compte, "message_id": mid})
         return {"ok": True, "compte": cible_compte, "chat_id": dest, "message_id": mid}
+
+    def prevenir(c, compte="", texte=""):
+        """Porter une notification à son destinataire, pour le moteur des canaux et pour lui seul. Elle part sans être racontée (palier « auto ») parce que la
+        personne l'a déjà décidé dans sa politique de notifications ; « envoyer », elle, garde son palier : Cassandra et Itare racontent toujours avant d'écrire sur
+        Telegram. D'où l'étroitesse : un moteur de « canaux » sous le compte « noyau » (c'est le noyau qui pose `appelant`, personne ne peut le prétendre), et le robot
+        du compte destinataire, jamais un autre. Un appel d'ailleurs est un RÉSULTAT ({ok: false}), pas une exception : deux exceptions de suite feraient
+        redescendre le palier, et n'importe quel agent pourrait ainsi couper les alertes de tout le monde."""
+        if c.compte != "noyau" or c.appelant != "canaux":
+            return {"ok": False, "cause": "reserve", "erreur": "réservée au moteur des canaux : pour écrire sur Telegram, la capacité est « envoyer »", "compte": ""}
+        cible_compte = str(compte or "").strip().lower()
+        t = str(texte or "").strip()
+        if not cible_compte or cible_compte in SYSTEME or not t:
+            return {"ok": False, "cause": "vide", "erreur": "il faut un compte destinataire et un texte", "compte": cible_compte}
+        return porter(c, cible_compte, t)
 
     def prouver_envoye(c, res):
         return (not res.get("ok")) or bool(res.get("message_id"))
@@ -335,6 +356,7 @@ def brancher(ctx):
     c.implementer("detacher", detacher, prouver_detache, defaire_detache, simuler=lambda x, **_: "débrancherait le robot (webhook retiré, jeton oublié)")
     c.implementer("cible_poser", cible_poser, prouver_cible, defaire_cible, simuler=lambda x, valeur="", **_: "déclarerait %s comme destinataire (après essai auprès de Telegram)" % (valeur or "aucun"))
     c.implementer("envoyer", envoyer, prouver_envoye, defaire_envoye, simuler=lambda x, compte="", **_: "enverrait un message Telegram à %s" % (compte or "ce compte"))
+    c.implementer("prevenir", prevenir, prouver_envoye, defaire_envoye, simuler=lambda x, compte="", **_: "porterait une notification sur le Telegram de %s" % (compte or "ce compte"))
     c.implementer("recevoir", recevoir, prouver_recu, defaire_recu, simuler=lambda x, **_: "rangerait un message reçu")
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

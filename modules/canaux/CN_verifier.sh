@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : canaux
 # ZONE       : CN
-# VERSION CN : 0.1.0  #91e8ad
+# VERSION CN : 0.2.0  #91e8ad
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Canaux vérifie, À ROOT : la commande de connexion est-elle posée et exécutable ?
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=91e8ad ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=91e8ad ▼▼▼
 # Canaux vérifie, À ROOT : la commande de connexion est-elle posée et exécutable ?
 set -eu
 [ -x "/usr/libexec/cassandra/canaux/connecter" ] || { echo "canaux : connecter absent" >&2; exit 1; }

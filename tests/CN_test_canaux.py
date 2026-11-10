@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #18701d
+# VERSION CN : 0.1.0  #f2e378
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des canaux : le miroir (éteint par défaut, réversible).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=18701d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f2e378 ▼▼▼
 """Bancs des canaux : le miroir (éteint par défaut, réversible)."""
 import shutil
 import sys
@@ -34,12 +34,12 @@ class Monde(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         base = Path(self.tmp.name)
         mods = base / "modules"
-        for m in ("canaux", "droits", "comptes"):
+        for m in ("canaux", "notifications", "droits", "comptes"):       # canaux requiert notifications : il écoute ce qu'il émet
             shutil.copytree(RACINE / "modules" / m, mods / m, ignore=shutil.ignore_patterns("__pycache__"))
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
         self.n.etat_modules.poser("canaux", installe=True, par="test")   # le module a un script d'installation
-        for m in ("droits", "comptes", "canaux"):
+        for m in ("droits", "comptes", "notifications", "canaux"):
             self.assertTrue(self.n.activer(m)["ok"], m)
         self.ctx = self.n.executeur.contextes["canaux"]
 
