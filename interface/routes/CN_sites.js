@@ -6,16 +6,17 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8e983b
+// VERSION CN : 0.1.0  #a7cee7
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8e983b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a7cee7 ▼▼▼
 /* Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
    la lecture passe telle quelle ; les gestes rendent {ok, reason} comme l'écran les lit.
-   /api/sites/act : vérifier (la sonde) et renouveler le certificat (par le panneau, accord exigé) ; redémarrer et journaux demandent la racine du panneau : dits tels quels. */
+   /api/sites/act : vérifier (la dernière mesure de la sonde) et renouveler le certificat (par le panneau, confirmation exigée) ; redémarrer et journaux demandent la racine du panneau : dits tels quels.
+   Toutes les heures rendues à l'écran sont à l'heure du serveur (ts) : une seule horloge sur la page. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
   const ok = (x) => Object.assign({ ok: true }, x);
@@ -24,10 +25,10 @@
   // Le module parle français (domaine, code, ms, ssl_jours), l'écran V18 anglais (domain, http_code, response_ms, ssl_days).
   const SITE = { domaine: "domain", code: "http_code", ms: "response_ms", ssl_jours: "ssl_days", ssl_etat: "ssl_state", proprietaire_panneau: "fp_compte", mesure: "sonde_ts" };
   const site18 = (x) => { const o = CASS.cles(x, SITE); o.sonde = { up: x.up, http_code: x.code, response_ms: x.ms, ssl_days: o.ssl_days, ts: x.mesure }; return o; };
-  P("/api/sites/mine", "sites.vue", { args: () => ({}), sortie: (x) => ok(Object.assign({}, x, { sites: (x.sites || []).map(site18), releve: new Date().toISOString().slice(0, 19).replace("T", " ") })) });
   // L'heure comme l'écran la lit (le module date en secondes depuis 1970).
   const z = (n) => String(n).padStart(2, "0");
   const ts = (t) => { if (typeof t !== "number") return t || ""; const d = new Date(t * 1000); return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + " " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()); };
+  P("/api/sites/mine", "sites.vue", { args: () => ({}), sortie: (x) => ok(Object.assign({}, x, { sites: (x.sites || []).map(site18), releve: ts(Date.now() / 1000) })) });
   const ligne18 = (l) => Object.assign({}, l, { ts: ts(l.ts), site: l.domaine });
   P("/api/site/journal", "sites.journal", { args: (r) => ({ domaine: String(r.body.domain || ""), limite: +(r.body.limite || 60) }), sortie: (x) => ok({ lignes: (x.lignes || []).map(ligne18) }) });
   P("/api/site/fiche", "sites.fiche", {
@@ -50,7 +51,7 @@
   P("/api/sites/demande/repondre", "sites.repondre_demande", { args: (r) => ({ id: +r.body.id, decision: String(r.body.decision || ""), reponse: String(r.body.reponse || "") }), sortie: ok });
 
   // L'accord de restauration (le propriétaire autorise un administrateur pour quelques heures) et les rattachements d'un site (projet, contact, client…).
-  const quand = (t) => (t ? new Date(t * 1000).toISOString().replace("T", " ").slice(0, 19) : "");
+  const quand = (t) => (t ? ts(t) : "");
   P("/api/site/accord", "sites.accorder", { args: (r) => ({ domaine: dom(r.body), geste: String(r.body.geste || "restaurer"), heures: +(r.body.heures || 24) }), sortie: (x) => ok(Object.assign({}, x, { jusqu_a: quand(x.jusqu_a) })) });
   P("/api/site/link/save", "sites.lier", { args: (r) => ({ domaine: dom(r.body), genre: String(r.body.kind || ""), ref: String(r.body.ref || ""), note: String(r.body.note || "") }), sortie: ok });
   P("/api/site/link/delete", "sites.delier", { args: (r) => ({ domaine: dom(r.body), genre: String(r.body.kind || ""), ref: String(r.body.ref || "") }), sortie: ok });
@@ -69,16 +70,25 @@
     const plans = ((await agir("fastpanel.plans", {})) || []);
     if (!plans.length) throw new Error("aucun plan de sauvegarde dans le panneau");
     const c = String(compte || "").toLowerCase();
-    return plans.find((p) => String(p.user_name || p.username || "").toLowerCase() === c) || plans[0];
+    const sien = plans.find((p) => String(p.user_name || p.username || "").toLowerCase() === c);
+    return { plan: sien || plans[0], sien: !!sien };
+  }
+  // Les copies de CE compte du panneau, et elles seules. Dans son propre plan, une copie sans compte nommé est la sienne ; dans le plan commun
+  // (aucun plan à son nom), seules celles qui le nomment : sinon la fiche d'un site montrerait, et laisserait restaurer, les copies d'un autre compte.
+  async function copiesDuCompte(agir, compte) {
+    const c = String(compte || "").toLowerCase();
+    if (!c) throw new Error("propriétaire du panneau inconnu pour ce site : aucune copie ne peut lui être rattachée");
+    const { plan, sien } = await planDuCompte(agir, c);
+    const r = await agir("fastpanel.copies_du_plan", { plan_id: +plan.id });
+    const copies = (r.copies || []).filter((x) => (x.compte ? String(x.compte).toLowerCase() === c : sien));
+    return { plan, copies };
   }
   P("/api/site/copies", null, { faire: async (req, agir) => {
     const d = dom(req.body);
     try {
       if (!d) return { ok: false, reason: "domaine requis" };
       const f = await sitePanneau(agir, d), compte = (f.site && f.site.proprietaire_panneau) || "";
-      const plan = await planDuCompte(agir, compte);
-      const c = await agir("fastpanel.copies_du_plan", { plan_id: +plan.id });
-      const copies = (c.copies || []).filter((x) => !x.compte || !compte || String(x.compte).toLowerCase() === String(compte).toLowerCase());
+      const { plan, copies } = await copiesDuCompte(agir, compte);
       return ok({ copies, plan: { id: plan.id, name: plan.name } });
     } catch (e) { return echec(e); }
   } });
@@ -90,6 +100,9 @@
       if (!f.mien && !f.accord) return new Response(JSON.stringify({ ok: false, reason: "accord du propriétaire requis : il l'autorise depuis sa fiche, pour 24 h" }), { status: 403, headers: { "Content-Type": "application/json" } });
       const copie = String(b.copie || "").trim();
       if (!copie) return { ok: false, reason: "copie requise" };
+      // L'identifiant vient du navigateur : il doit être l'une des copies de ce compte, pas celle d'un autre.
+      const { copies } = await copiesDuCompte(agir, compte);
+      if (!copies.some((x) => String(x.id) === copie)) return new Response(JSON.stringify({ ok: false, reason: "cette copie n'est pas l'une de celles de ce compte du panneau" }), { status: 403, headers: { "Content-Type": "application/json" } });
       const c = confirmer(req, "Restaure la copie " + copie + " sur le compte " + (compte || "?") + " du panneau : les fichiers et bases actuels de CE COMPTE (tous ses sites) sont remplacés par ceux de la copie.");
       if (c) return c;
       const r = await agir("fastpanel.copie_restaurer", { copie_id: copie, compte, forcer: !!b.force_clear });
@@ -106,8 +119,13 @@
     try {
       if (!d) return { ok: false, reason: "domaine requis" };
       if (req.body.envoyer) return { ok: false, reason: "l'envoi du rapport par courrier n'est pas encore porté : le rapport s'affiche ici" };
-      const mois = String(req.body.mois || "").slice(0, 7) || new Date().toISOString().slice(0, 7);
-      const h = await agir("sites.historique", { domaine: d, heures: 24 * 31 });
+      const mois = String(req.body.mois || "").slice(0, 7) || ts(Date.now() / 1000).slice(0, 7);
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mois)) return { ok: false, reason: "mois illisible : AAAA-MM" };
+      // Les chiffres sont ceux DU MOIS demandé (du 1er au 1er suivant, ou jusqu'à maintenant s'il est en cours), pas ceux des trente et un derniers jours.
+      const an = +mois.slice(0, 4), m = +mois.slice(5, 7);
+      const debut = new Date(an, m - 1, 1).getTime() / 1000, fin = Math.min(new Date(an, m, 1).getTime() / 1000, Date.now() / 1000);
+      if (debut >= fin) return { ok: false, reason: "ce mois n'a pas commencé" };
+      const h = await agir("sites.historique", { domaine: d, debut, fin });
       const ev = (h.evenements || []).filter((e) => ts(e.ts).slice(0, 7) === mois);
       let sauvegardes = [];
       try {
@@ -123,15 +141,16 @@
         phrase: d + " en " + mois + " : " + (dispo == null ? "pas de sonde" : dispo.toFixed(2) + " % de disponibilité") + " sur " + (h.mesures || 0) + " mesures, " + pannes + " coupure(s) commencée(s), " + reussies + " sauvegarde(s) réussie(s)." });
     } catch (e) { return echec(e); }
   } });
-  // Les gestes d'un site : vérifier (la sonde dit l'état), renouveler le certificat (par le panneau, accord exigé : le quota de l'autorité s'épuise).
+  // Les gestes d'un site : vérifier (la dernière mesure de la sonde dit l'état), renouveler le certificat (par le panneau, confirmation exigée : le quota de l'autorité s'épuise).
   P("/api/sites/act", null, { faire: async (req, agir) => {
     const d = dom(req.body), a = String(req.body.action || "").trim();
     try {
       if (!d) return { ok: false, error: "domaine requis" };
       const f = await agir("sites.fiche", { domaine: d });
       if (a === "status") {
-        const s = f.site || {}, up = s.up !== false && s.code != null && s.code < 500;
-        return { ok: !!s.code, message: d + (s.code ? " répond " + s.code + " en " + (s.ms == null ? "?" : s.ms) + " ms" : " ne répond pas") + (s.ssl_jours != null ? " · certificat : " + s.ssl_jours + " j" : ""), sonde: { code: s.code, ms: s.ms, ssl_days: s.ssl_jours } };
+        // « ok » dit que le site est en ligne selon la sonde, pas seulement qu'il a rendu un code : un 500 répond, il ne marche pas.
+        const s = f.site || {};
+        return { ok: s.up === true, message: d + (s.code ? " répond " + s.code + " en " + (s.ms == null ? "?" : s.ms) + " ms" : " ne répond pas") + (s.ssl_jours != null ? " · certificat : " + s.ssl_jours + " j" : ""), sonde: { code: s.code, ms: s.ms, ssl_days: s.ssl_jours } };
       }
       if (f.hors_panneau) return new Response(JSON.stringify({ ok: false, error: "hors panneau : ce geste n'existe pas pour un site déclaré à la main" }), { status: 400, headers: { "Content-Type": "application/json" } });
       if (a === "ssl_renew") {

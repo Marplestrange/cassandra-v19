@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.1.1  #4ecba0
+# VERSION CN : 0.1.2  #5195c7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=4ecba0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=5195c7 ▼▼▼
 [module]
 id = "sites"
 nom = "Sites"
-version = "0.1.1"
+version = "0.1.2"
 noyau_min = "0.1.0"
 description = "Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes."
 confiance = "interne"
@@ -45,6 +45,7 @@ defaut = 3000
 minimum = 500
 maximum = 60000
 portee = "societe"
+
 [[reglages]]
 id = "delai_sonde_s"
 libelle = "Délai d'attente d'une requête de la sonde, en secondes"
@@ -52,6 +53,29 @@ type = "entier"
 defaut = 8
 minimum = 2
 maximum = 60
+portee = "societe"
+
+[[reglages]]
+id = "echecs_avant_panne"
+libelle = "Nombre de mesures ratées de suite avant de dire un site en panne (1 : dès la première)"
+type = "entier"
+defaut = 2
+minimum = 1
+maximum = 5
+portee = "societe"
+
+[[reglages]]
+id = "proteges_en_ligne"
+libelle = "Tenir pour en ligne un site qui répond 401 ou 403 (site protégé par un mot de passe)"
+type = "booleen"
+defaut = false
+portee = "societe"
+
+[[reglages]]
+id = "sonde_interne"
+libelle = "Laisser la sonde interroger des adresses internes (réseau privé, boucle locale) : à n'ouvrir que si des sites suivis y vivent vraiment"
+type = "booleen"
+defaut = false
 
 [[reglages]]
 id = "retention_j"
@@ -61,6 +85,7 @@ defaut = 90
 minimum = 7
 maximum = 730
 portee = "societe"
+
 [[reglages]]
 id = "ssl_court_j"
 libelle = "Jours restants sous lesquels le certificat d'un site est signalé"
@@ -69,6 +94,7 @@ defaut = 21
 minimum = 3
 maximum = 90
 portee = "societe"
+
 [evenements]
 emet = ["site.panne", "site.retour", "site.declare", "site.retire", "site.attribue", "site.transfere", "site.demande", "site.adossement", "site.accord"]
 
@@ -145,7 +171,7 @@ risque = "lecture"
 id = "declarer"
 libelle = "Déclarer un site qu'on possède hors du panneau : la sonde le suivra"
 risque = "faible"
-perimetre = ["un nom de domaine valide, pas déjà à un autre compte, pas géré par le panneau"]
+perimetre = ["un nom de domaine valide, pas déjà à un autre compte, pas géré par le panneau", "ni un nom partagé (github.io, gouv.fr…) ni le parent du site d'un autre compte"]
 preuve = "relire la ligne du site : domaine et compte conformes"
 retour = "retirer ce site de la liste de ce compte"
 paliers = ["raconter", "auto", "maitre"]
@@ -155,7 +181,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "retirer"
 libelle = "Retirer un site déclaré de la liste d'un compte (jamais un site du panneau)"
 risque = "faible"
-perimetre = ["un site déclaré par ce compte", "son historique est gardé"]
+perimetre = ["un site déclaré par ce compte", "son historique est gardé", "ses liens sont mis de côté, ses accords tombent, sa demande ouverte se ferme"]
 preuve = "le site n'est plus dans la liste du compte"
 retour = "redéclarer le site au même compte"
 paliers = ["raconter", "auto", "maitre"]
@@ -177,7 +203,7 @@ id = "transferer"
 libelle = "Faire passer un site d'un compte à un autre"
 risque = "moyen"
 droit = "administrer"
-perimetre = ["un site déjà attribué ou déclaré", "un compte destinataire connu"]
+perimetre = ["un site déjà attribué ou déclaré", "un compte destinataire connu", "les liens, accords et demande de l'ancien compte ne suivent pas"]
 preuve = "le site est au compte destinataire et plus à l'ancien"
 retour = "remettre le site à l'ancien compte"
 paliers = ["raconter", "auto"]
@@ -209,7 +235,7 @@ qui = ["humain", "cassandra"]
 id = "accorder"
 libelle = "Le propriétaire autorise l'administrateur à faire un geste lourd sur son site, pour un temps limité"
 risque = "faible"
-perimetre = ["un site à ce compte", "de 1 heure à 7 jours"]
+perimetre = ["un site à ce compte", "un geste parmi restaurer, supprimer, transferer, migrer", "de 1 heure à 7 jours", "l'accord tombe si le site change de compte"]
 preuve = "l'accord est valable pour ce site et ce geste"
 retour = "révoquer cet accord"
 paliers = ["raconter", "auto"]
@@ -237,9 +263,8 @@ qui = ["humain", "compte", "cassandra", "itare"]
 
 [permissions]
 stockage = true
-droits = true
 lectures = true
-reseau = ["les sites suivis, en HTTPS sur le port 443 (une requête GET, 2 Ko lus)"]
+reseau = ["les sites suivis (et leur « www. »), en HTTPS sur le port 443 : une requête GET, 2 Ko lus, les redirections suivies seulement vers le même site ; jamais une adresse interne, sauf réglage « sonde_interne »"]
 
 [[capacites]]
 id = "serie"
@@ -263,7 +288,7 @@ capacite = "serie"
 unite = "ms"
 famille = "Sites"
 groupee = true
-description = "Durée de réponse mesurée, site par site. Au-delà de 3 s, le visiteur considère le site en panne."
+description = "Durée de réponse mesurée, site par site. Au-delà du seuil réglé (3 s par défaut), le visiteur considère le site en panne."
 
 [[mesures]]
 id = "site_ssl"

@@ -1,0 +1,15 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Migration 002_miroir.sql
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : sites
+# ZONE       : CN
+# VERSION CN : 0.1.2  #3064b4
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Migration 002_miroir.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)
+# MÉTHODE    : à compléter par l'auteur
+# ══════════════════════════════════════════════════════════════════════════════
+# FICHIER    : CN_002_miroir.sql  (empreinte du contenu #3064b4)
