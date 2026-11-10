@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : sites -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.3.0  #000000 -->
+<!-- VERSION CN : 0.4.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : sites — les sites web suivis par Cassandra -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.3.0 empreinte=036e18 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.4.0 empreinte=438e95 ▼▼▼ -->
 # sites — les sites web suivis par Cassandra
 
 Porté de la V18 (`sites_vue`, `site_fiche`, `site_pass`, `site_history`, `site_availability`, demandes/accords, liens, journal), lu en entier.
@@ -49,6 +49,12 @@ Sites ne remesure rien de ce qu'un autre module tient : il le lit. Ces lectures 
 - **Avis au propriétaire** : le détecteur `panne_proprietaire` ouvre un constat adressé au compte du propriétaire (le constat `panne` ne va qu'aux administrateurs).
 Une source absente ou muette laisse sa rubrique vide et le dit (`sources`) : rien n'est inventé, et Sites fonctionne sans aucune d'elles.
 
+## Une seule alerte de panne avec le Sensorium
+Quand le Sensorium suit un site (il est servi par la machine) et le voit tomber lui aussi, il en fait son alerte : le détecteur `panne` de Sites se tait alors pour les administrateurs — une seule alerte suffit. L'incident, lui, s'ouvre toujours ici, et le propriétaire reste prévenu par Sites (le Sensorium ne prévient que les administrateurs). Si le Sensorium voit le site répondre depuis la machine alors que la sonde de Sites, qui passe par son nom public, ne l'atteint pas, seul Sites le sait : il alerte, et dit où chercher (DNS, réseau, pare-feu, certificat). Un site hébergé ailleurs, que le Sensorium ne suit pas, s'alerte comme avant. La page d'un incident montre ce que le Sensorium voit depuis la machine et, pour qui en a le droit, ses gestes de réparation (`sensorium.reparer`) : Sites n'en porte aucun.
+
+## L'aperçu d'un site
+Une fois par jour et par site qui répond (quatre au plus par tour de sonde), Sites lit les 96 premiers Ko de la page d'accueil et en garde le titre, la description, la langue, le générateur, l'icône et — si la page en déclare une sur son propre nom — l'image de présentation (table `apercus`). Les images sont lues en HTTPS, sur le site lui-même seulement, bornées (24 Ko pour l'icône, 200 Ko pour l'image) et gardées en « data: » : l'interface n'affiche aucune image venue d'ailleurs. Pour un site hébergé ailleurs, où le Sensorium n'entre pas, le générateur déclaré par la page donne le CMS. Ce n'est pas une capture d'écran : celle-ci demanderait un navigateur sans interface sur la machine.
+
 ## Qui est concerné
 `concerne()` dit si un compte a quelque chose à voir ici (un site, une déclaration à prouver, ou il administre). Le module Affichage s'en sert : le menu ne montre « Sites » qu'à ceux-là.
 
@@ -68,7 +74,10 @@ La veille des échéances, l'alerte, le seuil et le quota d'émission sont l'aff
 - **Dépannage par Cassandra** : l'écran écrit la demande dans la conversation (elle lit `sites.incident`, propose un plan, attend l'accord) ; les gestes de réparation eux-mêmes (relancer PHP, recharger nginx) restent ceux du Sensorium et de Sécurité.
 - **Ce que le Sensorium n'expose pas par site** : attaques et erreurs 5xx (ses tables les ventilent par site, aucune lecture ne les rend), prévisions (elles valent pour une machine, pas pour un site). À ouvrir côté Sensorium avant de les montrer ici.
 - **Maintenance posée par un propriétaire sans le droit `sensorium.agir`** : il voit la fenêtre, il ne la pose pas ; pour une panne, il lui reste « panne connue ».
-- **Une seule sonde** : Sites et le Sensorium mesurent encore chacun la réponse d'un site ; l'alignement sur le Sensorium est le lot suivant.
+- **Une seule mesure** : l'alerte est unique (voir plus haut), mais Sites et le Sensorium interrogent encore chacun le site. Le Sensorium ne chronomètre pas la réponse et ne suit que les sites servis par la machine : tant qu'il ne fait ni l'un ni l'autre, Sites garde sa mesure (durée, historique, sites hébergés ailleurs).
+- **Capture d'écran** : il n'y a pas de navigateur sans interface sur la machine ; l'aperçu (titre, icône, image déclarée par la page) en tient lieu.
+- **Gestes du panneau par site** : le module FastPanel sait renouveler un certificat et restaurer une copie (portés ici) ; il n'a ni « sauvegarder maintenant », ni « analyser maintenant », ni changement de version de PHP, ni mise en pause d'un site. Ils demandent une commande root à table fermée côté FastPanel avant de paraître ici.
+- **Avis par courriel ou Telegram** : les constats de Sites sont de niveau « critique » et suivent la politique de chacun, mais aucun canal autre que la cloche ne livre encore (le module des canaux n'écoute pas `notification.emise`). C'est son affaire, pas celle de Sites.
 - **Rapport mensuel par courriel** (`site_rapport*`) : attend le module courrier.
 - **Captures d'écran / vignettes**, **détection du CMS** (`site_thumbnail`, `site_cms`) : à porter avec leur préalable (navigateur sans interface, lecture des fichiers du site).
 - **Vigilances d'analyse antivirus et de sauvegarde par site** : attendent les scans du panneau (`fp_scan_*`) ; l'audit des sauvegardes existe déjà côté `fastpanel`.

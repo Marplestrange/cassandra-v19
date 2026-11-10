@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b2cc6b
+// VERSION CN : 0.1.0  #a1df81
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages du module sites (vue d'ensemble, tous les sites, la page d'un site, alertes, disponibilité, demandes, journal) ; ses pages sont les sous-entrées de « Sites » dans le menu de gauche
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.sites) qui remplace l'onglet V18 « mysites » ; tout vient des capacités sites.* ; l'état vit hors de la scène, car le shell la redessine à chaque ouverture ; window.stVue reçoit la page demandée par le menu, window.stOpen ouvre un site depuis un autre écran
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b2cc6b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a1df81 ▼▼▼
 // Sites : l'écran du module. Il remplace l'onglet V18 « mysites » ; ses pages sont les sous-menus de « Sites » dans le menu de gauche
 // (le rail interne de l'ancien écran a disparu). Lot 1 : ce que les capacités sites.* savaient déjà rendre. Lot 2 : les incidents (une panne est un objet
 // qu'on dépanne), le calendrier d'un site, les sociétés, la preuve de propriété, les objectifs et les réglages.
@@ -63,6 +63,7 @@
     ".si input[type=text],.si select,.kit-m input[type=text],.kit-m select,.kit-m textarea{font:13.5px 'Inter',system-ui,sans-serif;border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:7px 11px;max-width:100%}.kit-m textarea{width:100%;min-height:70px}.kit-m .champ{display:grid;gap:4px}.kit-m .champ label{font:600 12.5px 'Inter',sans-serif;color:var(--txt-soft)}" +
     ".si .grp{font:600 11px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint);margin:10px 2px 2px}" +
     ".si .barre input[data-note]{flex:1;min-width:180px}" +
+    ".si .vg img{width:26px;height:26px;object-fit:contain;border-radius:5px}.si .vg.gd img{width:40px;height:40px}.si .apv{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.si .apv img{max-width:260px;max-height:150px;border-radius:10px;border:1px solid var(--line)}.si .apv .sp{flex:1;min-width:200px}" +
     ".si .choix{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.si .choix>div{border:1px solid var(--line);border-radius:13px;padding:13px 14px;background:var(--surface);display:flex;flex-direction:column;gap:7px}.si .choix>div.pr{border-color:var(--accent)}.si .choix h4{margin:0}" +
     ".si .code{font:500 12.5px ui-monospace,'JetBrains Mono',Menlo,monospace;background:color-mix(in srgb,var(--txt) 6%,transparent);border-radius:9px;padding:9px 11px;overflow-wrap:anywhere;user-select:all}" +
     ".si .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.si .cal .ent{font:600 11px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint);text-align:center}" +
@@ -128,10 +129,12 @@
       (i.etat === "resolu" || i.etat === "retabli" ? "du " + esc(heure(i.debut)) + " au " + esc(heure(i.fin)) : "depuis " + esc(heure(i.debut)) + (i.pris_par ? " · " + esc(court(i.pris_par)) + " s’en occupe" : "")) + '</span><span class="cote"><span>' + esc(i.duree) + "</span><span>n° " + i.id + "</span></span></button>";
   }
   const initiales = (d) => String(d || "").split(".")[0].slice(0, 2).toUpperCase() || "?";
+  // La vignette d'un site : son icône quand la sonde a pu la lire (gardée en « data: », l'interface n'affiche rien venu d'ailleurs), ses initiales sinon.
+  const vg = (s, cl) => '<span class="vg' + (cl ? " " + cl : "") + (s.up === false ? " dg" : "") + '">' + (s.icone && /^data:image\//.test(s.icone) ? '<img src="' + esc(s.icone) + '" alt="">' : esc(initiales(s.domaine))) + "</span>";
   const sousTitre = (s) => [admin() ? ((s.comptes || []).join(", ") || (s.source === "panneau" ? "panneau · " + (s.proprietaire_panneau || "?") : "sans compte")) : "", s.php ? "PHP " + s.php : "", s.source === "panneau" ? "" : "déclaré à la main"].filter(Boolean).join(" · ") || "—";
   function ligne(s) {
     const d30 = s.dispo30;
-    return '<button class="row" data-a="site" data-d="' + esc(s.domaine) + '"><span class="vg' + (s.up === false ? " dg" : "") + '">' + esc(initiales(s.domaine)) + '</span><span class="nm"><b class="mono">' + esc(s.domaine) + "</b><small>" + esc(sousTitre(s)) + '</small><span class="pills">' + pastilles(s) + "</span></span>" +
+    return '<button class="row" data-a="site" data-d="' + esc(s.domaine) + '">' + vg(s) + '<span class="nm"><b class="mono">' + esc(s.domaine) + "</b><small>" + esc((s.titre ? s.titre + " · " : "") + sousTitre(s)) + '</small><span class="pills">' + pastilles(s) + "</span></span>" +
       '<span class="note">' + (d30 ? d30.pannes + " coupure" + (d30.pannes > 1 ? "s" : "") + (d30.indisponible_min ? " · " + esc(d30.indisponible) : "") + " sur 30 j" : "pas encore de mesure") + '</span><span class="cote"><span>' + pct(d30 && d30.disponibilite) + " · 30 j</span><span>" + (s.code == null ? "—" : s.code) + " · " + (s.ms == null ? "—" : nb(s.ms) + " ms") + "</span></span></button>";
   }
   function vigilance(v) {
@@ -231,9 +234,15 @@
       const v = await chargerVue();
       if (!v) return entete() + bandeaux();
       const dans = new Set(visibles(v.sites).map((s) => s.domaine)), vig = (v.vigilances || []).filter((x) => dans.has(x.site)), j = await lire("sites.journal", { limite: 200 });
+      // Qui est prévenu, et par où : c'est le module Notifications qui le tient (une politique par niveau, des heures calmes). Sites le montre et y renvoie.
+      const pol = await tenter("notifications.politique"), LIBC = { cloche: "la cloche", mail: "le courriel", telegram: "Telegram", webhook: "un webhook" };
+      const voulu = pol && pol.moi && pol.moi.critique ? pol.moi.critique : null, portes = pol && pol.canaux && pol.canaux.portes;
+      const prevenus = '<div class="carte"><h3>Qui est prévenu, et comment</h3><p class="note">Le propriétaire d’un site est prévenu de sa panne, et les administrateurs aussi' + (multi() ? " (les superadministrateurs pour un site sans société)" : "") + ". Une mesure ratée isolée ne prévient personne ; une panne en maintenance, dite connue, ou acceptée dans le Sensorium se tait.</p>" +
+        '<dl class="g"><dt>une panne de site</dt><dd>niveau « critique »' + (voulu ? ' <span class="note">tu as choisi de la recevoir par ' + voulu.map((x) => LIBC[x] || x).map(esc).join(", ") + "</span>" : "") + "</dd><dt>ce qui arrive vraiment</dt><dd>" + (portes ? "la cloche de Cassandra" + ' <span class="note">' + esc(portes) + "</span>" : pol ? "selon ta politique" : '<span class="note">le module Notifications ne répond pas</span>') + "</dd></dl>" +
+        '<div class="acts"><button class="btn mini" data-a="notifs">Régler mes notifications</button></div></div>';
       const coup = ((j && j.lignes) || []).filter((x) => ["panne", "retour", "decouverte"].includes(x.verbe) && dans.has(x.domaine)).slice(0, 40);
       return entete(choixSoc()) + bandeaux() + '<div class="carte"><h3>' + vig.filter((x) => x.niveau !== "info").length + " alerte(s) · " + vig.filter((x) => x.niveau === "info").length + " pour information</h3>" + (vig.length ? '<div class="rows">' + vig.map(vigilance).join("") + "</div>" : '<p class="note"><b>Rien ne demande un geste.</b></p>') + "</div>" +
-        maintenances(visibles(v.sites)) + '<div class="carte"><h3>Coupures et retours</h3>' + journalHtml(coup, true) + "</div>";
+        maintenances(visibles(v.sites)) + prevenus + '<div class="carte"><h3>Coupures et retours</h3>' + journalHtml(coup, true) + "</div>";
     },
 
     async dispo() {
@@ -275,15 +284,18 @@
       const fil = '<p class="fil"><a data-a="aller" data-f="incidents">‹ tous les incidents</a></p>';
       if (!i) return fil + '<div class="carte vide"><b>Cet incident ne s’ouvre pas</b><p class="note">' + esc(S.erreur || "incident introuvable") + "</p></div>";
       const ouvert = i.etat === "ouvert" || i.etat === "depannage", d = esc(i.domaine), s = ((S.vue && S.vue.sites) || []).find((x) => x.domaine === i.domaine) || {}, panneau = s.source === "panneau";
-      const contacts = (i.liens || []).filter((x) => x.genre === "contact").map((x) => x.ref);
+      const contacts = (i.liens || []).filter((x) => x.genre === "contact").map((x) => x.ref), vm = i.vu_de_la_machine;
+      // Les gestes de réparation sont ceux du Sensorium (il les propose quand lui-même voit la panne) ; ils restent réservés à qui en a le droit là-bas.
+      const reparations = admin() && vm && vm.alerte ? (vm.gestes || []).map((g) => '<button class="btn" data-a="reparer" data-w="' + esc(vm.cle) + '" data-g="' + esc(g.id) + '" data-l="' + esc(g.libelle) + '" data-id="' + i.id + '" data-d="' + esc(i.domaine) + '">' + esc(g.libelle) + "</button>").join("") : "";
       const tete = '<div class="carte"><div class="tete-s"><span class="vg gd' + (ouvert ? " dg" : "") + '">' + esc(initiales(i.domaine)) + '</span><div class="sp"><h1>' + d + '</h1><div class="pills">' + pillInc(i) + (i.connu_jusqu ? K.pill("panne connue jusqu’à " + heure(i.connu_jusqu), "") : "") + '</div><p class="note" style="margin-top:6px">Incident n° ' + i.id + " · " +
         (ouvert ? "depuis " + esc(i.duree) + " · début " + esc(heure(i.debut)) : "du " + esc(heure(i.debut)) + " au " + esc(heure(i.fin)) + " · " + esc(i.duree)) + (i.pris_par ? " · " + esc(i.pris_par === moi() ? "tu t’en occupes" : court(i.pris_par) + " s’en occupe") : "") + '</p></div><div class="acts"><button class="btn" data-a="site" data-d="' + d + '">La page du site</button><button class="btn" data-a="cal" data-d="' + d + '">Calendrier</button></div></div></div>';
       const mesures = (i.mesures || []).length ? '<div class="jl">' + i.mesures.map((m) => '<div><span class="t">' + esc(heure(m.ts)) + "</span>" + K.pill(m.up ? "répond" : "échec", m.up ? "ok" : "dg") + "<span>" + (m.code == null ? "sans réponse" : "HTTP " + m.code) + " · " + nb(m.ms || 0) + " ms" + (m.erreur ? " · " + esc(m.erreur) : "") + "</span></div>").join("") + "</div>" : '<p class="note">Pas de mesure récente.</p>';
       const quoi = i.etat === "resolu" ? "" : '<div class="carte"><h3>Ce qui se passe</h3><p style="font-size:15px;color:var(--txt-strong,var(--txt));margin:0">' + esc(i.en_ligne && !ouvert ? "Le site répond de nouveau. Il reste à noter ce qui s’est passé." : i.diagnostic) + "</p>" +
+        (vm ? '<div class="bandeau in"><div class="sp"><b>Vu de la machine, par le Sensorium :</b> ' + esc(vm.valeur || "?") + ". " + (!ouvert ? "" : vm.alerte ? "Lui aussi le voit tomber : la panne est dans le site, ou dans ce qui le sert." : "Lui le voit répondre : la panne est entre l’Internet et la machine — DNS, réseau, pare-feu, certificat.") + "</div></div>" : "") +
         ((i.tombes_aussi || []).length ? '<div class="bandeau al"><div class="sp"><b>' + i.tombes_aussi.length + " autre" + (i.tombes_aussi.length > 1 ? "s sites sont" : " site est") + " en panne en même temps</b> (" + i.tombes_aussi.slice(0, 4).map(esc).join(", ") + (i.tombes_aussi.length > 4 ? "…" : "") + ") : cherche d’abord une cause commune — la machine, le réseau, le DNS.</div></div>" : "") + "<h4>Les dernières mesures</h4>" + mesures + "</div>";
       const faire = !ouvert ? "" : '<div class="carte"><h3>Que faire</h3><p class="note">Dépanner, pas seulement accuser réception.</p><div class="choix">' +
         '<div class="pr"><h4>Demander à Cassandra de corriger</h4><p class="note">Elle lit le diagnostic, propose un plan et attend ton accord avant d’agir. Elle agit en ton nom, avec tes droits, jamais plus.</p><div class="acts"><button class="btn pri" data-a="cassandra" data-id="' + i.id + '">Demander un plan</button></div></div>' +
-        '<div><h4>Dépanner moi-même</h4><p class="note">Dire que tu t’en occupes, puis vérifier après chaque geste.</p><div class="acts">' + (i.gestes.prendre ? '<button class="btn" data-a="prendre" data-id="' + i.id + '">' + (i.pris_par ? "Je prends la suite" : "Je m’en occupe") + "</button>" : "") + '<button class="btn" data-a="relever" data-d="' + d + '">Relever à nouveau</button>' + (panneau && admin() ? '<button class="btn" data-a="hebergement" data-d="' + d + '">Hébergement</button>' : "") + (panneau ? '<button class="btn" data-a="site" data-d="' + d + '" data-o="heberg">Copies de sauvegarde</button>' : "") + '<button class="btn" data-a="certificats">Certificats</button></div></div>' +
+        '<div><h4>Dépanner moi-même</h4><p class="note">Dire que tu t’en occupes, puis vérifier après chaque geste.</p><div class="acts">' + (i.gestes.prendre ? '<button class="btn" data-a="prendre" data-id="' + i.id + '">' + (i.pris_par ? "Je prends la suite" : "Je m’en occupe") + "</button>" : "") + '<button class="btn" data-a="relever" data-d="' + d + '">Relever à nouveau</button>' + reparations + (panneau && admin() ? '<button class="btn" data-a="hebergement" data-d="' + d + '">Hébergement</button>' : "") + (panneau ? '<button class="btn" data-a="site" data-d="' + d + '" data-o="heberg">Copies de sauvegarde</button>' : "") + '<button class="btn" data-a="certificats">Certificats</button></div></div>' +
         '<div><h4>Confier à quelqu’un</h4><p class="note">' + (contacts.length ? "Contact rattaché au site : " + contacts.map(esc).join(", ") + "." : "Aucun contact rattaché à ce site (onglet Liens de sa page).") + '</p><div class="acts"><button class="btn" data-a="tache" data-id="' + i.id + '" data-d="' + d + '">Créer une tâche</button></div></div>' +
         '<div><h4>Le temps d’intervenir</h4><p class="note">' + (i.connu_jusqu ? "L’alerte de cette panne se tait jusqu’à " + esc(heure(i.connu_jusqu)) + ". Les mesures continuent." : "Dire que la panne est connue : son alerte se tait, l’incident reste ouvert, les mesures continuent.") + '</p><div class="acts">' + (i.connu_jusqu ? '<button class="btn" data-a="connu" data-id="' + i.id + '" data-h="0">Faire reparler l’alerte</button>' : '<button class="btn" data-a="connu" data-id="' + i.id + '" data-h="4">Connue, 4 h</button><button class="btn" data-a="connu" data-id="' + i.id + '" data-h="24">Connue, 24 h</button>') +
         (i.maintenance ? '<span class="note">En maintenance jusqu’à ' + esc(heure(i.maintenance.fin)) + ".</span>" + (admin() && i.maintenance.ce_site ? '<button class="btn" data-a="mnt-fin" data-id="' + esc(i.maintenance.id) + '">Fin de la maintenance</button>' : "") : admin() ? '<button class="btn" data-a="mnt" data-d="' + d + '" data-h="2" data-inc="' + i.id + '">Maintenance 2 h</button>' : "") + "</div></div></div></div>";
@@ -366,7 +378,8 @@
         (f.gestes.attribuer_societe ? '<button class="btn" data-a="societe" data-d="' + esc(d) + '">Société…</button>' : "") +
         (f.preuve && f.gestes.attribuer ? '<button class="btn" data-a="attester" data-d="' + esc(d) + '" data-c="' + esc(f.preuve.compte) + '">Attester</button>' : f.gestes.attribuer && !(s.comptes || []).length ? '<button class="btn" data-a="attribuer" data-d="' + esc(d) + '">Attribuer…</button>' : "") +
         (f.gestes.retirer ? '<button class="btn dng" data-a="retirer" data-d="' + esc(d) + '"' + (f.preuve ? ' data-preuve="1">Annuler la déclaration' : ">Retirer de la liste") + "</button>" : "");
-      const tete = '<div class="carte"><div class="tete-s"><span class="vg gd' + (s.up === false ? " dg" : "") + '">' + esc(initiales(d)) + '</span><div class="sp"><h1>' + esc(d) + '</h1><div class="pills">' + pastilles(s) + '</div><p class="note" style="margin-top:6px">' + (f.preuve ? "Déclaré par" : "Propriétaire") + ' : <b>' + (f.mien ? "toi" : esc((s.comptes || []).join(", ") || "aucun compte Cassandra")) + "</b>" + (s.proprietaire_panneau ? " · compte « " + esc(s.proprietaire_panneau) + " » du panneau" : "") + '</p></div><div class="acts">' + acts + "</div></div>" +
+      const ap = f.apercu || {};
+      const tete = '<div class="carte"><div class="tete-s">' + vg({ domaine: d, up: s.up, icone: ap.icone || s.icone }, "gd") + '<div class="sp"><h1>' + esc(d) + "</h1>" + (ap.titre ? '<p class="note" style="margin:2px 0 6px">' + esc(ap.titre) + "</p>" : "") + '<div class="pills">' + pastilles(s) + '</div><p class="note" style="margin-top:6px">' + (f.preuve ? "Déclaré par" : "Propriétaire") + ' : <b>' + (f.mien ? "toi" : esc((s.comptes || []).join(", ") || "aucun compte Cassandra")) + "</b>" + (s.proprietaire_panneau ? " · compte « " + esc(s.proprietaire_panneau) + " » du panneau" : "") + '</p></div><div class="acts">' + acts + "</div></div>" +
         '<div class="onglets" role="tablist">' + ONGLETS.filter((o) => (o[0] !== "heberg" || !f.hors_panneau) && (!f.preuve || o[0] === "apercu" || o[0] === "journal")).map((o) => '<button role="tab" class="' + (S.onglet === o[0] ? "on" : "") + '" aria-selected="' + (S.onglet === o[0]) + '" data-a="onglet" data-o="' + o[0] + '">' + o[1] + "</button>").join("") + "</div>";
       return fil + bandeaux() + tete + (await O[S.onglet](f, s, e)) + "</div>";
     },
@@ -383,8 +396,9 @@
           (p.dns ? "<h4>1. Par le DNS — un enregistrement TXT</h4><div class=\"code\">" + esc(p.dns.nom) + "   TXT   \"" + esc(p.dns.valeur) + '"</div><h4>2. Ou par un fichier — à déposer sur le site</h4><div class="code">' + esc(p.fichier.adresse) + "   →   " + esc(p.fichier.contenu) + '</div><p class="note">L’une des deux suffit. Un enregistrement DNS met parfois quelques minutes à paraître.</p>' : '<p class="note">Le jeton à poser n’est montré qu’au compte qui a déclaré le site.</p>') +
           (f.gestes.prouver ? '<div class="acts"><button class="btn pri" data-a="prouver" data-d="' + esc(f.domaine) + '">Vérifier maintenant</button></div>' : "");
       }
-      const vo = f.voisins || {}, mnt = vo.maintenance, tr = vo.trafic, nm = vo.nom;
-      return (mnt ? '<div class="bandeau in"><div class="sp"><b>En maintenance jusqu’à ' + esc(heure(mnt.fin)) + ".</b> " + esc(mnt.motif || "Fenêtre posée dans le Sensorium") + (mnt.par ? " · par " + esc(court(mnt.par)) : "") + ". Ses alertes se taisent, les mesures continuent." + (mnt.ce_site ? "" : " Elle couvre plus que ce site.") + "</div>" + (admin() && mnt.ce_site ? '<button class="btn mini" data-a="mnt-fin" data-id="' + esc(mnt.id) + '">Fin de la maintenance</button>' : "") + "</div>" : "") +
+      const vo = f.voisins || {}, mnt = vo.maintenance, tr = vo.trafic, nm = vo.nom, ap = f.apercu || {};
+      const carte = ap.image || ap.description ? '<div class="apv">' + (ap.image && /^data:image\//.test(ap.image) ? '<img src="' + esc(ap.image) + '" alt="Image de présentation du site">' : "") + '<div class="sp">' + (ap.titre ? "<b>" + esc(ap.titre) + "</b>" : "") + (ap.description ? '<p class="note">' + esc(ap.description) + "</p>" : "") + '<p class="note">Ce que la page d’accueil dit d’elle' + (ap.langue ? " (" + esc(ap.langue) + ")" : "") + ", lu le " + esc(heure(ap.ts)) + ".</p></div></div>" : "";
+      return carte + (mnt ? '<div class="bandeau in"><div class="sp"><b>En maintenance jusqu’à ' + esc(heure(mnt.fin)) + ".</b> " + esc(mnt.motif || "Fenêtre posée dans le Sensorium") + (mnt.par ? " · par " + esc(court(mnt.par)) : "") + ". Ses alertes se taisent, les mesures continuent." + (mnt.ce_site ? "" : " Elle couvre plus que ce site.") + "</div>" + (admin() && mnt.ce_site ? '<button class="btn mini" data-a="mnt-fin" data-id="' + esc(mnt.id) + '">Fin de la maintenance</button>' : "") + "</div>" : "") +
         (vo.acceptee ? '<div class="bandeau in"><div class="sp"><b>Alerte acceptée dans le Sensorium.</b> ' + esc(vo.acceptee.raison || "Sans raison notée") + (vo.acceptee.jusqu_a ? " · jusqu’au " + esc(heure(vo.acceptee.jusqu_a)) : "") + ". Une panne de ce site ne sonne pas.</div></div>" : "") +
         (inc && inc.etat !== "retabli" ? '<div class="bandeau da"><div class="sp"><b>Incident ouvert depuis ' + esc(inc.duree) + ".</b> " + esc(inc.diagnostic) + (inc.pris_par ? " " + esc(inc.pris_par === moi() ? "Tu t’en occupes." : court(inc.pris_par) + " s’en occupe.") : "") + '</div><button class="btn mini pri" data-a="incident" data-id="' + inc.id + '">Dépanner ›</button></div>' : "") +
         (inc && inc.etat === "retabli" ? '<div class="bandeau al"><div class="sp"><b>Le site répond de nouveau.</b> L’incident attend sa cause, pour ne pas la rechercher deux fois.</div><button class="btn mini pri" data-a="incident" data-id="' + inc.id + '">Clore ›</button></div>' : "") +
@@ -441,7 +455,7 @@
       // Chaque module porte ses liens : les contacts, les notes et les documents rattachés à ce site se lisent chez eux ; les projets et les machines, ici.
       const ra = f.rattaches || {}, d = esc(f.domaine), R_ = S.rat, tous = l.length + (ra.contacts || []).length + (ra.notes || []).length + (ra.documents || []).length;
       const rang = (pill, nom, sous, bouton) => '<div class="row c2">' + K.pill(pill, "") + '<span class="nm"><b>' + esc(nom) + "</b><small>" + esc(sous) + "</small></span>" + (bouton || "<span></span>") + "</div>";
-      const liste = (ra.contacts || []).map((x) => rang("contact", x.nom, [x.role && x.role !== "autre" ? x.role : "", x.societe, "dans Contacts"].filter(Boolean).join(" · "), '<button class="btn mini" data-a="rat-retirer" data-d="' + d + '" data-id="' + esc(x.id) + '">Retirer</button>')).join("") +
+      const liste = (ra.contacts || []).map((x) => rang("contact", x.nom, [x.role && x.role !== "autre" ? x.role : "", x.societe, "dans Contacts"].filter(Boolean).join(" · "), '<span class="acts"><button class="btn mini" data-a="contact" data-id="' + esc(x.id) + '">Ouvrir</button><button class="btn mini" data-a="rat-retirer" data-d="' + d + '" data-id="' + esc(x.id) + '">Retirer</button></span>')).join("") +
         (ra.notes || []).map((x) => rang("note", x.titre || x.id, "dans Notes · " + x.id)).join("") +
         (ra.documents || []).map((x) => rang("document", x.nom, [x.libelle, "dans la GED"].filter(Boolean).join(" · "))).join("") +
         l.map((x) => rang(lib(x.genre), x.ref, (x.note ? x.note + " · " : "") + heure(x.ts), '<button class="btn mini" data-a="delier" data-d="' + d + '" data-g="' + esc(x.genre) + '" data-r="' + esc(x.ref) + '">Retirer</button>')).join("");
@@ -526,7 +540,8 @@
     },
     async cassandra(b) {
       const i = await tenter("sites.incident", { id: +b.dataset.id }); if (!i) return dire("Incident illisible.", "err");
-      const t = "Le site " + i.domaine + " est en panne depuis " + i.duree + " (incident n° " + i.id + ") : " + i.diagnostic + " Lis l’incident (sites.incident), propose-moi un plan de dépannage étape par étape, et attends mon accord avant d’agir.";
+      const vm = i.vu_de_la_machine, vu = !vm ? "" : " Depuis la machine, le Sensorium dit : " + vm.valeur + (vm.alerte ? "" : " (il le voit donc répondre : le problème serait entre l’Internet et la machine)") + "." + ((vm.gestes || []).length ? " Geste de réparation qu’il propose, réservé à une personne : " + vm.gestes.map((g) => g.libelle).join(", ") + "." : "");
+      const t = "Le site " + i.domaine + " est en panne depuis " + i.duree + " (incident n° " + i.id + ") : " + i.diagnostic + vu + " Lis l’incident (sites.incident), propose-moi un plan de dépannage étape par étape en disant ce que tu peux faire toi-même et ce qui me revient, et attends mon accord avant d’agir.";
       if (typeof window.d19Demander === "function" && await window.d19Demander(t)) dire("La demande est écrite dans la conversation : relis-la, puis envoie.", "ok"); else dire("La conversation n’est pas disponible ici.", "err");
     },
     // ── le lot 3 : la maintenance (tenue par le Sensorium) et les rattachements (portés par leurs modules) ──
@@ -543,6 +558,15 @@
     },
     async "mnt-fin"(b) { if (await geste("sensorium.fenetre_annuler", { id: +b.dataset.id }, "Fenêtre annulée : les alertes reparlent.")) { await tenter("sites.voisins"); S.lu = 0; rendre(); } },
     sensorium: () => { if (typeof window.switchTab === "function") window.switchTab("sensorium"); },
+    notifs: () => { if (CASS.ouvrirEcran) CASS.ouvrirEcran("comptes:mc_alertes", "Notifications"); },
+    contact: (b) => { if (typeof window.ctOuvrirId === "function") window.ctOuvrirId(+b.dataset.id); else dire("La fiche s’ouvre dans Contacts.", "ok"); },
+    async reparer(b) {
+      if (!await K.confirmer(b.dataset.l + " ?", '<p class="note">Ce geste est celui du Sensorium, exécuté en ton nom sur la machine pour ' + esc(b.dataset.d) + ". Il est noté dans la chronologie de l’incident, puis le site est relevé.</p>", b.dataset.l, true)) return;
+      if (!await geste("sensorium.reparer", { wkey: b.dataset.w, geste: b.dataset.g }, b.dataset.l + " : fait.")) return;
+      await tenter("sites.incident_noter", { id: +b.dataset.id, texte: b.dataset.l + " (geste du Sensorium)." });
+      await tenter("sites.relever", { domaine: b.dataset.d });
+      S.lu = 0; rendre();
+    },
     async "rat-chercher"() {
       const g = S.rat.genre, q = String((R.querySelector("[data-rat-q]") || {}).value || "").trim(), bas = q.toLowerCase(), dans = (t) => !bas || String(t || "").toLowerCase().includes(bas);
       S.rat.q = q; S.rat.erreur = ""; S.rat.res = [];

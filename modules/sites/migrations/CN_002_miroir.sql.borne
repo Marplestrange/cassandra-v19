@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.3.0  #3064b4
+# VERSION CN : 0.4.0  #3064b4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 002_miroir.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

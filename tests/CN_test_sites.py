@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #78ff87
+# VERSION CN : 0.1.0  #f34898
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=78ff87 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f34898 ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -70,6 +70,9 @@ class Monde(unittest.TestCase):
         self.mod._sonder_http = lambda d, delai: self.reponses.get(d, (200, 120, ""))
         self.certs = {}
         self.mod._cert_jours = lambda d, delai: self.certs.get(d, 60)
+        self.pages, self.images = {}, {}                  # {domaine: (html, adresse)} et {adresse: « data:… »} : aucun banc ne sort sur le réseau
+        self.mod._lire_page = lambda d, delai, interne=False: self.pages.get(d, ("", ""))
+        self.mod._lire_image = lambda adresse, site, delai, interne=False, maxi=0: self.images.get(adresse, "")
         self.e = self.n.executeur.executer
 
     def lecture(self, cap, **a):
@@ -1105,6 +1108,27 @@ class Voisinage(Monde):
         self.sonde()
         self.assertEqual(len(self.detecter("panne")), 1)
 
+    def test_une_seule_alerte_de_panne_quand_le_sensorium_la_voit_aussi(self):
+        self.tomber()
+        monde = {"ok": True, "muet": False, "fenetres": [], "rows": [{"wkey": "web.bea.exemple.fr", "value": "erreur 502 (HTTP 502)", "severity": "warning", "gestes": [{"id": "nginx", "libelle": "Recharger nginx"}]}]}
+        self.voisins["sensorium.etat"] = monde
+        self.sonde()
+        self.assertEqual(self.detecter("panne"), [])                                             # le Sensorium sonne déjà : Sites ne double pas l'alerte des administrateurs
+        self.assertEqual(len(self.detecter("panne_proprietaire")), 1)                            # le propriétaire, lui, n'est prévenu que par Sites
+        i = self.ex("incident", id=1)["resultat"]
+        self.assertEqual((i["etat"], i["vu_de_la_machine"]["alerte"], i["vu_de_la_machine"]["gestes"]), ("ouvert", True, [{"id": "nginx", "libelle": "Recharger nginx"}]))
+        # depuis la machine il répond, d'ici non : seul Sites le voit, donc Sites le dit, et dit où chercher
+        monde["rows"][0].update({"value": "répond · ssl oui", "severity": "info", "gestes": []})
+        self.sonde()
+        k = self.detecter("panne")
+        self.assertEqual(len(k), 1)
+        self.assertIn("depuis la machine, le Sensorium le voit répondre", k[0]["detail"])
+        # un site que le Sensorium ne suit pas (hébergé ailleurs) : Sites alerte comme avant
+        monde["rows"].clear()
+        self.sonde()
+        self.assertEqual(len(self.detecter("panne")), 1)
+        self.assertIsNone(self.ex("incident", id=1)["resultat"]["vu_de_la_machine"])
+
     def test_les_rattachements_se_lisent_chez_ceux_qui_les_portent(self):
         self.voisins["contacts.pour_cible"] = lambda a: {"contacts": [{"id": 3, "display_name": "Zoé Martin", "company": "Hébergeur", "role": "technique"}]} if a == {"kind": "domain", "ref": "bea.exemple.fr"} else {"contacts": []}
         self.voisins["notes.de"] = lambda a: {"notes": [{"id": "N-0011", "titre": "Accès et particularités"}]} if a.get("ref") == "bea.exemple.fr" else {"notes": []}
@@ -1122,6 +1146,76 @@ class Voisinage(Monde):
         self.assertEqual((f["cms"], f["trafic"], f["nom"], f["sauvegarde"], f["maintenance"], f["sensorium_lu"]), (None, None, None, None, None, False))
         self.assertEqual(f["hebergement"]["bases"], [])
         self.assertEqual(set(f["sources"].values()), {"absent"})
+
+
+class Apercu(Monde):
+    """L'aperçu d'un site : ce que sa page dit d'elle (titre, icône, image, générateur). Il vaut aussi pour un site hors de la machine."""
+
+    PAGE = ('<!doctype html><html lang="fr"><head><title> Atelier  B&eacute;a </title><meta name="description" content="Céramique à Lyon">'
+            '<meta name=generator content="WordPress 6.4.2"><link rel="icon" href="/favicon.png" sizes="32x32"><link rel="apple-touch-icon" href="/gros.png">'
+            '<meta property="og:image" content="https://bea.exemple.fr/vitrine.jpg"></head><body>…')
+
+    def setUp(self):
+        super().setUp()
+        self.ex("declarer", domaine="bea.exemple.fr")
+        self.pages["bea.exemple.fr"] = (self.PAGE, "https://bea.exemple.fr/")
+        self.images["https://bea.exemple.fr/favicon.png"] = "data:image/png;base64,AAAA"
+        self.images["https://bea.exemple.fr/vitrine.jpg"] = "data:image/jpeg;base64,BBBB"
+
+    def apercu(self):
+        return self.ex("fiche", domaine="bea.exemple.fr")["resultat"]["apercu"]
+
+    def test_l_apercu_se_lit_dans_la_page_une_fois_par_jour(self):
+        self.sonde()
+        f = self.ex("fiche", domaine="bea.exemple.fr")["resultat"]
+        a = f["apercu"]
+        self.assertEqual((a["titre"], a["description"], a["langue"], a["generateur"]), ("Atelier Béa", "Céramique à Lyon", "fr", "WordPress 6.4.2"))
+        self.assertEqual((a["icone"], a["image"]), ("data:image/png;base64,AAAA", "data:image/jpeg;base64,BBBB"))
+        self.assertEqual(f["voisins"]["cms"], {"type": "WordPress", "version": "6.4.2", "theme": "", "extensions": None, "source": "page"})     # hors de la machine : ce que la page déclare
+        ligne = next(s for s in self.ex("vue")["resultat"]["sites"] if s["domaine"] == "bea.exemple.fr")
+        self.assertEqual((ligne["titre"], ligne["icone"], ligne["cms"]["type"]), ("Atelier Béa", "data:image/png;base64,AAAA", "WordPress"))
+        self.pages["bea.exemple.fr"] = (self.PAGE.replace("Atelier", "Boutique"), "https://bea.exemple.fr/")
+        self.sonde()
+        self.assertEqual(self.apercu()["titre"], "Atelier Béa")                                  # pas deux lectures dans la journée
+        self.ctx.stockage.ecrire("UPDATE apercus SET ts = ts - 2 * 86400")
+        self.sonde()
+        self.assertEqual(self.apercu()["titre"], "Boutique Béa")
+        self.pages.pop("bea.exemple.fr")                                                         # la page ne se lit plus : on garde l'aperçu d'avant, et on le dit
+        self.ctx.stockage.ecrire("UPDATE apercus SET ts = ts - 2 * 86400")
+        self.sonde()
+        self.assertEqual((self.apercu()["titre"], bool(self.apercu()["erreur"])), ("Boutique Béa", True))
+        self.ex("retirer", domaine="bea.exemple.fr")
+        self.sonde()
+        self.assertEqual(self.ctx.stockage.lire("SELECT 1 FROM apercus WHERE domaine='bea.exemple.fr'"), [])
+
+    def test_une_grosse_icone_n_alourdit_pas_la_liste_et_un_site_en_panne_n_est_pas_lu(self):
+        self.images["https://bea.exemple.fr/favicon.png"] = "data:image/png;base64," + "A" * 9000
+        self.reponses["pan.exemple.fr"] = (None, 8000, "délai")
+        self.pages["pan.exemple.fr"] = (self.PAGE, "https://pan.exemple.fr/")
+        self.sonde()
+        ligne = next(s for s in self.ex("vue")["resultat"]["sites"] if s["domaine"] == "bea.exemple.fr")
+        self.assertEqual(ligne["icone"], "")                                                     # trop lourde pour la liste…
+        self.assertEqual(len(self.apercu()["icone"]), 9022)                                      # … mais elle est dans la fiche
+        self.assertIsNone(self.ex("fiche", domaine="pan.exemple.fr")["resultat"]["apercu"])      # il ne répond pas : rien à lire
+
+    def test_l_en_tete_d_une_page_se_lit_sans_se_laisser_abuser(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("sites_seul", RACINE / "modules" / "sites" / "CN_module.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        t = m.tete_html(self.PAGE, "https://bea.exemple.fr/accueil/")
+        self.assertEqual((t["titre"], t["icone"], t["image"]), ("Atelier Béa", "https://bea.exemple.fr/favicon.png", "https://bea.exemple.fr/vitrine.jpg"))
+        nu = m.tete_html('<html><head><meta property="og:title" content="Sans balise titre"></head>', "https://x.exemple.fr/")
+        self.assertEqual((nu["titre"], nu["icone"], nu["image"], nu["langue"]), ("Sans balise titre", "https://x.exemple.fr/favicon.ico", "", ""))
+        self.assertEqual(m.tete_html("", "https://x.exemple.fr/"), {"titre": "", "description": "", "generateur": "", "langue": "", "icone": "", "image": ""})
+        self.assertEqual(m.tete_html("<title>" + "x" * 400 + "</title>")["titre"], "x" * 150)
+        self.assertEqual(m.cms_du_generateur("Joomla! - Open Source Content Management")["type"], "Joomla")
+        self.assertEqual(m.cms_du_generateur("Hugo 0.121.1")["version"], "0.121.1")
+        self.assertIsNone(m.cms_du_generateur("un outil maison"))
+        # une image ne se lit qu'en HTTPS et sur le site lui-même : ailleurs, rien n'est même demandé
+        self.assertEqual(m._lire_image("http://bea.exemple.fr/i.png", "bea.exemple.fr", 2), "")
+        self.assertEqual(m._lire_image("https://cdn.ailleurs.test/i.png", "bea.exemple.fr", 2), "")
+        self.assertEqual(m._lire_image("https://bea.exemple.fr.pirate.test/i.png", "bea.exemple.fr", 2), "")
 
 
 class Ecran(unittest.TestCase):

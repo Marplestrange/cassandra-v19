@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.3.0  #f267d5
+# VERSION CN : 0.4.0  #628f8a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sites.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=f267d5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=628f8a ▼▼▼
 """Le module Sites.
 
 Ce qu'il tient de la V18 (sites, site_pass, site_fiche, site_history/availability, demandes, accords, liens) et les leçons qu'il garde :
@@ -34,7 +34,9 @@ plus sa propre fiche (« comptes.moi ») pour ne pas attendre le tour suivant. L
 """
 from __future__ import annotations
 
+import base64
 import calendar
+import html
 import ipaddress
 import json
 import re
@@ -44,6 +46,7 @@ import sqlite3
 import ssl
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import timezone
 
@@ -65,7 +68,17 @@ RELEVE_MIN_S = 30               # une relève à la demande ne remesure pas un s
 OBJECTIF_DEFAUT = 99.9
 COUPURE_COURTE_PCT = 98.0       # un jour à 98 % et plus (moins d'une demi-heure perdue) est une coupure courte ; en dessous, une coupure longue
 CHEMIN_PREUVE = "/.well-known/cassandra-site.txt"
-VOISINS_S = 3600                # ce que les autres modules savent d'un site (CMS, bases, sauvegardes, échéance du nom…) se relit une fois par heure
+APERCU_S = 86400                # l'aperçu d'un site (titre, icône, image) se relit une fois par jour
+APERCUS_PAR_TOUR = 4            # et pas plus de quatre sites par tour de sonde : les mesures passent d'abord
+PAGE_MAX = 96 * 1024            # ce qu'on lit d'une page pour son en-tête
+ICONE_MAX = 24 * 1024           # une icône plus lourde n'est pas gardée
+IMAGE_MAX = 200 * 1024          # ni une image de présentation au-delà de 200 Ko
+ICONE_EN_LISTE = 8 * 1024       # dans la liste des sites, une icône n'est jointe que si elle est petite (en caractères) : la liste doit rester légère
+IMAGES_ADMISES = ("image/png", "image/jpeg", "image/gif", "image/webp", "image/x-icon", "image/vnd.microsoft.icon", "image/svg+xml")
+CMS_DECLARES = (("wordpress", "WordPress"), ("joomla", "Joomla"), ("drupal", "Drupal"), ("prestashop", "PrestaShop"), ("nextcloud", "Nextcloud"), ("typo3", "TYPO3"), ("spip", "SPIP"),
+                ("dotclear", "Dotclear"), ("ghost", "Ghost"), ("hugo", "Hugo"), ("jekyll", "Jekyll"), ("gatsby", "Gatsby"), ("wix", "Wix"), ("shopify", "Shopify"),
+                ("squarespace", "Squarespace"), ("webflow", "Webflow"), ("dolibarr", "Dolibarr"), ("matomo", "Matomo"), ("mediawiki", "MediaWiki"), ("discourse", "Discourse"))
+VOISINS_S = 3600               # ce que les autres modules savent d'un site (CMS, bases, sauvegardes, échéance du nom…) se relit une fois par heure
 NOM_COURT_J = 30                # un nom de domaine à moins de trente jours de son échéance se signale ; à moins de dix, c'est grave
 # Des noms sous lesquels vivent les sites de beaucoup de gens : les déclarer donnerait, par les sous-domaines, la vue des sites des autres.
 SUFFIXES_PARTAGES = frozenset((
@@ -263,6 +276,97 @@ def _preuve_trouvee(domaine, jeton, delai, interne=False):
     if jeton in _fichier_preuve(h, delai, interne).split():
         return "fichier"
     return ""
+
+
+def _lire_page(domaine, delai, interne=False):
+    """(texte, adresse finale) de la page d'accueil : ses 96 premiers Ko, là où vivent le titre, l'icône et les balises de présentation. ("", "") si elle ne se lit pas."""
+    h = nom_hote(domaine)
+    for hote in (h, "www." + h):
+        try:
+            if not interne and _est_interne(hote):
+                return "", ""
+            req = urllib.request.Request("https://%s/" % hote, method="GET", headers={"User-Agent": "Cassandra/site-check", "Accept": "text/html"})
+            with urllib.request.build_opener(_MemeSite(h, interne)).open(req, timeout=delai) as r:
+                if "html" not in (r.headers.get("Content-Type") or "").lower():
+                    return "", ""
+                brut = r.read(PAGE_MAX)
+                try:
+                    return brut.decode(r.headers.get_content_charset() or "utf-8", "replace"), r.geturl()
+                except LookupError:
+                    return brut.decode("utf-8", "replace"), r.geturl()
+        except Exception:
+            continue
+    return "", ""
+
+
+def _lire_image(adresse, site, delai, interne=False, maxi=ICONE_MAX):
+    """Une image du site, rendue en « data: » (l'interface n'affiche aucune image venue d'ailleurs). Seulement en HTTPS, seulement sur le site lui-même
+    (son nom ou un de ses sous-domaines), d'un type d'image connu, et bornée en taille ; "" sinon."""
+    try:
+        if not str(adresse).lower().startswith("https://"):
+            return ""
+        h = nom_hote(adresse)
+        if h != site and not h.endswith("." + site):
+            return ""
+        if not interne and _est_interne(h):
+            return ""
+        req = urllib.request.Request(adresse, method="GET", headers={"User-Agent": "Cassandra/site-check"})
+        with urllib.request.build_opener(_MemeSite(site, interne)).open(req, timeout=delai) as r:
+            genre = (r.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+            if genre not in IMAGES_ADMISES:
+                return ""
+            brut = r.read(maxi + 1)
+            if not brut or len(brut) > maxi:
+                return ""
+            return "data:%s;base64,%s" % (genre, base64.b64encode(brut).decode("ascii"))
+    except Exception:
+        return ""
+
+
+_RE_ATTRIBUT = re.compile(r"([A-Za-z_:][\w:.-]*)\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s\"'>]+))")
+
+
+def tete_html(texte, adresse=""):
+    """Ce que l'en-tête d'une page dit d'elle : {titre, description, generateur, langue, icone, image}, les adresses rendues absolues.
+    Pur : du texte en entrée, des données en sortie ; une page vide ou illisible rend des champs vides."""
+    t = texte or ""
+
+    def attributs(balise):
+        return {m.group(1).lower(): html.unescape(next((g for g in m.groups()[1:] if g is not None), "")) for m in _RE_ATTRIBUT.finditer(balise)}
+    m = re.search(r"<title[^>]*>(.*?)</title>", t, re.I | re.S)
+    titre = " ".join(html.unescape(re.sub(r"<[^>]+>", "", m.group(1))).split()) if m else ""
+    metas = {}
+    for b in re.findall(r"<meta\b[^>]*>", t, re.I):
+        a = attributs(b)
+        cle = (a.get("property") or a.get("name") or "").lower()
+        if cle and cle not in metas and a.get("content"):
+            metas[cle] = " ".join(a["content"].split())
+    icone, note = "", 0
+    for b in re.findall(r"<link\b[^>]*>", t, re.I):
+        a = attributs(b)
+        rel = (a.get("rel") or "").lower().split()
+        if "icon" in rel and a.get("href"):
+            n = 3 if "32" in (a.get("sizes") or "") else 2
+            if n > note:
+                icone, note = a["href"], n
+    m = re.search(r"<html\b[^>]*\blang\s*=\s*[\"']?([A-Za-z-]{2,10})", t, re.I)
+
+    def absolue(u):
+        return urllib.parse.urljoin(adresse or "", u) if u else ""
+    return {"titre": (titre or metas.get("og:title", ""))[:150], "description": (metas.get("description") or metas.get("og:description") or "")[:300],
+            "generateur": metas.get("generator", "")[:80], "langue": m.group(1).lower() if m else "",
+            "icone": absolue(icone) or (absolue("/favicon.ico") if adresse and t else ""), "image": absolue(metas.get("og:image") or metas.get("twitter:image") or "")}
+
+
+def cms_du_generateur(generateur):
+    """Le CMS que la page déclare d'elle-même (<meta name="generator">), ou None : pour un site hors de la machine, c'est tout ce qu'on peut en savoir sans y entrer."""
+    g = (generateur or "").strip()
+    bas = g.lower()
+    for cle, nom in CMS_DECLARES:
+        if cle in bas:
+            v = re.search(r"\d+(?:\.\d+)+", g)
+            return {"type": nom, "version": v.group(0) if v else "", "theme": "", "extensions": None, "source": "page"}
+    return None
 
 
 def diagnostic(code, erreur):
@@ -573,11 +677,17 @@ def brancher(ctx):
             return poser_miroir("sensorium", {"lu": False, "fenetres": [], "acceptees": {}})
         if st != "ok" or not isinstance(e, dict) or e.get("muet"):
             return None                                                   # il se tait : on garde ce qu'on savait
-        acceptees = {}
+        acceptees, suivis = {}, {}
         for r in e.get("rows") or []:
             wk = str(r.get("wkey") or "") if isinstance(r, dict) else ""
-            if wk.startswith("web.") and isinstance(r.get("acquit"), dict):
-                acceptees[nom_hote(wk[4:])] = {"raison": str(r["acquit"].get("raison") or "")[:200], "jusqu_a": instant_utc(r["acquit"].get("jusqua")), "par": str(r["acquit"].get("par") or "")}
+            if not wk.startswith("web.") or len(wk) < 5:
+                continue
+            d = nom_hote(wk[4:])
+            # Ce que le Sensorium voit de ce site DEPUIS la machine : sa mesure, s'il en fait une alerte, et les gestes de réparation qu'il propose alors.
+            suivis[d] = {"cle": wk, "valeur": str(r.get("value") or "")[:160], "alerte": r.get("severity") == "warning",
+                         "gestes": [{"id": str(g.get("id") or ""), "libelle": str(g.get("libelle") or "")} for g in (r.get("gestes") or []) if isinstance(g, dict) and g.get("id")][:6]}
+            if isinstance(r.get("acquit"), dict):
+                acceptees[d] = {"raison": str(r["acquit"].get("raison") or "")[:200], "jusqu_a": instant_utc(r["acquit"].get("jusqua")), "par": str(r["acquit"].get("par") or "")}
         f, _ = lecture("sensorium.fenetres")
         fen = []
         for x in ((f.get("vivantes") or []) + (f.get("finies") or [])) if isinstance(f, dict) else (e.get("fenetres") or []):
@@ -585,7 +695,7 @@ def brancher(ctx):
                 a, b = instant_utc(x.get("debut")), instant_utc(x.get("fin"))
                 if a is not None and b is not None:
                     fen.append({"id": x.get("id"), "portee": str(x.get("portee") or "*"), "debut": a, "fin": b, "motif": str(x.get("motif") or "")[:200], "par": str(x.get("par") or "")})
-        poser_miroir("sensorium", {"lu": True, "fenetres": fen, "acceptees": acceptees})
+        poser_miroir("sensorium", {"lu": True, "fenetres": fen, "acceptees": acceptees, "suivis": suivis})
 
     def relever_voisins(echeance=None):
         """Une fois par heure : le CMS et le trafic (Sensorium), les bases, le courrier, les sauvegardes, les analyses et la fin de support de PHP (panneau), l'échéance des noms (DNS).
@@ -667,6 +777,10 @@ def brancher(ctx):
         def fenetres_de(self, d, a, b):
             """Les fenêtres (passées ou en cours) qui ont couvert ce site entre deux instants : pour son calendrier."""
             return [f for f in self.sens.get("fenetres") or [] if f["debut"] < b and f["fin"] >= a and f["portee"] in ("*", "famille:web", "domaine:services", "site:" + d, "site:www." + d)]
+
+        def vu_de_la_machine(self, d):
+            """Ce que le Sensorium voit de ce site depuis la machine ({cle, valeur, alerte, gestes}), ou None s'il ne le suit pas (un site hébergé ailleurs, ou pas de Sensorium)."""
+            return (self.sens.get("suivis") or {}).get(d) or (self.sens.get("suivis") or {}).get("www." + d)
 
         def acceptee(self, d):
             a = (self.sens.get("acceptees") or {}).get(d)
@@ -804,6 +918,39 @@ def brancher(ctx):
                 donnees={"code": code, "ms": ms, "ssl_jours": jours, "erreur": erreur, "mesure": maintenant, "douteux": douteux}, compte="")
         return {"domaine": d, "ts": maintenant, "code": code, "ms": ms, "up": bool(up), "erreur": erreur, "ssl_jours": jours, "douteux": douteux}
 
+    def relever_apercus(doms, t, echeance, sources_sures):
+        """L'aperçu des sites qui répondent : quelques-uns par tour, les plus anciens d'abord, une fois par jour chacun. La page est lue une fois, puis son icône
+        et — si elle en déclare une sur son propre nom — son image de présentation. Une page illisible garde l'aperçu d'avant, et le dit."""
+        maintenant = time.time()
+        connus = {r["domaine"]: r["ts"] for r in db.lire("SELECT domaine, ts FROM apercus")}
+        en_ligne = {r["domaine"] for r in db.lire("SELECT domaine FROM etat_vu WHERE up=1")}
+        a_lire = sorted((d for d in doms if d in en_ligne and connus.get(d, 0) < maintenant - APERCU_S), key=lambda d: connus.get(d, 0))
+        for d in a_lire[:APERCUS_PAR_TOUR]:
+            if time.time() > echeance:
+                break
+            texte, adresse = _lire_page(d, t["delai"], True) if t["interne"] else _lire_page(d, t["delai"])
+            if not texte:
+                if d in connus:
+                    db.ecrire("UPDATE apercus SET ts=?, erreur=? WHERE domaine=?", (maintenant, "page illisible au dernier passage", d))
+                else:
+                    db.ecrire("INSERT INTO apercus(domaine, ts, erreur) VALUES (?,?,?)", (d, maintenant, "page illisible"))
+                continue
+            p = tete_html(texte, adresse)
+            icone = _lire_image(p["icone"], d, t["delai"], t["interne"], ICONE_MAX) if p["icone"] else ""
+            image = _lire_image(p["image"], d, t["delai"], t["interne"], IMAGE_MAX) if p["image"] and time.time() < echeance else ""
+            db.ecrire("INSERT OR REPLACE INTO apercus(domaine, ts, titre, description, generateur, langue, icone, image, erreur) VALUES (?,?,?,?,?,?,?,?,'')",
+                      (d, maintenant, p["titre"], p["description"], p["generateur"], p["langue"], icone, image))
+        if sources_sures:
+            suivis = set(doms)
+            for d in connus:
+                if d not in suivis:
+                    db.ecrire("DELETE FROM apercus WHERE domaine=?", (d,))
+
+    def apercus_legers():
+        """{domaine: {titre, generateur, icone}} pour la liste : l'icône n'y entre que si elle est petite."""
+        return {r["domaine"]: {"titre": r["titre"], "generateur": r["generateur"], "icone": r["icone"] if len(r["icone"]) <= ICONE_EN_LISTE else ""}
+                for r in db.lire("SELECT domaine, titre, generateur, icone FROM apercus")}
+
     def sonde(c):
         t = tour()
         delai = t["delai"]
@@ -864,6 +1011,7 @@ def brancher(ctx):
         mv = miroir("voisins", perime=True)
         if (not isinstance(mv, dict) or maintenant - (mv.get("ts") or 0) > VOISINS_S) and time.time() - debut < DUREE_MAX_SONDE_S - 90:
             relever_voisins(debut + DUREE_MAX_SONDE_S - 40)              # le panneau peut être lent : ce qui ne tient pas dans ce tour se lira au suivant
+        relever_apercus(doms, t, debut + DUREE_MAX_SONDE_S - 60, e1 != "muet" and e2 != "muet")
         vieux =maintenant - max(garde, INCIDENT_GARDE_J) * 86400
         db.ecrire("DELETE FROM incident_faits WHERE incident IN (SELECT id FROM incidents WHERE etat='resolu' AND fin < ?)", (vieux,))
         db.ecrire("DELETE FROM incidents WHERE etat='resolu' AND fin < ?", (vieux,))
@@ -875,9 +1023,20 @@ def brancher(ctx):
     def det_panne(c):
         # Une panne dite « connue » (quelqu'un s'en occupe et l'a dit) se tait jusqu'à l'échéance : l'incident reste ouvert, le constat ne sonne plus.
         connues = {r["domaine"] for r in db.lire("SELECT domaine FROM incidents WHERE etat IN ('ouvert','depannage') AND connu_jusqu > ?", (time.time(),))}
-        vo = Voisins()
-        return [{"objet": ("site", o["id"]), "titre": "Site hors ligne : %s" % o["id"], "detail": o["donnees"].get("erreur") or ("code %s" % o["donnees"].get("code"))}
-                for o in objets_site(c, "hors_ligne") if o["id"] not in connues and not tu(vo, o["id"])]
+        vo, sortie = Voisins(), []
+        for o in objets_site(c, "hors_ligne"):
+            d = o["id"]
+            if d in connues or tu(vo, d):
+                continue
+            vu = vo.vu_de_la_machine(d)
+            if vu and vu["alerte"]:
+                continue                 # le Sensorium le voit tomber lui aussi et en fait déjà son alerte : une seule suffit (l'incident, lui, est ouvert ici)
+            detail = o["donnees"].get("erreur") or ("code %s" % o["donnees"].get("code"))
+            if vu:
+                # Lui le voit répondre, d'ici il ne répond pas : la panne est sur le chemin, pas dans le site. Seul Sites le sait, donc Sites le dit.
+                detail += " — depuis la machine, le Sensorium le voit répondre (%s) : cherche entre l'Internet et la machine (DNS, réseau, pare-feu, certificat)" % vu["valeur"]
+            sortie.append({"objet": ("site", d), "titre": "Site hors ligne : %s" % d, "detail": detail, "niveau": "critique"})      # une panne : le niveau qui passe les canaux les plus pressants
+        return sortie
 
     def tu(vo, d):
         """Le Sensorium a-t-il fait taire ce site : une fenêtre de maintenance le couvre, ou son alerte y a été acceptée ? Ce qui se tait là-bas se tait ici."""
@@ -912,7 +1071,7 @@ def brancher(ctx):
                 continue
             for k, compte in enumerate(sorted(x for x in pr.get(d, ()) if x and not admin(x))):
                 # La clé d'un constat est son objet : un site à plusieurs comptes en ouvre un par compte, sous un identifiant qui les distingue.
-                sortie.append({"objet": ("site", d if k == 0 else "%s#%s" % (d, compte)), "compte": compte, "titre": "Ton site %s ne répond pas" % d,
+                sortie.append({"objet": ("site", d if k == 0 else "%s#%s" % (d, compte)), "compte": compte, "titre": "Ton site %s ne répond pas" % d, "niveau": "critique",
                                "detail": (i["diagnostic"] if i else "") or o["donnees"].get("erreur") or ("code %s" % o["donnees"].get("code"))})
         return sortie
 
@@ -1074,7 +1233,7 @@ def brancher(ctx):
         incidents_ = {}
         for i in db.lire("SELECT * FROM incidents WHERE etat != 'resolu' ORDER BY id"):
             incidents_[i["domaine"]] = ligne_incident(i, maintenant)                 # le plus récent l'emporte (un « rétabli » cède devant un nouvel « ouvert »)
-        lignes, vo = [], Voisins()
+        lignes, vo, ap = [], Voisins(), apercus_legers()
         # Les déclarations qui attendent leur preuve : le site n'est encore à personne, il n'est ni dans la carte ni mesuré. Son déclarant le voit, et l'administrateur de sa société.
         for p in db.lire("SELECT domaine, compte, jeton, cree FROM preuves WHERE cree >= ? ORDER BY domaine", (maintenant - PREUVE_GARDE_J * 86400,)):
             if p["domaine"] in carte or not (p["compte"] == compte or r.large or (tout and r.societe_du_compte(p["compte"]) == r.soc)):
@@ -1082,13 +1241,16 @@ def brancher(ctx):
             lignes.append({"domaine": p["domaine"], "source": "declare", "origine": "declare", "up": None, "code": None, "ms": None, "erreur": "", "ssl_jours": None, "ssl_etat": None, "ssl_source": "",
                            "php": "", "proprietaire_panneau": "", "mesure": None, "dispo30": None, "comptes": [p["compte"]] if tout else None, "demande": None,
                            "societe": r.societe_du_compte(p["compte"]), "societe_source": "compte", "objectif": defaut, "objectif_propre": False, "incident": None,
-                           "maintenance": None, "acceptee": None, "cms": None, "nom": None, "sauvegarde": None, "php_fin": None,
+                           "maintenance": None, "acceptee": None, "cms": None, "nom": None, "sauvegarde": None, "php_fin": None, "titre": "", "icone": "",
                            "preuve": {"compte": p["compte"], "expire": p["cree"] + PREUVE_GARDE_J * 86400, "jeton": p["jeton"] if p["compte"] == compte else None}})
         for d in sorted(carte):
             e = carte[d]
             m = mesures.get(d)
             p = e["panneau"] or {}
-            lignes.append({**vo.resume(d, bool(e["panneau"])),
+            res, a = vo.resume(d, bool(e["panneau"])), ap.get(d) or {}
+            if not res["cms"] and a.get("generateur"):
+                res["cms"] = cms_du_generateur(a["generateur"])                # hors de la machine, le Sensorium n'y entre pas : reste ce que la page déclare d'elle-même
+            lignes.append({**res, "titre": a.get("titre", ""), "icone": a.get("icone", ""),
                            "domaine": d, "source": e["origine"] if e["origine"] == "panneau" else "declare", "origine": e["origine"],
                            "societe": e.get("societe", ""), "societe_source": e.get("societe_source", ""), "objectif": objectifs.get(d, defaut), "objectif_propre": d in objectifs,
                            "incident": incidents_.get(d), "preuve": None,
@@ -1292,7 +1454,7 @@ def brancher(ctx):
             return {"domaine": d, "site": attente, "mien": mien, "admin_autrui": bool(tout and not mien), "hors_panneau": True,
                     "histoire": {"disponibilite": None, "reponse_moy_ms": None, "reponse_max_ms": None, "mesures": 0, "evenements": []},
                     "liens": [], "journal": db.lire("SELECT ts, acteur, verbe, domaine, detail, 'geste' source FROM journal WHERE domaine=? ORDER BY id DESC LIMIT 12", (d,)),
-                    "demande": None, "accord": None, "accords": {}, "incidents": [], "voisins": None, "rattaches": {"contacts": [], "notes": [], "documents": [], "sources": {}},
+                    "demande": None, "accord": None, "accords": {}, "incidents": [], "voisins": None, "apercu": None, "rattaches": {"contacts": [], "notes": [], "documents": [], "sources": {}},
                     "preuve": {"compte": attente["preuve"]["compte"], "expire": attente["preuve"]["expire"], "jeton": jeton,
                                "dns": {"nom": "_cassandra." + d, "valeur": "cassandra-site=" + jeton} if jeton else None,
                                "fichier": {"adresse": "https://%s%s" % (d, CHEMIN_PREUVE), "contenu": jeton} if jeton else None},
@@ -1308,11 +1470,16 @@ def brancher(ctx):
         maintenant = time.time()
         h = _historique(d, maintenant - 86400, maintenant)
         accords = {g: accord_valide(r, d, g) for g in GESTES_ACCORD}
+        voisins_d = Voisins().detail(d, not hors, r.du_panneau(d))
+        ap = db.lire("SELECT ts, titre, description, generateur, langue, icone, image, erreur FROM apercus WHERE domaine=?", (d,))
+        apercu = dict(ap[0]) if ap else None
+        if not voisins_d["cms"] and apercu and apercu["generateur"]:
+            voisins_d["cms"] = cms_du_generateur(apercu["generateur"])
         return {"domaine": d, "site": ligne, "mien": mien, "admin_autrui": bool(tout and not mien), "hors_panneau": hors,
                 "histoire": {k: h[k] for k in ("disponibilite", "reponse_moy_ms", "reponse_max_ms", "mesures")} | {"evenements": h["evenements"][:8]},
                 "liens": _liens(d), "journal": _journal(r, d, 12), "demande": ligne["demande"],
                 "accord": accords["restaurer"], "accords": accords, "preuve": None,
-                "voisins": Voisins().detail(d, not hors, r.du_panneau(d)), "rattaches": rattaches(d),
+                "voisins": voisins_d, "apercu": apercu, "rattaches": rattaches(d),
                 "incidents": [ligne_incident(i, maintenant) for i in db.lire("SELECT * FROM incidents WHERE domaine=? ORDER BY id DESC LIMIT 6", (d,))],
                 "gestes": {"retirer": bool(rows and (tout or (mien and rows[0]["origine"] != "attribue"))), "attribuer": tout,
                            "transferer": bool(tout and rows),
@@ -1700,7 +1867,7 @@ def brancher(ctx):
         tombes = [x["domaine"] for x in db.lire("SELECT domaine FROM etat_vu WHERE up=0 AND domaine != ? ORDER BY domaine", (d,)) if r.large or x["domaine"] in r.carte]
         ouvert = i["etat"] in ("ouvert", "depannage")
         vo = Voisins()
-        return dict(ligne_incident(i, maintenant), maintenance=vo.maintenance(d), acceptee=vo.acceptee(d),
+        return dict(ligne_incident(i, maintenant), maintenance=vo.maintenance(d), acceptee=vo.acceptee(d), vu_de_la_machine=vo.vu_de_la_machine(d),
                     en_ligne=bool(vu and vu[0]["up"]), suivi=bool(vu),
                     mesures=[dict(m, up=bool(m["up"])) for m in db.lire("SELECT ts, code, ms, up, erreur FROM mesures WHERE domaine=? ORDER BY id DESC LIMIT 8", (d,))],
                     tombes_aussi=tombes[:20],                              # d'autres sites en panne au même moment : une cause commune, probablement
