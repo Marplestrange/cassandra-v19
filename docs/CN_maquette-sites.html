@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-sites.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=a35025 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=652d7d ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -83,6 +83,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .sous .mi[aria-current="page"]::before{content:"";position:absolute;margin-left:-22px;width:2px;height:20px;background:var(--accent);border-radius:2px}
 .bad{margin-left:auto;font-size:11.5px;border-radius:999px;padding:1px 8px;background:var(--line);color:var(--soft)}
 .bad.w{background:var(--warn10);color:var(--warn)}.bad.d{background:var(--dan10);color:var(--danger)}
+.ac{font-size:10px;letter-spacing:.5px;text-transform:uppercase;background:var(--warn10);color:var(--warn);border-radius:6px;padding:1px 5px;margin-left:6px;font-weight:650;white-space:nowrap}
+.legende{margin:12px 6px 4px;padding:10px 10px 6px;border-top:1px solid var(--line);font-size:12px;color:var(--soft);display:grid;gap:6px}
+.legende span{margin-left:0;margin-right:6px}
+.bandeau{background:var(--inf10);border:1px solid var(--line);border-radius:14px;padding:11px 14px;margin-bottom:14px;font-size:14px}
 .de{font-size:10px;letter-spacing:.5px;text-transform:uppercase;background:var(--inf10);color:var(--info);border-radius:6px;padding:1px 5px;margin-left:6px;font-weight:650;white-space:nowrap}
 .neuf{font-size:10px;letter-spacing:.5px;text-transform:uppercase;background:var(--acc10);color:var(--accent);border-radius:6px;padding:1px 5px;margin-left:6px;font-weight:650}
 /* page */
@@ -187,6 +191,7 @@ dl.paires dt{color:var(--muted)}dl.paires dd{margin:0;color:var(--strong)}
 <div class="haut">
   <b>Cassandra</b><span class="note">Maquette interactive · module Sites · données fictives</span>
   <span class="seg" role="group" aria-label="Portée"><button id="b-admin" aria-pressed="true" onclick="portee(true)">Administrateur</button><button id="b-compte" aria-pressed="false" onclick="portee(false)">Compte</button></span>
+  <button onclick="sansPanneau()" id="b-pan" aria-pressed="false" title="Montre l'écran quand FastPanel n'est ni installé ni actif">Sans FastPanel</button>
   <button onclick="simuler()" id="b-sim" aria-pressed="false" title="Fait tomber un site pour voir l'écran réagir">Simuler une panne</button>
   <button onclick="theme()" aria-label="Clair ou sombre">◐</button>
 </div>
@@ -203,6 +208,10 @@ dl.paires dt{color:var(--muted)}dl.paires dd{margin:0;color:var(--strong)}
     <div class="sous" id="sous"></div>
     <button class="mi"><span class="ic">▥</span>Hébergement</button>
     <button class="mi"><span class="ic">⇄</span>Automatismes</button>
+    <div class="legende"><b>Les étiquettes</b>
+      <div><span class="neuf">nouveau</span>à coder dans Sites</div>
+      <div><span class="de">module</span>existe déjà ailleurs : Sites s’y branche</div>
+      <div><span class="ac">à créer</span>n’existe nulle part aujourd’hui</div></div>
   </nav>
   <main id="page" aria-live="polite"></main>
 </div>
@@ -291,7 +300,7 @@ const MENU = () => [
   ['demandes', ETAT.admin ? 'Demandes d’adossement' : 'Mes demandes', String(demandes().length), false, demandes().length ? 'w' : ''],
   ['journal', 'Journal', ''],
   ['rapports', 'Rapports', '', true],
-  ...(ETAT.admin ? [['reglages', 'Réglages de la sonde', '', true]] : []),
+  ...(ETAT.admin ? [['reglages', 'Seuils d’alerte', '']] : []),
 ];
 function menu(){
   $('sous').innerHTML = MENU().map(([id, nom, n, neuf, c]) =>
@@ -299,6 +308,13 @@ function menu(){
 }
 function plier(){ const b = $('m-sites'), o = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', o); $('sous').hidden = !o; }
 function aller(sec, filtre){ ETAT.sec = sec; if (filtre !== undefined) ETAT.filtre = filtre; fermer(); rendre(); window.scrollTo({top:0}); }
+// Sans FastPanel : il n'y a plus de « site du panneau ». Ce que le Sensorium lit de la machine (PHP, disque, CMS) reste ; ce qui est au panneau (ses sauvegardes, ses gestes) disparaît.
+function sansPanneau(){
+  ETAT.sans = !ETAT.sans; $('b-pan').setAttribute('aria-pressed', ETAT.sans);
+  SITES.forEach(s => { s.src0 = s.src0 || s.src; s.src = ETAT.sans ? 'declare' : s.src0; });
+  fermer(); rendre(); toast(ETAT.sans ? 'FastPanel absent : Sites continue avec les sites déclarés et ce que le Sensorium relève.' : 'FastPanel présent.');
+}
+const lieu = s => ETAT.sans ? ((s.src0 || s.src) === 'panneau' ? 'sur cette machine' : 'hébergé ailleurs') : 'hors panneau';
 function portee(a){ ETAT.admin = a; $('b-admin').setAttribute('aria-pressed', a); $('b-compte').setAttribute('aria-pressed', !a); if (!a && ETAT.sec === 'reglages') ETAT.sec = 'vue'; fermer(); rendre(); }
 function theme(){ const r = document.documentElement, sombre = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches; r.dataset.theme = sombre ? 'light' : 'dark'; }
 function simuler(){
@@ -337,7 +353,7 @@ function ligne(s){
   const e = etat(s);
   const go = v => v >= 1024 ? (Math.round(v / 102.4) / 10).toLocaleString('fr-FR') + ' Go' : v + ' Mo';
   return `<button class="row site" onclick="ouvrir('${s.d}')">${vignette(s)}<div class="nm"><b><code>${E(s.d)}</code></b><small>${ETAT.admin ? E(s.compte || 'sans compte · panneau ' + s.fp) + ' · ' : ''}${[s.cms, s.php ? 'PHP ' + s.php : '', s.disque ? go(s.disque) : '', s.src === 'panneau' ? '' : 'déclaré à la main'].filter(Boolean).join(' · ') || 'panneau'}</small>
-    <div class="pills">${pill(e.t, e.c)}${s.ssl >= 0 && s.ssl >= REGL.ssl ? pill('SSL ' + s.ssl + ' j', 'ok') : ''}${s.src === 'panneau' ? (s.sauv == null ? pill('aucune sauvegarde', 'w') : pill(s.sauv === 0 ? 'sauvegardé aujourd’hui' : 'sauvegardé il y a ' + s.sauv + ' j', s.sauv > 2 ? 'w' : 'ok')) : pill('hors panneau', '')}${s.demande ? pill('adossement demandé', 'i') : ''}</div></div>
+    <div class="pills">${pill(e.t, e.c)}${s.ssl >= 0 && s.ssl >= REGL.ssl ? pill('SSL ' + s.ssl + ' j', 'ok') : ''}${s.src === 'panneau' ? (s.sauv == null ? pill('aucune sauvegarde', 'w') : pill(s.sauv === 0 ? 'sauvegardé aujourd’hui' : 'sauvegardé il y a ' + s.sauv + ' j', s.sauv > 2 ? 'w' : 'ok')) : pill(lieu(s), '')}${s.demande ? pill('adossement demandé', 'i') : ''}</div></div>
     <div>${bande(s)}</div><div class="cote"><span class="num">${pct(s).toLocaleString('fr-FR')} % · 30 j</span><span class="num">${s.code ?? '—'} · ${s.ms.toLocaleString('fr-FR')} ms</span></div></button>`;
 }
 
@@ -350,7 +366,8 @@ const PAGES = {
     const sans = l.filter(s => s.src === 'panneau' && s.sauv == null).length;
     const sous = bas.length ? `${l.length - bas.length} autres répondent. La panne est dite au ${REGL.echecs}ᵉ échec de suite, et datée du premier.` : (moy.length || graves.length) ? (al.filter(a => a.n !== 'i' && a.t !== titre).slice(0, 2).map(a => a.t).join(' ; ') || 'Rien d’autre à signaler') + '.' : `Aucune panne, aucun certificat court.${sans ? ' ' + sans + ' site(s) du panneau sans sauvegarde connue.' : ''}`;
     const dm = Math.round(l.reduce((a, s) => a + pct(s), 0) / l.length * 10) / 10, cmin = Math.min(...l.map(s => s.ssl));
-    return tete('Vue d’ensemble', `${ETAT.admin ? 'administrateur' : 'compte ' + E(ETAT.moi)} · ${l.length} sites · relevé 04:31 · sonde toutes les 5 min`, `<button class="btn" onclick="toast('Sonde lancée : résultats dans quelques secondes.')">Sonder maintenant</button><button class="btn p" onclick="aller('sites');declarer()">Déclarer un site</button>`) + `
+    return tete('Vue d’ensemble', `${ETAT.admin ? 'administrateur' : 'compte ' + E(ETAT.moi)} · ${l.length} sites · relevé 04:31 · relève du Sensorium toutes les 5 min`, `<button class="btn" onclick="toast('Relève demandée au Sensorium : résultats dans quelques secondes.')">Relever maintenant</button><button class="btn p" onclick="aller('sites');declarer()">Déclarer un site</button>`) + `
+    ${ETAT.sans ? `<div class="bandeau"><b>FastPanel n’est pas installé.</b> Sites fonctionne quand même : l’état, la disponibilité, les certificats, les alertes, le journal et les rattachements viennent du Sensorium, de Certificats et des comptes. Ne manquent que ce qui appartient au panneau : ses sauvegardes, ses analyses, et ses gestes (restaurer, renouveler par le panneau).</div>` : ''}
     <section class="sec carte"><div class="verdict"><div class="vm ${m}"></div><div><p class="vt">${E(titre)}</p><p class="vs">${E(sous)}</p></div></div>
       <div class="kpis">
         <button class="kpi" onclick="aller('sites','${bas.length ? 'tombes' : ''}')"><span>En ligne</span><b class="${bas.length ? 'd' : ''}">${l.length - bas.length} / ${l.length}</b><em>${bas.length ? bas.length + ' ne répond pas' : 'tous répondent'}</em></button>
@@ -371,10 +388,10 @@ const PAGES = {
       <div class="chips">${OBJETS.map(o => `<button class="chip" aria-pressed="${ETAT.impact === o[0]}" onclick="ETAT.impact='${o[0]}';rendre()">${E(o[1])}</button>`).join('')}</div>
       ${(() => { const o = OBJETS.find(x => x[0] === ETAT.impact), l = sites().filter(o[2]); return l.length ? `<p class="silence" style="padding-top:0"><b>${l.length} site${l.length > 1 ? 's' : ''}</b> sur ${sites().length} dépend${l.length > 1 ? 'ent' : ''} de ${E(o[1])}.</p><div class="pills">${l.map(s => `<button class="chip" onclick="ouvrir('${s.d}','dependances')"><code>${E(s.d)}</code></button>`).join('')}</div>` : `<p class="silence">Aucun de ${ETAT.admin ? 'ces' : 'tes'} sites ne dépend de ${E(o[1])}.</p>`; })()}</section>
     <section class="sec carte"><div class="sh"><h2>D’où viennent les chiffres</h2><span class="meta">et leur âge</span></div><div class="rows">
-      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('sonde', 'ok')}<div class="nm"><b>La sonde de Cassandra</b><small>code HTTP et durée, toutes les 5 minutes</small></div><span class="num">il y a 2 min</span></div>
-      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('miroir', 'ok')}<div class="nm"><b>Comptes et panneau</b><small>relus à chaque tour de sonde ; c’est ce que voit un compte ordinaire</small></div><span class="num">il y a 2 min</span></div>
+      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('sensorium', 'ok')}<div class="nm"><b>Le Sensorium</b><small>il relève : réponse et durée, pannes et retours, PHP, disque, CMS, bases, courrier, sauvegardes. Sites le questionne, il ne sonde plus de son côté</small></div><span class="num">il y a 2 min</span></div>
+      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('comptes', 'ok')}<div class="nm"><b>Les comptes</b><small>à qui est chaque site : c’est ce qui fait que chacun voit tout de ses sites, et rien de ceux des autres</small></div><span class="num">il y a 2 min</span></div>
       <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('certificats', 'ok')}<div class="nm"><b>Le module Certificats</b><small>échéance du certificat servi, quota d’émission, renouvellement : Sites les lit, ne les refait pas</small></div><span class="num">il y a 38 min</span></div>
-      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('panneau', '')}<div class="nm"><b>La base du panneau</b><small>propriétaire, PHP, sauvegardes</small></div><span class="num">04:31</span></div></div></section>`;
+      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(ETAT.sans ? 'absent' : 'panneau', ETAT.sans ? 'w' : '')}<div class="nm"><b>FastPanel, facultatif</b><small>${ETAT.sans ? 'pas installé : Sites s’en passe' : 'quand il est là : le propriétaire du panneau, ses copies de sauvegarde, ses gestes'}</small></div><span class="num">${ETAT.sans ? '—' : '04:31'}</span></div></div></section>`;
   },
   sites(){
     let l = sites(); const q = ETAT.q.toLowerCase(), f = ETAT.filtre;
@@ -413,7 +430,12 @@ const PAGES = {
     <section class="sec carte"><div class="sh"><h2>Alertes acceptées</h2><span class="de">Sensorium</span><span class="meta">« je sais, c’est normal » : elles se taisent jusqu’à l’échéance</span></div>
       ${Object.keys(ACCEPTEES).filter(k => ETAT.admin || sites().some(s => s.d === ACCEPTEES[k].d)).length ? `<div class="rows">${Object.keys(ACCEPTEES).filter(k => ETAT.admin || sites().some(s => s.d === ACCEPTEES[k].d)).map((k, i) => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('acceptée', '')}<div class="nm"><b>${E(k)}</b><small>jusqu’à ${E(ACCEPTEES[k].jusqu)} · revient si son chiffre monte</small></div><button class="btn s" onclick="delete ACCEPTEES[Object.keys(ACCEPTEES)[${i}]];rendre();toast('Elle redevient une alerte.')">Ne plus accepter</button></div>`).join('')}</div>` : '<p class="silence">Aucune. Le bouton « Accepter » d’une alerte la range ici.</p>'}</section>
     <section class="sec carte"><div class="sh"><h2>Coupures et retours</h2><span class="meta">la veille, 30 jours</span></div>${journalHtml(40, 'coupures')}</section>
-    <section class="sec carte"><div class="sh"><h2>Qui est prévenu</h2></div><p class="silence">L’administrateur reçoit toutes les alertes ; le propriétaire reçoit celles de ses sites (panne confirmée, retour, certificat court). Une mesure ratée isolée ne prévient personne.</p></section>`;
+    <section class="sec carte"><div class="sh"><h2>Qui est prévenu</h2></div><p class="silence" style="padding-top:0">L’administrateur reçoit toutes les alertes ; le propriétaire reçoit celles de ses sites (panne confirmée, retour, certificat court). Une mesure ratée isolée ne prévient personne.</p>
+      <div class="rows">
+        <label class="row" style="grid-template-columns:auto minmax(0,1fr) auto"><input type="checkbox" checked disabled><div class="nm"><b>Dans Cassandra (la cloche)</b><small>toujours : c’est le seul canal qui marche aujourd’hui</small></div><span class="de">notifications</span></label>
+        <label class="row" style="grid-template-columns:auto minmax(0,1fr) auto"><input type="checkbox" onchange="toast(this.checked ? 'Tu recevras un courriel à chaque panne et à chaque retour.' : 'Plus de courriel.')"><div class="nm"><b>Par courriel</b><small>à l’adresse de contact du compte ; demande un serveur d’envoi de l’instance</small></div><span class="ac">à créer</span></label>
+        <label class="row" style="grid-template-columns:auto minmax(0,1fr) auto"><input type="checkbox" onchange="toast(this.checked ? 'Tu recevras un message Telegram pour les pannes.' : 'Plus de message Telegram.')"><div class="nm"><b>Par Telegram</b><small>les pannes seulement, par le robot du compte</small></div><span class="ac">à créer</span></label>
+      </div></section>`;
   },
   demandes(){
     const l = demandes();
@@ -432,12 +454,12 @@ const PAGES = {
     <section class="sec carte"><div class="sh"><h2><code>${E(s.d)}</code> · ${ETAT.mois}</h2><span class="dr"><button class="btn s" onclick="toast('PDF du rapport (maquette).')">Télécharger</button><button class="btn s" onclick="toast('Envoi au propriétaire (maquette).')">Envoyer au propriétaire</button></span></div>
       ${vide ? '<p class="silence"><b>Pas de mesure ce mois-là.</b> La sonde suit ce site depuis le 2 novembre : le rapport dit « pas de sonde », il n’emprunte pas les chiffres d’un autre mois.</p>' : `<div class="kpis"><div class="kpi"><span>Disponibilité</span><b>${pct(s).toLocaleString('fr-FR')} %</b><em>2 326 mesures</em></div><div class="kpi"><span>Coupures</span><b class="${s.pannes ? 'w' : ''}">${s.pannes}</b><em>${s.indispo || '0 min'} indisponible</em></div><div class="kpi"><span>Réponse</span><b>${s.ms} ms</b><em>au pire 461 ms</em></div><div class="kpi"><span>Sauvegardes</span><b>9</b><em>réussies ce mois</em></div></div>
       <div style="margin-top:14px">${bande(s)}</div>`}</section>
-    <section class="sec carte"><div class="sh"><h2>Envoi automatique</h2><span class="neuf">nouveau</span></div><p class="silence">Le 1er de chaque mois, chaque propriétaire reçoit le rapport de ses sites. À activer compte par compte.</p></section>`;
+    <section class="sec carte"><div class="sh"><h2>Envoi automatique</h2><span class="ac">à créer</span></div><p class="silence">Le 1er de chaque mois, chaque propriétaire reçoit le rapport de ses sites. À activer compte par compte.</p></section>`;
   },
   reglages(){
     const num = (k, lib, aide, min, max) => `<label class="champ"><span>${lib}</span><input type="number" min="${min}" max="${max}" value="${REGL[k]}" onchange="REGL.${k}=Math.max(${min},Math.min(${max},+this.value||${min}));rendre();toast('Réglage enregistré.')" style="max-width:140px"><small>${aide}</small></label>`;
     const coche = (k, lib, aide) => `<label class="champ" style="grid-template-columns:auto 1fr;align-items:start;column-gap:10px"><input type="checkbox" ${REGL[k] ? 'checked' : ''} onchange="REGL.${k}=this.checked;rendre();toast('Réglage enregistré.')" style="margin-top:5px"><span>${lib}<br><small>${aide}</small></span></label>`;
-    return tete('Réglages de la sonde', 'ils changent ce que l’écran appelle une panne', '') + `<div class="grille2">
+    return tete('Seuils d’alerte', 'ils changent ce que l’écran appelle une panne · réglés ici pour les sites, tenus par le Sensorium <span class="de">Sensorium</span>', '') + `<div class="grille2">
       <section class="sec carte"><div class="sh"><h2>Quand dire qu’un site va mal</h2></div>${num('echecs', 'Mesures ratées de suite avant une panne', '1 : dès la première. 2 évite les fausses alertes.', 1, 5)}${num('lent', 'Seuil « lent », en millisecondes', 'Au-delà, le site répond mais le visiteur s’en va.', 500, 60000)}${coche('proteges', 'Un 401 ou 403 est « en ligne »', 'Pour les sites protégés par un mot de passe.')}</section>
       <section class="sec carte"><div class="sh"><h2>Comment la sonde travaille</h2></div>${num('delai', 'Délai d’attente d’une requête (s)', '', 2, 60)}${num('garde', 'Garde des mesures (jours)', 'Le journal des gestes se garde un an au moins.', 7, 730)}${coche('interne', 'Autoriser les adresses internes', 'Fermé par défaut : la sonde ne sort que vers l’Internet public.')}
         <div class="encart">Le seuil d’alerte des certificats ne se règle pas ici : il est dans Sécurité › Certificats › Réglages, un seul endroit pour tous les écrans.</div><div class="encart">Essaie : passe le seuil « lent » à 4000, ou coche « 401 est en ligne » — les alertes et les pastilles changent tout de suite.</div></section></div>`;
@@ -466,17 +488,20 @@ function jugerNom(){
   else { m = '✓ ' + d + ' peut être déclaré'; ok = true; }
   $('dj').textContent = m; $('dj').style.color = ok ? 'var(--ok)' : (m[0] === '✕' ? 'var(--danger)' : ''); $('db').disabled = !ok;
 }
+const CIBLES = {projet: ['Refonte 2027', 'Boutique de Noël', 'Migration PHP 8.3'], contact: ['Zoé Martin', 'Paul Renard', 'Hébergeur Exemple SARL'], note: ['Accès et particularités', 'Compte rendu du 4 novembre'], document: ['Contrat d’hébergement.pdf', 'Charte graphique.pdf'], machine: ['argos', 'athena', 'orion']};
+function chercherCible(d){ const k = $('rt-k').value, q = $('rt-q').value.trim().toLowerCase(), z = $('rt-r'); const l = CIBLES[k].filter(x => x.toLowerCase().includes(q)); z.innerHTML = l.length ? l.map(x => `<button class="row" style="grid-template-columns:auto minmax(0,1fr)" onclick="toast('« ${x} » rattaché à ${d} : le lien est écrit dans le module ${k === 'document' ? 'ged' : k + 's'}. (maquette)')">${pill(k, 'nu')}<div class="nm"><b>${x}</b></div></button>`).join('') : '<p class="silence">Aucun ' + k + ' à ce nom.</p>'; }
 function versCertificats(d){ toast('Ouvre Sécurité › Certificats' + (d ? ' sur ' + d : '') + ' (maquette) : échéances, quota, renouvellement.'); }
 function repondre(d, fait, annule){ const s = SITES.find(x => x.d === d); delete s.demande; rendre(); toast(annule ? 'Demande annulée.' : fait ? 'Demande close : adossé. Le compte est prévenu.' : 'Demande refusée. Le compte lira la raison.'); }
 
 // ───────────────────────── la fiche d'un site ─────────────────────────
 function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; const s = SITES.find(x => x.d === d), e = etat(s), mien = s.compte === ETAT.moi && !ETAT.admin, hors = s.src !== 'panneau';
   const acc = ACCORDS.find(a => a.d === d);
-  const O = [['etat', 'État'], ['historique', 'Historique'], ['gestes', 'Gestes']].concat(hors ? [] : [['sauvegardes', 'Sauvegardes'], ['hebergement', 'Hébergement']]).concat([['dependances', 'Dépendances'], ['liens', 'Rattachements'], ['journal', 'Journal']]);
+  const O = [['etat', 'État'], ['historique', 'Historique'], ['gestes', 'Gestes']].concat(hors ? [['ailleurs', 'DNS et courrier']] : [['sauvegardes', 'Sauvegardes'], ['hebergement', 'Hébergement']]).concat([['dependances', 'Dépendances'], ['liens', 'Rattachements'], ['journal', 'Journal']]);
   if (hors && (ETAT.onglet === 'sauvegardes' || ETAT.onglet === 'hebergement')) ETAT.onglet = 'etat';
+  if (!hors && ETAT.onglet === 'ailleurs') ETAT.onglet = 'etat';
   const go = v => v >= 1024 ? (Math.round(v / 102.4) / 10).toLocaleString('fr-FR') + ' Go' : v + ' Mo';
   const corps = {
-    etat: `${vignette(s, true)}<p class="silence" style="padding:0 0 10px;font-size:12.5px">${s.capture ? 'capture : ' + s.capture + ' · ' : ''}<a href="#" onclick="toast('Nouvelle capture demandée (maquette).');return false" style="color:var(--accent)">rafraîchir la capture</a></p><dl class="paires"><dt>réponse</dt><dd>${s.code ?? 'sans réponse'} en ${s.ms.toLocaleString('fr-FR')} ms <small style="color:var(--muted)">sonde · il y a 2 min</small></dd>
+    etat: `${vignette(s, true)}<p class="silence" style="padding:0 0 10px;font-size:12.5px">${s.capture ? 'capture : ' + s.capture + ' · ' : ''}<a href="#" onclick="toast('Nouvelle capture demandée (maquette).');return false" style="color:var(--accent)">rafraîchir la capture</a> <span class="ac">à créer</span></p><dl class="paires"><dt>réponse</dt><dd>${s.code ?? 'sans réponse'} en ${s.ms.toLocaleString('fr-FR')} ms <small style="color:var(--muted)">sonde · il y a 2 min</small></dd>
       <dt>disponibilité 30 j</dt><dd>${pct(s).toLocaleString('fr-FR')} % · ${s.pannes} coupure${s.pannes > 1 ? 's' : ''}${s.indispo ? ' · ' + s.indispo : ''}</dd>
       <dt>certificat</dt><dd>${s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : 'expire dans ' + s.ssl + ' j'} <small style="color:var(--muted)">d’après Certificats</small> <button class="btn s" onclick="versCertificats('${d}')">Certificats ↗</button></dd>
       <dt>hébergement</dt><dd>${hors ? 'hors panneau, déclaré à la main' : 'panneau · compte ' + E(s.fp) + (s.php ? ' · PHP ' + s.php : '')}</dd>
@@ -492,7 +517,7 @@ function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; cons
     gestes: `<div class="gest"><button class="btn p" onclick="toast('Sonde de ${d} : ${s.code ?? 'sans réponse'} en ${s.ms} ms.')">Sonder maintenant</button>${hors ? '' : `<button class="btn" onclick="versCertificats('${d}')">Certificat : renouveler, quota ↗</button><button class="btn" ${mien || acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Choix de la copie à restaurer (maquette).')">Restaurer une sauvegarde…</button>`}</div>
       ${hors ? '<div class="encart">Hors panneau : la sonde, l’historique et les rattachements seulement.' + (mien && !s.demande ? ' <button class="btn s" onclick="SITES.find(x=>x.d===\'' + d + '\').demande={id:99,msg:\'À rapatrier.\',quand:\'à l’instant\'};rendre();ouvrir(\'' + d + '\');toast(\'Demande envoyée à l’administrateur.\')">Demander l’adossement</button>' : '') + '</div>' : ''}
       ${acc ? `<div class="encart">Accord de restauration donné par ${E(acc.par)} jusqu’à ${E(acc.fin)}.</div>` : (!hors && mien ? `<div class="gest"><button class="btn" onclick="ACCORDS.push({d:'${d}',par:ETAT.moi,geste:'restaurer',fin:'demain 04:31'});rendre();ouvrir('${d}');toast('Accord donné pour 24 h.')">Autoriser l’administrateur à restaurer (24 h)</button></div>` : '')}
-      ${!hors ? `<div class="gest"><button class="btn" onclick="toast('Analyse antivirus lancée (maquette).')">${ETAT.admin ? 'Scanner' : 'Scanner mon site'}</button><button class="btn" onclick="toast('Lance le plan de sauvegarde du compte (maquette).')">Sauvegarder maintenant</button><button class="btn" onclick="toast('Les 200 dernières lignes du journal du site (maquette).')">Journaux</button><button class="btn d" onclick="toast('Confirmation demandée avant de redémarrer PHP. (maquette)')">Redémarrer PHP</button></div><p class="silence">Ces quatre gestes existent dans l’écran d’aujourd’hui ; en V19 ils attendent la commande racine du panneau. La maquette les garde.</p>` : ''}
+      ${!hors ? `<div class="gest"><button class="btn" onclick="toast('Analyse antivirus lancée (maquette).')">${ETAT.admin ? 'Scanner' : 'Scanner mon site'}</button><button class="btn" onclick="toast('Lance le plan de sauvegarde du compte (maquette).')">Sauvegarder maintenant</button><button class="btn" onclick="toast('Les 200 dernières lignes du journal du site (maquette).')">Journaux</button><button class="btn d" onclick="toast('Confirmation demandée avant de redémarrer PHP. (maquette)')">Redémarrer PHP</button></div><p class="silence">Ces quatre gestes existent dans l’écran d’aujourd’hui mais ne marchent plus en V19 : ils attendent une commande racine du panneau. <span class="ac">à créer</span></p>` : ''}
       <div class="gest">${FENETRES.some(f => f.d === d) ? `<button class="btn" onclick="FENETRES.splice(FENETRES.findIndex(x => x.d === '${d}'), 1);rendre();ouvrir('${d}');toast('Fenêtre annulée : les alertes reparlent.')">Fin de la maintenance</button>` : `<button class="btn" onclick="maintenance('${d}','2 h');ouvrir('${d}')">Mettre en maintenance (2 h)</button>`}<button class="btn" onclick="toast('Nouvelle capture demandée (maquette).')">Rafraîchir la capture</button><button class="btn" onclick="ETAT.onglet='historique';ouvrir('${d}')">Historique</button></div>
       ${ETAT.admin ? `<div class="gest"><button class="btn" onclick="toast('Transférer : les liens, accords et demande de l’ancien compte ne suivent pas. (maquette)')">Transférer à un compte…</button>${hors ? `<button class="btn d" onclick="toast('Retirer de la liste (maquette).')">Retirer de la liste</button>` : ''}</div>` : (hors && mien ? `<div class="gest"><button class="btn d" onclick="toast('Retirer de ma liste (maquette).')">Retirer de ma liste</button></div>` : '')}`,
     sauvegardes: `<p class="silence" style="padding-top:0">Une copie couvre tout le compte du panneau, pas ce seul site.</p>${s.sauv == null ? '<div class="encart w"><b>Aucune copie connue.</b> Aucun plan de sauvegarde ne couvre ce compte du panneau.</div>' : `<div class="rows">${[['aujourd’hui 03:00 → 03:12', 'complète', '2,1 Go · bases : boutique_prod'], ['hier 03:00 → 03:11', 'complète', '2,1 Go · bases : boutique_prod'], ['11-08 03:00 → 03:04', 'partielle', '640 Mo']].slice(s.sauv ? 1 : 0).map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(c[1], c[1] === 'complète' ? 'ok' : 'w')}<div class="nm"><b>${c[0]}</b><small>${c[2]}</small></div><button class="btn s d" ${mien || acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Confirmation : les fichiers et bases du compte seront remplacés. (maquette)')">Restaurer</button></div>`).join('')}</div>`}
@@ -502,14 +527,26 @@ function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; cons
       <h2 style="font-size:14px;margin:16px 0 8px">Bases</h2><div class="rows"><div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('MariaDB', 'nu')}<div class="nm"><b>${E(d.split('.')[0])}_prod</b><small>utilisateur ${E(s.fp)}_app</small></div><span class="num">184 Mo</span></div></div>
       <h2 style="font-size:14px;margin:16px 0 8px">DNS du domaine</h2><div class="rows">${[['A', '@', '203.0.113.24', '3600'], ['AAAA', '@', '2001:db8::24', '3600'], ['CNAME', 'www', E(d) + '.', '3600'], ['MX', '@', '10 mail.exemple.test.', '3600']].map(r => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(r[0], 'nu')}<div class="nm"><b>${r[1]}</b><small class="mono">${r[2]}</small></div><span class="num">${r[3]}</span></div>`).join('')}</div>
       <h2 style="font-size:14px;margin:16px 0 8px">Courrier du domaine</h2><div class="rows">${[['contact', '412 Mo sur 2 Go'], ['facturation', '96 Mo sur 1 Go']].map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr)">${pill('actif', 'ok')}<div class="nm"><b>${c[0]}@${E(d)}</b><small>${c[1]}</small></div></div>`).join('')}</div>`,
-    liens: `<div class="rows"><div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('project', 'nu')}<div class="nm"><b>Refonte 2027</b><small>rattaché hier</small></div><button class="btn s">Retirer</button></div></div><div class="gest"><button class="btn" onclick="toast('Choisir un projet, un contact, une machine ou une note (maquette).')">Rattacher…</button></div>`,
+    ailleurs: `<p class="silence" style="padding-top:0">${(s.src0 || s.src) === 'panneau' ? 'Sans FastPanel, le DNS et le courrier du domaine se lisent de l’extérieur : voici ce que le monde en voit.' : 'Ce site n’est pas sur cette machine : voici ce que le monde en voit.'} <span class="ac">à créer</span></p>
+      <h2 style="font-size:14px;margin:6px 0 8px">Résolution publique</h2><div class="rows">${[['A', '@', '198.51.100.7', 'chez l’hébergeur'], ['CNAME', 'www', E(d) + '.', ''], ['MX', '@', '10 mx.hebergeur.exemple.', '']].map(r => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(r[0], 'nu')}<div class="nm"><b>${r[1]}</b><small class="mono">${r[2]}</small></div><span class="num" style="font-size:12.5px;color:var(--soft)">${r[3]}</span></div>`).join('')}</div>
+      <h2 style="font-size:14px;margin:16px 0 8px">Courrier du domaine</h2><div class="pills">${pill('SPF présent', 'ok')}${pill('DKIM présent', 'ok')}${pill('DMARC absent', 'w')}</div>
+      <h2 style="font-size:14px;margin:16px 0 8px">Nom de domaine</h2><p class="silence" style="padding-top:0">Expire dans 212 jours. <span class="de">dns</span></p>`,
+    liens: (() => {
+      const G = [['contacts', 'Contacts', [['Zoé Martin', 'hébergeur · technique'], ['Paul Renard', 'propriétaire']]], ['projets', 'Projets', [['Refonte 2027', 'par le champ « domaine » du projet']]], ['notes', 'Notes', [['Accès et particularités', 'note de nature « site »']]], ['ged', 'Documents', [['Contrat d’hébergement.pdf', 'document lié au domaine']]], ['taches', 'Tâches', [['Renouveler le nom de domaine', 'échéance le 12 mars']]], ['flotte', 'Machines', hors ? [] : [['argos', 'lien de genre « domaine »']]]].filter(g => g[2].length).slice(0, d.length % 2 ? 6 : 4);
+      return `<p class="silence" style="padding-top:0">Chaque lien vit dans le module qui le porte ; Sites les lit tous ici et n’en garde pas de copie.</p>
+        ${G.map(g => `<h2 style="font-size:14px;margin:14px 0 8px">${g[1]} <span class="de">${g[0]}</span></h2><div class="rows">${g[2].map(x => `<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>${x[0]}</b><small>${x[1]}</small></div><button class="btn s" onclick="toast('Ouvre « ${x[0]} » dans ${g[1]} (maquette).')">Ouvrir ↗</button></div>`).join('')}</div>`).join('')}
+        <h2 style="font-size:14px;margin:18px 0 8px">Rattacher <span class="neuf">nouveau</span></h2>
+        <div class="gest" style="margin-top:0"><select id="rt-k" aria-label="Type" onchange="chercherCible('${d}')"><option>projet</option><option>contact</option><option>note</option><option>document</option><option>machine</option></select><input type="search" id="rt-q" placeholder="chercher par nom…" aria-label="Chercher" oninput="chercherCible('${d}')" style="flex:1 1 160px"></div>
+        <div class="rows" id="rt-r" style="margin-top:8px"></div>
+        <div class="encart">Un vrai choix dans la liste, au lieu d’un type et d’une référence tapés à la main. <b>À débattre :</b> aujourd’hui sept modules tiennent chacun leur table de liens ; un module Liens commun les remplacerait.</div>`;
+    })(),
     dependances: `<p class="silence" style="padding-top:0">Ce dont ce site dépend, et ce qui dépend de lui <span class="de">Sensorium</span></p>
       <h2 style="font-size:14px;margin:6px 0 8px">Il dépend de</h2><div class="rows">${(hors ? [['résolu par', 'la zone DNS exemple.test', 'chez un autre hébergeur']] : [['hébergé par', 'la machine argos', 'santé 95 · disque 80 %'], ['certifié par', 'son certificat', s.ssl < 0 ? 'échu' : 'expire dans ' + s.ssl + ' j'], ['résolu par', 'la zone DNS exemple.test', '4 enregistrements'], ['hébergé par', 'le compte « ' + E(s.fp) + ' » du panneau', 'PHP ' + (s.php || '—')]]).map(x => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(x[0], 'nu')}<div class="nm"><b>${x[1]}</b></div><span class="num" style="font-size:12.5px;color:var(--soft)">${x[2]}</span></div>`).join('')}</div>
       <h2 style="font-size:14px;margin:16px 0 8px">S’il tombe</h2>${d === 'api.exemple.test' ? `<div class="encart w"><b>2 sites sont touchés</b> : boutique.exemple.test et atelier.exemple.test l’appellent.</div>` : '<p class="silence">Rien d’autre ne dépend de ce site.</p>'}
       <div class="gest"><button class="btn" onclick="toast('Déclarer une dépendance : dépend de, hébergé par, certifié par, résolu par (maquette).')">Déclarer une dépendance…</button></div>`,
     journal: (() => { const l = JOURNAL.filter(j => j.d === d); return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span>${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : '<p class="silence">Aucun geste encore sur ce site.</p>'; })(),
   };
-  $('tiroir').innerHTML = `<div class="sh"><h1 style="font-size:20px"><code>${E(d)}</code></h1><span class="dr"><button class="btn" aria-pressed="${SUIVIS.has(d)}" title="Recevoir un avis à chaque changement d’état de ce site (Sensorium)" onclick="SUIVIS.has('${d}') ? SUIVIS.delete('${d}') : SUIVIS.add('${d}');ouvrir('${d}');toast(SUIVIS.has('${d}') ? 'Tu seras prévenu à chaque changement d’état.' : 'Tu ne suis plus ce site.')">${SUIVIS.has(d) ? '★ Suivi' : '☆ Suivre'}</button><button class="btn" onclick="fermer()">Fermer</button></span></div><div class="pills">${pill(e.t, e.c)}${FENETRES.some(f => f.d === d) ? pill('en maintenance', 'i') : ''}${pill(hors ? 'hors panneau' : 'panneau', 'nu')}${s.demande ? pill('adossement demandé', 'i') : ''}</div>
+  $('tiroir').innerHTML = `<div class="sh"><h1 style="font-size:20px"><code>${E(d)}</code></h1><span class="dr"><button class="btn" aria-pressed="${SUIVIS.has(d)}" title="Recevoir un avis à chaque changement d’état de ce site (Sensorium)" onclick="SUIVIS.has('${d}') ? SUIVIS.delete('${d}') : SUIVIS.add('${d}');ouvrir('${d}');toast(SUIVIS.has('${d}') ? 'Tu seras prévenu à chaque changement d’état.' : 'Tu ne suis plus ce site.')">${SUIVIS.has(d) ? '★ Suivi' : '☆ Suivre'}</button><button class="btn" onclick="fermer()">Fermer</button></span></div><div class="pills">${pill(e.t, e.c)}${FENETRES.some(f => f.d === d) ? pill('en maintenance', 'i') : ''}${pill(hors ? lieu(s) : 'panneau', 'nu')}${s.demande ? pill('adossement demandé', 'i') : ''}</div>
     <div class="onglets" role="tablist">${O.map(o => `<button role="tab" aria-selected="${ETAT.onglet === o[0]}" onclick="ETAT.onglet='${o[0]}';ouvrir('${d}')">${o[1]}</button>`).join('')}</div><div role="tabpanel">${corps[ETAT.onglet]}</div>`;
   $('tiroir').classList.add('on'); $('voile').classList.add('on');
 }
