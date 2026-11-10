@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8e4926
+// VERSION CN : 0.1.0  #f8313b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8e4926 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f8313b ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -31128,7 +31128,7 @@ function stMoi(a){ a=String(a||''); const me=(window._me||{}).user; if(me && a==
 function stPillsSite(x){
     const p=[];
     if(x.up===true) p.push(stPuce('en ligne','ok')); else if(x.up===false) p.push(stPuce(x.http_code?('code '+x.http_code):'ne répond pas','panne')); else p.push(stPuce('pas encore sondé','pas_encore'));
-    if(typeof x.ssl_days==='number'){ const c=x.ssl_days<7?'panne':(x.ssl_days<21?'regarder':'ok'); p.push(stPuce('SSL '+x.ssl_days+' j'+(x.ssl_source==='sonde'?' (sonde)':''), c)); }
+    if(typeof x.ssl_days==='number'){ const c=x.ssl_days<7?'panne':(x.ssl_days<21?'regarder':'ok'); p.push(stPuce('SSL '+x.ssl_days+' j', c)); }
     else if(x.source==='panneau') p.push(stPuce('sans certificat','regarder'));
     if(x.source==='panneau'){
         if(x.sauvegarde){ const a=stAge(x.sauvegarde.at); p.push(stPuce(a===0?'sauvegardé aujourd’hui':(a===1?'sauvegardé hier':'sauvegardé il y a '+a+' j'), (a!==null&&a>2)?'regarder':'ok')); }
@@ -31388,7 +31388,7 @@ function stFicheHtml(d){
         ${paire('réponse', so.http_code ? `${so.http_code} en ${so.response_ms||'?'} ms${x.https?' · HTTPS forcé':''}` : (x.http_code?'code '+x.http_code:'pas encore sondé'), so.ts?'sonde · '+stHeure(so.ts):'')}
         ${paire('disponibilité 30 j', x.dispo30&&typeof x.dispo30.pct==='number' ? `${stPct(x.dispo30.pct)} · ${x.dispo30.outages||0} coupure${(x.dispo30.outages||0)>1?'s':''}${x.dispo30.downtime?' · '+stE(x.dispo30.downtime):''}` : '—', 'sonde')}
         ${paire('dernières 24 h', h&&typeof h.availability==='number' ? `${stPct(h.availability)} · ${h.response_avg_ms||'?'} ms en moyenne · ${h.samples||0} mesure${(h.samples||0)>1?'s':''}` : '—', 'sonde')}
-        ${paire('certificat', typeof x.ssl_days==='number' ? `expire dans ${x.ssl_days} j${quotaTxt}` : (d.hors_panneau?'inconnu':'aucun'), x.ssl_source==='sonde'?'sonde':'panneau')}
+        ${paire('certificat', typeof x.ssl_days==='number' ? `expire dans ${x.ssl_days} j${quotaTxt}` : (d.hors_panneau?'inconnu':'aucun'), ({sonde:'sonde', certificats:'Sécurité › Certificats', panneau:'panneau'})[x.ssl_source]||'')}
         ${paire('PHP', x.php ? `${stE(x.php)}${x.backend?' · '+stE(x.backend):''}${(x.running===false&&x.up===false)?' · <b style="color:var(--danger)">arrêté</b>':''}` : (d.hors_panneau?'<small class="mx-meta">hors panneau — pas d’information</small>':'aucun <small class="mx-meta">le panneau n’en déclare pas pour ce site</small>'), x.php?'panneau':'')}
         ${paire('CMS', x.cms&&x.cms.type ? `${stE(x.cms.type)}${x.cms.version?' '+stE(x.cms.version):''}` : ((d.non_lu||[]).includes('cms')?stPasLu:'inconnu'), x.cms&&x.cms.type?'sonde':'')}
         ${paire('disque', x.disk_mb!==null&&x.disk_mb!==undefined ? `${stMo(x.disk_mb)}${x.root?' · racine '+stE(x.root):''}` : (x.root?'racine '+stE(x.root):(d.hors_panneau?'<small class="mx-meta">hors panneau — pas d’information</small>':stPasLu)), x.disk_mb!==null&&x.disk_mb!==undefined?'panneau':'')}

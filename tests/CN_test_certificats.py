@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #511d76
+# VERSION CN : 0.1.0  #f26849
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=511d76 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f26849 ▼▼▼
 """Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau."""
 import importlib.util
 import shutil
@@ -68,6 +68,12 @@ class Monde(unittest.TestCase):
 
 
 class Sonde(Monde):
+    def test_la_sonde_suit_aussi_les_sites_declares_hors_du_panneau(self):
+        self.ctx.executer_lecture = lambda cap, **a: {"sites": [{"domaine": "declare.exemple.fr"}]} if cap == "sites.vue" else self.panneau
+        self.certs["declare.exemple.fr"] = self.cert(40)
+        self.sonde()
+        self.assertEqual(self.etat("declare.exemple.fr"), "valide")      # Sites ne lit plus les certificats : c'est ici qu'un site déclaré trouve son échéance
+
     def test_les_etats_et_le_domaine_inconnu_n_est_pas_sans_certificat(self):
         self.certs = {"a.exemple.fr": self.cert(80), "b.exemple.org": self.cert(10), "c.exemple.fr": self.cert(-3)}
         self.n.reglages.poser("certificats.hotes", "d.exemple.fr")

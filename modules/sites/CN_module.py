@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.1.3  #a8327c
+# VERSION CN : 0.1.4  #1d9da9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sites.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=a8327c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=1d9da9 ▼▼▼
 """Le module Sites.
 
 Ce qu'il tient de la V18 (sites, site_pass, site_fiche, site_history/availability, demandes, accords, liens) et les leçons qu'il garde :
@@ -395,6 +395,17 @@ def brancher(ctx):
             poser_miroir("comptes", cs)                                  # le miroir des comptes ordinaires (absent : une liste vide, et c'est vrai)
         if e2 != "muet":
             poser_miroir("panneau", {"lu": e2 == "ok", "sites": pan})      # « lu » : le panneau a répondu (absent, il n'y a rien à lire, et on le dit)
+        # Les certificats sont l'affaire du module Certificats (Sécurité) : il les lit, les alerte, tient le seuil et le quota. Quand il est là, Sites ne refait
+        # rien de tout cela : il recopie les jours restants pour sa vue et sa courbe. Sans lui, Sites garde sa propre lecture, pour ne pas devenir aveugle.
+        etat_c, ec = lecture("certificats.etat")
+        tenu = ec != "absent"
+        par_cert = {nom_hote(x.get("hote")): x for x in (etat_c.get("certificats") or []) if isinstance(x, dict)} if isinstance(etat_c, dict) else None
+        if tenu:
+            s_c, _ = lecture("certificats.seuil")
+            ancien = miroir("certificats", perime=True) or {}
+            poser_miroir("certificats", {"tenu": True, "seuil": int(s_c["jours"]) if isinstance(s_c, dict) and isinstance(s_c.get("jours"), int) else ancien.get("seuil", 21)})
+        else:
+            poser_miroir("certificats", {"tenu": False})
         connus = {nom_hote(r["domaine"]) for r in db.lire("SELECT domaine FROM sites")}
         for x in cs or []:
             connus |= set(x["sites"])
@@ -410,7 +421,13 @@ def brancher(ctx):
             bon = code is not None and (200 <= int(code) < 400 or (proteges and int(code) in (401, 403)))
             up = 1 if bon else 0
             avant = avant_tous.get(d)
-            if avant and avant["ssl_jours"] is not None and time.time() - avant["ts"] < CERT_REFRAICHI_S:
+            if tenu:
+                x = (par_cert or {}).get(d)
+                if par_cert is None:
+                    jours = avant["ssl_jours"] if avant else None      # Certificats est là mais se tait : on garde ce qu'on savait, on ne le double pas
+                else:
+                    jours = x.get("jours") if x and isinstance(x.get("jours"), int) else None
+            elif avant and avant["ssl_jours"] is not None and time.time() - avant["ts"] < CERT_REFRAICHI_S:
                 jours = avant["ssl_jours"]
             elif code is None and (erreur or "").startswith("adresse interne"):
                 jours = None
@@ -480,7 +497,16 @@ def brancher(ctx):
                  "detail": "le code HTTP est bon, mais pour un visiteur c'est déjà lent (au-delà de %d ms)" % seuil}
                 for o in objets_site(c, "en_ligne") if not o["donnees"].get("douteux") and (o["donnees"].get("ms") or 0) >= seuil]
 
+    def certificats_tenus():
+        """(tenu, seuil) : le module Certificats est-il là, et quel seuil fait foi — le sien s'il est là, le réglage de Sites sinon."""
+        m = miroir("certificats", perime=True)
+        if isinstance(m, dict) and m.get("tenu"):
+            return True, int(m.get("seuil") or 21)
+        return False, entier("ssl_court_j", 21)
+
     def det_certificat(c):
+        if lecture("certificats.seuil")[1] != "absent":
+            return []                                                   # le module Certificats ouvre déjà ce constat (expiration_proche) : un seul suffit
         seuil = entier("ssl_court_j", 21)
         sortie = []
         for o in objets_site(c):
@@ -529,7 +555,7 @@ def brancher(ctx):
 
     def vigilances(lignes, tout, demandes):
         vig = []
-        court = entier("ssl_court_j", 21)
+        court = certificats_tenus()[1]
         for d in demandes:
             if tout:
                 vig.append({"niveau": "regarder", "site": d["domaine"], "titre": "%s : adossement demandé par %s" % (d["domaine"], d["compte"]), "detail": d["message"] or "sans message", "geste": "repondre_demande", "demande": d["id"]})
@@ -570,7 +596,7 @@ def brancher(ctx):
             lignes.append({"domaine": d, "source": e["origine"] if e["origine"] == "panneau" else "declare", "origine": e["origine"],
                            "up": bool(m["up"]) if m else None, "code": m["code"] if m else None, "ms": m["ms"] if m else None, "erreur": m["erreur"] if m else "",
                            "ssl_jours": m["ssl_jours"] if m and m["ssl_jours"] is not None else (p.get("ssl") or {}).get("jours"), "ssl_etat": (p.get("ssl") or {}).get("etat"),
-                           "ssl_source": "sonde" if m and m["ssl_jours"] is not None else ("panneau" if (p.get("ssl") or {}).get("jours") is not None else ""),
+                           "ssl_source": ("certificats" if certificats_tenus()[0] else "sonde") if m and m["ssl_jours"] is not None else ("panneau" if (p.get("ssl") or {}).get("jours") is not None else ""),
                            "php": p.get("php", ""), "proprietaire_panneau": p.get("proprietaire", ""), "mesure": m["ts"] if m else None,
                            "dispo30": dispo.get(d), "comptes": e["comptes"] if tout else None, "demande": parsite.get(d)})
         return {"sites": lignes, "vigilances": vigilances(lignes, tout, demandes),

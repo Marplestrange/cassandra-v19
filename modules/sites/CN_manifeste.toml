@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.1.3  #4be1e7
+# VERSION CN : 0.1.4  #5fcb8b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=4be1e7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=5fcb8b ▼▼▼
 [module]
 id = "sites"
 nom = "Sites"
-version = "0.1.3"
+version = "0.1.4"
 noyau_min = "0.1.0"
 description = "Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes."
 confiance = "interne"
@@ -88,7 +88,7 @@ portee = "societe"
 
 [[reglages]]
 id = "ssl_court_j"
-libelle = "Jours restants sous lesquels le certificat d'un site est signalé"
+libelle = "Jours restants sous lesquels le certificat d'un site est signalé — seulement si le module Certificats est absent : sinon c'est son seuil qui fait foi"
 type = "entier"
 defaut = 21
 minimum = 3
@@ -100,7 +100,7 @@ emet = ["site.panne", "site.retour", "site.declare", "site.retire", "site.attrib
 
 [[moteurs]]
 id = "sonde"
-libelle = "Sonde chaque site (code, durée, certificat), consigne les pannes et les retours, purge les vieilles mesures"
+libelle = "Sonde chaque site (code, durée ; le certificat est recopié du module Certificats, ou lu ici s'il est absent), consigne les pannes et les retours, purge les vieilles mesures"
 mode = "periodique"
 toutes_les_s = 300
 duree_max_s = 280
@@ -117,7 +117,7 @@ frequence_s = 300
 
 [[detecteurs]]
 id = "certificat_court"
-libelle = "Le certificat d'un site arrive à échéance"
+libelle = "Le certificat d'un site arrive à échéance (muet quand le module Certificats est là : c'est lui qui alerte)"
 frequence_s = 900
 
 [[detecteurs]]

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.3.0  #01eda0
+# VERSION CN : 0.3.1  #b747c9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Certificats TLS : la veille (ce que voient les visiteurs, le quota) et le cycle de vie (demande, validation, révocation, archivage, audit).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=01eda0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=b747c9 ▼▼▼
 """Certificats TLS : ce que les visiteurs voient, combien d'émissions il reste, et le cycle de vie d'un certificat.
 
 Porté de la V18 (`_ssl_probe`, `ssl_quota_state`, `_ssl_quota_note`, `_cert_sonde_jours`), avec ses leçons :
@@ -198,6 +198,23 @@ def brancher(ctx):
         s |= {h for h, r in m.items() if r["source"] == "importe"}
         return sorted(x for x in s if x and "." in x and m.get(x, {}).get("etat_force", "") not in ("archive", "revoque"))
 
+    def hotes_sonde():
+        """Ce que la sonde lit : les hôtes suivis, plus les sites que le module Sites connaît hors du panneau (déclarés à la main, inscrits dans une fiche).
+        Sites ne lit plus les certificats lui-même quand ce module est là : sans cela, un site déclaré n'aurait plus d'échéance nulle part.
+        Ces hôtes ne comptent que pour la lecture : ils n'entrent pas dans `hotes()`, qui décide aussi des demandes."""
+        s = set(hotes())
+        try:
+            r = ctx.executer_lecture("sites.vue")
+        except Exception:
+            r = None
+        if isinstance(r, dict):
+            m = metas()
+            for x in r.get("sites") or []:
+                h = nom_hote(x.get("domaine")) if isinstance(x, dict) else ""
+                if h and "." in h and m.get(h, {}).get("etat_force", "") not in ("archive", "revoque"):
+                    s.add(h)
+        return sorted(s)
+
     # ------------------------------------------------------------------ qui voit quoi
     def admin():
         return (not ctx.compte) or ctx.est_admin(ctx.compte)
@@ -246,7 +263,7 @@ def brancher(ctx):
         delai = entier("delai_s", 5)
         seuil = entier("seuil_jours", 21)
         m = metas()
-        for h in hotes():
+        for h in hotes_sonde():
             if time.time() - debut > BUDGET_S:
                 break
             r = lire_certificat(h, delai)

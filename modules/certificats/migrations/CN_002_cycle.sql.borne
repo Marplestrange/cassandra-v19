@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.3.0  #644386
+# VERSION CN : 0.3.1  #644386
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 002_cycle.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

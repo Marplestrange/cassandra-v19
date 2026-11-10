@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0615af
+# VERSION CN : 0.1.0  #9a2ddd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0615af ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9a2ddd ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -60,6 +60,8 @@ class Monde(unittest.TestCase):
         self.panneau = [{"domaine": "pan.exemple.fr", "proprietaire": "bea", "ssl": {"etat": "actif", "jours": 80}, "php": "8.3"},
                         {"domaine": "autre.exemple.fr", "proprietaire": "zoe", "ssl": {"etat": "actif", "jours": 80}, "php": "8.2"}]
         self.pan_dispo = True
+        self.certificats = None                       # None : module Certificats absent ; sinon {hote: jours} et il fait foi
+        self.seuil_certificats = 21
         self.droits_reels = False                     # vrai : « comptes.lister » et « fastpanel.sites » sont refusés à un compte ordinaire, comme en service
         self.ctx.executer_lecture = self.lecture
         self.mod = _ModuleGlobals(self.n.catalogue.get("sites.vue").faire.__globals__)
@@ -76,6 +78,8 @@ class Monde(unittest.TestCase):
             return next((dict(c) for c in self.comptes if c["compte"] == compte), None)
         if self.droits_reels and compte and compte != CHEF:
             return None
+        if cap.startswith("certificats.") and self.certificats is not None:
+            return {"jours": self.seuil_certificats} if cap == "certificats.seuil" else {"certificats": [{"hote": h, "jours": j, "etat": "valide"} for h, j in self.certificats.items()]}
         if cap == "comptes.lister":
             return {"comptes": self.comptes}
         if cap == "fastpanel.sites":
@@ -390,6 +394,30 @@ class Sonde(Monde):
         self.assertTrue(any("échu" in json.dumps(e["donnees"], ensure_ascii=False) for e in self.evts("constat.ouvert")))
         v = self.ex("vue")["resultat"]["vigilances"]
         self.assertTrue(any("échu" in x["titre"] and x["niveau"] == "panne" for x in v))
+
+    def test_avec_le_module_certificats_sites_ne_lit_ni_n_alerte(self):
+        appels = []
+        self.mod._cert_jours = lambda d, delai: appels.append(d) or 50
+        self.certificats = {"bea.exemple.fr": 5, "pan.exemple.fr": 80}
+        self.seuil_certificats = 30
+        self.sonde()
+        self.assertEqual(appels, [])                                             # une seule sonde des certificats : celle de Certificats
+        s = {x["domaine"]: x for x in self.ex("vue", compte=CHEF)["resultat"]["sites"]}
+        self.assertEqual((s["bea.exemple.fr"]["ssl_jours"], s["bea.exemple.fr"]["ssl_source"]), (5, "certificats"))
+        self.assertIsNone(self.ctx.stockage.lire("SELECT ssl_jours FROM mesures WHERE domaine='fiche.exemple.fr'")[0]["ssl_jours"])   # pas encore lu là-bas : dit, pas deviné
+        self.n.tick()
+        self.assertFalse(any("ertificat" in json.dumps(e["donnees"], ensure_ascii=False) for e in self.evts("constat.ouvert")))        # un seul constat : celui de Certificats
+        self.certificats["pan.exemple.fr"] = 25
+        self.ctx.stockage.ecrire("UPDATE mesures SET ts = ts - 400")
+        self.sonde()
+        v = self.ex("vue", compte=CHEF)["resultat"]["vigilances"]
+        self.assertTrue(any("pan.exemple.fr" in x["titre"] and x["niveau"] == "regarder" for x in v))    # 25 j : sous le seuil de Certificats (30), pas sous celui de Sites (21)
+
+    def test_sans_le_module_certificats_sites_garde_sa_lecture(self):
+        self.certs["bea.exemple.fr"] = 5
+        self.sonde()
+        self.n.tick()
+        self.assertTrue(any("bea.exemple.fr" in json.dumps(e, ensure_ascii=False) and "ertificat" in json.dumps(e, ensure_ascii=False) for e in self.evts("constat.ouvert")))
 
     def test_un_site_protege_est_hors_ligne_sauf_reglage(self):
         self.reponses["bea.exemple.fr"] = (401, 50, "")
