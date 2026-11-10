@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #9bf11e
+// VERSION CN : 0.1.0  #9d5054
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=9bf11e ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=9d5054 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -83,6 +83,7 @@
         else if (page === "gestion") S.g = await chargerReseau();
         else S.e = await agir("netbird.etat");
         if (page === "vue" || page === "installation" || page === "serveur") S.v = await agir("netbird.versions").catch(() => null);
+        if (page === "serveur" && !S.f.version && S.v && S.v.derniere) S.f.version = S.v.derniere;            // personne ne devine la dernière version : on la propose
         S.erreur = ""; S.lu = Date.now();
       } catch (e) { S.erreur = e.message || String(e); if (page === "gestion") S.g = null; }
       if (page === "historique") { try { S.j = (await agir("netbird.journal", { limite: 30 })).gestes; } catch (_) { S.j = null; } }
@@ -349,7 +350,7 @@
       const choix = [["nginx", "nginx (ton nginx publie le serveur)"], ["caddy", "caddy (ton caddy publie le serveur)"], ["traefik", "traefik (tout intégré : ports 80 et 443 libres)"]];
       let h = '<div class="carte"><h2 ' + H2 + ">Installer un serveur NetBird sur cette machine</h2>" +
         '<p class="note">Deux temps : Cassandra télécharge d’abord le script officiel de NetBird, et te montre son empreinte. Elle ne l’exécute qu’après ta confirmation, et seulement s’il n’a pas changé entre-temps.</p>' +
-        '<div class="champs"><label class="ch"><b>Version</b><span class="note">Précise (v0.40.0) : jamais « latest ».</span><input type="text" id="nb-s-ver" value="' + esc(f.version) + '" placeholder="v0.40.0" autocomplete="off" spellcheck="false"></label>' +
+        '<div class="champs"><label class="ch"><b>Version</b><span class="note">' + (S.v && S.v.derniere ? "Dernière publiée par NetBird : <b>" + esc(S.v.derniere) + "</b>, proposée ici. Précise : jamais « latest »." : "On n’a pas pu lire la dernière version publiée : saisis-la (github.com/netbirdio/netbird/releases), précise : jamais « latest ».") + '</span><input type="text" id="nb-s-ver" value="' + esc(f.version) + '" placeholder="' + esc((S.v && S.v.derniere) || "v0.82.0") + '" autocomplete="off" spellcheck="false"></label>' +
         champDomaine() +
         '<label class="ch"><b>Adresse e-mail</b><span class="note">Pour les certificats Let’s Encrypt.</span><input type="text" id="nb-s-mel" value="' + esc(f.email) + '" placeholder="admin@exemple.fr" autocomplete="off" spellcheck="false"></label>' +
         '<label class="ch"><b>Proxy</b><span class="note">Qui publie le serveur sur internet.</span><select id="nb-s-prx">' + choix.map((o) => '<option value="' + o[0] + '"' + (f.proxy === o[0] ? " selected" : "") + ">" + o[1] + "</option>").join("") + "</select></label></div>" +
@@ -435,6 +436,7 @@
     }
 
     function dessiner() {
+      if (racine.querySelector("#nb-s-ver")) S.f = lireForm();            // ce qui est tapé dans le formulaire survit à un redessin (relecture, minuterie)
       const e = S.e, t = TITRES[page];
       let h = '<div class="tete"><h1>NetBird' + (t[0] ? ' <span class="note" style="font-weight:500">› ' + esc(t[0]) + "</span>" : "") + '</h1><p class="sous">' + esc(t[1]) + '</p><div class="acts" style="margin-top:8px"><button class="btn" data-a="relire">Relire</button><span class="note">' +
         (S.lu ? "Relu à " + new Date(S.lu).toLocaleTimeString() : "") + "</span></div></div>";
