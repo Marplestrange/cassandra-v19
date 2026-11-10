@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a1df81
+// VERSION CN : 0.1.0  #6cd834
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages du module sites (vue d'ensemble, tous les sites, la page d'un site, alertes, disponibilité, demandes, journal) ; ses pages sont les sous-entrées de « Sites » dans le menu de gauche
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.sites) qui remplace l'onglet V18 « mysites » ; tout vient des capacités sites.* ; l'état vit hors de la scène, car le shell la redessine à chaque ouverture ; window.stVue reçoit la page demandée par le menu, window.stOpen ouvre un site depuis un autre écran
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a1df81 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=6cd834 ▼▼▼
 // Sites : l'écran du module. Il remplace l'onglet V18 « mysites » ; ses pages sont les sous-menus de « Sites » dans le menu de gauche
 // (le rail interne de l'ancien écran a disparu). Lot 1 : ce que les capacités sites.* savaient déjà rendre. Lot 2 : les incidents (une panne est un objet
 // qu'on dépanne), le calendrier d'un site, les sociétés, la preuve de propriété, les objectifs et les réglages.
@@ -397,7 +397,7 @@
           (f.gestes.prouver ? '<div class="acts"><button class="btn pri" data-a="prouver" data-d="' + esc(f.domaine) + '">Vérifier maintenant</button></div>' : "");
       }
       const vo = f.voisins || {}, mnt = vo.maintenance, tr = vo.trafic, nm = vo.nom, ap = f.apercu || {};
-      const carte = ap.image || ap.description ? '<div class="apv">' + (ap.image && /^data:image\//.test(ap.image) ? '<img src="' + esc(ap.image) + '" alt="Image de présentation du site">' : "") + '<div class="sp">' + (ap.titre ? "<b>" + esc(ap.titre) + "</b>" : "") + (ap.description ? '<p class="note">' + esc(ap.description) + "</p>" : "") + '<p class="note">Ce que la page d’accueil dit d’elle' + (ap.langue ? " (" + esc(ap.langue) + ")" : "") + ", lu le " + esc(heure(ap.ts)) + ".</p></div></div>" : "";
+      const carte = ap.image || ap.description ? '<div class="apv">' + (ap.image && /^data:image\//.test(ap.image) ? '<img src="' + esc(ap.image) + '" alt="Image de présentation du site">' : "") + '<div class="sp">' + (ap.titre ? "<b>" + esc(ap.titre) + "</b>" : "") + (ap.description ? '<p class="note">' + esc(ap.description) + "</p>" : "") + '<p class="note">Ce que la page d’accueil dit d’elle' + (ap.langue ? " (" + esc(ap.langue) + ")" : "") + " ; dernière lecture : " + esc(heure(ap.ts)) + ".</p></div></div>" : "";
       return carte + (mnt ? '<div class="bandeau in"><div class="sp"><b>En maintenance jusqu’à ' + esc(heure(mnt.fin)) + ".</b> " + esc(mnt.motif || "Fenêtre posée dans le Sensorium") + (mnt.par ? " · par " + esc(court(mnt.par)) : "") + ". Ses alertes se taisent, les mesures continuent." + (mnt.ce_site ? "" : " Elle couvre plus que ce site.") + "</div>" + (admin() && mnt.ce_site ? '<button class="btn mini" data-a="mnt-fin" data-id="' + esc(mnt.id) + '">Fin de la maintenance</button>' : "") + "</div>" : "") +
         (vo.acceptee ? '<div class="bandeau in"><div class="sp"><b>Alerte acceptée dans le Sensorium.</b> ' + esc(vo.acceptee.raison || "Sans raison notée") + (vo.acceptee.jusqu_a ? " · jusqu’au " + esc(heure(vo.acceptee.jusqu_a)) : "") + ". Une panne de ce site ne sonne pas.</div></div>" : "") +
         (inc && inc.etat !== "retabli" ? '<div class="bandeau da"><div class="sp"><b>Incident ouvert depuis ' + esc(inc.duree) + ".</b> " + esc(inc.diagnostic) + (inc.pris_par ? " " + esc(inc.pris_par === moi() ? "Tu t’en occupes." : court(inc.pris_par) + " s’en occupe.") : "") + '</div><button class="btn mini pri" data-a="incident" data-id="' + inc.id + '">Dépanner ›</button></div>' : "") +
