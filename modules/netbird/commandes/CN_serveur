@@ -62,6 +62,8 @@ SCRIPT_MAX = 300000
 SORTIE_MAX = 4000
 SORTIE_LISTE = 400000                                              # `compose ps --format json` : une ligne par service, avec ses étiquettes ; la couper ferait perdre des services
 DELAI_INSTALL = 280
+DELAI_TIRER = 200                                              # le courtier coupe à 300 s : télécharger puis relancer doit tenir dans ce délai (200 + 90)
+DELAI_RELANCER = 90
 SAUVEGARDES = "/var/backups/cassandra/netbird"
 ID_SAUV = re.compile(r"^\d{8}-\d{6}$")
 RAISONS = ("manuelle", "avant_maj", "avant_retrait", "avant_restauration")
@@ -279,10 +281,10 @@ def verbe_mettre_a_jour(a):
         refuser("aucun serveur à mettre à jour" if not installe() else "usage : mettre_a_jour [version]")
     version = verifier(a[0], VERSION, "version") if a else ""
     dossier_sur()
-    code, sortie = compose(["pull"], DELAI_INSTALL)
+    code, sortie = compose(["pull"], DELAI_TIRER)
     if code != 0:
         return {"ok": False, "code": code, "sortie": sortie}
-    code, sortie = compose(["up", "-d"], DELAI_INSTALL)
+    code, sortie = compose(["up", "-d"], DELAI_RELANCER)
     if code == 0 and version:
         marquer(dict(meta(), version=version), "ok")                          # la dernière publication est installée : NetBird les publie sous la même étiquette
     return {"ok": code == 0, "code": code, "sortie": sortie}
@@ -450,7 +452,7 @@ def verbe_sauvegarder(a):
     arrete = en_marche()
     try:
         if arrete:
-            code, sortie = compose(["stop"], 120)                    # la base du serveur est copiée à l'arrêt : une copie cohérente
+            code, sortie = compose(["stop"], 90)                    # la base du serveur est copiée à l'arrêt : une copie cohérente
             if code != 0:
                 refuser("le serveur n'a pas pu être arrêté pour la copie : %s" % sortie[-160:])
         fichiers = []
@@ -464,7 +466,7 @@ def verbe_sauvegarder(a):
         raise
     finally:
         if arrete:
-            compose(["start"], 120)
+            compose(["start"], 90)
     m = meta()
     fiche = {"id": ident, "quand": time.strftime("%Y-%m-%d %H:%M:%S"), "raison": raison, "version": m.get("version", ""), "domaine": m.get("domaine", ""), "proxy": m.get("proxy", ""), "volumes": fichiers, "images": images}
     with open(os.path.join(dest, "meta.json"), "w") as f:
@@ -527,7 +529,7 @@ def verbe_restaurer(a):
     if not installe():
         marquer({"version": f.get("version", ""), "domaine": f.get("domaine", ""), "proxy": f.get("proxy", ""), "installe_le": time.strftime("%Y-%m-%d %H:%M:%S")}, "ok")
     remises = remettre_images(f) if len(a) == 2 else 0
-    code, sortie = compose(["up", "-d"] + (["--force-recreate"] if len(a) == 2 else []), DELAI_INSTALL)
+    code, sortie = compose(["up", "-d"] + (["--force-recreate"] if len(a) == 2 else []), 150)
     return {"ok": code == 0, "code": code, "sortie": sortie, "id": ident, "securite": securite, "volumes": len(cibles), "images_remises": remises}
 
 
@@ -633,7 +635,7 @@ def verbe_installer_compose(a):
         refuser("aucun gestionnaire de paquets connu (apt-get, dnf, yum) : installe Docker Compose à la main")
     sortie = ""
     for c in commandes:
-        code, sortie = lancer(c, 300, env)
+        code, sortie = lancer(c, 90 if "update" in c else 200, env)
         if code != 0:
             return {"ok": False, "code": code, "sortie": sortie}
     if compose_cmd() is None:
@@ -655,7 +657,7 @@ def verbe_installer_jq(a):
         refuser("aucun gestionnaire de paquets connu (apt-get, dnf, yum) : installe jq à la main")
     sortie = ""
     for c in commandes:
-        code, sortie = lancer(c, 240, env)
+        code, sortie = lancer(c, 90 if "update" in c else 150, env)
         if code != 0:
             return {"ok": False, "code": code, "sortie": sortie}
     return {"ok": True, "code": 0, "sortie": sortie}

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #907b86
+# VERSION CN : 0.1.0  #4b1738
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=907b86 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4b1738 ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -93,10 +93,18 @@ def _direct(args, delai=DELAI):
         return None, str(e)[:200]
 
 
+def _borner(delai):
+    """Le courtier refuse un délai hors de 1 à 300 secondes : un geste long demandait plus et échouait avant de commencer (« délai entre 1 et 300 secondes »)."""
+    try:
+        return max(1, min(int(delai), 300))
+    except (TypeError, ValueError):
+        return 30
+
+
 def _racine(verbe, args=(), entree=None, delai=30, commande="piloter"):
     """Le courtier : {ok, …} de la commande root `piloter` (le client) ou `serveur` (le serveur), ou {ok: False, erreur} (commande absente, délai, courtier arrêté)."""
     try:
-        r = _RACINE_CTX(commande, [verbe] + [str(x) for x in args], entree, delai)
+        r = _RACINE_CTX(commande, [verbe] + [str(x) for x in args], entree, _borner(delai))
     except Exception as e:                          # noqa: BLE001
         return {"ok": False, "erreur": str(e)[:200], "courtier": False}
     return _REPONSE(r)

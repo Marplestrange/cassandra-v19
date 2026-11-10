@@ -309,7 +309,7 @@ def verbe_docker_maj(a, entree):
     if tag is None and "@" in image:
         refuser("l'image du conteneur est épinglée par empreinte : elle ne se met pas à jour ; indique une étiquette")
     cible = "%s:%s" % (IMAGE, tag) if tag else image
-    code, sortie = lancer(["docker", "pull", cible], delai=240)
+    code, sortie = lancer(["docker", "pull", cible], delai=170)
     if code != 0:
         return {"ok": False, "code": code, "sortie": sortie}                          # rien n'est touché tant que l'image n'est pas là
     _, vu = lancer(["docker", "container", "inspect", "-f", "{{.Image}}|{{.Config.Hostname}}", c], delai=20)
@@ -433,13 +433,13 @@ def verbe_natif_installer(a, entree):
     f = famille()
     if f == "apt":
         poser_depot_apt()
-        code, sortie = lancer(["apt-get", "update"], delai=180, env=ENV_PAQUETS)
+        code, sortie = lancer(["apt-get", "update"], delai=90, env=ENV_PAQUETS)
         if code != 0:
             return {"ok": False, "code": code, "sortie": sortie}
     else:
         with open(DEPOT_RPM, "w") as d:
             d.write(CONTENU_RPM)
-    code, sortie = lancer(paquet("install", f), delai=240, env=ENV_PAQUETS)
+    code, sortie = lancer(paquet("install", f), delai=150, env=ENV_PAQUETS)
     if code != 0:
         return {"ok": False, "code": code, "sortie": sortie}
     lancer(["netbird", "service", "install"], delai=30)                              # sans effet si le paquet l'a déjà fait
@@ -455,10 +455,10 @@ def verbe_natif_maj(a, entree):
     f = famille()
     avant = version_native()
     if f == "apt":
-        code, sortie = lancer(["apt-get", "update"], delai=180, env=ENV_PAQUETS)
+        code, sortie = lancer(["apt-get", "update"], delai=90, env=ENV_PAQUETS)
         if code != 0:
             return {"ok": False, "code": code, "sortie": sortie}
-    code, sortie = lancer(paquet("upgrade", f), delai=240, env=ENV_PAQUETS)
+    code, sortie = lancer(paquet("upgrade", f), delai=150, env=ENV_PAQUETS)
     if code != 0:
         return {"ok": False, "code": code, "sortie": sortie}
     apres = version_native()
@@ -474,7 +474,7 @@ def verbe_natif_revenir(a, entree):
     if shutil.which("netbird") is None:
         refuser("aucun client natif")
     f = famille()
-    code, sortie = lancer(paquet("downgrade", f, v), delai=240, env=ENV_PAQUETS)
+    code, sortie = lancer(paquet("downgrade", f, v), delai=150, env=ENV_PAQUETS)
     if code == 0:
         lancer(["netbird", "service", "restart"], delai=30)
     return {"ok": code == 0, "code": code, "sortie": sortie, "version": version_native()}

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #305d33
+// VERSION CN : 0.1.0  #0d79fe
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=305d33 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=0d79fe ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -122,8 +122,8 @@
       return CASS.kit.confirmer("Confirmer", "<p>" + esc(texte).split(String.fromCharCode(10)).join("<br>") + "</p>", oui || "Oui, continuer", danger);
     };
     const faire = async (f, ok) => {
-      if (S.occupe) return; S.occupe = true; dessiner();
-      try { await f(); if (ok) dire(ok); } catch (e) { dire(e.message || String(e), "err"); S.erreur = e.message || String(e); }
+      if (S.occupe) return; S.occupe = true; S.echec = ""; dessiner();
+      try { await f(); if (ok) dire(ok); } catch (e) { dire(e.message || String(e), "err"); S.erreur = e.message || String(e); S.echec = S.erreur; }      // l’échec reste affiché : la relecture qui suit effacerait l’erreur, et le clic semblerait ne rien faire
       finally { S.occupe = false; S.couper = false; await charger(); }
     };
     async function copier(t) {
@@ -445,6 +445,7 @@
       const e = S.e, t = TITRES[page];
       let h = '<div class="tete"><h1>NetBird' + (t[0] ? ' <span class="note" style="font-weight:500">› ' + esc(t[0]) + "</span>" : "") + '</h1><p class="sous">' + esc(t[1]) + '</p><div class="acts" style="margin-top:8px"><button class="btn" data-a="relire">Relire</button><span class="note">' +
         (S.lu ? "Relu à " + new Date(S.lu).toLocaleTimeString() : "") + "</span></div></div>";
+      if (S.echec && !S.erreur) h += '<div class="carte" role="alert" style="color:var(--danger)"><b>Le geste n’a pas abouti.</b> ' + esc(S.echec) + '<div class="acts"><button class="btn" data-a="echec-fermer">Fermer</button></div></div>';
       if (S.erreur) h += '<div class="carte" role="alert" style="color:var(--danger)">' + esc(S.erreur) + '<div class="acts"><button class="btn" data-a="relire">Réessayer</button></div></div>';
       if (page === "gestion") { racine.innerHTML = h + (S.lu || S.erreur ? pageGestion() : '<div class="attente" role="status" aria-live="polite">Lecture du réseau…</div>'); lier(); return; }
       if (page === "serveur") { racine.innerHTML = h + (S.s ? pageServeur(S.s) : '<div class="attente" role="status" aria-live="polite">Lecture du serveur…</div>'); lier(); return; }
@@ -531,6 +532,7 @@
         return faire(() => agir("fastpanel.dns_enregistrer", { domaine: dom, adresse: ip }), "Enregistrement DNS créé : la propagation peut prendre quelques minutes.");
       }
       if (a === "dns-verifier") { S.ipSaisie = val("#nb-d-ip"); return charger(); }
+      if (a === "echec-fermer") { S.echec = ""; dessiner(); return; }
       if (a === "txt-fermer") { S.txt = null; dessiner(); return; }
       if (a === "onglet") { S.onglet = b.dataset.id; S.edit = ""; dessiner(); return; }
       if (a === "cle-ok") { S.cle = null; dessiner(); return; }

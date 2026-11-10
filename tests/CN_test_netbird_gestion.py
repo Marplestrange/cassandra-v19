@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f03b54
+# VERSION CN : 0.1.0  #f6a58e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de ce que le module netbird sait faire d'un serveur NetBird auto-hébergé : l'installer (par la commande root, simulée) et l'administrer par son API (simulée : un faux serveur qui répond comme lui). Rien n'est installé, aucun réseau n'est touché.
 # MÉTHODE    : un vrai noyau, une fausse commande root `serveur`, une fausse API NetBird ; on vérifie les garde-fous, le secret qui ne traîne nulle part et le retour de chaque geste.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f03b54 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f6a58e ▼▼▼
 """Bancs de la gestion d'un serveur NetBird : commande root et API NetBird SIMULÉES, noyau réel."""
 import copy
 import json
@@ -335,6 +335,11 @@ class Maintenance(Gestion):
         self.assertTrue(r["jq_installe"] and r["jq"])
         self.assertIn(("serveur:installer_jq", [], None), self.racines)
         self.assertIn("jq installé", self.lire("journal")["gestes"][0]["libelle"])
+
+    def test_aucun_delai_ne_depasse_ce_que_le_courtier_accepte(self):
+        # trouvé sur argos : « délai entre 1 et 300 secondes » faisait échouer un geste avant même de commencer
+        borner = self.g["_borner"]
+        self.assertEqual([borner(x) for x in (480, 300, 295, 30, 1, 0, -5, "x", None)], [300, 300, 295, 30, 1, 1, 1, 30, 30])
 
     def test_la_derniere_version_est_lue_chez_github_et_gardee_une_heure(self):
         r = self.lire("versions")
