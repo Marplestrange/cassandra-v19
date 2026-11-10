@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d6acda
+# VERSION CN : 0.1.0  #333eec
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`, `port_libre` et `shutil` sont remplacés ; le dossier du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d6acda ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=333eec ▼▼▼
 """Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`,
 `port_libre` et `shutil` sont remplacés ; le dossier du serveur est un dossier temporaire. On vérifie surtout ce qui est REFUSÉ et que le script n'est lancé que s'il est celui qu'on a confirmé."""
 import hashlib
@@ -687,6 +687,14 @@ class Compose(Monde):
         self.assertFalse(self.cmds, "rien n'est lancé")
         self.assertFalse(Path(self.dossier, "cassandra.json").exists(), "pas de pile à moitié posée : la marque n'est pas écrite")
         self.assertFalse(self.lance("etat")["compose"])
+
+    def test_l_etat_se_rend_meme_sans_compose_quand_un_serveur_est_pose(self):
+        self.poser()
+        self.plugin.unlink()
+        r = self.lance("etat")
+        self.assertTrue(r["ok"], r)
+        self.assertEqual((r["installe"], r["compose"], r["conteneurs"]), (True, False, []))
+        self.assertEqual(self.lance("commande", "restart")["erreur"], "Docker Compose n'est pas installé sur cette machine")
 
     def test_l_ancien_docker_compose_sert_quand_le_greffon_manque(self):
         self.plugin.unlink()

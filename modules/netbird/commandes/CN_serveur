@@ -169,6 +169,8 @@ def compose(args, delai=60, garder=SORTIE_MAX):
 
 
 def conteneurs():
+    if compose_cmd() is None:
+        return []                                                  # sans Docker Compose, il n'y a rien à lister : l'état se rend quand même
     code, sortie = compose(["ps", "-a", "--format", "json"], 30, SORTIE_LISTE)
     if code != 0:
         return []
