@@ -36,6 +36,8 @@
  "securite:CN_analyse.py:pf_chaines": "entrées introuvables (aucun des 186 essais ne rend un résultat exact)",
  "securite:CN_analyse.py:verdict": "entrées introuvables (3 cas valides sur 214 essais)",
  "securite:CN_images.py:courriel_etats": "entrées introuvables (aucun des 36 essais ne rend un résultat exact)",
+ "sites:CN_module.py:nom_hote": "décide de la portée d'un compte (c'est le nom par lequel on dit à qui est un site et ce que chacun a le droit d'en voir) : du nexus, pas un calcul à optimiser",
+ "sites:CN_module.py:nombre": "valide une entrée de capacité et la refuse par une exception dont le texte est lu par l'utilisateur : une garde du nexus, pas un calcul pur",
  "societes:CN_module.py:_valider": "validation propre au module, couplée à son état : laissée au nexus",
  "societes:CN_module.py:luhn": "validation propre au module, couplée à son état : laissée au nexus",
  "societes:CN_module.py:valider_champs": "validation propre au module, couplée à son état : laissée au nexus",

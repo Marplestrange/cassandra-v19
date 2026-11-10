@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9379f8
+# VERSION CN : 0.1.0  #0615af
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9379f8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0615af ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -60,14 +60,27 @@ class Monde(unittest.TestCase):
         self.panneau = [{"domaine": "pan.exemple.fr", "proprietaire": "bea", "ssl": {"etat": "actif", "jours": 80}, "php": "8.3"},
                         {"domaine": "autre.exemple.fr", "proprietaire": "zoe", "ssl": {"etat": "actif", "jours": 80}, "php": "8.2"}]
         self.pan_dispo = True
-        faux = {"comptes.lister": lambda: {"comptes": self.comptes}, "fastpanel.sites": lambda: self.panneau if self.pan_dispo else None}
-        self.ctx.executer_lecture = lambda cap, **a: faux[cap]()
+        self.droits_reels = False                     # vrai : « comptes.lister » et « fastpanel.sites » sont refusés à un compte ordinaire, comme en service
+        self.ctx.executer_lecture = self.lecture
         self.mod = _ModuleGlobals(self.n.catalogue.get("sites.vue").faire.__globals__)
         self.reponses = {}
         self.mod._sonder_http = lambda d, delai: self.reponses.get(d, (200, 120, ""))
         self.certs = {}
         self.mod._cert_jours = lambda d, delai: self.certs.get(d, 60)
         self.e = self.n.executeur.executer
+
+    def lecture(self, cap, **a):
+        """Les lectures des autres modules, simulées. Comme le noyau : pour le compte au nom duquel on agit (aucun pour un moteur), et None quand le droit manque."""
+        compte = self.ctx.compte
+        if cap == "comptes.moi":
+            return next((dict(c) for c in self.comptes if c["compte"] == compte), None)
+        if self.droits_reels and compte and compte != CHEF:
+            return None
+        if cap == "comptes.lister":
+            return {"comptes": self.comptes}
+        if cap == "fastpanel.sites":
+            return self.panneau if self.pan_dispo else None
+        raise PermissionError("« %s » n'est pas une capacité de lecture" % cap)
 
     def ex(self, cap, compte=BEA, acteur="humain", **args):
         return self.e("sites." + cap, acteur, args, compte=compte)
@@ -112,9 +125,114 @@ class Portee(Monde):
         self.assertNotIn("pan.exemple.fr", {s["domaine"] for s in v["sites"]})
 
     def test_sans_module_de_comptes_le_reste_fonctionne(self):
-        self.ctx.executer_lecture = lambda cap, **a: None
+        def absent(cap, **a):                                                  # ce que fait le noyau quand le module n'est pas là
+            raise PermissionError("« %s » n'est pas une capacité de lecture" % cap)
+        self.ctx.executer_lecture = absent
         self.assertEqual(self.ex("declarer", domaine="bea.exemple.fr")["statut"], "faite")
         self.assertEqual({s["domaine"] for s in self.ex("vue")["resultat"]["sites"]}, {"bea.exemple.fr"})
+        self.assertEqual(self.ex("vue", compte=CHEF)["statut"], "faite")
+        self.sonde()                                                           # et la sonde tourne sans eux
+        self.assertEqual(self.e("sites.attribuer", "humain", {"domaine": "x.exemple.fr", "compte": LEO}, compte=CHEF)["statut"], "faite")
+
+    def test_des_comptes_muets_et_jamais_lus_interdisent_de_declarer(self):
+        self.ctx.executer_lecture = lambda cap, **a: None                      # les modules sont là mais ne répondent pas : on ne sait pas à qui sont les sites
+        r = self.ex("declarer", domaine="bea.exemple.fr")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("lisibles", json.dumps(r, ensure_ascii=False))
+
+
+class DroitsReels(Monde):
+    """Comme en service : un compte ordinaire n'a ni « comptes.gerer » ni « fastpanel.voir ». Les bancs d'avant donnaient ces lectures à tout le monde."""
+
+    def setUp(self):
+        super().setUp()
+        self.droits_reels = True
+
+    def doms(self, compte):
+        return {s["domaine"] for s in self.ex("vue", compte=compte)["resultat"]["sites"]}
+
+    def test_un_compte_ordinaire_voit_tout_de_suite_les_sites_de_sa_fiche(self):
+        self.assertEqual(self.doms(LEO), {"fiche.exemple.fr"})                 # par sa propre fiche (comptes.moi), sans attendre la sonde
+
+    def test_apres_un_tour_de_sonde_il_voit_aussi_ceux_du_panneau(self):
+        self.assertEqual(self.doms(BEA), set())
+        self.sonde()
+        self.assertEqual(self.doms(BEA), {"pan.exemple.fr"})
+        self.assertTrue(self.ex("vue")["resultat"]["portee"]["panneau_lu"])
+        self.assertNotIn("autre.exemple.fr", self.doms(BEA))                   # le miroir ne lui montre pas le panneau des autres
+
+    def test_il_ne_s_approprie_ni_le_site_d_une_fiche_ni_celui_du_panneau(self):
+        self.sonde()
+        self.assertEqual(self.ex("declarer", domaine="fiche.exemple.fr")["statut"], "echec")     # à Leo, par sa fiche
+        self.assertEqual(self.ex("declarer", compte=LEO, domaine="pan.exemple.fr")["statut"], "echec")
+        self.assertEqual(self.ex("declarer", compte=LEO, domaine="autre.exemple.fr")["statut"], "echec")
+        self.assertEqual(self.ex("declarer", domaine="bea.exemple.fr")["statut"], "faite")
+
+    def test_avant_le_premier_tour_rien_ne_se_declare(self):
+        self.assertEqual(self.ex("declarer", domaine="fiche.exemple.fr")["statut"], "echec")
+
+    def test_un_panneau_muet_garde_son_dernier_miroir_pour_les_refus(self):
+        self.sonde()
+        self.pan_dispo = False
+        self.ctx.stockage.ecrire("UPDATE miroir SET ts = ts - 7200")           # miroir périmé : plus montré, mais encore opposé à une déclaration
+        self.assertEqual(self.ex("declarer", compte=LEO, domaine="pan.exemple.fr")["statut"], "echec")
+
+
+class Cloisons(Monde):
+    def test_un_nom_partage_ne_se_declare_pas(self):
+        for d in ("github.io", "gouv.fr", "co.uk"):
+            self.assertEqual(self.ex("declarer", domaine=d)["statut"], "echec", d)
+        self.assertEqual(self.ex("declarer", domaine="bea.github.io")["statut"], "faite")
+
+    def test_le_parent_du_site_d_un_autre_ne_se_declare_pas(self):
+        self.assertEqual(self.ex("declarer", compte=LEO, domaine="blog.bea.exemple.fr")["statut"], "faite")
+        self.assertEqual(self.ex("declarer", domaine="bea.exemple.fr")["statut"], "echec")
+        self.assertEqual(self.ex("declarer", domaine="exemple.fr")["statut"], "echec")              # parent de pan, autre, fiche
+
+    def test_le_sous_domaine_suivi_pour_un_autre_n_est_pas_dans_la_portee(self):
+        self.assertEqual(self.e("sites.attribuer", "humain", {"domaine": "bea.exemple.fr", "compte": BEA}, compte=CHEF)["statut"], "faite")
+        self.assertEqual(self.e("sites.attribuer", "humain", {"domaine": "blog.bea.exemple.fr", "compte": LEO}, compte=CHEF)["statut"], "faite")
+        self.assertEqual(self.ex("historique", domaine="blog.bea.exemple.fr")["statut"], "echec")   # à Leo, bien que sous le site de Bea
+        self.assertEqual(self.ex("lier", domaine="blog.bea.exemple.fr", genre="note", ref="x")["statut"], "echec")
+        self.assertEqual(self.ex("historique", domaine="autre.bea.exemple.fr")["statut"], "faite")   # à personne d'autre : c'est le sien
+
+    def test_l_accord_de_l_ancien_proprietaire_ne_vaut_plus_apres_un_transfert(self):
+        self.ex("declarer", domaine="bea.exemple.fr")
+        self.ex("lier", domaine="bea.exemple.fr", genre="note", ref="n1", note="à moi")
+        self.ex("demander", domaine="bea.exemple.fr")
+        self.assertEqual(self.ex("accorder", domaine="bea.exemple.fr")["statut"], "faite")
+        self.assertIsNotNone(self.ex("accord", compte=CHEF, domaine="bea.exemple.fr")["resultat"]["accord"])
+        r = self.e("sites.transferer", "humain", {"domaine": "bea.exemple.fr", "vers": LEO}, compte=CHEF)
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertIsNone(self.ex("accord", compte=CHEF, domaine="bea.exemple.fr")["resultat"]["accord"])
+        self.assertEqual(self.ex("liens", compte=LEO, domaine="bea.exemple.fr")["resultat"]["liens"], [])   # les notes de Bea ne passent pas à Leo
+        self.assertEqual(self.ex("demandes", compte=CHEF)["resultat"]["demandes"], [])
+        self.n.catalogue.get("sites.transferer").defaire(self.ctx, r["resultat"])
+        self.assertEqual(self.ex("liens", domaine="bea.exemple.fr")["resultat"]["liens"][0]["note"], "à moi")
+        self.assertEqual(len(self.ex("demandes", compte=CHEF)["resultat"]["demandes"]), 1)
+
+    def test_un_accord_reste_sans_effet_si_le_site_est_redeclare_par_un_autre(self):
+        self.ex("declarer", domaine="bea.exemple.fr")
+        self.ex("accorder", domaine="bea.exemple.fr")
+        self.ctx.stockage.ecrire("UPDATE sites SET compte=? WHERE domaine='bea.exemple.fr'", (LEO,))   # le site a changé de mains sans passer par le geste
+        self.assertIsNone(self.ex("accord", compte=CHEF, domaine="bea.exemple.fr")["resultat"]["accord"])
+
+    def test_un_geste_d_accord_inconnu_est_refuse(self):
+        self.ex("declarer", domaine="bea.exemple.fr")
+        self.assertEqual(self.ex("accorder", domaine="bea.exemple.fr", geste="tout_casser")["statut"], "echec")
+
+    def test_les_nombres_illisibles_sont_refuses_en_clair(self):
+        self.ex("declarer", domaine="bea.exemple.fr")
+        for cap, args in (("accorder", {"domaine": "bea.exemple.fr", "heures": "abc"}), ("historique", {"domaine": "bea.exemple.fr", "heures": "abc"}),
+                          ("disponibilite", {"jours": "x"}), ("journal", {"limite": "x"})):
+            r = self.ex(cap, **args)
+            self.assertEqual(r["statut"], "echec", cap)
+            self.assertIn("nombre entier", json.dumps(r, ensure_ascii=False), cap)
+            self.assertNotIn("invalid literal", json.dumps(r, ensure_ascii=False), cap)
+
+    def test_le_nom_d_hote_perd_port_identifiants_et_point_final(self):
+        for brut in ("https://moi:secret@www.Bea.exemple.fr:8443/x?y=1#z", "bea.exemple.fr.", "BEA.exemple.fr?x", "http://bea.exemple.fr#a"):
+            self.assertEqual(self.mod.nom_hote(brut), "bea.exemple.fr", brut)
 
 
 class Declarations(Monde):
@@ -198,7 +316,11 @@ class Sonde(Monde):
         self.sonde()
         self.reponses["bea.exemple.fr"] = (500, 300, "")
         self.sonde()
-        self.assertEqual(len(self.evts("site.panne")), 1)
+        self.assertEqual(self.evts("site.panne"), [])                           # une mesure ratée n'est pas une panne
+        self.assertEqual(self.etat("bea.exemple.fr"), "en_ligne")
+        self.sonde()
+        self.assertEqual(len(self.evts("site.panne")), 1)                       # deux de suite, si
+        self.assertEqual(self.etat("bea.exemple.fr"), "hors_ligne")
         self.sonde()
         self.assertEqual(len(self.evts("site.panne")), 1)                       # pas de répétition
         self.ctx.stockage.ecrire("UPDATE etat_vu SET depuis = depuis - 600 WHERE domaine='bea.exemple.fr'")
@@ -214,7 +336,83 @@ class Sonde(Monde):
         self.assertEqual(self.etat("bea.exemple.fr"), "en_ligne")
         self.reponses["bea.exemple.fr"] = (404, 50, "")
         self.sonde()
+        self.sonde()
         self.assertEqual(self.etat("bea.exemple.fr"), "hors_ligne")
+
+    def test_un_echec_isole_ne_fait_ni_panne_ni_retour(self):
+        self.sonde()
+        self.reponses["bea.exemple.fr"] = (None, 8000, "délai")
+        self.sonde()
+        self.reponses.pop("bea.exemple.fr")
+        self.sonde()
+        self.assertEqual(self.evts("site.panne") + self.evts("site.retour"), [])
+        self.assertFalse(self.n.registre.lire("site", "bea.exemple.fr", portee=TOUT)["donnees"]["douteux"])
+
+    def test_la_panne_commence_au_premier_echec(self):
+        self.sonde()
+        self.reponses["bea.exemple.fr"] = (None, 8000, "délai")
+        self.sonde()
+        self.ctx.stockage.ecrire("UPDATE mesures SET ts = ts - 300 WHERE domaine='bea.exemple.fr' AND up=0")
+        self.sonde()
+        depuis = self.ctx.stockage.lire("SELECT depuis FROM etat_vu WHERE domaine='bea.exemple.fr'")[0]["depuis"]
+        self.assertLess(depuis, time.time() - 290)
+
+    def test_un_site_retire_quitte_le_registre(self):
+        self.reponses["bea.exemple.fr"] = (None, 8000, "délai")
+        self.sonde()
+        self.assertEqual(self.etat("bea.exemple.fr"), "hors_ligne")
+        self.ex("retirer", domaine="bea.exemple.fr")
+        self.sonde()
+        self.assertIsNone(self.etat("bea.exemple.fr"))                          # plus de constat « hors ligne » pour un site que personne ne suit
+        self.assertEqual(self.ctx.stockage.lire("SELECT 1 FROM etat_vu WHERE domaine='bea.exemple.fr'"), [])
+
+    def test_un_panneau_muet_ne_fait_pas_oublier_ses_sites(self):
+        self.sonde()
+        self.pan_dispo = False
+        self.sonde()
+        self.assertEqual(self.etat("pan.exemple.fr"), "en_ligne")
+
+    def test_une_panne_en_cours_compte_dans_la_disponibilite(self):
+        self.sonde()
+        self.reponses["bea.exemple.fr"] = (None, 8000, "délai")
+        self.sonde()
+        self.sonde()
+        self.ctx.stockage.ecrire("UPDATE etat_vu SET depuis = depuis - 1200 WHERE domaine='bea.exemple.fr'")
+        d = {s["domaine"]: s for s in self.ex("disponibilite")["resultat"]["sites"]}["bea.exemple.fr"]
+        self.assertEqual(d["pannes"], 1)
+        self.assertTrue(d["en_panne"])
+        self.assertGreaterEqual(d["indisponible_min"], 20)
+
+    def test_un_certificat_echu_est_un_constat(self):
+        self.certs["bea.exemple.fr"] = -3
+        self.sonde()
+        self.n.tick()
+        self.assertTrue(any("échu" in json.dumps(e["donnees"], ensure_ascii=False) for e in self.evts("constat.ouvert")))
+        v = self.ex("vue")["resultat"]["vigilances"]
+        self.assertTrue(any("échu" in x["titre"] and x["niveau"] == "panne" for x in v))
+
+    def test_un_site_protege_est_hors_ligne_sauf_reglage(self):
+        self.reponses["bea.exemple.fr"] = (401, 50, "")
+        self.sonde()
+        self.assertEqual(self.etat("bea.exemple.fr"), "hors_ligne")
+
+    def test_un_long_historique_est_regroupe_sans_perdre_la_coupure(self):
+        t = time.time()
+        for i in range(2000):
+            self.ctx.stockage.ecrire("INSERT INTO mesures(ts, domaine, code, ms, up, ssl_jours, erreur) VALUES (?,?,?,?,?,?,?)",
+                                     (t - 86000 + i * 40, "bea.exemple.fr", 200 if i != 1000 else None, 100, 1 if i != 1000 else 0, 60, "" if i != 1000 else "délai"))
+        h = self.ex("historique", domaine="bea.exemple.fr", heures=24)["resultat"]
+        self.assertEqual(h["mesures"], 2000)
+        self.assertLessEqual(len(h["points"]), 720)
+        self.assertEqual(sum(1 for p in h["points"] if not p["up"]), 1)
+        self.assertEqual(h["disponibilite"], 99.95)
+
+    def test_l_historique_d_une_periode_passee(self):
+        t = time.time()
+        for age, up in ((40 * 86400, 0), (40 * 86400 - 60, 1), (86400, 1)):
+            self.ctx.stockage.ecrire("INSERT INTO mesures(ts, domaine, code, ms, up, ssl_jours, erreur) VALUES (?,?,?,?,?,?,?)", (t - age, "bea.exemple.fr", 200, 100, up, 60, ""))
+        h = self.ex("historique", domaine="bea.exemple.fr", debut=t - 45 * 86400, fin=t - 35 * 86400)["resultat"]
+        self.assertEqual((h["mesures"], h["disponibilite"]), (2, 50.0))          # la période demandée, pas les derniers jours
 
     def test_les_sites_du_panneau_sont_sondes_aussi(self):
         self.sonde()
@@ -286,6 +484,20 @@ class Demandes(Monde):
         self.assertEqual(r["statut"], "faite", r)
         self.assertEqual(self.ex("demandes", compte=CHEF)["resultat"]["demandes"], [])
         self.n.catalogue.get("sites.repondre_demande").defaire(self.ctx, r["resultat"])
+        self.assertEqual(len(self.ex("demandes", compte=CHEF)["resultat"]["demandes"]), 1)
+
+    def test_une_decision_inconnue_n_est_pas_un_refus(self):
+        did = self.ex("demander", domaine="bea.exemple.fr")["resultat"]["id"]
+        for mot in ("ok", "oui", "accepter", ""):
+            self.assertEqual(self.e("sites.repondre_demande", "humain", {"id": did, "decision": mot}, compte=CHEF)["statut"], "echec", mot)
+        self.assertEqual(len(self.ex("demandes", compte=CHEF)["resultat"]["demandes"]), 1)           # toujours ouverte
+        self.assertEqual(self.e("sites.repondre_demande", "humain", {"id": did, "decision": "fait"}, compte=CHEF)["resultat"]["statut"], "fait")
+
+    def test_retirer_ferme_la_demande_et_le_retour_la_rouvre(self):
+        self.ex("demander", domaine="bea.exemple.fr")
+        r = self.ex("retirer", domaine="bea.exemple.fr")
+        self.assertEqual(self.ex("demandes", compte=CHEF)["resultat"]["demandes"], [])
+        self.n.catalogue.get("sites.retirer").defaire(self.ctx, r["resultat"])
         self.assertEqual(len(self.ex("demandes", compte=CHEF)["resultat"]["demandes"]), 1)
 
     def test_la_demande_ouverte_est_un_constat_pour_l_admin(self):
