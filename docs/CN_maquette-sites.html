@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-sites.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=de49f6 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=6eb31d ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -161,6 +161,19 @@ dl.paires dt{color:var(--muted)}dl.paires dd{margin:0;color:var(--strong)}
 .jl{display:grid;gap:7px;font-size:13.5px}
 .jl div{display:grid;grid-template-columns:86px auto minmax(0,1fr);gap:9px;align-items:baseline}
 .jl .t{color:var(--muted);font-size:12.5px}
+/* vignettes : l'aperçu du site, comme dans l'écran actuel */
+.vg{position:relative;width:84px;height:56px;border-radius:9px;overflow:hidden;border:1px solid var(--line2);flex:none;background:var(--solid)}
+.vg svg{display:block;width:100%;height:100%}
+.vg.gd{width:100%;height:auto;aspect-ratio:16/8;border-radius:14px;cursor:zoom-in;margin:12px 0 4px;box-shadow:var(--shadow)}
+.vg.bas svg{filter:grayscale(1) brightness(.75)}
+.vg .et{position:absolute;inset:auto 0 0 0;font-size:10.5px;text-align:center;padding:2px 0;background:rgba(190,18,60,.9);color:#fff;letter-spacing:.3px}
+.vg.gd .et{font-size:13px;padding:6px 0}
+.vg .ini{position:absolute;inset:0;display:grid;place-items:center;font:650 17px "JetBrains Mono",monospace;color:var(--muted);background:repeating-linear-gradient(45deg,var(--surface2),var(--surface2) 6px,transparent 6px,transparent 12px)}
+.vg.gd .ini{font-size:15px;font-family:inherit;font-weight:500;padding:0 20px;text-align:center}
+.row.site{grid-template-columns:auto minmax(0,1.5fr) minmax(0,1.2fr) auto}
+@media (max-width:700px){.row.site{grid-template-columns:auto minmax(0,1fr)}.row.site>div:nth-child(3),.row.site>.cote{grid-column:1/-1}}
+.zoom{position:fixed;inset:0;z-index:70;background:rgba(10,16,20,.82);display:none;place-items:center;padding:24px;cursor:zoom-out}
+.zoom.on{display:grid}.zoom .vg{width:min(1000px,94vw);height:auto;aspect-ratio:16/10;border-radius:14px;cursor:zoom-out}
 .silence{color:var(--soft);font-size:14px;padding:6px 0}
 .grille2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
 .champ{display:grid;gap:4px;margin-bottom:12px;font-size:14px}.champ small{color:var(--muted)}
@@ -195,6 +208,7 @@ dl.paires dt{color:var(--muted)}dl.paires dd{margin:0;color:var(--strong)}
 
 <div class="voile" id="voile" onclick="fermer()"></div>
 <aside class="tiroir" id="tiroir" aria-label="Fiche du site"></aside>
+<div class="zoom" id="zoom" onclick="this.classList.remove('on')" aria-label="Aperçu agrandi"></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -211,6 +225,8 @@ const SITES = [
   {d:'archives.exemple.test', compte:'', src:'panneau', fp:'ancien', up:true, code:200, ms:410, ssl:-2, php:'7.4', dispo:jours([27,28,29]), rep:rep(400), sauv:null, analyse:'jamais', disque:310, pannes:1, indispo:'2 jours'},
   {d:'api.exemple.test', compte:'zoe@exemple.test', src:'panneau', fp:'zoe', up:true, douteux:true, code:null, ms:8000, ssl:88, php:'8.3', dispo:jours([29]), rep:rep(120), sauv:0, analyse:'saine · 1 j', disque:120, pannes:0, indispo:''},
 ];
+const CMS = {'boutique.exemple.test':'WooCommerce 9.4', 'blog.exemple.test':'WordPress 6.7', 'atelier.exemple.test':'Nextcloud 30', 'archives.exemple.test':'WordPress 5.9', 'vitrine.exemple.test':'site statique'};
+SITES.forEach((s, i) => { s.cms = CMS[s.d] || ''; s.gabarit = i % 3; s.capture = s.code === 401 ? '' : (i === 3 ? 'hier 22:10' : 'aujourd’hui 03:00'); });
 const JOURNAL = [
   {t:'04:31', v:'en attente', c:'w', d:'api.exemple.test', x:'Une mesure ratée (délai dépassé) : la panne se dit au deuxième échec.', q:'la sonde'},
   {t:'03:22', v:'de retour', c:'ok', d:'blog.exemple.test', x:'De nouveau en ligne après 5 min (HTTP 200, 3 460 ms).', q:'la sonde'},
@@ -218,6 +234,10 @@ const JOURNAL = [
   {t:'hier 16:20', v:'adossement demandé', c:'i', d:'vitrine.exemple.test', x:'Demande envoyée à l’administrateur.', q:'leo'},
   {t:'hier 11:02', v:'accord donné', c:'i', d:'boutique.exemple.test', x:'restaurer · 24 h', q:'bea'},
   {t:'hier 09:40', v:'rattaché', c:'', d:'boutique.exemple.test', x:'project Refonte 2027', q:'bea'},
+  {t:'hier 03:00', v:'sauvegarde lancée', c:'ok', d:'boutique.exemple.test', x:'plan « nuit » · 2,1 Go · copie complète', q:'le panneau'},
+  {t:'11-08 14:12', v:'certificat renouvelé', c:'ok', d:'atelier.exemple.test', x:'Let’s Encrypt · 3 émissions restantes cette semaine', q:'leo'},
+  {t:'11-08 02:30', v:'analyse lancée', c:'ok', d:'blog.exemple.test', x:'antivirus : saine, 18 204 fichiers', q:'Cassandra'},
+  {t:'11-07 19:41', v:'statut (outil)', c:'', d:'boutique.exemple.test', x:'demandé dans une conversation', q:'Itare'},
   {t:'11-07 08:15', v:'attribué', c:'', d:'atelier.exemple.test', x:'à leo@exemple.test', q:'chef'},
 ];
 const ACCORDS = [{d:'boutique.exemple.test', par:'bea@exemple.test', geste:'restaurer', fin:'demain 11:02'}];
@@ -290,9 +310,25 @@ function courbe(s, h = 34){
   const seuil = REGL.lent <= max ? `<line x1="0" x2="${w}" y1="${(h - 3 - REGL.lent / max * (h - 6)).toFixed(1)}" y2="${(h - 3 - REGL.lent / max * (h - 6)).toFixed(1)}" stroke="var(--warn)" stroke-dasharray="3 3" stroke-width="1"/>` : '';
   return `<svg class="sp" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Temps de réponse de ${E(s.d)} sur 24 h, dernier : ${s.ms} ms">${seuil}<polyline points="${pts}" fill="none" stroke="${s.ms >= REGL.lent ? 'var(--warn)' : 'var(--accent)'}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
 }
+// L'aperçu d'un site : une capture (ici dessinée, pour rester en données fictives), grise et barrée quand le site est tombé, remplacée par ses initiales quand il n'y en a pas.
+function teinte(d){ let h = 0; for (const c of d) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+function vignette(s, grand, zoom){
+  const h = teinte(s.d), bas = s.up === false, a = `hsl(${h} 55% 42%)`, b = `hsl(${(h + 40) % 360} 60% 62%)`, f = `hsl(${h} 30% 96%)`, g = `hsl(${h} 20% 84%)`;
+  const corps = [
+    `<rect x="0" y="9" width="160" height="38" fill="url(#g${h})"/><rect x="12" y="19" width="62" height="6" rx="2" fill="#fff" opacity=".95"/><rect x="12" y="29" width="40" height="4" rx="2" fill="#fff" opacity=".7"/><rect x="12" y="37" width="24" height="6" rx="3" fill="#fff"/>` + [0, 1, 2].map(i => `<rect x="${12 + i * 47}" y="54" width="41" height="28" rx="3" fill="#fff" stroke="${g}"/><rect x="${16 + i * 47}" y="58" width="33" height="13" rx="2" fill="${g}"/><rect x="${16 + i * 47}" y="75" width="22" height="3" rx="1.5" fill="${g}"/>`).join(''),
+    `<rect x="12" y="16" width="70" height="7" rx="2" fill="${a}"/>` + [0, 1, 2, 3].map(i => `<rect x="12" y="${30 + i * 15}" width="24" height="11" rx="2" fill="${i % 2 ? g : b}"/><rect x="41" y="${31 + i * 15}" width="${70 - i * 9}" height="3.5" rx="1.5" fill="${a}" opacity=".75"/><rect x="41" y="${37 + i * 15}" width="${54 + i * 6}" height="2.5" rx="1" fill="${g}"/>`).join('') + `<rect x="122" y="16" width="28" height="72" rx="3" fill="#fff" stroke="${g}"/>`,
+    `<rect x="0" y="9" width="30" height="91" fill="${a}"/>` + [0, 1, 2, 3, 4].map(i => `<rect x="5" y="${16 + i * 9}" width="20" height="3.5" rx="1.5" fill="#fff" opacity="${i ? .55 : .95}"/>`).join('') + [0, 1, 2].map(i => `<rect x="${37 + i * 40}" y="15" width="34" height="20" rx="3" fill="#fff" stroke="${g}"/><rect x="${41 + i * 40}" y="27" width="${14 + i * 5}" height="4" rx="2" fill="${b}"/>`).join('') + `<rect x="37" y="41" width="114" height="46" rx="3" fill="#fff" stroke="${g}"/><polyline points="42,78 58,66 72,72 88,54 104,60 120,48 146,52" fill="none" stroke="${a}" stroke-width="2"/>`,
+  ][s.gabarit];
+  const svg = `<svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="g${h}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="160" height="100" fill="${f}"/>${corps}<rect width="160" height="9" fill="#e7ebef"/><circle cx="5" cy="4.5" r="1.6" fill="#f87171"/><circle cx="10" cy="4.5" r="1.6" fill="#fbbf24"/><circle cx="15" cy="4.5" r="1.6" fill="#34d399"/><rect x="24" y="2" width="96" height="5" rx="2.5" fill="#fff"/></svg>`;
+  const sans = !s.capture;
+  const clic = zoom ? '' : grand ? `onclick="agrandir('${s.d}')" title="cliquer pour agrandir"` : '';
+  return `<div class="vg ${grand ? 'gd' : ''} ${bas ? 'bas' : ''}" ${clic} role="img" aria-label="Aperçu de ${E(s.d)}${sans ? ' : pas de capture' : ', capture : ' + s.capture}">${sans ? `<span class="ini">${grand ? 'Pas d’aperçu : le site demande un mot de passe (401), la capture ne passe pas.' : E(s.d.slice(0, 2).toUpperCase())}</span>` : svg}${bas ? '<span class="et">hors ligne</span>' : ''}</div>`;
+}
+function agrandir(d){ const z = $('zoom'); z.innerHTML = vignette(SITES.find(x => x.d === d), true, true); z.classList.add('on'); }
 function ligne(s){
   const e = etat(s);
-  return `<button class="row" onclick="ouvrir('${s.d}')"><div class="nm"><b><code>${E(s.d)}</code></b><small>${ETAT.admin ? E(s.compte || 'sans compte · panneau ' + s.fp) + ' · ' : ''}${s.src === 'panneau' ? 'panneau' + (s.php ? ' · PHP ' + s.php : '') : 'déclaré à la main'}</small>
+  const go = v => v >= 1024 ? (Math.round(v / 102.4) / 10).toLocaleString('fr-FR') + ' Go' : v + ' Mo';
+  return `<button class="row site" onclick="ouvrir('${s.d}')">${vignette(s)}<div class="nm"><b><code>${E(s.d)}</code></b><small>${ETAT.admin ? E(s.compte || 'sans compte · panneau ' + s.fp) + ' · ' : ''}${[s.cms, s.php ? 'PHP ' + s.php : '', s.disque ? go(s.disque) : '', s.src === 'panneau' ? '' : 'déclaré à la main'].filter(Boolean).join(' · ') || 'panneau'}</small>
     <div class="pills">${pill(e.t, e.c)}${s.ssl >= 0 && s.ssl >= REGL.ssl ? pill('SSL ' + s.ssl + ' j', 'ok') : ''}${s.src === 'panneau' ? (s.sauv == null ? pill('aucune sauvegarde', 'w') : pill(s.sauv === 0 ? 'sauvegardé aujourd’hui' : 'sauvegardé il y a ' + s.sauv + ' j', s.sauv > 2 ? 'w' : 'ok')) : pill('hors panneau', '')}${s.demande ? pill('adossement demandé', 'i') : ''}</div></div>
     <div>${bande(s)}</div><div class="cote"><span class="num">${pct(s).toLocaleString('fr-FR')} % · 30 j</span><span class="num">${s.code ?? '—'} · ${s.ms.toLocaleString('fr-FR')} ms</span></div></button>`;
 }
@@ -315,6 +351,8 @@ const PAGES = {
         <button class="kpi" onclick="aller('alertes')"><span>Alertes</span><b class="${graves.length ? 'd' : moy.length ? 'w' : ''}">${graves.length + moy.length}</b><em>${graves.length} grave${graves.length > 1 ? 's' : ''} · ${moy.length} à regarder</em></button>
         <button class="kpi" onclick="aller('demandes')"><span>Demandes</span><b class="${demandes().length ? 'w' : ''}">${demandes().length}</b><em>${ETAT.admin ? 'adossement à traiter' : 'en attente'}</em></button>
         <button class="kpi" onclick="aller('sites','sans')"><span>Sauvegardes</span><b class="${sans ? 'w' : ''}">${l.filter(s => s.src === 'panneau' && s.sauv != null).length} / ${l.filter(s => s.src === 'panneau').length}</b><em>${sans ? sans + ' site sans copie' : 'tous couverts'}</em></button>
+        <button class="kpi" onclick="aller('sites','analyse')"><span>Analyses</span><b class="${l.some(s => s.analyse === 'jamais') ? 'w' : ''}">${l.filter(s => s.analyse === 'jamais').length ? l.filter(s => s.analyse === 'jamais').length + ' à revoir' : 'à jour'}</b><em>antivirus · sites du panneau</em></button>
+        <div class="kpi"><span>Disque</span><b>${(Math.round(l.reduce((a, s) => a + (s.disque || 0), 0) / 102.4) / 10).toLocaleString('fr-FR')} Go</b><em>fichiers des sites du panneau</em></div>
       </div></section>
     <section class="sec carte"><div class="sh"><h2>Ce qui demande un geste</h2><span class="meta">le plus grave d’abord</span><span class="dr"><button class="btn s" onclick="aller('alertes')">Tout voir</button></span></div>${al.length ? `<div class="rows">${al.slice(0, 4).map(alerteHtml).join('')}</div>` : '<p class="silence"><b>Rien ne demande un geste.</b></p>'}</section>
     <div class="grille2">
@@ -330,9 +368,9 @@ const PAGES = {
   sites(){
     let l = sites(); const q = ETAT.q.toLowerCase(), f = ETAT.filtre;
     if (q) l = l.filter(s => (s.d + ' ' + s.compte).toLowerCase().includes(q));
-    if (f === 'tombes') l = l.filter(s => s.up === false); else if (f === 'regarder') l = l.filter(s => etat(s).r < 2); else if (f === 'panneau') l = l.filter(s => s.src === 'panneau'); else if (f === 'declares') l = l.filter(s => s.src === 'declare'); else if (f === 'sans') l = l.filter(s => s.src === 'panneau' && s.sauv == null);
+    if (f === 'tombes') l = l.filter(s => s.up === false); else if (f === 'regarder') l = l.filter(s => etat(s).r < 2); else if (f === 'panneau') l = l.filter(s => s.src === 'panneau'); else if (f === 'declares') l = l.filter(s => s.src === 'declare'); else if (f === 'sans') l = l.filter(s => s.src === 'panneau' && s.sauv == null); else if (f === 'analyse') l = l.filter(s => s.analyse === 'jamais'); else if (f === 'sanscompte') l = l.filter(s => !s.compte);
     l.sort((a, b) => etat(a).r - etat(b).r || pct(a) - pct(b));
-    const chips = [['', 'tous'], ['tombes', 'tombés'], ['regarder', 'à regarder'], ['panneau', 'du panneau'], ['declares', 'déclarés'], ['sans', 'sans sauvegarde']];
+    const chips = [['', 'tous'], ['tombes', 'tombés'], ['regarder', 'à regarder'], ['panneau', 'du panneau'], ['declares', 'déclarés'], ['sans', 'sans sauvegarde'], ['analyse', 'jamais analysés']].concat(ETAT.admin ? [['sanscompte', 'sans compte']] : []);
     let corps;
     if (!l.length) corps = '<p class="silence"><b>Aucun site</b> pour ce filtre.</p>';
     else if (ETAT.admin && ETAT.groupe){ const g = {}; l.forEach(s => (g[s.compte || 'Sans compte Cassandra'] = g[s.compte || 'Sans compte Cassandra'] || []).push(s));
@@ -354,8 +392,9 @@ const PAGES = {
   },
   alertes(){
     const al = alertes();
-    return tete('Alertes', `${al.filter(a => a.n === 'd').length} graves · ${al.filter(a => a.n === 'w').length} à regarder · ${al.filter(a => a.n === 'i').length} pour information`, `<button class="btn" onclick="toast('Fenêtre de maintenance : les alertes d’un site sont suspendues pour une durée choisie. (maquette)')">Fenêtre de maintenance<span class="neuf">nouveau</span></button>`) + `
+    return tete('Alertes', `${al.filter(a => a.n === 'd').length} graves · ${al.filter(a => a.n === 'w').length} à regarder · ${al.filter(a => a.n === 'i').length} pour information`, `<button class="btn" onclick="toast('Ouvre Sensorium › Fenêtres de maintenance : les alertes des sites choisis se taisent, les relevés continuent. (maquette)')" title="Les fenêtres de maintenance existent déjà dans le Sensorium : Sites s’y branche, il n’en refait pas">Fenêtre de maintenance ↗</button><button class="btn" onclick="toast('Sensorium › Accepter une alerte : « je sais, c’est normal », jusqu’à une échéance. (maquette)')">Accepter une alerte ↗</button>`) + `
     <section class="sec carte">${al.length ? `<div class="rows">${al.map(alerteHtml).join('')}</div>` : '<p class="silence"><b>Rien ne demande un geste.</b></p>'}</section>
+    <section class="sec carte"><div class="sh"><h2>Coupures et retours</h2><span class="meta">la veille, 30 jours</span></div>${journalHtml(40, 'coupures')}</section>
     <section class="sec carte"><div class="sh"><h2>Qui est prévenu</h2></div><p class="silence">L’administrateur reçoit toutes les alertes ; le propriétaire reçoit celles de ses sites (panne confirmée, retour, certificat court). Une mesure ratée isolée ne prévient personne.</p></section>`;
   },
   demandes(){
@@ -367,7 +406,7 @@ const PAGES = {
       ${ACCORDS.filter(a => ETAT.admin || a.par === ETAT.moi).length ? `<div class="rows">${ACCORDS.filter(a => ETAT.admin || a.par === ETAT.moi).map(a => `<div class="row" style="grid-template-columns:minmax(0,1fr) auto auto"><div class="nm"><b><code>${E(a.d)}</code> · ${E(a.geste)}</b><small>donné par ${E(a.par)} · tombe si le site change de compte</small></div>${pill('jusqu’à ' + a.fin, 'i')}${!ETAT.admin ? `<button class="btn s d" onclick="ACCORDS.length=0;rendre();toast('Accord révoqué.')">Révoquer</button>` : '<span></span>'}</div>`).join('')}</div>` : '<p class="silence">Aucun accord en cours.</p>'}</section>`;
   },
   journal(){
-    return tete('Journal', 'les gestes et la veille, fondus · un clic ouvre le site', '') + `<section class="sec carte"><div class="chips">${['tout', 'coupures', 'certificats', 'gestes', 'demandes et accords'].map((c, i) => `<button class="chip" aria-pressed="${i === 0}" onclick="toast('Filtre « ${c} » (maquette).')">${c}</button>`).join('')}</div>${journalHtml(99)}</section>`;
+    return tete('Journal', 'les gestes et la veille, fondus · un clic ouvre le site', '') + `<section class="sec carte"><div class="chips">${FAMILLES.map(c => `<button class="chip" aria-pressed="${(ETAT.jfam || 'tout') === c}" onclick="ETAT.jfam='${c}';rendre()">${c}</button>`).join('')}</div>${journalHtml(99, ETAT.jfam)}</section>`;
   },
   rapports(){
     const l = sites(), s = l[0], vide = ETAT.mois < '2026-11';
@@ -387,7 +426,9 @@ const PAGES = {
   },
 };
 const alerteHtml = a => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(a.n === 'd' ? 'grave' : a.n === 'w' ? 'à regarder' : 'info', a.n === 'i' ? 'i' : a.n)}<button class="nm" style="background:none;border:0;text-align:left;padding:0" onclick="ouvrir('${a.s.d}')"><b>${E(a.t)}</b><small>${E(a.x)}</small></button><button class="btn s" onclick="${a.cert ? `versCertificats('${a.s.d}')` : `toast('${E(a.g)} : ${a.s.d} (maquette).')`}">${E(a.g)}${a.cert ? ' ↗' : ''}</button></div>`;
-function journalHtml(n){ const l = JOURNAL.filter(j => ETAT.admin || SITES.find(s => s.d === j.d && s.compte === ETAT.moi)).slice(0, n); return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span><a href="#" onclick="ouvrir('${j.d}');return false" style="color:inherit"><code>${E(j.d)}</code></a> · ${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : '<p class="silence">Aucun geste encore.</p>'; }
+const FAMILLES = ['tout', 'coupures', 'sauvegardes', 'certificats', 'analyses', 'gestes de l’écran', 'demandes et accords', 'outils de Cassandra'];
+const famille = j => /coupure|retour|attente/.test(j.v) ? 'coupures' : /sauvegarde/.test(j.v) ? 'sauvegardes' : /certificat/.test(j.v) ? 'certificats' : /analyse/.test(j.v) ? 'analyses' : /adossement|accord/.test(j.v) ? 'demandes et accords' : /outil/.test(j.v) ? 'outils de Cassandra' : 'gestes de l’écran';
+function journalHtml(n, fam){ const l = JOURNAL.filter(j => (ETAT.admin || SITES.find(s => s.d === j.d && s.compte === ETAT.moi)) && (!fam || fam === 'tout' || famille(j) === fam)).slice(0, n); return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span><a href="#" onclick="ouvrir('${j.d}');return false" style="color:inherit"><code>${E(j.d)}</code></a> · ${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : `<p class="silence">${fam && fam !== 'tout' ? '<b>Rien dans cette famille.</b>' : 'Aucun geste encore.'}</p>`; }
 function rendre(garderFocus){ menu(); $('page').innerHTML = PAGES[ETAT.sec](); if (garderFocus){ const q = $('q'); if (q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } } }
 
 // ───────────────────────── déclarer : les refus, dits avant d'envoyer ─────────────────────────
@@ -411,12 +452,17 @@ function repondre(d, fait, annule){ const s = SITES.find(x => x.d === d); delete
 // ───────────────────────── la fiche d'un site ─────────────────────────
 function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; const s = SITES.find(x => x.d === d), e = etat(s), mien = s.compte === ETAT.moi && !ETAT.admin, hors = s.src !== 'panneau';
   const acc = ACCORDS.find(a => a.d === d);
-  const O = [['etat', 'État'], ['historique', 'Historique'], ['gestes', 'Gestes'], ['liens', 'Rattachements'], ['journal', 'Journal']];
+  const O = [['etat', 'État'], ['historique', 'Historique'], ['gestes', 'Gestes']].concat(hors ? [] : [['sauvegardes', 'Sauvegardes'], ['hebergement', 'Hébergement']]).concat([['liens', 'Rattachements'], ['journal', 'Journal']]);
+  if (hors && (ETAT.onglet === 'sauvegardes' || ETAT.onglet === 'hebergement')) ETAT.onglet = 'etat';
+  const go = v => v >= 1024 ? (Math.round(v / 102.4) / 10).toLocaleString('fr-FR') + ' Go' : v + ' Mo';
   const corps = {
-    etat: `<dl class="paires"><dt>réponse</dt><dd>${s.code ?? 'sans réponse'} en ${s.ms.toLocaleString('fr-FR')} ms <small style="color:var(--muted)">sonde · il y a 2 min</small></dd>
+    etat: `${vignette(s, true)}<p class="silence" style="padding:0 0 10px;font-size:12.5px">${s.capture ? 'capture : ' + s.capture + ' · ' : ''}<a href="#" onclick="toast('Nouvelle capture demandée (maquette).');return false" style="color:var(--accent)">rafraîchir la capture</a></p><dl class="paires"><dt>réponse</dt><dd>${s.code ?? 'sans réponse'} en ${s.ms.toLocaleString('fr-FR')} ms <small style="color:var(--muted)">sonde · il y a 2 min</small></dd>
       <dt>disponibilité 30 j</dt><dd>${pct(s).toLocaleString('fr-FR')} % · ${s.pannes} coupure${s.pannes > 1 ? 's' : ''}${s.indispo ? ' · ' + s.indispo : ''}</dd>
       <dt>certificat</dt><dd>${s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : 'expire dans ' + s.ssl + ' j'} <small style="color:var(--muted)">d’après Certificats</small> <button class="btn s" onclick="versCertificats('${d}')">Certificats ↗</button></dd>
       <dt>hébergement</dt><dd>${hors ? 'hors panneau, déclaré à la main' : 'panneau · compte ' + E(s.fp) + (s.php ? ' · PHP ' + s.php : '')}</dd>
+      <dt>CMS</dt><dd>${E(s.cms || 'inconnu')}</dd>
+      <dt>disque</dt><dd>${s.disque ? go(s.disque) : '<small style="color:var(--muted)">hors panneau</small>'}</dd>
+      <dt>dernière analyse</dt><dd>${hors ? '<small style="color:var(--muted)">hors panneau</small>' : E(s.analyse === 'jamais' ? 'jamais analysé' : s.analyse)}</dd>
       <dt>sauvegarde</dt><dd>${hors ? '<small style="color:var(--muted)">hors panneau</small>' : s.sauv == null ? 'aucune copie connue' : s.sauv === 0 ? 'aujourd’hui' : 'il y a ' + s.sauv + ' j'}</dd>
       <dt>propriétaire</dt><dd>${ETAT.admin ? E(s.compte || 'aucun compte Cassandra') : 'toi'}</dd></dl>
       ${s.douteux ? `<div class="encart w"><b>Une mesure ratée, pas encore une panne.</b> Si la prochaine échoue aussi, la panne sera dite et datée de 04:31.</div>` : ''}
@@ -426,8 +472,16 @@ function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; cons
     gestes: `<div class="gest"><button class="btn p" onclick="toast('Sonde de ${d} : ${s.code ?? 'sans réponse'} en ${s.ms} ms.')">Sonder maintenant</button>${hors ? '' : `<button class="btn" onclick="versCertificats('${d}')">Certificat : renouveler, quota ↗</button><button class="btn" ${mien || acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Choix de la copie à restaurer (maquette).')">Restaurer une sauvegarde…</button>`}</div>
       ${hors ? '<div class="encart">Hors panneau : la sonde, l’historique et les rattachements seulement.' + (mien && !s.demande ? ' <button class="btn s" onclick="SITES.find(x=>x.d===\'' + d + '\').demande={id:99,msg:\'À rapatrier.\',quand:\'à l’instant\'};rendre();ouvrir(\'' + d + '\');toast(\'Demande envoyée à l’administrateur.\')">Demander l’adossement</button>' : '') + '</div>' : ''}
       ${acc ? `<div class="encart">Accord de restauration donné par ${E(acc.par)} jusqu’à ${E(acc.fin)}.</div>` : (!hors && mien ? `<div class="gest"><button class="btn" onclick="ACCORDS.push({d:'${d}',par:ETAT.moi,geste:'restaurer',fin:'demain 04:31'});rendre();ouvrir('${d}');toast('Accord donné pour 24 h.')">Autoriser l’administrateur à restaurer (24 h)</button></div>` : '')}
-      ${!hors ? '<p class="silence">Redémarrer, lancer une sauvegarde, lire les journaux : pas encore portés en V19, et dits comme tels au lieu d’un bouton grisé sans raison.</p>' : ''}
+      ${!hors ? `<div class="gest"><button class="btn" onclick="toast('Analyse antivirus lancée (maquette).')">${ETAT.admin ? 'Scanner' : 'Scanner mon site'}</button><button class="btn" onclick="toast('Lance le plan de sauvegarde du compte (maquette).')">Sauvegarder maintenant</button><button class="btn" onclick="toast('Les 200 dernières lignes du journal du site (maquette).')">Journaux</button><button class="btn d" onclick="toast('Confirmation demandée avant de redémarrer PHP. (maquette)')">Redémarrer PHP</button></div><p class="silence">Ces quatre gestes existent dans l’écran d’aujourd’hui ; en V19 ils attendent la commande racine du panneau. La maquette les garde.</p>` : ''}
+      <div class="gest"><button class="btn" onclick="toast('Nouvelle capture demandée (maquette).')">Rafraîchir la capture</button><button class="btn" onclick="ETAT.onglet='historique';ouvrir('${d}')">Historique</button></div>
       ${ETAT.admin ? `<div class="gest"><button class="btn" onclick="toast('Transférer : les liens, accords et demande de l’ancien compte ne suivent pas. (maquette)')">Transférer à un compte…</button>${hors ? `<button class="btn d" onclick="toast('Retirer de la liste (maquette).')">Retirer de la liste</button>` : ''}</div>` : (hors && mien ? `<div class="gest"><button class="btn d" onclick="toast('Retirer de ma liste (maquette).')">Retirer de ma liste</button></div>` : '')}`,
+    sauvegardes: `<p class="silence" style="padding-top:0">Une copie couvre tout le compte du panneau, pas ce seul site.</p>${s.sauv == null ? '<div class="encart w"><b>Aucune copie connue.</b> Aucun plan de sauvegarde ne couvre ce compte du panneau.</div>' : `<div class="rows">${[['aujourd’hui 03:00 → 03:12', 'complète', '2,1 Go · bases : boutique_prod'], ['hier 03:00 → 03:11', 'complète', '2,1 Go · bases : boutique_prod'], ['11-08 03:00 → 03:04', 'partielle', '640 Mo']].slice(s.sauv ? 1 : 0).map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(c[1], c[1] === 'complète' ? 'ok' : 'w')}<div class="nm"><b>${c[0]}</b><small>${c[2]}</small></div><button class="btn s d" ${mien || acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Confirmation : les fichiers et bases du compte seront remplacés. (maquette)')">Restaurer</button></div>`).join('')}</div>`}
+      ${acc ? `<div class="encart">Accord de restauration donné par ${E(acc.par)} jusqu’à ${E(acc.fin)}.</div>` : (mien ? `<div class="gest"><button class="btn" onclick="ACCORDS.push({d:'${d}',par:ETAT.moi,geste:'restaurer',fin:'demain 04:31'});rendre();ouvrir('${d}');toast('Accord donné pour 24 h.')">Autoriser l’administrateur à restaurer (24 h)</button></div>` : '<p class="silence">Restaurer demande l’accord du propriétaire.</p>')}
+      <div class="gest"><button class="btn" onclick="toast('Lance le plan de sauvegarde du compte (maquette).')">Sauvegarder maintenant</button><button class="btn" onclick="toast('Ouvre le module Sauvegardes (maquette).')">Sauvegardes ↗</button></div>`,
+    hebergement: `<div class="gest" style="margin-top:0">${['Fiche du domaine', 'Sauvegardes', 'Bases', 'Analyses'].map(x => `<button class="btn s" onclick="toast('Ouvre Hébergement › ${x} (maquette).')">${x} ↗</button>`).join('')}<button class="btn s" onclick="versCertificats('${d}')">Certificat ↗</button></div>
+      <h2 style="font-size:14px;margin:16px 0 8px">Bases</h2><div class="rows"><div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('MariaDB', 'nu')}<div class="nm"><b>${E(d.split('.')[0])}_prod</b><small>utilisateur ${E(s.fp)}_app</small></div><span class="num">184 Mo</span></div></div>
+      <h2 style="font-size:14px;margin:16px 0 8px">DNS du domaine</h2><div class="rows">${[['A', '@', '203.0.113.24', '3600'], ['AAAA', '@', '2001:db8::24', '3600'], ['CNAME', 'www', E(d) + '.', '3600'], ['MX', '@', '10 mail.exemple.test.', '3600']].map(r => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(r[0], 'nu')}<div class="nm"><b>${r[1]}</b><small class="mono">${r[2]}</small></div><span class="num">${r[3]}</span></div>`).join('')}</div>
+      <h2 style="font-size:14px;margin:16px 0 8px">Courrier du domaine</h2><div class="rows">${[['contact', '412 Mo sur 2 Go'], ['facturation', '96 Mo sur 1 Go']].map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr)">${pill('actif', 'ok')}<div class="nm"><b>${c[0]}@${E(d)}</b><small>${c[1]}</small></div></div>`).join('')}</div>`,
     liens: `<div class="rows"><div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('project', 'nu')}<div class="nm"><b>Refonte 2027</b><small>rattaché hier</small></div><button class="btn s">Retirer</button></div></div><div class="gest"><button class="btn" onclick="toast('Choisir un projet, un contact, une machine ou une note (maquette).')">Rattacher…</button></div>`,
     journal: (() => { const l = JOURNAL.filter(j => j.d === d); return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span>${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : '<p class="silence">Aucun geste encore sur ce site.</p>'; })(),
   };
@@ -436,7 +490,7 @@ function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; cons
   $('tiroir').classList.add('on'); $('voile').classList.add('on');
 }
 function fermer(){ ETAT.sel = null; ETAT.onglet = 'etat'; $('tiroir').classList.remove('on'); $('voile').classList.remove('on'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fermer(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ if ($('zoom').classList.contains('on')) $('zoom').classList.remove('on'); else fermer(); } });
 rendre();
 </script>
 </body>
