@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-sites.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=b8420c ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=de49f6 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -243,8 +243,8 @@ function alertes(){
   const a = [];
   sites().forEach(s => { const e = etat(s);
     if (s.up === false) a.push({n:'d', s, t:`${s.d} ne répond pas`, x:'Injoignable depuis 12 min — HTTP 502', g:'Vérifier'});
-    if (s.ssl < 0) a.push({n:'d', s, t:`Certificat de ${s.d} : échu depuis ${-s.ssl} jour(s)`, x:'Les navigateurs refusent le site.', g:'Renouveler'});
-    else if (s.ssl < REGL.ssl) a.push({n:'w', s, t:`Certificat de ${s.d} : ${s.ssl} jours`, x:'À renouveler avant l’échéance.', g:'Renouveler'});
+    if (s.ssl < 0) a.push({n:'d', s, t:`Certificat de ${s.d} : échu depuis ${-s.ssl} jour(s)`, x:'Les navigateurs refusent le site. Lu dans Sécurité › Certificats.', g:'Ouvrir dans Certificats', cert:1});
+    else if (s.ssl < REGL.ssl) a.push({n:'w', s, t:`Certificat de ${s.d} : ${s.ssl} jours`, x:'À renouveler avant l’échéance. Lu dans Sécurité › Certificats.', g:'Ouvrir dans Certificats', cert:1});
     if (s.up !== false && s.ms >= REGL.lent && !s.douteux) a.push({n:'w', s, t:`${s.d} est lent (${s.ms.toLocaleString('fr-FR')} ms)`, x:`Le code est bon, mais au-delà de ${REGL.lent} ms un visiteur s’en va.`, g:'Voir la courbe'});
     if (s.douteux) a.push({n:'i', s, t:`${s.d} : une mesure ratée`, x:`Pas encore une panne : il en faut ${REGL.echecs} de suite.`, g:'Sonder maintenant'});
     if (s.src === 'panneau' && s.sauv == null) a.push({n:'w', s, t:`${s.d} : aucune sauvegarde connue`, x:'Aucun plan ne couvre ce compte du panneau.', g:'Ouvrir Sauvegardes'});
@@ -259,7 +259,6 @@ const MENU = () => [
   ['vue', 'Vue d’ensemble', ''],
   ['sites', 'Tous les sites', String(sites().length)],
   ['dispo', 'Disponibilité', '', true],
-  ['certs', 'Certificats', '', true],
   ['alertes', 'Alertes', String(alertes().filter(a => a.n !== 'i').length), false, alertes().some(a => a.n === 'd') ? 'd' : (alertes().some(a => a.n === 'w') ? 'w' : '')],
   ['demandes', ETAT.admin ? 'Demandes d’adossement' : 'Mes demandes', String(demandes().length), false, demandes().length ? 'w' : ''],
   ['journal', 'Journal', ''],
@@ -312,7 +311,7 @@ const PAGES = {
       <div class="kpis">
         <button class="kpi" onclick="aller('sites','${bas.length ? 'tombes' : ''}')"><span>En ligne</span><b class="${bas.length ? 'd' : ''}">${l.length - bas.length} / ${l.length}</b><em>${bas.length ? bas.length + ' ne répond pas' : 'tous répondent'}</em></button>
         <button class="kpi" onclick="aller('dispo')"><span>Disponibilité 30 j</span><b>${dm.toLocaleString('fr-FR')} %</b><em>${l.reduce((a, s) => a + s.pannes, 0)} coupures sur le mois</em></button>
-        <button class="kpi" onclick="aller('certs')"><span>Certificats</span><b class="${cmin < 0 ? 'd' : cmin < REGL.ssl ? 'w' : ''}">${cmin < 0 ? '1 échu' : cmin + ' j'}</b><em>${cmin < 0 ? 'depuis ' + -cmin + ' jours' : 'le plus court'}</em></button>
+        <button class="kpi" onclick="versCertificats()" title="Ouvre Sécurité › Certificats"><span>Certificats ↗</span><b class="${cmin < 0 ? 'd' : cmin < REGL.ssl ? 'w' : ''}">${cmin < 0 ? '1 échu' : cmin + ' j'}</b><em>${cmin < 0 ? 'depuis ' + -cmin + ' jours' : 'le plus court'}</em></button>
         <button class="kpi" onclick="aller('alertes')"><span>Alertes</span><b class="${graves.length ? 'd' : moy.length ? 'w' : ''}">${graves.length + moy.length}</b><em>${graves.length} grave${graves.length > 1 ? 's' : ''} · ${moy.length} à regarder</em></button>
         <button class="kpi" onclick="aller('demandes')"><span>Demandes</span><b class="${demandes().length ? 'w' : ''}">${demandes().length}</b><em>${ETAT.admin ? 'adossement à traiter' : 'en attente'}</em></button>
         <button class="kpi" onclick="aller('sites','sans')"><span>Sauvegardes</span><b class="${sans ? 'w' : ''}">${l.filter(s => s.src === 'panneau' && s.sauv != null).length} / ${l.filter(s => s.src === 'panneau').length}</b><em>${sans ? sans + ' site sans copie' : 'tous couverts'}</em></button>
@@ -323,9 +322,10 @@ const PAGES = {
       <section class="sec carte"><div class="sh"><h2>Derniers événements</h2><span class="dr"><button class="btn s" onclick="aller('journal')">Tout le journal</button></span></div>${journalHtml(4)}</section>
     </div>
     <section class="sec carte"><div class="sh"><h2>D’où viennent les chiffres</h2><span class="meta">et leur âge</span></div><div class="rows">
-      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('sonde', 'ok')}<div class="nm"><b>La sonde de Cassandra</b><small>code, durée, certificat lu sur le port 443</small></div><span class="num">il y a 2 min</span></div>
+      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('sonde', 'ok')}<div class="nm"><b>La sonde de Cassandra</b><small>code HTTP et durée, toutes les 5 minutes</small></div><span class="num">il y a 2 min</span></div>
       <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('miroir', 'ok')}<div class="nm"><b>Comptes et panneau</b><small>relus à chaque tour de sonde ; c’est ce que voit un compte ordinaire</small></div><span class="num">il y a 2 min</span></div>
-      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('panneau', '')}<div class="nm"><b>La base du panneau</b><small>propriétaire, PHP, certificat géré, sauvegardes</small></div><span class="num">04:31</span></div></div></section>`;
+      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('certificats', 'ok')}<div class="nm"><b>Le module Certificats</b><small>échéance du certificat servi, quota d’émission, renouvellement : Sites les lit, ne les refait pas</small></div><span class="num">il y a 38 min</span></div>
+      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('panneau', '')}<div class="nm"><b>La base du panneau</b><small>propriétaire, PHP, sauvegardes</small></div><span class="num">04:31</span></div></div></section>`;
   },
   sites(){
     let l = sites(); const q = ETAT.q.toLowerCase(), f = ETAT.filtre;
@@ -351,14 +351,6 @@ const PAGES = {
     <section class="sec carte"><div class="rows">${l.map(s => `<button class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr) auto" onclick="ouvrir('${s.d}','historique')"><div class="nm"><b><code>${E(s.d)}</code></b><small>${s.pannes} coupure${s.pannes > 1 ? 's' : ''}${s.indispo ? ' · ' + s.indispo + ' indisponible' : ''}</small></div>${bande(s)}${courbe(s)}<div class="cote"><span class="num"><b style="color:var(--strong)">${pct(s).toLocaleString('fr-FR')} %</b></span><span class="num">${s.ms.toLocaleString('fr-FR')} ms</span></div></button>`).join('')}</div>
       <div class="leg"><span><i style="background:var(--ok)"></i>sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span><span>┄ seuil « lent » : ${REGL.lent.toLocaleString('fr-FR')} ms</span></div></section>
     <section class="sec carte"><div class="sh"><h2>Comment c’est compté</h2></div><p class="silence">Une mesure toutes les 5 minutes. Une panne se dit au ${REGL.echecs}ᵉ échec de suite et commence au premier ; une panne qui dure encore compte jusqu’à maintenant. Un site qu’on ne mesure plus depuis deux jours sort du calcul : il n’a pas 100 %, il n’a pas de mesure.</p></section>`;
-  },
-  certs(){
-    const l = sites().slice().sort((a, b) => a.ssl - b.ssl);
-    return tete('Certificats', 'lus sur le port 443, une fois par heure · même échus', '') + `
-    <section class="sec carte"><div class="graduation"><span>aujourd’hui</span><span>30 j</span><span>60 j</span><span>90 j</span></div><div class="rows">${l.map(s => { const c = s.ssl < 0 ? 'd' : s.ssl < REGL.ssl ? 'w' : ''; return `<div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) auto"><div class="nm"><b><code>${E(s.d)}</code></b><small>${s.src === 'panneau' ? 'géré par le panneau' : 'hors panneau : à renouveler chez l’hébergeur'}</small></div>
-      <div class="frise" role="img" aria-label="${s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' jours' : 'expire dans ' + s.ssl + ' jours'}"><i class="${c}" style="width:${Math.max(3, Math.min(100, s.ssl / 90 * 100))}%"></i></div>
-      <div class="cote" style="flex-direction:row;align-items:center;gap:8px">${pill(s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : s.ssl + ' j', c || 'ok')}${s.src === 'panneau' ? `<button class="btn s ${c ? 'p' : ''}" onclick="toast('Confirmation : l’autorité limite les émissions par semaine. (maquette)')">Renouveler</button>` : ''}</div></div>`; }).join('')}</div></section>
-    <section class="sec carte"><div class="sh"><h2>Prévenir avant l’échéance</h2><span class="neuf">nouveau</span></div><p class="silence">Un rappel part au propriétaire à ${REGL.ssl} jours, puis à 7 jours, puis le jour même. Un certificat échu reste visible ici avec son nombre de jours, au lieu de disparaître de la liste.</p></section>`;
   },
   alertes(){
     const al = alertes();
@@ -389,12 +381,12 @@ const PAGES = {
     const num = (k, lib, aide, min, max) => `<label class="champ"><span>${lib}</span><input type="number" min="${min}" max="${max}" value="${REGL[k]}" onchange="REGL.${k}=Math.max(${min},Math.min(${max},+this.value||${min}));rendre();toast('Réglage enregistré.')" style="max-width:140px"><small>${aide}</small></label>`;
     const coche = (k, lib, aide) => `<label class="champ" style="grid-template-columns:auto 1fr;align-items:start;column-gap:10px"><input type="checkbox" ${REGL[k] ? 'checked' : ''} onchange="REGL.${k}=this.checked;rendre();toast('Réglage enregistré.')" style="margin-top:5px"><span>${lib}<br><small>${aide}</small></span></label>`;
     return tete('Réglages de la sonde', 'ils changent ce que l’écran appelle une panne', '') + `<div class="grille2">
-      <section class="sec carte"><div class="sh"><h2>Quand dire qu’un site va mal</h2></div>${num('echecs', 'Mesures ratées de suite avant une panne', '1 : dès la première. 2 évite les fausses alertes.', 1, 5)}${num('lent', 'Seuil « lent », en millisecondes', 'Au-delà, le site répond mais le visiteur s’en va.', 500, 60000)}${num('ssl', 'Certificat signalé sous (jours)', '', 3, 90)}${coche('proteges', 'Un 401 ou 403 est « en ligne »', 'Pour les sites protégés par un mot de passe.')}</section>
+      <section class="sec carte"><div class="sh"><h2>Quand dire qu’un site va mal</h2></div>${num('echecs', 'Mesures ratées de suite avant une panne', '1 : dès la première. 2 évite les fausses alertes.', 1, 5)}${num('lent', 'Seuil « lent », en millisecondes', 'Au-delà, le site répond mais le visiteur s’en va.', 500, 60000)}${coche('proteges', 'Un 401 ou 403 est « en ligne »', 'Pour les sites protégés par un mot de passe.')}</section>
       <section class="sec carte"><div class="sh"><h2>Comment la sonde travaille</h2></div>${num('delai', 'Délai d’attente d’une requête (s)', '', 2, 60)}${num('garde', 'Garde des mesures (jours)', 'Le journal des gestes se garde un an au moins.', 7, 730)}${coche('interne', 'Autoriser les adresses internes', 'Fermé par défaut : la sonde ne sort que vers l’Internet public.')}
-        <div class="encart">Essaie : passe le seuil « lent » à 4000, ou coche « 401 est en ligne » — les alertes et les pastilles changent tout de suite.</div></section></div>`;
+        <div class="encart">Le seuil d’alerte des certificats ne se règle pas ici : il est dans Sécurité › Certificats › Réglages, un seul endroit pour tous les écrans.</div><div class="encart">Essaie : passe le seuil « lent » à 4000, ou coche « 401 est en ligne » — les alertes et les pastilles changent tout de suite.</div></section></div>`;
   },
 };
-const alerteHtml = a => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(a.n === 'd' ? 'grave' : a.n === 'w' ? 'à regarder' : 'info', a.n === 'i' ? 'i' : a.n)}<button class="nm" style="background:none;border:0;text-align:left;padding:0" onclick="ouvrir('${a.s.d}')"><b>${E(a.t)}</b><small>${E(a.x)}</small></button><button class="btn s" onclick="toast('${E(a.g)} : ${a.s.d} (maquette).')">${E(a.g)}</button></div>`;
+const alerteHtml = a => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(a.n === 'd' ? 'grave' : a.n === 'w' ? 'à regarder' : 'info', a.n === 'i' ? 'i' : a.n)}<button class="nm" style="background:none;border:0;text-align:left;padding:0" onclick="ouvrir('${a.s.d}')"><b>${E(a.t)}</b><small>${E(a.x)}</small></button><button class="btn s" onclick="${a.cert ? `versCertificats('${a.s.d}')` : `toast('${E(a.g)} : ${a.s.d} (maquette).')`}">${E(a.g)}${a.cert ? ' ↗' : ''}</button></div>`;
 function journalHtml(n){ const l = JOURNAL.filter(j => ETAT.admin || SITES.find(s => s.d === j.d && s.compte === ETAT.moi)).slice(0, n); return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span><a href="#" onclick="ouvrir('${j.d}');return false" style="color:inherit"><code>${E(j.d)}</code></a> · ${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : '<p class="silence">Aucun geste encore.</p>'; }
 function rendre(garderFocus){ menu(); $('page').innerHTML = PAGES[ETAT.sec](); if (garderFocus){ const q = $('q'); if (q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } } }
 
@@ -413,6 +405,7 @@ function jugerNom(){
   else { m = '✓ ' + d + ' peut être déclaré'; ok = true; }
   $('dj').textContent = m; $('dj').style.color = ok ? 'var(--ok)' : (m[0] === '✕' ? 'var(--danger)' : ''); $('db').disabled = !ok;
 }
+function versCertificats(d){ toast('Ouvre Sécurité › Certificats' + (d ? ' sur ' + d : '') + ' (maquette) : échéances, quota, renouvellement.'); }
 function repondre(d, fait, annule){ const s = SITES.find(x => x.d === d); delete s.demande; rendre(); toast(annule ? 'Demande annulée.' : fait ? 'Demande close : adossé. Le compte est prévenu.' : 'Demande refusée. Le compte lira la raison.'); }
 
 // ───────────────────────── la fiche d'un site ─────────────────────────
@@ -422,7 +415,7 @@ function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; cons
   const corps = {
     etat: `<dl class="paires"><dt>réponse</dt><dd>${s.code ?? 'sans réponse'} en ${s.ms.toLocaleString('fr-FR')} ms <small style="color:var(--muted)">sonde · il y a 2 min</small></dd>
       <dt>disponibilité 30 j</dt><dd>${pct(s).toLocaleString('fr-FR')} % · ${s.pannes} coupure${s.pannes > 1 ? 's' : ''}${s.indispo ? ' · ' + s.indispo : ''}</dd>
-      <dt>certificat</dt><dd>${s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : 'expire dans ' + s.ssl + ' j'} <small style="color:var(--muted)">lu sur le port 443</small></dd>
+      <dt>certificat</dt><dd>${s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : 'expire dans ' + s.ssl + ' j'} <small style="color:var(--muted)">d’après Certificats</small> <button class="btn s" onclick="versCertificats('${d}')">Certificats ↗</button></dd>
       <dt>hébergement</dt><dd>${hors ? 'hors panneau, déclaré à la main' : 'panneau · compte ' + E(s.fp) + (s.php ? ' · PHP ' + s.php : '')}</dd>
       <dt>sauvegarde</dt><dd>${hors ? '<small style="color:var(--muted)">hors panneau</small>' : s.sauv == null ? 'aucune copie connue' : s.sauv === 0 ? 'aujourd’hui' : 'il y a ' + s.sauv + ' j'}</dd>
       <dt>propriétaire</dt><dd>${ETAT.admin ? E(s.compte || 'aucun compte Cassandra') : 'toi'}</dd></dl>
@@ -430,7 +423,7 @@ function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; cons
       ${ETAT.admin && s.compte ? `<div class="encart">Ce site appartient à ${E(s.compte)}. Tu vois son état, pas son contenu.</div>` : ''}`,
     historique: `<p class="silence" style="padding-top:0">30 jours, un trait par jour</p>${bande(s)}<p class="silence">Temps de réponse, 24 h${s.ms >= REGL.lent ? ' — au-dessus du seuil « lent »' : ''}</p>${courbe(s, 70)}
       <div class="gest"><button class="btn" onclick="aller('rapports')">Rapport du mois</button><button class="btn" onclick="toast('Ouvre les courbes de l’onglet Historique (maquette).')">Courbes détaillées</button></div>`,
-    gestes: `<div class="gest"><button class="btn p" onclick="toast('Sonde de ${d} : ${s.code ?? 'sans réponse'} en ${s.ms} ms.')">Sonder maintenant</button>${hors ? '' : `<button class="btn" onclick="toast('Confirmation demandée : émissions limitées par semaine. (maquette)')">Renouveler le certificat</button><button class="btn" ${mien || acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Choix de la copie à restaurer (maquette).')">Restaurer une sauvegarde…</button>`}</div>
+    gestes: `<div class="gest"><button class="btn p" onclick="toast('Sonde de ${d} : ${s.code ?? 'sans réponse'} en ${s.ms} ms.')">Sonder maintenant</button>${hors ? '' : `<button class="btn" onclick="versCertificats('${d}')">Certificat : renouveler, quota ↗</button><button class="btn" ${mien || acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Choix de la copie à restaurer (maquette).')">Restaurer une sauvegarde…</button>`}</div>
       ${hors ? '<div class="encart">Hors panneau : la sonde, l’historique et les rattachements seulement.' + (mien && !s.demande ? ' <button class="btn s" onclick="SITES.find(x=>x.d===\'' + d + '\').demande={id:99,msg:\'À rapatrier.\',quand:\'à l’instant\'};rendre();ouvrir(\'' + d + '\');toast(\'Demande envoyée à l’administrateur.\')">Demander l’adossement</button>' : '') + '</div>' : ''}
       ${acc ? `<div class="encart">Accord de restauration donné par ${E(acc.par)} jusqu’à ${E(acc.fin)}.</div>` : (!hors && mien ? `<div class="gest"><button class="btn" onclick="ACCORDS.push({d:'${d}',par:ETAT.moi,geste:'restaurer',fin:'demain 04:31'});rendre();ouvrir('${d}');toast('Accord donné pour 24 h.')">Autoriser l’administrateur à restaurer (24 h)</button></div>` : '')}
       ${!hors ? '<p class="silence">Redémarrer, lancer une sauvegarde, lire les journaux : pas encore portés en V19, et dits comme tels au lieu d’un bouton grisé sans raison.</p>' : ''}
