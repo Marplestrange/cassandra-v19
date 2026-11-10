@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4b1738
+# VERSION CN : 0.1.0  #fb275f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4b1738 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fb275f ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -540,8 +540,9 @@ def brancher(ctx):
         _SERVEUR["meta"] = d.get("meta") or {}
         if d["installe"] and d["meta"].get("domaine"):
             code, i = _http("GET", "https://%s/api/instance" % d["meta"]["domaine"], None, None, 8)
-            d["api_joignable"] = code is not None and code < 500
-            d["setup_requis"] = bool(code == 200 and isinstance(i, dict) and i.get("setup_required"))      # le premier compte reste à créer (page /setup)
+            ok = code == 200 and isinstance(i, dict) and "setup_required" in i                       # la vraie API de NetBird : la 404 du tableau de bord (proxy incomplet) n'en est pas une
+            d["api_joignable"] = ok
+            d["setup_requis"] = bool(ok and i.get("setup_required"))                                   # le premier compte reste à créer (page /setup)
         return d
 
     # Le domaine du serveur NetBird doit être un nom que Cassandra ADMINISTRE : un site du panneau d'hébergement, ou un nom de la zone DNS qu'il héberge.
@@ -704,6 +705,38 @@ def brancher(ctx):
 
     def prouver_jq(c, res):
         return bool(serveur_etat(c).get("jq"))
+
+    # ---- le proxy : le domaine du serveur doit envoyer /api, /oauth2, /relay et le gRPC au serveur NetBird, pas tout au tableau de bord
+    def serveur_proxy_etat(c, domaine=""):
+        d = str(domaine or (_SERVEUR.get("meta") or {}).get("domaine") or "").strip().lower()
+        if not DOMAINE.match(d):
+            raise ValueError("Domaine invalide : le nom (netbird.exemple.fr) du serveur")
+        r = srv("proxy_etat", [d])
+        etat = {k: v for k, v in r.items() if k != "ok"} if r.get("ok") else {"fastpanel": False, "include": "", "deja": False, "nginx": "", "http2": False, "erreur_root": str(r.get("erreur") or "")[:200]}
+        code, i = _http("GET", "https://%s/api/instance" % d, None, None, 8)
+        code2, o = _http("GET", "https://%s/oauth2/.well-known/openid-configuration" % d, None, None, 8)
+        api = code == 200 and isinstance(i, dict) and "setup_required" in i
+        oauth = code2 == 200 and isinstance(o, dict) and bool(o.get("issuer"))
+        return dict(etat, domaine=d, https=code is not None, api_ok=api, oauth_ok=oauth, routes_ok=api and oauth, setup_requis=bool(api and i.get("setup_required")))
+
+    def serveur_proxy_publier(c, domaine=""):
+        with _VERROU:
+            d = str(domaine or (_SERVEUR.get("meta") or {}).get("domaine") or "").strip().lower()
+            if not DOMAINE.match(d):
+                raise ValueError("Domaine invalide : le nom (netbird.exemple.fr) du serveur")
+            r = srv_ok(srv("proxy_publier", [d], None, 120))
+            return dict(serveur_proxy_etat(c, d), publie=True, include=r.get("include", ""))
+
+    def prouver_proxy(c, res):
+        for _ in range(8):
+            if serveur_proxy_etat(c, res.get("domaine", "")).get("routes_ok"):
+                return True
+            time.sleep(1.5)
+        return False
+
+    def defaire_proxy(c, res):
+        with _VERROU:
+            srv_ok(srv("proxy_retirer", [res.get("domaine", "")], None, 120))
 
     def serveur_ip(c):
         return srv_ok(srv("ip"))
@@ -976,7 +1009,7 @@ def brancher(ctx):
 
     DEFAIRE = {"connecter": defaire_connecter, "deconnecter": defaire_deconnecter, "installer_docker": defaire_installer, "machine_modifier": defaire_machine, "cle_creer": defaire_cle, "cle_revoquer": defaire_revocation,
                "groupe_creer": defaire_groupe, "politique_creer": defaire_politique, "politique_activer": defaire_activation,
-               "serveur_mettre_a_jour": defaire_serveur_maj, "mettre_a_jour_client": defaire_maj_client, "serveur_restaurer": defaire_restauration, "pare_feu_ouvrir": defaire_pare_feu,
+               "serveur_mettre_a_jour": defaire_serveur_maj, "serveur_proxy_publier": defaire_proxy, "mettre_a_jour_client": defaire_maj_client, "serveur_restaurer": defaire_restauration, "pare_feu_ouvrir": defaire_pare_feu,
                "installer_natif": defaire_installer_natif}
     PEUT_DEFAIRE = {"serveur_mettre_a_jour": lambda r: bool(r.get("sauvegarde")), "mettre_a_jour_client": lambda r: bool(r.get("revenir")), "serveur_restaurer": lambda r: bool(r.get("securite")),
                     "pare_feu_ouvrir": lambda r: bool(r.get("ouverts_par_nous"))}
@@ -1001,6 +1034,8 @@ def brancher(ctx):
             return "Serveur NetBird restauré depuis la sauvegarde %s" % res.get("restauree", "?")
         if cap == "pare_feu_ouvrir":
             return "Ports NetBird ouverts dans le pare-feu (%s)" % (", ".join(res.get("ouverts_par_nous") or []) or "déjà tous ouverts")
+        if cap == "serveur_proxy_publier":
+            return "Routes NetBird posées dans le site FASTPANEL %s (nginx rechargé)" % res.get("domaine", "?")
         if cap == "serveur_installer_compose":
             return "Docker Compose installé (%s) : exigé par le script d'installation du serveur NetBird" % (res.get("commande") or "paquet de la distribution")
         if cap == "serveur_installer_jq":
@@ -1083,6 +1118,8 @@ def brancher(ctx):
     ctx.implementer("serveur_restaurer", journaliser("serveur_restaurer", serveur_restaurer), prouver_restauration, defaire_restauration, simuler=lambda x, id="", **_: "restaurerait la sauvegarde %s du serveur NetBird (après une sauvegarde de sécurité)" % id)
     ctx.implementer("pare_feu_etat", pare_feu_etat)
     ctx.implementer("pare_feu_ouvrir", journaliser("pare_feu_ouvrir", pare_feu_ouvrir), prouver_pare_feu, defaire_pare_feu, simuler=lambda x, proxy="", **_: "ouvrirait dans le pare-feu les ports publics de NetBird (proxy %s)" % (proxy or "du serveur"))
+    ctx.implementer("serveur_proxy_etat", serveur_proxy_etat)
+    ctx.implementer("serveur_proxy_publier", journaliser("serveur_proxy_publier", serveur_proxy_publier), prouver_proxy, defaire_proxy, simuler=lambda x, domaine="", **_: "poserait les routes NetBird (/api, /oauth2, /relay, gRPC) dans le fichier d'inclusion du site FASTPANEL %s, puis rechargerait nginx" % (domaine or "du serveur"))
     ctx.implementer("serveur_installer_compose", journaliser("serveur_installer_compose", serveur_installer_compose), prouver_compose, lambda c, res: None, simuler=lambda x, **_: "installerait Docker Compose (paquet de la distribution) pour le script du serveur NetBird")
     ctx.implementer("serveur_installer_jq", journaliser("serveur_installer_jq", serveur_installer_jq), prouver_jq, lambda c, res: None, simuler=lambda x, **_: "installerait jq (paquet de la distribution) pour le script du serveur NetBird")
     ctx.implementer("serveur_ip", serveur_ip)

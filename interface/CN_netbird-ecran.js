@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #0d79fe
+// VERSION CN : 0.1.0  #024f12
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=0d79fe ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=024f12 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -71,7 +71,7 @@
     const racine = document.createElement("div"); racine.className = "nb"; corps.appendChild(racine);
 
     const S = { e: null, occupe: false, erreur: "", couper: false, q: "", filtre: "tous", j: null, lu: 0, nom: "", s: null, g: null, onglet: "machines", edit: "", cle: null, txt: null, dl: null, f: { version: "", domaine: "", email: "", proxy: "nginx", hors: false }, pt: null,
-      cMode: "docker", v: null, sBack: true, pf: null, sv: null, ipm: null, ipSaisie: "", dnsv: null, dmv: null };
+      cMode: "docker", px: null, pj: false, v: null, sBack: true, pf: null, sv: null, ipm: null, ipSaisie: "", dnsv: null, dmv: null };
     let minuterie = null;
 
     async function charger(silencieux) {
@@ -79,7 +79,10 @@
         if (page === "serveur") { S.s = await agir("netbird.serveur_etat"); S.dm = S.s.installe ? null : await agir("netbird.serveur_domaines").catch(() => null); S.pt = await agir("netbird.serveur_ports", S.s.installe ? {} : { proxy: S.f.proxy }).catch(() => null);
           S.pf = await agir("netbird.pare_feu_etat", { proxy: S.s.installe ? (S.s.meta || {}).proxy || "" : S.f.proxy }).catch(() => null);
           S.sv = S.s.installe ? await agir("netbird.serveur_sauvegardes").catch(() => null) : null;
-          await chargerDns(); }
+          await chargerDns();
+          const dom = S.s.installe ? (S.s.meta || {}).domaine : "";
+          S.px = dom ? await agir("netbird.serveur_proxy_etat", { domaine: dom }).catch(() => null) : null;
+          S.pj = !!(S.px && S.px.routes_ok && !S.s.setup_requis) && await agir("netbird.api_verifier").then(() => true).catch(() => false); }
         else if (page === "gestion") S.g = await chargerReseau();
         else S.e = await agir("netbird.etat");
         if (page === "vue" || page === "installation" || page === "serveur") S.v = await agir("netbird.versions").catch(() => null);
@@ -272,12 +275,38 @@
     // ---- le serveur NetBird auto-hébergé : l’installer, le tenir à jour, le retirer
     const oui = (b) => '<span class="pastille ' + (b ? "ok" : "mu") + '">' + (b ? "oui" : "non") + "</span>";
     const fiche = (l, v) => '<div><span class="lib">' + l + '</span><span class="gros" style="font-size:16px">' + v + "</span></div>";
+    // Le pas à pas : tout ce qu’il faut pour avoir un serveur NetBird qui marche, dans l’ordre, avec l’état de chaque étape et le bouton qui la fait quand Cassandra le peut.
+    function etapesServeur(s) {
+      const dom = s.installe ? (s.meta || {}).domaine : S.f.domaine, pf = S.pf, px = S.px, inst = !!s.installe && !s.partiel;
+      const portsOk = !pf || !pf.outil || !pf.actif || (pf.publics || []).every((p) => (pf.ouverts || []).includes(p));
+      const dnsOk = !!(S.dnsv && S.dnsv.correspond), routesOk = !!(px && px.routes_ok), compteFait = inst && routesOk && !s.setup_requis;
+      const manque = pf ? (pf.publics || []).filter((p) => !(pf.ouverts || []).includes(p)) : [];
+      const urlSetup = dom ? "https://" + dom + "/setup" : "";
+      return [
+        { t: "Docker", ok: !!s.docker, aide: s.docker ? "" : "Cassandra ne l’installe pas : installe-le d’abord, puis relis la page." },
+        { t: "Docker Compose", ok: !!s.compose, aide: s.compose ? "" : "Le script officiel d’installation du serveur en a besoin.", act: !s.compose && s.docker ? ["srv-compose", "Installer Docker Compose"] : null },
+        { t: "jq", ok: !!s.jq, aide: s.jq ? "" : "Le script officiel d’installation du serveur en a besoin.", act: !s.jq ? ["srv-jq", "Installer jq"] : null },
+        { t: "Un domaine pour le serveur, qui pointe vers cette machine", ok: !!dom && dnsOk,
+          aide: !dom ? "Choisis le domaine du serveur dans le formulaire plus bas (un nom réservé à NetBird, pas celui de Cassandra)." : dnsOk ? "" : "Le domaine ne pointe pas encore vers cette machine : crée l’enregistrement DNS (carte « Enregistrement DNS » plus bas). Avec nginx derrière FASTPANEL, crée aussi dans FASTPANEL un site « reverse proxy » vers 127.0.0.1:8080, avec un certificat." },
+        { t: "Ports ouverts dans le pare-feu", ok: portsOk, aide: portsOk ? "" : "443/tcp et 3478/udp (et 80/tcp avec traefik) doivent être ouverts sur internet.", act: !portsOk && manque.length ? ["pf-ouvrir", "Ouvrir " + manque.join(", ")] : null },
+        { t: "Installer le serveur", ok: inst, aide: inst ? "" : s.partiel ? "L’installation précédente n’a pas abouti : retire-la (en bas de page), puis recommence." : "Remplis le formulaire plus bas (la dernière version est proposée), télécharge le script, vérifie son empreinte, puis installe." },
+        { t: "Publier les routes du serveur dans le proxy", ok: routesOk, voir: inst,
+          aide: routesOk ? "" : px && px.fastpanel ? "Le domaine envoie tout au tableau de bord : il manque les routes /api, /oauth2, /relay et gRPC vers le serveur. Cassandra peut les poser dans le site FASTPANEL (elle teste nginx avant de le recharger)." : "Le domaine doit envoyer /api, /oauth2, /relay et le gRPC au serveur (127.0.0.1:8081). Ce n’est pas un site FASTPANEL : copie la configuration nginx (« Voir la conf nginx ») dans ton proxy.",
+          act: !routesOk && px && px.fastpanel ? ["srv-proxy", "Publier les routes dans FASTPANEL"] : null },
+        { t: "Créer ton compte administrateur", ok: compteFait, voir: inst && routesOk,
+          aide: compteFait ? "" : "Ouvre la page d’installation de NetBird et crée toi-même ton compte : Cassandra ne choisit ni ne garde aucun mot de passe.", lien: !compteFait && urlSetup ? urlSetup : "" },
+        { t: "Donner un jeton d’accès à Cassandra", ok: !!S.pj, voir: compteFait,
+          aide: S.pj ? "" : "Dans le tableau de bord NetBird (Settings › Personal Access Tokens), crée un jeton ; donne-le à Cassandra depuis la page Administration.", act: !S.pj ? ["vers-gestion", "Aller à l’Administration"] : null },
+      ];
+    }
     function cartePrerequis(s) {
-      return '<div class="carte"><h2 ' + H2 + ">Avant d’installer</h2><div class=\"hero\">" + fiche("Docker", oui(s.docker)) + fiche("Docker Compose (exigé par le script officiel)", oui(s.compose)) + fiche("jq (exigé par le script officiel)", oui(s.jq)) + "</div>" +
-        (!s.docker ? '<p class="note" style="color:var(--warn)">Docker n’est pas installé : Cassandra ne l’installe pas, installe-le d’abord (le bouton d’installation reste grisé sans lui).</p>' : "") +
-        (s.docker && !s.compose ? '<div class="acts"><span class="note" style="color:var(--warn)">Docker Compose manque : le script officiel d’installation en a besoin, et le bouton d’installation reste grisé sans lui.</span><button class="btn pri" data-a="srv-compose"' + (S.occupe ? " disabled" : "") + ">Installer Docker Compose</button></div>" : "") +
-        (!s.jq ? '<div class="acts"><span class="note" style="color:var(--warn)">jq manque : le script officiel d’installation en a besoin, et le bouton d’installation reste grisé sans lui.</span><button class="btn pri" data-a="srv-jq"' + (S.occupe ? " disabled" : "") + ">Installer jq</button></div>" : "") +
-        '<p class="note">Il faut aussi un nom de domaine propre au serveur NetBird (pas celui de Cassandra) qui pointe déjà vers cette machine, et les ports 80, 443 et 3478/udp ouverts (avec le proxy « nginx » ou « caddy », ton proxy existant publie le serveur : seul le port 3478/udp doit être libre).</p></div>';
+      const e = etapesServeur(s), prochaine = e.findIndex((x) => !x.ok && x.voir !== false);
+      if (prochaine < 0) return "";
+      return '<div class="carte"><h2 ' + H2 + ">Pas à pas</h2><p class=\"note\">Dans l’ordre : chaque étape dit où elle en est, et propose le bouton quand Cassandra peut la faire.</p><div class=\"pairs\">" +
+        e.map((x, i) => x.voir === false ? "" : '<div class="pair" style="grid-template-columns:auto minmax(0,1fr)"><span class="pastille ' + (x.ok ? "ok" : i === prochaine ? "al" : "mu") + '">' + (x.ok ? "✓" : i + 1) + '</span><span class="nom" style="font-family:inherit">' + esc(x.t) + (i === prochaine ? ' <span class="pastille al">prochaine étape</span>' : "") +
+          (x.ok || !x.aide ? "" : '<br><span class="note">' + esc(x.aide) + "</span>") +
+          (x.act ? '<br><button class="btn pri" data-a="' + x.act[0] + '"' + (S.occupe ? " disabled" : "") + ">" + esc(x.act[1]) + "</button>" : "") +
+          (x.lien ? '<br><a class="btn pri" href="' + esc(x.lien) + '" target="_blank" rel="noopener noreferrer">Ouvrir la page de création du compte</a>' : "") + "</span></div>").join("") + "</div></div>";
     }
     const ETP = { libre: ["ok", "libre"], occupe: ["dg", "déjà pris : bloque l’installation"], pris_par_proxy: ["mu", "pris par ton proxy (normal)"], inconnu: ["mu", ""] };
     // Le pare-feu : lesquels des ports publics de NetBird sont ouverts, et un bouton pour ouvrir ceux qui manquent
@@ -369,11 +398,10 @@
     function carteServeur(s) {
       const m = s.meta || {}, url = m.domaine ? "https://" + m.domaine : "";
       const avisPartiel = s.partiel ? '<div class="carte" role="alert" style="color:var(--warn)"><b>Installation inachevée.</b> Le script d’installation a échoué ou n’a pas eu le temps de finir : la pile est à moitié posée. Retire-la avec ses données (en bas de page), puis recommence l’installation.</div>' : "";
-      if (s.partiel) return avisPartiel + cartePrerequis(s) + carteRetrait();
+      if (s.partiel) return avisPartiel + carteRetrait();
       let h = avisPartiel + '<div class="carte"><div class="hero"><div><span class="lib">Serveur</span><span class="pastille ' + (s.conteneurs.some((c) => c.etat === "running") ? "ok" : "al") + '">' + (s.conteneurs.some((c) => c.etat === "running") ? "En marche" : "Arrêté") + "</span></div>" +
         fiche("Domaine", esc(m.domaine || "—")) + fiche("Version", esc(m.version || "—")) + fiche("Proxy", esc(m.proxy || "—")) + fiche("API", s.api_joignable ? "joignable ✓" : "ne répond pas ✗") + "</div>" +
         (s.conteneurs.length ? '<div class="pairs">' + s.conteneurs.map((c) => '<div class="pair" style="grid-template-columns:auto minmax(0,1fr) minmax(0,auto)"><span class="pt' + (c.etat === "running" ? " on" : "") + '"></span><span class="nom">' + esc(c.service) + '</span><span class="note" style="overflow-wrap:anywhere">' + esc(c.etat) + " · " + esc(c.image) + "</span></div>").join("") + "</div>" : "") + "</div>";
-      if (s.setup_requis && url) h += '<div class="lien"><h2 ' + H2 + ">Dernier pas : crée le premier compte administrateur</h2><p class=\"note\">Ouvre la page d’installation de NetBird et crée toi-même ton compte : Cassandra ne choisit ni ne garde aucun mot de passe. Puis, dans le tableau de bord, crée un jeton d’accès personnel (Settings › Personal Access Tokens) et donne-le à Cassandra depuis la page <b>Administration</b>.</p><div class=\"acts\"><a class=\"btn pri\" href=\"" + esc(url) + '/setup" target="_blank" rel="noopener noreferrer">Ouvrir la page de création du compte</a></div></div>';
       h += carteMajServeur(s) + carteDns(s) + carteSauvegardes();
       h += cartePorts() + '<div class="carte"><h2 ' + H2 + ">Entretien</h2><div class=\"acts\"><button class=\"btn\" data-a=\"srv-journaux\"" + (S.occupe ? " disabled" : "") + ">Voir les journaux</button><button class=\"btn\" data-a=\"srv-redemarrer\"" + (S.occupe ? " disabled" : "") + ">Redémarrer</button>" +
         (m.proxy === "nginx" ? '<button class="btn" data-a="srv-nginx"' + (S.occupe ? " disabled" : "") + ">Voir la conf nginx</button>" : "") + "</div>" + carteTexte() + "</div>";
@@ -386,7 +414,7 @@
     }
     function pageServeur(s) {
       if (!s.disponible) return '<div class="carte" style="color:var(--warn)">La commande root « serveur » du module ne répond pas : <span class="mono">CN_install.sh --module netbird</span> la pose, et le courtier doit être armé. Détail : ' + esc(s.erreur || "") + "</div>";
-      return aiguillage(false) + (s.installe ? carteServeur(s) : cartePrerequis(s) + cartePorts() + carteDns(s) + carteInstallation(s));
+      return aiguillage(false) + cartePrerequis(s) + (s.installe ? carteServeur(s) : cartePorts() + carteDns(s) + carteInstallation(s));
     }
 
     // ---- l’administration du réseau, par l’API du serveur : machines, clés d’installation, groupes, politiques
@@ -505,6 +533,12 @@
         return faire(() => agir("netbird.installer_natif"), "Le client NetBird natif est installé : connecte-le depuis la Vue d’ensemble.");
       }
       if (a === "natif-retirer") { if (!(await demander("Désinstaller le client NetBird natif ? La machine quitte le réseau tant qu’elle n’est pas reconnectée."))) return; return faire(() => agir("netbird.retirer_natif"), "Client natif désinstallé."); }
+      if (a === "vers-gestion") { if (CASS.ouvrirEcran) CASS.ouvrirEcran("netbird:n_gestion", "Administration"); return; }
+      if (a === "srv-proxy") {
+        const dom = (S.s && S.s.meta || {}).domaine || S.f.domaine;
+        if (!(await demander("Poser les routes NetBird (/api, /oauth2, /relay, gRPC) dans le site FASTPANEL " + dom + " ? Cassandra écrit entre deux marques dans le fichier d’inclusion du site, teste nginx, puis le recharge ; au moindre refus de nginx, l’ancien contenu est remis. Ce que tu y as mis reste. Le geste peut être défait depuis l’Historique.", "Oui, publier"))) return;
+        return faire(() => agir("netbird.serveur_proxy_publier", { domaine: dom }), "Routes posées : le domaine sert maintenant l’API de NetBird.");
+      }
       if (a === "srv-compose") {
         if (!(await demander("Installer Docker Compose sur cette machine ? C’est un paquet de la distribution (apt, dnf ou yum), installé par le courtier : le script officiel du serveur NetBird en a besoin. Docker lui-même n’est pas touché.", "Oui, installer"))) return;
         return faire(() => agir("netbird.serveur_installer_compose"), "Docker Compose est installé : tu peux maintenant télécharger le script du serveur.");

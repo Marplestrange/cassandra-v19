@@ -28,11 +28,15 @@ Verbes (table fermée) :
   pare_feu_ouvrir <traefik|nginx|caddy>          ouvre les ports publics de NetBird (443/tcp, 3478/udp, et 80/tcp avec traefik) ; rend ceux qu'elle a ouverts elle-même
   pare_feu_fermer <port/proto>…                  referme ces ports, parmi ceux de NetBird seulement
   installer_compose                              installe Docker Compose (docker-compose-plugin, docker-compose-v2 ou docker-compose : le premier que la distribution offre)
+  proxy_etat <domaine>                           le site FASTPANEL de ce domaine : son fichier d'inclusion, si les routes NetBird y sont, la version de nginx (http2)
+  proxy_publier <domaine>                        pose les routes NetBird (/api, /oauth2, /relay, gRPC) dans le fichier d'inclusion du site FASTPANEL, teste nginx, le recharge ; au moindre refus remet l'ancien contenu
+  proxy_retirer <domaine>                        retire ce bloc, et lui seul
   installer_jq                                   installe jq (exigé par le script officiel) par apt-get, dnf ou yum, et rien d'autre
   ip                                             l'adresse de cette machine, telle que la voit le réseau (pour l'enregistrement DNS)
   retirer [purger]                               docker compose down ; avec « purger » : les volumes et le dossier (les comptes et les machines du serveur sont PERDUS)
 Rend UNE ligne de JSON : {"ok": true, …} ou {"ok": false, "erreur": "…"} ; le code de sortie est 0 si ok."""
 import errno
+import glob
 import hashlib
 import json
 import os
@@ -72,6 +76,10 @@ REF_IMAGE = re.compile(r"^[a-z0-9][a-z0-9./_-]{0,120}(:[A-Za-z0-9_.-]{1,127})?$"
 ID_IMAGE = re.compile(r"^sha256:[0-9a-f]{64}$")
 PORTS_NETBIRD = ("80/tcp", "443/tcp", "3478/udp")                  # les seuls ports que le pare-feu ouvre ou referme d'ici
 COMMENTAIRE_PF = "NetBird (Cassandra)"
+FASTPANEL_SITES = "/etc/nginx/fastpanel2-sites"
+MARQUE_DEBUT = "# >>> cassandra-netbird : géré par Cassandra, ne pas modifier entre les marques"
+MARQUE_FIN = "# <<< cassandra-netbird"
+NL_ = chr(10)
 PLUGINS_COMPOSE = ("/usr/libexec/docker/cli-plugins/docker-compose", "/usr/lib/docker/cli-plugins/docker-compose", "/usr/local/libexec/docker/cli-plugins/docker-compose", "/usr/local/lib/docker/cli-plugins/docker-compose")
 
 executer = subprocess.run                                       # remplaçables : les bancs n'ont ni Docker, ni réseau, ni ports à eux
@@ -637,6 +645,129 @@ def verbe_pare_feu_fermer(a):
     return {"ok": True, "outil": outil, "fermes": fermes}
 
 
+ROUTES = (
+    "# NetBird : les routes que le proxy envoie au serveur NetBird (127.0.0.1:8081) ; le tableau de bord (127.0.0.1:8080) est servi par le « location / » du site.",
+    "client_header_timeout 1d;",
+    "client_body_timeout 1d;",
+    "location ~ ^/(relay|ws-proxy/) {",
+    "    proxy_pass http://127.0.0.1:8081;",
+    "    proxy_http_version 1.1;",
+    "    proxy_set_header Upgrade $http_upgrade;",
+    "    proxy_set_header Connection \"Upgrade\";",
+    "    proxy_set_header Host $host;",
+    "    proxy_set_header X-Real-IP $remote_addr;",
+    "    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;",
+    "    proxy_set_header X-Forwarded-Proto https;",
+    "    proxy_read_timeout 1d;",
+    "}",
+    "location ~ ^/(signalexchange\\.SignalExchange|management\\.ManagementService)/ {",
+    "    grpc_pass grpc://127.0.0.1:8081;",
+    "    grpc_set_header X-Forwarded-For $proxy_add_x_forwarded_for;",
+    "    grpc_read_timeout 1d;",
+    "    grpc_send_timeout 1d;",
+    "    grpc_socket_keepalive on;",
+    "}",
+    "location ~ ^/(api|oauth2)/ {",
+    "    proxy_pass http://127.0.0.1:8081;",
+    "    proxy_set_header Host $host;",
+    "    proxy_set_header X-Real-IP $remote_addr;",
+    "    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;",
+    "    proxy_set_header X-Forwarded-Proto https;",
+    "    proxy_set_header X-Forwarded-Host $host;",
+    "}",
+)
+
+
+# ---- le proxy : les routes NetBird dans le fichier d'inclusion du site FASTPANEL
+def include_du_domaine(domaine):
+    """Le fichier d'inclusion que FASTPANEL réserve à ce site (un vrai fichier, jamais un lien), ou ''."""
+    for chemin in sorted(glob.glob(os.path.join(FASTPANEL_SITES, "*", domaine + ".includes"))):
+        if os.path.isfile(chemin) and not os.path.islink(chemin):
+            return chemin
+    return ""
+
+
+def nginx_version():
+    code, sortie = lancer(["nginx", "-v"], 10)
+    m = re.search(r"nginx/(\d+)\.(\d+)\.(\d+)", sortie) if code == 0 else None
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def sans_bloc(texte):
+    """Le texte sans le bloc que Cassandra y a posé (ses deux marques comprises) ; ce que l'utilisateur y a mis lui-même reste."""
+    d = texte.find(MARQUE_DEBUT)
+    f = texte.find(MARQUE_FIN)
+    if d < 0 or f < d:
+        return texte
+    return (texte[:d].rstrip() + NL_ + texte[f + len(MARQUE_FIN):].lstrip(NL_)).strip() + (NL_ if texte[:d].strip() or texte[f + len(MARQUE_FIN):].strip() else "")
+
+
+def verbe_proxy_etat(a):
+    if len(a) != 1:
+        refuser("usage : proxy_etat <domaine>")
+    domaine = verifier(a[0].lower(), DOMAINE, "domaine")
+    chemin = include_du_domaine(domaine)
+    v = nginx_version()
+    deja = False
+    if chemin:
+        with open(chemin, errors="replace") as f:
+            deja = MARQUE_DEBUT in f.read()
+    return {"ok": True, "fastpanel": bool(chemin), "include": chemin, "deja": deja, "nginx": ".".join(map(str, v)) if v else "", "http2": bool(v and v >= (1, 25, 1))}
+
+
+def recharger_nginx(chemin, avant):
+    """nginx -t puis rechargement ; au moindre refus, l'ancien contenu est remis (et rien n'est rechargé)."""
+    code, sortie = lancer(["nginx", "-t"], 30)
+    if code == 0:
+        code, sortie = lancer(["systemctl", "reload", "nginx"], 30)
+        if code == 0:
+            return None
+    with open(chemin, "w") as f:
+        f.write(avant)
+    lancer(["nginx", "-t"], 30)
+    return sortie[-300:] or "nginx a refusé la configuration"
+
+
+def verbe_proxy_publier(a):
+    if len(a) != 1:
+        refuser("usage : proxy_publier <domaine>")
+    domaine = verifier(a[0].lower(), DOMAINE, "domaine")
+    chemin = include_du_domaine(domaine)
+    if not chemin:
+        refuser("« %s » n'est pas un site FASTPANEL (pas de fichier d'inclusion dans %s) : copie la configuration nginx (« Voir la conf nginx ») dans ton proxy" % (domaine, FASTPANEL_SITES))
+    v = nginx_version()
+    with open(chemin, errors="replace") as f:
+        avant = f.read()
+    bloc = MARQUE_DEBUT + NL_ + ("http2 on;" + NL_ if v and v >= (1, 25, 1) else "") + NL_.join(ROUTES) + NL_ + MARQUE_FIN + NL_
+    base = sans_bloc(avant)
+    with open(chemin, "w") as f:
+        f.write(base + (NL_ if base.strip() else "") + bloc)
+    erreur = recharger_nginx(chemin, avant)
+    if erreur:
+        return {"ok": False, "erreur": "nginx refuse la configuration (l'ancien contenu est remis, rien n'est rechargé) : %s" % erreur, "include": chemin}
+    return {"ok": True, "include": chemin, "http2": bool(v and v >= (1, 25, 1)), "nginx": ".".join(map(str, v)) if v else ""}
+
+
+def verbe_proxy_retirer(a):
+    if len(a) != 1:
+        refuser("usage : proxy_retirer <domaine>")
+    domaine = verifier(a[0].lower(), DOMAINE, "domaine")
+    chemin = include_du_domaine(domaine)
+    if not chemin:
+        refuser("« %s » n'est pas un site FASTPANEL" % domaine)
+    with open(chemin, errors="replace") as f:
+        avant = f.read()
+    if MARQUE_DEBUT not in avant:
+        return {"ok": True, "include": chemin, "retire": False}
+    with open(chemin, "w") as f:
+        f.write(sans_bloc(avant))
+    erreur = recharger_nginx(chemin, avant)
+    if erreur:
+        return {"ok": False, "erreur": "nginx refuse la configuration (le bloc est remis) : %s" % erreur, "include": chemin}
+    return {"ok": True, "include": chemin, "retire": True}
+
+
+
 def verbe_installer_compose(a):
     if a:
         refuser("installer_compose n'a pas d'argument")
@@ -705,7 +836,8 @@ def verbe_ip(a):
 
 
 VERBES = {"etat": verbe_etat, "telecharger": verbe_telecharger, "installer": verbe_installer, "mettre_a_jour": verbe_mettre_a_jour, "commande": verbe_commande, "nginx": verbe_nginx, "retirer": verbe_retirer, "sauvegarder": verbe_sauvegarder, "sauvegardes": verbe_sauvegardes, "restaurer": verbe_restaurer,
-          "pare_feu": verbe_pare_feu, "pare_feu_ouvrir": verbe_pare_feu_ouvrir, "pare_feu_fermer": verbe_pare_feu_fermer, "ip": verbe_ip, "installer_jq": verbe_installer_jq, "installer_compose": verbe_installer_compose}
+          "pare_feu": verbe_pare_feu, "pare_feu_ouvrir": verbe_pare_feu_ouvrir, "pare_feu_fermer": verbe_pare_feu_fermer, "ip": verbe_ip, "installer_jq": verbe_installer_jq, "installer_compose": verbe_installer_compose,
+          "proxy_etat": verbe_proxy_etat, "proxy_publier": verbe_proxy_publier, "proxy_retirer": verbe_proxy_retirer}
 
 
 def serveur(argv):

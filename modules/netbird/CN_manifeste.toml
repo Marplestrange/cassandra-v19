@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #922797
+# VERSION CN : 0.1.0  #470ecb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (l'installer dans Docker, le connecter, le couper) ET, au besoin, un serveur NetBird auto-hébergé (l'installer, le tenir à jour, administrer ses machines, clés, groupes et politiques).
 # MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=922797 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=470ecb ▼▼▼
 [module]
 id = "netbird"
 nom = "NetBird"
@@ -56,7 +56,7 @@ stockage = true
 racine = true
 lectures = true
 reseau = ["le client NetBird local (son socket) ou son conteneur Docker ; le serveur de gestion NetBird (api.netbird.io par défaut, ou le vôtre) et ses relais, par ce client", "Docker Hub (netbirdio/netbird) quand le conteneur est installé", "github.com (le script officiel getting-started.sh, d'une version et d'une empreinte confirmées ; api.github.com pour la dernière version publiée, une demande par heure au plus) et les images du serveur NetBird quand un serveur est installé", "pkgs.netbird.io (le dépôt apt ou dnf du paquet officiel, quand le client natif est installé ou mis à jour : clé du dépôt, puis le paquet signé)", "l'API du serveur NetBird administré (réglage url_api, ou le domaine du serveur posé par Cassandra), avec le jeton d'accès enregistré : jamais ailleurs, sans suivre de redirection"]
-privileges = ["installer : la commande /usr/libexec/cassandra/netbird/piloter, lancée en root par le courtier : une table fermée de verbes, jamais un shell, jamais le conteneur d'un autre service", "serveur : la commande /usr/libexec/cassandra/netbird/serveur, lancée en root par le courtier : installe le script officiel de la version confirmée dans /opt/netbird-serveur seulement, et pilote docker compose de ce dossier seulement ; sauvegarde et restaure ses volumes dans /var/backups/cassandra/netbird ; ouvre et referme seulement 80/tcp, 443/tcp et 3478/udp dans ufw ou firewalld", "paquet : pose le dépôt apt ou dnf de NetBird et installe, met à jour ou retire le paquet netbird, par apt-get ou dnf, rien d'autre"]
+privileges = ["installer : la commande /usr/libexec/cassandra/netbird/piloter, lancée en root par le courtier : une table fermée de verbes, jamais un shell, jamais le conteneur d'un autre service", "serveur : la commande /usr/libexec/cassandra/netbird/serveur, lancée en root par le courtier : installe le script officiel de la version confirmée dans /opt/netbird-serveur seulement, et pilote docker compose de ce dossier seulement ; sauvegarde et restaure ses volumes dans /var/backups/cassandra/netbird ; ouvre et referme seulement 80/tcp, 443/tcp et 3478/udp dans ufw ou firewalld ; pose les routes NetBird dans le fichier d'inclusion d'un site FASTPANEL (entre deux marques), teste nginx et le recharge", "paquet : pose le dépôt apt ou dnf de NetBird et installe, met à jour ou retire le paquet netbird, par apt-get ou dnf, rien d'autre"]
 
 [[racine]]
 id = "piloter"
@@ -279,6 +279,21 @@ droit = "serveur"
 perimetre = ["80/tcp, 443/tcp et 3478/udp seulement", "ufw ou firewalld, par le courtier"]
 preuve = "relire le pare-feu : ces ports y sont ouverts"
 retour = "refermer seulement les ports que ce geste a ouverts (ceux qui l'étaient déjà restent ouverts)"
+
+[[capacites]]
+id = "serveur_proxy_etat"
+libelle = "Le proxy du domaine du serveur NetBird : est-ce un site FASTPANEL (son fichier d'inclusion), les routes NetBird y sont-elles, et le domaine sert-il bien l'API, OAuth2 et la connexion (et non tout au tableau de bord)"
+risque = "lecture"
+droit = "serveur"
+
+[[capacites]]
+id = "serveur_proxy_publier"
+libelle = "Poser les routes du serveur NetBird (/api, /oauth2, /relay, gRPC, HTTP/2) dans le fichier d'inclusion du site FASTPANEL du domaine, tester nginx puis le recharger ; au moindre refus de nginx, l'ancien contenu est remis"
+risque = "eleve"
+droit = "serveur"
+perimetre = ["le fichier d'inclusion du site FASTPANEL de ce domaine seulement, entre deux marques : ce que l'utilisateur y a mis reste", "refusé si le domaine n'est pas un site FASTPANEL ; par le courtier : nginx -t puis systemctl reload nginx"]
+preuve = "le domaine répond en JSON sur /api/instance et sur /oauth2/.well-known/openid-configuration"
+retour = "retirer le bloc posé (les marques et lui seul), tester, recharger"
 
 [[capacites]]
 id = "serveur_installer_compose"

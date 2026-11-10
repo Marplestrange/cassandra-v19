@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f6a58e
+# VERSION CN : 0.1.0  #49882a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de ce que le module netbird sait faire d'un serveur NetBird auto-hébergé : l'installer (par la commande root, simulée) et l'administrer par son API (simulée : un faux serveur qui répond comme lui). Rien n'est installé, aucun réseau n'est touché.
 # MÉTHODE    : un vrai noyau, une fausse commande root `serveur`, une fausse API NetBird ; on vérifie les garde-fous, le secret qui ne traîne nulle part et le retour de chaque geste.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f6a58e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=49882a ▼▼▼
 """Bancs de la gestion d'un serveur NetBird : commande root et API NetBird SIMULÉES, noyau réel."""
 import copy
 import json
@@ -89,10 +89,16 @@ class Gestion(Monde):
         self.sauvegardes, self.sauvegarde_echoue, self.pf_ouverts, self.version_serveur = [], False, [], "v0.40.0"
         self.jq = True
         self.compose = True
+        self.routes = True
+        self.fastpanel, self.routes_apres_publication = True, True
         self.github = {"tag_name": "v0.41.0"}
         faux_netbird = self.api
 
         def http(methode, url, jeton, corps=None, delai=15):
+            if "/oauth2/" in url:
+                return (200, {"issuer": "https://netbird.exemple.fr/oauth2"}) if self.routes else (404, "<!DOCTYPE html>")
+            if url.endswith("/api/instance") and not self.routes:
+                return 404, "<!DOCTYPE html>"                      # le tableau de bord répond à la place de l'API : le proxy est incomplet
             if "api.github.com" in url:
                 self.urls_github.append(url)
                 return (200, self.github) if self.github else (None, "Connection refused")
@@ -153,6 +159,16 @@ class Gestion(Monde):
             if verbe == "pare_feu_fermer":
                 self.pf_ouverts = [p for p in self.pf_ouverts if p not in args]
                 return {"ok": True, "outil": "ufw", "fermes": list(args)}
+            if verbe == "proxy_etat":
+                return {"ok": True, "fastpanel": self.fastpanel, "include": "/etc/nginx/fastpanel2-sites/fastuser/%s.includes" % args[0] if self.fastpanel else "", "deja": self.routes, "nginx": "1.30.6", "http2": True}
+            if verbe == "proxy_publier":
+                if not self.fastpanel:
+                    return {"ok": False, "erreur": "n'est pas un site FASTPANEL"}
+                self.routes = self.routes_apres_publication
+                return {"ok": True, "include": "/etc/nginx/fastpanel2-sites/fastuser/%s.includes" % args[0], "http2": True}
+            if verbe == "proxy_retirer":
+                self.routes = False
+                return {"ok": True, "retire": True}
             if verbe == "installer_compose":
                 self.compose = True
                 return {"ok": True, "code": 0, "sortie": "", "commande": "docker-compose"}
@@ -319,6 +335,45 @@ class Maintenance(Gestion):
     def setUp(self):
         super().setUp()
         self.installe, self.conteneurs = True, [{"service": "management", "etat": "running", "image": "x"}]
+
+    def test_l_api_n_est_pas_joignable_si_le_domaine_sert_le_tableau_de_bord_a_sa_place(self):
+        # trouvé sur argos : la 404 du tableau de bord passait pour « API joignable »
+        self.installe, self.conteneurs = True, [{"service": "management", "etat": "running", "image": "x"}]
+        self.assertTrue(self.lire("serveur_etat")["api_joignable"])
+        self.routes = False
+        e = self.lire("serveur_etat")
+        self.assertEqual((e["api_joignable"], e["setup_requis"]), (False, False))
+
+    def test_etat_du_proxy_dit_si_le_domaine_sert_l_api_et_oauth2(self):
+        e = self.lire("serveur_proxy_etat", domaine="netbird.exemple.fr")
+        self.assertEqual((e["fastpanel"], e["api_ok"], e["oauth_ok"], e["routes_ok"], e["setup_requis"]), (True, True, True, True, True))
+        self.routes = False
+        e = self.lire("serveur_proxy_etat", domaine="netbird.exemple.fr")
+        self.assertEqual((e["routes_ok"], e["api_ok"], e["oauth_ok"]), (False, False, False))
+        with self.assertRaises(Echec):
+            self.lire("serveur_proxy_etat", domaine="pas un domaine")
+
+    def test_publier_les_routes_est_prouve_journalise_et_se_defait(self):
+        self.routes = False
+        r = self.lire("serveur_proxy_publier", domaine="netbird.exemple.fr")
+        self.assertTrue(r["publie"] and r["routes_ok"])
+        self.assertIn(("serveur:proxy_publier", ["netbird.exemple.fr"], None), self.racines)
+        g = self.lire("journal")["gestes"][0]
+        self.assertEqual(g["libelle"], "Routes NetBird posées dans le site FASTPANEL netbird.exemple.fr (nginx rechargé)")
+        self.assertTrue(g["defaisable"])
+        self.lire("defaire_geste", id=g["id"])
+        self.assertIn(("serveur:proxy_retirer", ["netbird.exemple.fr"], None), self.racines)
+
+    def test_publier_sans_effet_visible_est_annule_faute_de_preuve(self):
+        self.routes, self.routes_apres_publication = False, False
+        with self.assertRaises(Echec):
+            self.lire("serveur_proxy_publier", domaine="netbird.exemple.fr")
+
+    def test_publier_pour_un_domaine_qui_n_est_pas_un_site_fastpanel_est_refuse(self):
+        self.fastpanel = False
+        with self.assertRaises(Echec) as q:
+            self.lire("serveur_proxy_publier", domaine="netbird.exemple.fr")
+        self.assertIn("FASTPANEL", str(q.exception))
 
     def test_installer_compose_depuis_l_ecran_est_prouve_et_journalise(self):
         self.compose = False

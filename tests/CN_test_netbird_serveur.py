@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8507c6
+# VERSION CN : 0.1.0  #9484ef
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`, `port_libre` et `shutil` sont remplacés ; le dossier du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8507c6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9484ef ▼▼▼
 """Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`,
 `port_libre` et `shutil` sont remplacés ; le dossier du serveur est un dossier temporaire. On vérifie surtout ce qui est REFUSÉ et que le script n'est lancé que s'il est celui qu'on a confirmé."""
 import hashlib
@@ -674,6 +674,79 @@ class PareFeu(Monde):
         self.assertEqual(r["ouverts_par_nous"], ["443/tcp", "3478/udp"])
         self.assertEqual([c for c in self.cmds if "--permanent" in c], [["firewall-cmd", "--permanent", "--add-port=443/tcp"], ["firewall-cmd", "--permanent", "--add-port=3478/udp"]])
         self.assertIn(["firewall-cmd", "--reload"], self.cmds)
+
+
+class ProxyFastpanel(Monde):
+    def setUp(self):
+        super().setUp()
+        self.sites = Path(self.tmp.name) / "fastpanel2-sites"
+        (self.sites / "fastuser").mkdir(parents=True)
+        self.m.FASTPANEL_SITES = str(self.sites)
+        self.inc = self.sites / "fastuser" / "netbird.exemple.fr.includes"
+        self.inc.write_text("")
+        self.sorties["nginx -v"] = (0, "nginx version: nginx/1.30.6")
+
+    def test_publier_pose_les_trois_routes_teste_puis_recharge(self):
+        r = self.lance("proxy_publier", "netbird.exemple.fr")
+        self.assertTrue(r["ok"], r)
+        t = self.inc.read_text()
+        self.assertEqual(t.count(self.m.MARQUE_DEBUT), 1)
+        for attendu in ("http2 on;", "location ~ ^/(relay|ws-proxy/) {", "grpc_pass grpc://127.0.0.1:8081;", "location ~ ^/(api|oauth2)/ {", "ManagementService)/"):
+            self.assertIn(attendu, t, attendu)
+        self.assertNotIn("proxy_pass http://127.0.0.1:8080", t, "le tableau de bord reste servi par le site")
+        cmds = [" ".join(c) for c in self.cmds if c[0] in ("nginx", "systemctl") and c[1] != "-v"]
+        self.assertEqual(cmds, ["nginx -t", "systemctl reload nginx"], "tester AVANT de recharger")
+
+    def test_un_vieux_nginx_ne_recoit_pas_http2_on(self):
+        self.sorties["nginx -v"] = (0, "nginx version: nginx/1.18.0")
+        r = self.lance("proxy_publier", "netbird.exemple.fr")
+        self.assertTrue(r["ok"] and not r["http2"])
+        self.assertNotIn("http2 on;", self.inc.read_text())
+
+    def test_ce_que_l_utilisateur_y_a_mis_reste_et_republier_ne_double_pas(self):
+        self.inc.write_text("# mon réglage\nclient_max_body_size 50m;\n")
+        self.lance("proxy_publier", "netbird.exemple.fr")
+        self.lance("proxy_publier", "netbird.exemple.fr")
+        t = self.inc.read_text()
+        self.assertEqual(t.count(self.m.MARQUE_DEBUT), 1)
+        self.assertIn("client_max_body_size 50m;", t)
+        self.assertTrue(self.lance("proxy_etat", "netbird.exemple.fr")["deja"])
+        self.assertTrue(self.lance("proxy_retirer", "netbird.exemple.fr")["retire"])
+        t = self.inc.read_text()
+        self.assertEqual(t, "# mon réglage\nclient_max_body_size 50m;\n", "après le retrait, exactement ce qu'il y avait")
+        self.assertFalse(self.lance("proxy_retirer", "netbird.exemple.fr")["retire"], "rien à retirer la seconde fois")
+
+    def test_un_refus_de_nginx_remet_l_ancien_contenu_sans_recharger(self):
+        self.inc.write_text("# avant\n")
+        self.sorties["nginx -t"] = (1, "nginx: [emerg] unknown directive")
+        r = self.lance("proxy_publier", "netbird.exemple.fr")
+        self.assertFalse(r["ok"])
+        self.assertIn("unknown directive", r["erreur"])
+        self.assertEqual(self.inc.read_text(), "# avant\n", "l'ancien contenu est remis")
+        self.assertFalse([c for c in self.cmds if c[:2] == ["systemctl", "reload"]], "rien n'est rechargé")
+
+    def test_un_domaine_qui_n_est_pas_un_site_fastpanel_ou_illisible_est_refuse(self):
+        self.assertIn("pas un site FASTPANEL", self.lance("proxy_publier", "autre.exemple.fr")["erreur"])
+        for argv in (("proxy_publier",), ("proxy_publier", "pas un domaine"), ("proxy_publier", "../x"), ("proxy_publier", "a.fr", "b.fr"), ("proxy_etat",), ("proxy_retirer", "a;b.fr")):
+            self.assertFalse(self.lance(*argv)["ok"], argv)
+        self.assertFalse([c for c in self.cmds if c[0] == "systemctl"])
+
+    def test_un_lien_a_la_place_du_fichier_est_refuse(self):
+        cible = Path(self.tmp.name) / "ailleurs"
+        cible.write_text("")
+        self.inc.unlink()
+        try:
+            os.symlink(cible, self.inc)
+        except (OSError, NotImplementedError):
+            self.skipTest("liens symboliques indisponibles ici")
+        self.assertIn("pas un site FASTPANEL", self.lance("proxy_publier", "netbird.exemple.fr")["erreur"])
+        self.assertEqual(cible.read_text(), "")
+
+    def test_etat_du_proxy(self):
+        r = self.lance("proxy_etat", "netbird.exemple.fr")
+        self.assertEqual((r["fastpanel"], r["deja"], r["nginx"], r["http2"]), (True, False, "1.30.6", True))
+        r = self.lance("proxy_etat", "inconnu.exemple.fr")
+        self.assertEqual((r["fastpanel"], r["include"]), (False, ""))
 
 
 class Compose(Monde):
