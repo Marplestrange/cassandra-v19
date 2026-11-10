@@ -571,10 +571,11 @@
       if (a === "onglet") { S.onglet = b.dataset.id; S.edit = ""; dessiner(); return; }
       if (a === "cle-ok") { S.cle = null; dessiner(); return; }
       if (a === "jeton-enregistrer") {
-        const jeton = val("#nb-j-jeton"), url = val("#nb-j-url");
+        // Une copie depuis le tableau de bord traîne parfois des caractères invisibles (espace de largeur nulle, marque de sens, guillemets) : on les retire avant de juger.
+        const jeton = val("#nb-j-jeton").replace(/[​-‏‪-‮⁠﻿ \s"'“”‘’`]/g, ""), url = val("#nb-j-url");
         if (jeton) {
           // Dire POURQUOI le texte collé n’est pas un jeton, sans jamais le répéter : seule sa longueur et sa forme sont données.
-          const raison = /\s/.test(jeton) ? "il contient un espace ou un saut de ligne : recopie seulement le jeton" : !/^[A-Za-z0-9_.-]+$/.test(jeton) ? "il contient un caractère inattendu (un jeton NetBird n’a que des lettres, des chiffres et _)" : jeton.length < 16 ? "il est trop court (" + jeton.length + " caractères)" : jeton.length > 300 ? "il est trop long (" + jeton.length + " caractères)" : !/^nbp_/.test(jeton) ? "il ne commence pas par nbp_ : ce n’est pas un jeton d’accès personnel (c’est peut-être l’identifiant du jeton, ou autre chose)" : "";
+          const raison = /\s/.test(jeton) ? "il contient un espace ou un saut de ligne : recopie seulement le jeton" : !/^[A-Za-z0-9_.-]+$/.test(jeton) ? "il contient un caractère inattendu en position " + (jeton.search(/[^A-Za-z0-9_.-]/) + 1) + " (code U+" + jeton.charCodeAt(jeton.search(/[^A-Za-z0-9_.-]/)).toString(16).toUpperCase().padStart(4, "0") + ") : un jeton NetBird n’a que des lettres, des chiffres et _" : jeton.length < 16 ? "il est trop court (" + jeton.length + " caractères)" : jeton.length > 300 ? "il est trop long (" + jeton.length + " caractères)" : !/^nbp_/.test(jeton) ? "il ne commence pas par nbp_ : ce n’est pas un jeton d’accès personnel (c’est peut-être l’identifiant du jeton, ou autre chose)" : "";
           if (raison) { S.echec = "Ce texte n’est pas un jeton d’accès NetBird : " + raison + ". Un jeton ressemble à nbp_ suivi de lettres et de chiffres, environ 40 caractères."; dire("Jeton refusé : " + raison, "err"); dessiner(); return; }
         }
         if (!jeton && !url) { dire("Rien à enregistrer", "err"); return; }
