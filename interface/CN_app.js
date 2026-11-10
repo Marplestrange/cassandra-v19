@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f3fa37
+// VERSION CN : 0.1.0  #8e4926
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f3fa37 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8e4926 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -31108,10 +31108,12 @@ const ST_FAMILLE_VERBES = {sauvegardes:['sauvegarde','site_backup'], certificats
   coupures:['panne','retour','down','decouverte'], gestes:['ssl_renew','restart','status','logs','scan','sauvegarde','declare','retire','attribue','link_save','link_delete']};
 const stE = v => (typeof escapeHtml === 'function' ? escapeHtml(String(v ?? '')) : String(v ?? ''));
 const stA = v => (typeof escapeAttr === 'function' ? escapeAttr(String(v ?? '')) : String(v ?? '').replace(/"/g, '&quot;'));
-function stHeure(ts){ const t=String(ts||''); if(!t) return '—'; const auj=new Date().toISOString().slice(0,10); return t.slice(0,10)===auj ? t.slice(11,16) : t.slice(5,16).replace('T',' '); }
+// Le jour d'aujourd'hui (ou d'il y a j jours) à l'heure d'ICI, comme les dates que la route rend : le comparer au jour UTC décalait « aujourd'hui » autour de minuit.
+function stAuj(j){ const d=new Date(Date.now()-(j||0)*86400000); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function stHeure(ts){ const t=String(ts||''); if(!t) return '—'; const auj=stAuj(0); return t.slice(0,10)===auj ? t.slice(11,16) : t.slice(5,16).replace('T',' '); }
 function stJour(ts){
     const d=String(ts||'').slice(0,10); if(!d) return '';
-    const auj=new Date().toISOString().slice(0,10), hier=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const auj=stAuj(0), hier=stAuj(1);
     if(d===auj) return 'aujourd’hui'; if(d===hier) return 'hier';
     try{ return new Date(d+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); }catch(e){ return d; }
 }
@@ -31119,6 +31121,7 @@ function stPct(v){ return (v===null||v===undefined||v==='') ? '—' : (Math.roun
 function stMo(v){ if(v===null||v===undefined||v==='') return '—'; const n=Number(v); return n>=1024 ? (Math.round(n/102.4)/10).toLocaleString('fr-FR')+' Go' : Math.round(n).toLocaleString('fr-FR')+' Mo'; }
 function stAge(ts){ if(!ts) return null; const d=(Date.now()-new Date(String(ts).replace(' ','T')+'Z').getTime())/86400000; return isFinite(d)?Math.floor(d):null; }
 function stPuce(t, c){ return `<span class="mx-pill ${c||''}">${stE(t)}</span>`; }
+const stPasLu = '<small class="mx-meta">pas encore lu ici en V19 — voir Hébergement</small>';
 function stMoi(a){ a=String(a||''); const me=(window._me||{}).user; if(me && a===me) return 'toi'; if(a==='sonde') return 'la sonde'; if(a==='cassandra') return 'Cassandra'; if(a==='itare') return 'Itare'; return a.split('@')[0]||'?'; }
 
 // ── l'état d'un site en quelques pastilles, les mêmes partout ──
@@ -31205,6 +31208,15 @@ function stRendre(){
     if(ST.sec==='alertes'){ stVueAlertes(main); return; }
     stVue(main);
 }
+// Ce qu'on peut dire quand rien n'alerte : seulement ce qui est vrai. « Sauvegardes et analyses à jour » s'affichait à côté de « 0 / 2 sauvegardes » et « 2 à revoir ».
+function stBilan(l){
+    const pan=l.filter(x=>x.source==='panneau'), sansS=pan.filter(x=>!x.sauvegarde).length, sansA=pan.filter(x=>!x.scan).length;
+    let t='Aucune panne, aucun certificat court.';
+    if(sansS) t+=` ${sansS} site${sansS>1?'s':''} du panneau sans sauvegarde connue.`;
+    if(sansA) t+=` ${sansA} jamais analysé${sansA>1?'s':''}.`;
+    if(pan.length && !sansS && !sansA) t='Certificats, sauvegardes et analyses à jour.';
+    return t;
+}
 // ── la vue d'ensemble : verdict, compteurs, ce qui demande un geste, les sites ──
 function stVerdict(){
     const l=(ST.vue.sites||[]), vig=(ST.vue.vigilances||[]), p=ST.vue.portee||{};
@@ -31215,7 +31227,7 @@ function stVerdict(){
     else if(tombes.length){ mark='panne'; titre = (tombes.length===1?`Un site est tombé : ${tombes[0].domain}`:`${tombes.length} sites ne répondent pas`)+(tombes[0].http_code?` (code ${tombes[0].http_code})`:''); sous = `${qui} · ${l.length-tombes.length} répondent${ssl.length?' · '+ssl.length+' certificat'+(ssl.length>1?'s':'')+' à moins de 21 jours':''}.`; }
     else if(infectes.length){ mark='panne'; titre=`Analyse antivirus positive sur ${infectes[0].domain}`; sous=`${qui} répondent. Rapport du ${infectes[0].scan.at||'?'}.`; }
     else if(ssl.length){ mark='regarder'; titre = ssl.length===1 ? `${qui} répondent · le certificat de ${ssl[0].domain} expire dans ${ssl[0].ssl_days} jour${ssl[0].ssl_days>1?'s':''}` : `${qui} répondent · ${ssl.length} certificats expirent sous 21 jours`; sous='Cassandra tente le renouvellement automatique sous 21 jours ; tu peux le faire maintenant.'; }
-    else { mark='ok'; titre = ST.admin ? `${qui} répondent` : `${qui} répondent`; const aRegarder=vig.filter(v=>v.niveau==='regarder').length; sous = aRegarder ? `${aRegarder} point${aRegarder>1?'s':''} à regarder : ${vig.filter(v=>v.niveau==='regarder').slice(0,2).map(v=>v.titre).join(' ; ')}.` : 'Certificats, sauvegardes et analyses à jour.'; if(aRegarder) mark='regarder'; }
+    else { mark='ok'; titre = ST.admin ? `${qui} répondent` : `${qui} répondent`; const aRegarder=vig.filter(v=>v.niveau==='regarder').length; sous = aRegarder ? `${aRegarder} point${aRegarder>1?'s':''} à regarder : ${vig.filter(v=>v.niveau==='regarder').slice(0,2).map(v=>v.titre).join(' ; ')}.` : stBilan(l); if(aRegarder) mark='regarder'; }
     const nP=(p.panneau||0), nD=(p.declares||0);
     sous += ` ${nP} du panneau${nD?', '+nD+' déclaré'+(nD>1?'s':'')+' à la main (sonde seule)':''}.`;
     const gestes=[];
@@ -31247,7 +31259,7 @@ function stKpis(){
 }
 function stVigilancesHtml(vig, tout){
     const l = tout ? vig : vig.filter(v=>v.niveau!=='info').concat(vig.filter(v=>v.niveau==='info')).slice(0, 6);
-    if(!l.length) return `<div class="mx-silence"><b>Rien ne demande un geste.</b> Certificats, sauvegardes et analyses sont à jour.</div>`;
+    if(!l.length) return `<div class="mx-silence"><b>Rien ne demande un geste.</b> ${stE(stBilan((ST.vue||{}).sites||[]))}</div>`;
     return `<div class="mx-rows">${l.map(v=>{
         const g=v.geste, dom=v.site;
         let btn='';
@@ -31288,7 +31300,7 @@ function stVue(main){
       <section class="mx-sec"><div class="mx-chart-h"><h2>Les sites</h2><span class="mx-meta">${(ST.vue.sites||[]).length} · panneau ∪ déclarés · un clic ouvre la fiche</span></div>
         <div class="mx-chips">${chips.map(c=>`<button class="mx-chip ${f===c[0]?'on':''}" type="button" onclick="ST.filtre='${c[0]}';stRendre()">${c[1]}</button>`).join('')}</div>
         ${l.length?`<div class="mx-rows">${l.map(stLigneSite).join('')}</div>`:`<div class="mx-silence"><b>Aucun site</b> pour ce filtre.</div>`}
-        <div class="mx-foot"><span>Sonde : Cassandra appelle chaque site toutes les 5 min, l’historique garde 30 jours.</span><span>Panneau : état lu dans sa base, gestes par son API.</span>${ST.admin?`<a onclick="switchTab('fastpanel');setTimeout(()=>fpNav('domains'),120)">Tout voir dans Hébergement →</a>`:''}</div></section>
+        <div class="mx-foot"><span>Sonde : Cassandra appelle chaque site toutes les 5 min ; la disponibilité se lit sur 30 jours.</span><span>Panneau : état lu dans sa base, gestes par son API.</span>${ST.admin?`<a onclick="switchTab('fastpanel');setTimeout(()=>fpNav('domains'),120)">Tout voir dans Hébergement →</a>`:''}</div></section>
       <div class="mx-grid2"><section class="mx-sec"><div class="mx-chart-h"><h2>Derniers gestes</h2><span class="mx-meta">journal · ${ST.admin?'tous les sites':'tes sites'}</span></div><div class="st-jl" id="st-derniers"><span class="mx-meta">lecture…</span></div><div class="mx-foot"><a onclick="stAller('journal')">Tout le journal →</a></div></section>
       <section class="mx-sec"><div class="mx-chart-h"><h2>D’où viennent les chiffres</h2><span class="mx-meta">et leur âge</span></div><div class="mx-rows">
         <div class="mx-row">${stPuce('sonde','')}<div class="mx-rt"><b>La sonde de Cassandra</b><span>réponse, code HTTP, HTTPS, délai, disponibilité 30 j, capture</span></div><span class="mx-meta">${(function(){ const t=(ST.vue.sites||[]).map(x=>x.sonde&&x.sonde.ts).filter(Boolean).sort().pop(); return t?stHeure(t):'jamais'; })()}</span></div>
@@ -31377,12 +31389,12 @@ function stFicheHtml(d){
         ${paire('disponibilité 30 j', x.dispo30&&typeof x.dispo30.pct==='number' ? `${stPct(x.dispo30.pct)} · ${x.dispo30.outages||0} coupure${(x.dispo30.outages||0)>1?'s':''}${x.dispo30.downtime?' · '+stE(x.dispo30.downtime):''}` : '—', 'sonde')}
         ${paire('dernières 24 h', h&&typeof h.availability==='number' ? `${stPct(h.availability)} · ${h.response_avg_ms||'?'} ms en moyenne · ${h.samples||0} mesure${(h.samples||0)>1?'s':''}` : '—', 'sonde')}
         ${paire('certificat', typeof x.ssl_days==='number' ? `expire dans ${x.ssl_days} j${quotaTxt}` : (d.hors_panneau?'inconnu':'aucun'), x.ssl_source==='sonde'?'sonde':'panneau')}
-        ${paire('PHP', x.php ? `${stE(x.php)}${x.backend?' · '+stE(x.backend):''}${(x.running===false&&x.up===false)?' · <b style="color:var(--danger)">arrêté</b>':''}` : '<small class="mx-meta">hors panneau — pas d’information</small>', x.php?'panneau':'')}
-        ${paire('CMS', x.cms&&x.cms.type ? `${stE(x.cms.type)}${x.cms.version?' '+stE(x.cms.version):''}` : 'inconnu', 'sonde')}
-        ${paire('disque', x.disk_mb!==null&&x.disk_mb!==undefined ? `${stMo(x.disk_mb)}${x.root?' · racine '+stE(x.root):''}` : (x.root?'racine '+stE(x.root):'<small class="mx-meta">hors panneau — pas d’information</small>'), x.disk_mb!==null&&x.disk_mb!==undefined?'panneau':'')}
+        ${paire('PHP', x.php ? `${stE(x.php)}${x.backend?' · '+stE(x.backend):''}${(x.running===false&&x.up===false)?' · <b style="color:var(--danger)">arrêté</b>':''}` : (d.hors_panneau?'<small class="mx-meta">hors panneau — pas d’information</small>':'aucun <small class="mx-meta">le panneau n’en déclare pas pour ce site</small>'), x.php?'panneau':'')}
+        ${paire('CMS', x.cms&&x.cms.type ? `${stE(x.cms.type)}${x.cms.version?' '+stE(x.cms.version):''}` : ((d.non_lu||[]).includes('cms')?stPasLu:'inconnu'), x.cms&&x.cms.type?'sonde':'')}
+        ${paire('disque', x.disk_mb!==null&&x.disk_mb!==undefined ? `${stMo(x.disk_mb)}${x.root?' · racine '+stE(x.root):''}` : (x.root?'racine '+stE(x.root):(d.hors_panneau?'<small class="mx-meta">hors panneau — pas d’information</small>':stPasLu)), x.disk_mb!==null&&x.disk_mb!==undefined?'panneau':'')}
         ${paire('dernière sauvegarde', sauv, x.sauvegarde?(d.admin_autrui?'date et taille : oui · contenu : réservé au propriétaire':'panneau'):'')}
         ${paire('dernière analyse', scan, x.scan?'panneau':'')}
-        ${paire('bases', (d.bases||[]).length ? d.bases.map(b=>`${stE(b.name)}${b.size_mb?' · '+stMo(b.size_mb):''}`).join(', ') : (d.hors_panneau?'<small class="mx-meta">hors panneau</small>':'aucune'), (d.bases||[]).length?'panneau':'')}
+        ${paire('bases', (d.bases||[]).length ? d.bases.map(b=>`${stE(b.name)}${b.size_mb?' · '+stMo(b.size_mb):''}`).join(', ') : (d.hors_panneau?'<small class="mx-meta">hors panneau</small>':(d.bases===null?stPasLu:'aucune')), (d.bases||[]).length?'panneau':'')}
         ${paire('propriétaire', ST.admin ? ((x.comptes||[]).length ? stE(x.comptes.join(', ')) : (x.source==='panneau' ? 'aucun compte Cassandra · panneau <code>'+stE(x.fp_compte||'?')+'</code>' : 'aucun compte')) + ((x.declare_par||[]).length?' · déclaré par '+stE(x.declare_par.join(', ')):'') : (d.mien?'toi'+(x.fp_compte?' · compte panneau <code>'+stE(x.fp_compte)+'</code>':''):'—'), '')}
       </dl>
       <div class="st-bloc"><h3>Gestes${d.admin_autrui?' · journalisés et notifiés':''}</h3>
@@ -31398,8 +31410,8 @@ function stFicheHtml(d){
       </div>
       ${d.hors_panneau ? '' : `<div class="st-bloc"><h3>Le mois</h3><div class="mx-gest"><button class="mx-btn" onclick="stRapport('${stA(dom)}',false)">Rapport du mois</button><button class="mx-btn" onclick="stRapport('${stA(dom)}',false,stMoisPrecedent())">Mois précédent</button><button class="mx-btn" onclick="stRapport('${stA(dom)}',true)">Envoyer par courriel</button></div><div id="st-rapport"></div></div>
       <div class="st-bloc"><h3>Copies de sauvegarde</h3>${d.accord?`<div class="st-encart">Accord de restauration donné par ${stE(d.accord.par)} jusqu’au ${stE(String(d.accord.jusqu_a||'').slice(0,16))}.</div>`:''}<div class="mx-gest"><button class="mx-btn" onclick="stCopies('${stA(dom)}')">Voir les copies</button>${g.accord?`<button class="mx-btn" onclick="stAccord('${stA(dom)}')">Autoriser une restauration par l’administrateur (24 h)</button>`:''}</div><div id="st-copies"></div></div>
-      <div class="st-bloc"><h3>DNS du domaine</h3>${(d.dns||[]).length?`<div class="mx-rows">${d.dns.slice(0,12).map(r=>`<div class="mx-row">${stPuce(r.type||'?','')}<div class="mx-rt"><b>${stE(r.name||'@')}</b><span class="mono">${stE(r.value||'')}</span></div><span class="mx-meta">${stE(r.ttl||'')}</span></div>`).join('')}</div>${d.dns.length>12?`<div class="mx-foot"><span>${d.dns.length-12} enregistrement(s) de plus dans Hébergement › DNS</span></div>`:''}`:'<div class="mx-silence">Aucun enregistrement DNS lu dans le panneau pour cette zone.</div>'}</div>
-      <div class="st-bloc"><h3>Courrier du domaine</h3>${(d.courrier||[]).length?`<div class="mx-rows">${d.courrier.slice(0,12).map(c=>`<div class="mx-row">${stPuce(c.status||'?', String(c.status||'').toLowerCase().startsWith('act')?'ok':'')}<div class="mx-rt"><b>${stE(c.email||'')}</b><span>${c.quota_mb?stMo(c.used_mb||0)+' sur '+stMo(c.quota_mb):'sans quota'}</span></div></div>`).join('')}</div>`:'<div class="mx-silence">Aucun compte de courrier sur ce domaine dans le panneau.</div>'}</div>`}
+      <div class="st-bloc"><h3>DNS du domaine</h3>${(d.dns||[]).length?`<div class="mx-rows">${d.dns.slice(0,12).map(r=>`<div class="mx-row">${stPuce(r.type||'?','')}<div class="mx-rt"><b>${stE(r.name||'@')}</b><span class="mono">${stE(r.value||'')}</span></div><span class="mx-meta">${stE(r.ttl||'')}</span></div>`).join('')}</div>${d.dns.length>12?`<div class="mx-foot"><span>${d.dns.length-12} enregistrement(s) de plus dans Hébergement › DNS</span></div>`:''}`:(d.dns===null?'<div class="mx-silence">Pas encore lu ici en V19 : voir Hébergement › DNS.</div>':'<div class="mx-silence">Aucun enregistrement DNS lu dans le panneau pour cette zone.</div>')}</div>
+      <div class="st-bloc"><h3>Courrier du domaine</h3>${(d.courrier||[]).length?`<div class="mx-rows">${d.courrier.slice(0,12).map(c=>`<div class="mx-row">${stPuce(c.status||'?', String(c.status||'').toLowerCase().startsWith('act')?'ok':'')}<div class="mx-rt"><b>${stE(c.email||'')}</b><span>${c.quota_mb?stMo(c.used_mb||0)+' sur '+stMo(c.quota_mb):'sans quota'}</span></div></div>`).join('')}</div>`:(d.courrier===null?'<div class="mx-silence">Pas encore lu ici en V19 : voir Hébergement › Courrier.</div>':'<div class="mx-silence">Aucun compte de courrier sur ce domaine dans le panneau.</div>')}</div>`}
       <div class="st-bloc"><h3>Journal de ce site</h3>
         ${(d.journal||[]).length ? `<div class="st-jl">${d.journal.map(x=>`<div class="e"><span class="t">${stE(stHeure(x.ts))}</span>${stPuce(ST_VERBES[x.verbe]||x.verbe, ST_VERBE_PUCE[x.verbe]||'')}<span>${stE(x.detail||'')}${x.detail?' · ':''}${stE(stMoi(x.acteur))}</span></div>`).join('')}</div>` : '<div class="mx-silence">Aucun geste encore sur ce site.</div>'}
         <div class="mx-foot"><a onclick="ST.jfam='';stAller('journal')">Tout le journal →</a></div>
@@ -31426,7 +31438,7 @@ function stBlocListe(d){
     if(!parts.length && !gestes.length) return '';
     return `<div class="st-bloc"><h3>Ce site dans ${ST.admin?'les listes':'ta liste'}</h3>${parts.join('')}${gestes.length?`<div class="mx-gest">${gestes.join('')}</div>`:''}</div>`;
 }
-function stMoisPrecedent(){ const d=new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()-1); return d.toISOString().slice(0,7); }
+function stMoisPrecedent(){ const n=new Date(), d=new Date(n.getFullYear(), n.getMonth()-1, 1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 async function stRapport(domain, envoyer, mois){
     const z=document.getElementById('st-rapport'); if(!z) return;
     z.innerHTML='<span class="mx-meta">'+(envoyer?'envoi…':'calcul…')+'</span>';

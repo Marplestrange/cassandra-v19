@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a7cee7
+// VERSION CN : 0.1.0  #5c8980
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a7cee7 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5c8980 ▼▼▼
 /* Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
    la lecture passe telle quelle ; les gestes rendent {ok, reason} comme l'écran les lit.
    /api/sites/act : vérifier (la dernière mesure de la sonde) et renouveler le certificat (par le panneau, confirmation exigée) ; redémarrer et journaux demandent la racine du panneau : dits tels quels.
@@ -24,22 +24,51 @@
 
   // Le module parle français (domaine, code, ms, ssl_jours), l'écran V18 anglais (domain, http_code, response_ms, ssl_days).
   const SITE = { domaine: "domain", code: "http_code", ms: "response_ms", ssl_jours: "ssl_days", ssl_etat: "ssl_state", proprietaire_panneau: "fp_compte", mesure: "sonde_ts" };
-  const site18 = (x) => { const o = CASS.cles(x, SITE); o.sonde = { up: x.up, http_code: x.code, response_ms: x.ms, ssl_days: o.ssl_days, ts: x.mesure }; return o; };
+  // La disponibilité : le module dit {disponibilite, pannes, indisponible}, l'écran lit {pct, outages, downtime}. Sans cette traduction l'écran affichait « pas encore de sonde ».
+  const dispo18 = (d) => (d ? { pct: d.disponibilite, outages: d.pannes || 0, downtime: d.indisponible_min ? d.indisponible : "", mesures: d.mesures, en_panne: !!d.en_panne } : null);
+  // L'heure de la mesure part déjà mise en forme : l'écran la découpe comme un texte (un nombre de secondes y devenait « 81413.58034 »).
+  const site18 = (x) => { const o = CASS.cles(x, SITE); o.sonde = { up: x.up, http_code: x.code, response_ms: x.ms, ssl_days: o.ssl_days, ts: ts(x.mesure) }; o.dispo30 = dispo18(x.dispo30); return o; };
+  // Les gestes des vigilances : le module dit « repondre_demande », l'écran attend « demande » pour offrir « Adossé, c'est fait » et « Refuser ».
+  const vig18 = (v) => Object.assign({}, v, { geste: v.geste === "repondre_demande" ? "demande" : v.geste });
+  // La portée : l'écran lit « comptes » (combien de comptes ont un site) et « panneau_ok ».
+  const portee18 = (x) => { const cs = new Set(); (x.sites || []).forEach((s) => (s.comptes || []).forEach((c) => cs.add(c))); return Object.assign({}, x.portee || {}, { comptes: cs.size, panneau_ok: (x.portee || {}).panneau_lu !== false }); };
   // L'heure comme l'écran la lit (le module date en secondes depuis 1970).
   const z = (n) => String(n).padStart(2, "0");
   const ts = (t) => { if (typeof t !== "number") return t || ""; const d = new Date(t * 1000); return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + " " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()); };
-  P("/api/sites/mine", "sites.vue", { args: () => ({}), sortie: (x) => ok(Object.assign({}, x, { sites: (x.sites || []).map(site18), releve: ts(Date.now() / 1000) })) });
-  const ligne18 = (l) => Object.assign({}, l, { ts: ts(l.ts), site: l.domaine });
+  P("/api/sites/mine", "sites.vue", { args: () => ({}), sortie: (x) => ok(Object.assign({}, x, { sites: (x.sites || []).map(site18), vigilances: (x.vigilances || []).map(vig18), portee: portee18(x), releve: ts(Date.now() / 1000) })) });
+  // Une ligne de journal : l'écran range « ecran » (un geste) et connaît « link_save / link_delete » ; le module dit « geste », « lien », « delie ».
+  const VERBE18 = { lien: "link_save", delie: "link_delete" };
+  const ligne18 = (l) => Object.assign({}, l, { ts: ts(l.ts), site: l.domaine, verbe: VERBE18[l.verbe] || l.verbe, source: l.source === "geste" ? "ecran" : l.source });
+  // Ce que l'écran peut offrir sur la fiche. Il n'active un bouton que s'il est dans « seul » (sans confirmation) ou « confirm », et dit la raison de « refuses » :
+  // sans ces listes, tous les boutons restaient grisés « indisponible », y compris vérifier et renouveler qui existent.
+  const PAS_PORTE = "demande la racine du panneau : pas encore porté en V19";
+  const gestes18 = (x) => {
+    const g = x.gestes || {}, seul = ["status"], confirm = [], refuses = {};
+    if (x.hors_panneau) ["ssl_renew", "restart", "logs", "scan", "sauvegarde", "restaurer"].forEach((a) => { refuses[a] = "hors panneau : ce geste n'existe pas pour un site déclaré à la main"; });
+    else {
+      confirm.push("ssl_renew");
+      refuses.restart = "redémarrer " + PAS_PORTE + " (le service se relance depuis Hébergement › Services)";
+      refuses.logs = "lire les journaux " + PAS_PORTE;
+      refuses.scan = "l'analyse antivirus " + PAS_PORTE + " (Sécurité › ClamAV analyse le serveur)";
+      refuses.sauvegarde = "lancer la sauvegarde " + PAS_PORTE + " (elle se fait par un plan, dans Sauvegardes)";
+      if (x.mien || x.accord) confirm.push("restaurer"); else refuses.restaurer = "accord du propriétaire requis : il l'autorise depuis sa fiche, pour 24 h";
+    }
+    return Object.assign({}, g, { seul, confirm, refuses, accord: !!g.accorder });
+  };
   P("/api/site/journal", "sites.journal", { args: (r) => ({ domaine: String(r.body.domain || ""), limite: +(r.body.limite || 60) }), sortie: (x) => ok({ lignes: (x.lignes || []).map(ligne18) }) });
   P("/api/site/fiche", "sites.fiche", {
     args: (r) => ({ domaine: dom(r.body) }),
     sortie: (x) => {
       const h = x.histoire || {};
       return ok({
-        domain: x.domaine, site: site18(x.site), mien: x.mien, admin_autrui: x.admin_autrui, hors_panneau: x.hors_panneau, quota: {}, bases: [],
+        domain: x.domaine, site: site18(x.site), mien: x.mien, admin_autrui: x.admin_autrui, hors_panneau: x.hors_panneau, quota: {}, bases: null,
         histoire: { availability: h.disponibilite, response_avg_ms: h.reponse_moy_ms, response_max_ms: h.reponse_max_ms, samples: h.mesures, evenements: (h.evenements || []).map((e) => Object.assign({}, e, { ts: ts(e.ts) })) },
-        liens: x.liens || [], journal: (x.journal || []).map(ligne18), demande: x.demande, accord: x.accord,
-        gestes: Object.assign({ seul: [], confirm: [], refuses: {} }, x.gestes || {}),
+        liens: (x.liens || []).map((l) => ({ kind: l.genre, ref: l.ref, note: l.note, ts: ts(l.ts) })), journal: (x.journal || []).map(ligne18),
+        demande: x.demande ? Object.assign({}, x.demande, { ts: ts(x.demande.ts) }) : x.demande,
+        accord: x.accord ? Object.assign({}, x.accord, { jusqu_a: ts(x.accord.jusqu_a) }) : x.accord,
+        // « bases », « dns » et « courrier » ne sont pas lus par la V19 : null (et non une liste vide) pour que l'écran dise « pas lu » plutôt que « aucun ».
+        dns: null, courrier: null, non_lu: ["bases", "dns", "courrier", "disque", "cms"],
+        gestes: gestes18(x),
       });
     },
   });

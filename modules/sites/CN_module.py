@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.1.2  #c9ebf3
+# VERSION CN : 0.1.2  #a8327c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sites.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=c9ebf3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=a8327c ▼▼▼
 """Le module Sites.
 
 Ce qu'il tient de la V18 (sites, site_pass, site_fiche, site_history/availability, demandes, accords, liens) et les leçons qu'il garde :
@@ -425,7 +425,7 @@ def brancher(ctx):
             if connu is None:
                 db.ecrire("INSERT OR REPLACE INTO etat_vu(domaine, up, depuis, ts) VALUES (?,?,?,?)", (d, up, maintenant, maintenant))
                 db.ecrire("INSERT INTO evenements_site(ts, domaine, genre, detail) VALUES (?,?,?,?)",
-                          (maintenant, d, "decouverte", "Première observation — %s (HTTP %s, %d ms)" % ("en ligne" if up else "hors ligne", code, ms)))
+                          (maintenant, d, "decouverte", "Première observation — %s (%s, %d ms)" % ("en ligne" if up else "hors ligne", ("HTTP %s" % code) if code is not None else "sans réponse", ms)))
             elif connu[0] != up:
                 tombe = maintenant
                 if not up and seuil > 1:
@@ -570,6 +570,7 @@ def brancher(ctx):
             lignes.append({"domaine": d, "source": e["origine"] if e["origine"] == "panneau" else "declare", "origine": e["origine"],
                            "up": bool(m["up"]) if m else None, "code": m["code"] if m else None, "ms": m["ms"] if m else None, "erreur": m["erreur"] if m else "",
                            "ssl_jours": m["ssl_jours"] if m and m["ssl_jours"] is not None else (p.get("ssl") or {}).get("jours"), "ssl_etat": (p.get("ssl") or {}).get("etat"),
+                           "ssl_source": "sonde" if m and m["ssl_jours"] is not None else ("panneau" if (p.get("ssl") or {}).get("jours") is not None else ""),
                            "php": p.get("php", ""), "proprietaire_panneau": p.get("proprietaire", ""), "mesure": m["ts"] if m else None,
                            "dispo30": dispo.get(d), "comptes": e["comptes"] if tout else None, "demande": parsite.get(d)})
         return {"sites": lignes, "vigilances": vigilances(lignes, tout, demandes),
