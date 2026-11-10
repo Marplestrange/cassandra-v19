@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.2.0  #fd6a6c
+# VERSION CN : 0.3.0  #f267d5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sites.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=fd6a6c ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=f267d5 ▼▼▼
 """Le module Sites.
 
 Ce qu'il tient de la V18 (sites, site_pass, site_fiche, site_history/availability, demandes, accords, liens) et les leçons qu'il garde :
@@ -34,6 +34,7 @@ plus sa propre fiche (« comptes.moi ») pour ne pas attendre le tour suivant. L
 """
 from __future__ import annotations
 
+import calendar
 import ipaddress
 import json
 import re
@@ -64,6 +65,8 @@ RELEVE_MIN_S = 30               # une relève à la demande ne remesure pas un s
 OBJECTIF_DEFAUT = 99.9
 COUPURE_COURTE_PCT = 98.0       # un jour à 98 % et plus (moins d'une demi-heure perdue) est une coupure courte ; en dessous, une coupure longue
 CHEMIN_PREUVE = "/.well-known/cassandra-site.txt"
+VOISINS_S = 3600                # ce que les autres modules savent d'un site (CMS, bases, sauvegardes, échéance du nom…) se relit une fois par heure
+NOM_COURT_J = 30                # un nom de domaine à moins de trente jours de son échéance se signale ; à moins de dix, c'est grave
 # Des noms sous lesquels vivent les sites de beaucoup de gens : les déclarer donnerait, par les sous-domaines, la vue des sites des autres.
 SUFFIXES_PARTAGES = frozenset((
     "co.uk", "org.uk", "ac.uk", "gov.uk", "com.au", "co.nz", "co.jp", "com.br", "co.za", "com.cn", "co.in",
@@ -337,10 +340,10 @@ def brancher(ctx):
         return systeme(compte) or ctx.est_admin(compte)
 
     # ------------------------------------------------------------------ les comptes et le panneau
-    def lecture(cap):
+    def lecture(cap, **args):
         """(valeur, état) : « ok », « muet » (la capacité existe mais ne répond pas, ou la refuse à ce compte) ou « absent » (son module n'est pas là)."""
         try:
-            r = ctx.executer_lecture(cap)
+            r = ctx.executer_lecture(cap, **args)
         except PermissionError:
             return None, "absent"
         return (r, "ok") if r is not None else (None, "muet")
@@ -358,7 +361,8 @@ def brancher(ctx):
             return ([] if e == "absent" else None), e
         if isinstance(r, dict):
             r = r.get("sites") or []
-        return [{"domaine": nom_hote(s.get("domaine")), "proprietaire": str(s.get("proprietaire") or ""), "ssl": s.get("ssl") or {}, "php": s.get("php", "")}
+        return [dict({"domaine": nom_hote(s.get("domaine")), "proprietaire": str(s.get("proprietaire") or ""), "ssl": s.get("ssl") or {}, "php": s.get("php", "")},
+                     **{k: s[k] for k in ("statut", "erreurs", "code_http", "fichiers_mo", "bases_mo") if s.get(k) not in (None, "")})
                 for s in (r or []) if isinstance(s, dict) and s.get("domaine")], e
 
     def miroir(cle, perime=False):
@@ -551,6 +555,156 @@ def brancher(ctx):
     def noter(acteur, verbe, domaine, detail=""):
         db.ecrire("INSERT INTO journal(ts, acteur, verbe, domaine, detail) VALUES (?,?,?,?,?)", (time.time(), acteur or "?", verbe, nom_hote(domaine), str(detail)[:300]))
 
+    # ------------------------------------------------------------------ les voisins : ce que les autres modules savent déjà d'un site
+    # Sites ne remesure rien de tout cela : il lit. Le Sensorium tient les fenêtres de maintenance, les alertes acceptées, le CMS et le trafic ; le panneau, le disque,
+    # les bases, le courrier, les sauvegardes, les analyses et la fin de support de PHP ; le DNS, l'échéance du nom. Ces lectures demandent des droits qu'un compte
+    # ordinaire n'a pas : la sonde, qui tourne sans compte, les recopie dans le miroir, et chacun n'y lit que ce qui touche SES sites.
+    def instant_utc(texte):
+        """« AAAA-MM-JJ HH:MM:SS » (UTC, le format du Sensorium) en secondes depuis 1970, ou None."""
+        try:
+            return float(calendar.timegm(time.strptime(str(texte)[:19].replace("T", " "), "%Y-%m-%d %H:%M:%S")))
+        except (TypeError, ValueError):
+            return None
+
+    def relever_sensorium():
+        """À chaque tour : les fenêtres de maintenance et les alertes de site acceptées. Une fenêtre posée ou une alerte acceptée dans le Sensorium vaut aussi ici."""
+        e, st = lecture("sensorium.etat")
+        if st == "absent":
+            return poser_miroir("sensorium", {"lu": False, "fenetres": [], "acceptees": {}})
+        if st != "ok" or not isinstance(e, dict) or e.get("muet"):
+            return None                                                   # il se tait : on garde ce qu'on savait
+        acceptees = {}
+        for r in e.get("rows") or []:
+            wk = str(r.get("wkey") or "") if isinstance(r, dict) else ""
+            if wk.startswith("web.") and isinstance(r.get("acquit"), dict):
+                acceptees[nom_hote(wk[4:])] = {"raison": str(r["acquit"].get("raison") or "")[:200], "jusqu_a": instant_utc(r["acquit"].get("jusqua")), "par": str(r["acquit"].get("par") or "")}
+        f, _ = lecture("sensorium.fenetres")
+        fen = []
+        for x in ((f.get("vivantes") or []) + (f.get("finies") or [])) if isinstance(f, dict) else (e.get("fenetres") or []):
+            if isinstance(x, dict) and not x.get("annulee"):
+                a, b = instant_utc(x.get("debut")), instant_utc(x.get("fin"))
+                if a is not None and b is not None:
+                    fen.append({"id": x.get("id"), "portee": str(x.get("portee") or "*"), "debut": a, "fin": b, "motif": str(x.get("motif") or "")[:200], "par": str(x.get("par") or "")})
+        poser_miroir("sensorium", {"lu": True, "fenetres": fen, "acceptees": acceptees})
+
+    def relever_voisins(echeance=None):
+        """Une fois par heure : le CMS et le trafic (Sensorium), les bases, le courrier, les sauvegardes, les analyses et la fin de support de PHP (panneau), l'échéance des noms (DNS).
+        Chaque source absente ou muette laisse sa rubrique vide (et le dit : « lu » faux) ; rien n'est inventé."""
+        v = {"ts": time.time(), "cms": {}, "trafic": {}, "bases": {}, "courrier": {}, "sauvegardes": None, "php": {}, "analyses": {}, "noms": {}, "sources": {}}
+        ancien = miroir("voisins", perime=True)
+        ancien = ancien if isinstance(ancien, dict) else {}
+
+        def source(rubrique, cap, **args):
+            if echeance is not None and time.time() > echeance:
+                r, st = None, "muet"                                    # plus le temps dans ce tour de sonde : cette rubrique attendra le suivant
+                v["ts"] = ancien.get("ts") or 0
+            else:
+                r, st = lecture(cap, **args)
+            v["sources"][rubrique] = st
+            if st == "muet" and rubrique in ancien:
+                v[rubrique] = ancien[rubrique]                          # elle se tait : on garde ce qu'on savait, on ne vide pas la rubrique
+            return r if st == "ok" else None
+        r = source("cms", "sensorium.entite", nom="cms_sites")
+        for x in r if isinstance(r, list) else []:
+            if isinstance(x, dict) and x.get("domain") and x.get("cms_type"):
+                v["cms"][nom_hote(x["domain"])] = {"type": str(x["cms_type"]), "version": str(x.get("version") or ""), "theme": str(x.get("theme") or ""), "extensions": x.get("plugins_count")}
+        r = source("trafic", "sensorium.secu")
+        if isinstance(r, dict):
+            robots = r.get("robots") if isinstance(r.get("robots"), dict) else {}
+            for x in r.get("sites") or []:
+                if isinstance(x, dict) and x.get("site"):
+                    v["trafic"][nom_hote(x["site"])] = {"requetes": x.get("n"), "robots": x.get("b"), "jours": 9, "premiers_robots": [str(y.get("robot")) for y in (robots.get(x["site"]) or [])[:3] if isinstance(y, dict)]}
+        r = source("bases", "fastpanel.bases")
+        for x in r if isinstance(r, list) else []:
+            if isinstance(x, dict) and x.get("site"):
+                v["bases"].setdefault(nom_hote(x["site"]), []).append({"nom": str(x.get("nom") or ""), "moteur": str(x.get("moteur") or ""), "taille_mo": x.get("taille_mo"), "derniere_copie": x.get("derniere_copie")})
+        r = source("courrier", "fastpanel.mail")
+        for x in r if isinstance(r, list) else []:
+            if isinstance(x, dict) and x.get("domaine"):
+                c = v["courrier"].setdefault(nom_hote(x["domaine"]), {"boites": 0, "utilise_mo": 0, "quota_mo": 0})
+                c["boites"] += 1
+                for k in ("utilise_mo", "quota_mo"):
+                    if isinstance(x.get(k), (int, float)):
+                        c[k] += x[k]
+        r = source("sauvegardes", "fastpanel.audit")
+        s = r.get("sauvegardes") if isinstance(r, dict) else None
+        if isinstance(s, dict):
+            v["sauvegardes"] = {"seuil_j": s.get("seuil_j"), "sans": [nom_hote(d) for d in s.get("sans") or []],
+                                "perimees": {nom_hote(x["domaine"]): x.get("derniere") for x in s.get("perimees") or [] if isinstance(x, dict) and x.get("domaine")}}
+        r = source("php", "fastpanel.php")
+        if isinstance(r, dict):
+            for etat_, cle in (("depassee", "fin_de_support"), ("bientot", "bientot")):
+                for x in r.get(cle) or []:
+                    if isinstance(x, dict) and x.get("domaine"):
+                        v["php"].setdefault(nom_hote(x["domaine"]), {"etat": etat_, "version": str(x.get("php") or ""), "fin": str(x.get("fin") or "")})
+        r = source("analyses", "fastpanel.scans_cibles")
+        for x in (r.get("sites") or []) if isinstance(r, dict) else []:
+            if isinstance(x, dict) and x.get("domaine"):
+                v["analyses"][nom_hote(x["domaine"])] = {"actif": bool(x.get("actif")), "planning": str(x.get("planning") or ""), "dernier": x.get("dernier"), "rapports": x.get("rapports")}
+        r = source("noms", "dns.etat")
+        for x in (r.get("zones") or []) if isinstance(r, dict) else []:
+            if isinstance(x, dict) and x.get("domaine") and x.get("expiration"):
+                v["noms"][nom_hote(x["domaine"])] = str(x["expiration"])[:10]
+        poser_miroir("voisins", v)
+
+    class Voisins:
+        """Ce que le miroir sait des voisins, pour UN appel (ou un passage de détecteur) : lu une fois."""
+
+        def __init__(self):
+            ms = miroir("sensorium", perime=True)
+            self.sens = ms if isinstance(ms, dict) else {}
+            mv = miroir("voisins", perime=True)
+            self.v = mv if isinstance(mv, dict) else {}
+            self.maintenant = time.time()
+
+        def maintenance(self, d):
+            """La fenêtre de maintenance du Sensorium qui couvre ce site en ce moment (tout, tous les sites, les services, ou ce site-là), ou None."""
+            for f in self.sens.get("fenetres") or []:
+                if f["debut"] <= self.maintenant < f["fin"] and f["portee"] in ("*", "famille:web", "domaine:services", "site:" + d, "site:www." + d):
+                    return {"id": f["id"], "fin": f["fin"], "motif": f["motif"], "par": f.get("par", ""), "ce_site": f["portee"].startswith("site:")}
+            return None
+
+        def fenetres_de(self, d, a, b):
+            """Les fenêtres (passées ou en cours) qui ont couvert ce site entre deux instants : pour son calendrier."""
+            return [f for f in self.sens.get("fenetres") or [] if f["debut"] < b and f["fin"] >= a and f["portee"] in ("*", "famille:web", "domaine:services", "site:" + d, "site:www." + d)]
+
+        def acceptee(self, d):
+            a = (self.sens.get("acceptees") or {}).get(d)
+            return a if a and (a.get("jusqu_a") is None or a["jusqu_a"] > self.maintenant) else None
+
+        def nom(self, d):
+            """L'échéance du nom de domaine qui porte ce site : {zone, expiration, jours}, ou None si le DNS ne la connaît pas."""
+            for zone, exp in sorted((self.v.get("noms") or {}).items(), key=lambda x: -len(x[0])):
+                if d == zone or d.endswith("." + zone):
+                    t = instant_utc(exp + " 00:00:00")
+                    return {"zone": zone, "expiration": exp, "jours": int((t - self.maintenant) // 86400) if t is not None else None}
+            return None
+
+        def sauvegarde(self, d):
+            """{etat: « ok » | « sans » | « perimee », derniere, seuil_j}, ou None si le panneau n'a pas dit ce qu'il sauvegarde."""
+            s = self.v.get("sauvegardes")
+            if not isinstance(s, dict):
+                return None
+            if d in (s.get("sans") or []):
+                return {"etat": "sans", "derniere": None, "seuil_j": s.get("seuil_j")}
+            if d in (s.get("perimees") or {}):
+                return {"etat": "perimee", "derniere": s["perimees"][d], "seuil_j": s.get("seuil_j")}
+            return {"etat": "ok", "derniere": None, "seuil_j": s.get("seuil_j")}
+
+        def resume(self, d, panneau):
+            """Ce qui entre dans la ligne d'un site : court, pour la liste et les alertes."""
+            return {"maintenance": self.maintenance(d), "acceptee": self.acceptee(d), "cms": (self.v.get("cms") or {}).get(d), "nom": self.nom(d),
+                    "sauvegarde": self.sauvegarde(d) if panneau else None, "php_fin": (self.v.get("php") or {}).get(d) if panneau else None}
+
+        def detail(self, d, panneau, ligne_panneau):
+            """Ce qui entre dans la fiche d'un site : tout ce que les voisins en savent, et de quand date la lecture."""
+            p = ligne_panneau or {}
+            return dict(self.resume(d, panneau), lu=self.v.get("ts"), sources=self.v.get("sources") or {}, sensorium_lu=bool(self.sens.get("lu")),
+                        trafic=(self.v.get("trafic") or {}).get(d),
+                        hebergement={"statut": p.get("statut"), "disque_mo": p.get("fichiers_mo"), "bases_mo": p.get("bases_mo"), "erreurs": p.get("erreurs"), "code_http": p.get("code_http"),
+                                     "bases": (self.v.get("bases") or {}).get(d) or [], "courrier": (self.v.get("courrier") or {}).get(d),
+                                     "analyse": (self.v.get("analyses") or {}).get(d)} if panneau else None)
+
     # ------------------------------------------------------------------ les incidents : une panne est un objet
     def fait_incident(iid, acteur, genre, texte="", ts=None):
         return db.ecrire("INSERT INTO incident_faits(incident, ts, acteur, genre, texte) VALUES (?,?,?,?,?)", (iid, ts or time.time(), acteur or "?", genre, str(texte)[:500]))
@@ -606,7 +760,9 @@ def brancher(ctx):
                 jours = avant["ssl_jours"] if avant else None      # Certificats est là mais se tait : on garde ce qu'on savait, on ne le double pas
             else:
                 jours = x.get("jours") if x and isinstance(x.get("jours"), int) else None
-        elif avant and avant["ssl_jours"] is not None and time.time() - avant["ts"] < CERT_REFRAICHI_S:
+        elif avant and avant["ssl_jours"] is not None and int(time.time() // CERT_REFRAICHI_S) == int(avant["ts"] // CERT_REFRAICHI_S):
+            # Une lecture par heure d'horloge. Comparer à l'âge de la dernière MESURE (cinq minutes, toujours) ne relisait jamais le certificat :
+            # le nombre de jours restait figé à sa première lecture.
             jours = avant["ssl_jours"]
         elif code is None and (erreur or "").startswith("adresse interne"):
             jours = None
@@ -703,7 +859,12 @@ def brancher(ctx):
         db.ecrire("DELETE FROM journal WHERE ts < ?", (maintenant - max(garde, JOURNAL_GARDE_J) * 86400,))
         db.ecrire("DELETE FROM accords WHERE jusqu_a < ?", (maintenant - COTE_GARDE_J * 86400,))
         db.ecrire("DELETE FROM liens_retires WHERE lot < ?", (maintenant - COTE_GARDE_J * 86400,))
-        vieux = maintenant - max(garde, INCIDENT_GARDE_J) * 86400
+        # Les voisins, en dernier : les mesures d'abord. Le Sensorium à chaque tour (une fenêtre posée doit valoir vite), le reste une fois par heure, s'il reste du temps.
+        relever_sensorium()
+        mv = miroir("voisins", perime=True)
+        if (not isinstance(mv, dict) or maintenant - (mv.get("ts") or 0) > VOISINS_S) and time.time() - debut < DUREE_MAX_SONDE_S - 90:
+            relever_voisins(debut + DUREE_MAX_SONDE_S - 40)              # le panneau peut être lent : ce qui ne tient pas dans ce tour se lira au suivant
+        vieux =maintenant - max(garde, INCIDENT_GARDE_J) * 86400
         db.ecrire("DELETE FROM incident_faits WHERE incident IN (SELECT id FROM incidents WHERE etat='resolu' AND fin < ?)", (vieux,))
         db.ecrire("DELETE FROM incidents WHERE etat='resolu' AND fin < ?", (vieux,))
         db.ecrire("DELETE FROM preuves WHERE cree < ?", (maintenant - PREUVE_GARDE_J * 86400,))
@@ -714,14 +875,53 @@ def brancher(ctx):
     def det_panne(c):
         # Une panne dite « connue » (quelqu'un s'en occupe et l'a dit) se tait jusqu'à l'échéance : l'incident reste ouvert, le constat ne sonne plus.
         connues = {r["domaine"] for r in db.lire("SELECT domaine FROM incidents WHERE etat IN ('ouvert','depannage') AND connu_jusqu > ?", (time.time(),))}
+        vo = Voisins()
         return [{"objet": ("site", o["id"]), "titre": "Site hors ligne : %s" % o["id"], "detail": o["donnees"].get("erreur") or ("code %s" % o["donnees"].get("code"))}
-                for o in objets_site(c, "hors_ligne") if o["id"] not in connues]
+                for o in objets_site(c, "hors_ligne") if o["id"] not in connues and not tu(vo, o["id"])]
+
+    def tu(vo, d):
+        """Le Sensorium a-t-il fait taire ce site : une fenêtre de maintenance le couvre, ou son alerte y a été acceptée ? Ce qui se tait là-bas se tait ici."""
+        return bool(vo.maintenance(d) or vo.acceptee(d))
+
+    def proprietaires_miroir():
+        """{domaine: {comptes}} d'après la table sites et les miroirs de la sonde : ce qu'un détecteur, qui tourne sans compte, sait des propriétaires sans rien relire."""
+        cs = miroir("comptes", perime=True) or []
+        mp = miroir("panneau", perime=True) or {}
+        par_fp, pr = {}, {}
+        for x in cs:
+            if x.get("fp_account"):
+                par_fp.setdefault(x["fp_account"], []).append(x["compte"])
+            for d in x.get("sites") or []:
+                pr.setdefault(d, set()).add(x["compte"])
+        for r in db.lire("SELECT domaine, compte FROM sites"):
+            pr.setdefault(nom_hote(r["domaine"]), set()).add(r["compte"])
+        for s in (mp.get("sites") or []) if isinstance(mp, dict) else []:
+            for o in par_fp.get(str(s.get("proprietaire") or "").lower(), []):
+                pr.setdefault(s["domaine"], set()).add(o)
+        return pr
+
+    def det_panne_proprietaire(c):
+        """La panne d'un site, dite à SON propriétaire (un constat adressé à son compte) : le constat « panne » ne va qu'aux administrateurs.
+        Un propriétaire qui est administrateur a déjà le sien ; une panne dite connue se tait pour lui aussi."""
+        ouverts = {r["domaine"]: r for r in db.lire("SELECT id, domaine, diagnostic, connu_jusqu FROM incidents WHERE etat IN ('ouvert','depannage')")}
+        pr, maintenant, sortie, vo = proprietaires_miroir(), time.time(), [], Voisins()
+        for o in objets_site(c, "hors_ligne"):
+            d = o["id"]
+            i = ouverts.get(d)
+            if (i and (i["connu_jusqu"] or 0) > maintenant) or tu(vo, d):
+                continue
+            for k, compte in enumerate(sorted(x for x in pr.get(d, ()) if x and not admin(x))):
+                # La clé d'un constat est son objet : un site à plusieurs comptes en ouvre un par compte, sous un identifiant qui les distingue.
+                sortie.append({"objet": ("site", d if k == 0 else "%s#%s" % (d, compte)), "compte": compte, "titre": "Ton site %s ne répond pas" % d,
+                               "detail": (i["diagnostic"] if i else "") or o["donnees"].get("erreur") or ("code %s" % o["donnees"].get("code"))})
+        return sortie
 
     def det_lenteur(c):
         seuil = entier("lent_ms", 3000)
+        vo = Voisins()
         return [{"objet": ("site", o["id"]), "titre": "Site lent : %s (%d ms)" % (o["id"], o["donnees"]["ms"]),
                  "detail": "le code HTTP est bon, mais pour un visiteur c'est déjà lent (au-delà de %d ms)" % seuil}
-                for o in objets_site(c, "en_ligne") if not o["donnees"].get("douteux") and (o["donnees"].get("ms") or 0) >= seuil]
+                for o in objets_site(c, "en_ligne") if not o["donnees"].get("douteux") and (o["donnees"].get("ms") or 0) >= seuil and not vo.maintenance(o["id"])]
 
     def certificats_tenus():
         """(tenu, seuil) : le module Certificats est-il là, et quel seuil fait foi — le sien s'il est là, le réglage de Sites sinon."""
@@ -801,7 +1001,7 @@ def brancher(ctx):
 
     def vigilances(lignes, r, demandes):
         tout = r.tout
-        vig = []
+        vig, noms_dits = [], set()
         court = certificats_tenus()[1]
         for d in demandes:
             if tout:
@@ -817,9 +1017,29 @@ def brancher(ctx):
             inc = x.get("incident")
             if inc and inc["etat"] == "retabli":
                 vig.append({"niveau": "regarder", "site": d, "titre": "%s répond de nouveau : incident à clore" % d, "detail": "note la cause, pour ne pas la rechercher deux fois", "geste": "depanner", "incident": inc["id"]})
+            mnt, acc = x.get("maintenance"), x.get("acceptee")
+            if mnt:
+                vig.append({"niveau": "info", "site": d, "titre": "%s est en maintenance" % d, "detail": (mnt["motif"] or "fenêtre posée dans le Sensorium") + " : ses alertes se taisent, les mesures continuent",
+                            "geste": "maintenance", "jusqu_a": mnt["fin"]})
             if x["up"] is False:
-                vig.append({"niveau": "panne", "site": d, "titre": "%s ne répond pas" % d, "detail": ("code %s" % x["code"]) if x["code"] else (x.get("erreur") or "aucune réponse"),
+                # En maintenance, ou son alerte acceptée dans le Sensorium : la panne reste dite, mais elle ne compte plus comme une alerte.
+                vig.append({"niveau": "info" if (mnt or acc) else "panne", "site": d, "titre": "%s ne répond pas" % d,
+                            "detail": ("alerte acceptée dans le Sensorium : %s" % (acc["raison"] or "sans raison notée")) if acc and not mnt else ("code %s" % x["code"]) if x["code"] else (x.get("erreur") or "aucune réponse"),
                             "geste": "depanner" if inc else None, "incident": inc["id"] if inc else None})
+            sv, pf, nm = x.get("sauvegarde"), x.get("php_fin"), x.get("nom")
+            if sv and sv["etat"] == "sans":
+                vig.append({"niveau": "regarder", "site": d, "titre": "%s : aucune sauvegarde connue" % d, "detail": "aucun plan du panneau ne couvre ce site", "geste": "hebergement"})
+            elif sv and sv["etat"] == "perimee":
+                vig.append({"niveau": "regarder", "site": d, "titre": "%s : sauvegarde trop ancienne" % d, "detail": "la dernière date du %s" % str(sv["derniere"] or "?")[:10], "geste": "hebergement"})
+            if pf:
+                vig.append({"niveau": "regarder" if pf["etat"] == "depassee" else "info", "site": d,
+                            "titre": "%s : PHP %s %s" % (d, pf["version"], "n'est plus maintenu" if pf["etat"] == "depassee" else "arrive en fin de support"),
+                            "detail": ("plus de correctifs de sécurité depuis le %s" if pf["etat"] == "depassee" else "fin des correctifs de sécurité le %s") % pf["fin"], "geste": "hebergement"})
+            if nm and isinstance(nm.get("jours"), int) and nm["jours"] < NOM_COURT_J and nm["zone"] not in noms_dits:
+                noms_dits.add(nm["zone"])                                   # une alerte par nom, pas une par site qu'il porte
+                vig.append({"niveau": "panne" if nm["jours"] < 10 else "regarder", "site": d,
+                            "titre": ("le nom %s est échu" % nm["zone"]) if nm["jours"] < 0 else "le nom %s expire dans %d jour(s)" % (nm["zone"], nm["jours"]),
+                            "detail": "s'il n'est pas renouvelé, le site et son courrier disparaissent", "geste": None})
             if r.super and r.multi and x.get("societe_source") != "attribuee":
                 vig.append({"niveau": "info", "site": d, "titre": "%s n'est attribué à aucune société" % d,
                             "detail": ("il suit celle de son compte (%s), mais le site lui-même n'est pas attribué" % ", ".join(x["comptes"] or [])) if x.get("societe")
@@ -854,7 +1074,7 @@ def brancher(ctx):
         incidents_ = {}
         for i in db.lire("SELECT * FROM incidents WHERE etat != 'resolu' ORDER BY id"):
             incidents_[i["domaine"]] = ligne_incident(i, maintenant)                 # le plus récent l'emporte (un « rétabli » cède devant un nouvel « ouvert »)
-        lignes = []
+        lignes, vo = [], Voisins()
         # Les déclarations qui attendent leur preuve : le site n'est encore à personne, il n'est ni dans la carte ni mesuré. Son déclarant le voit, et l'administrateur de sa société.
         for p in db.lire("SELECT domaine, compte, jeton, cree FROM preuves WHERE cree >= ? ORDER BY domaine", (maintenant - PREUVE_GARDE_J * 86400,)):
             if p["domaine"] in carte or not (p["compte"] == compte or r.large or (tout and r.societe_du_compte(p["compte"]) == r.soc)):
@@ -862,12 +1082,14 @@ def brancher(ctx):
             lignes.append({"domaine": p["domaine"], "source": "declare", "origine": "declare", "up": None, "code": None, "ms": None, "erreur": "", "ssl_jours": None, "ssl_etat": None, "ssl_source": "",
                            "php": "", "proprietaire_panneau": "", "mesure": None, "dispo30": None, "comptes": [p["compte"]] if tout else None, "demande": None,
                            "societe": r.societe_du_compte(p["compte"]), "societe_source": "compte", "objectif": defaut, "objectif_propre": False, "incident": None,
+                           "maintenance": None, "acceptee": None, "cms": None, "nom": None, "sauvegarde": None, "php_fin": None,
                            "preuve": {"compte": p["compte"], "expire": p["cree"] + PREUVE_GARDE_J * 86400, "jeton": p["jeton"] if p["compte"] == compte else None}})
         for d in sorted(carte):
             e = carte[d]
             m = mesures.get(d)
             p = e["panneau"] or {}
-            lignes.append({"domaine": d, "source": e["origine"] if e["origine"] == "panneau" else "declare", "origine": e["origine"],
+            lignes.append({**vo.resume(d, bool(e["panneau"])),
+                           "domaine": d, "source": e["origine"] if e["origine"] == "panneau" else "declare", "origine": e["origine"],
                            "societe": e.get("societe", ""), "societe_source": e.get("societe_source", ""), "objectif": objectifs.get(d, defaut), "objectif_propre": d in objectifs,
                            "incident": incidents_.get(d), "preuve": None,
                            "up": bool(m["up"]) if m else None, "code": m["code"] if m else None, "ms": m["ms"] if m else None, "erreur": m["erreur"] if m else "",
@@ -1020,6 +1242,24 @@ def brancher(ctx):
                    if a["domaine"] in r.carte and a["compte"] in r.proprietaires(a["domaine"])]
         return {"demandes": lignes, "preuves": preuves, "accords": accords}
 
+    def rattaches(d):
+        """Ce que les autres modules ont rattaché à ce site, lu CHEZ EUX au nom du compte qui regarde : les contacts (Contacts), les notes (Notes), les documents (GED).
+        Chaque module porte ses liens ; Sites les montre, il ne les recopie pas. Une source absente ou muette rend une liste vide, et le dit."""
+        out = {"contacts": [], "notes": [], "documents": [], "sources": {}}
+        r, out["sources"]["contacts"] = lecture("contacts.pour_cible", kind="domain", ref=d)
+        for x in ((r.get("contacts") or []) if isinstance(r, dict) else [])[:30]:
+            if isinstance(x, dict):
+                out["contacts"].append({"id": x.get("id"), "nom": str(x.get("display_name") or ""), "societe": str(x.get("company") or ""), "role": str(x.get("role") or "")})
+        r, out["sources"]["notes"] = lecture("notes.de", kind="site", ref=d)
+        for x in ((r.get("notes") or []) if isinstance(r, dict) else [])[:30]:
+            if isinstance(x, dict):
+                out["notes"].append({"id": x.get("id"), "titre": str(x.get("titre") or "")})
+        r, out["sources"]["documents"] = lecture("ged.documents_de", kind="domain", ref=d)
+        for x in ((r.get("documents") or []) if isinstance(r, dict) else [])[:30]:
+            if isinstance(x, dict):
+                out["documents"].append({"id": x.get("id"), "nom": str(x.get("nom") or ""), "libelle": str(x.get("label") or "")})
+        return out
+
     def accord_valide(r, d, geste):
         """Le dernier accord encore valable, donné par un compte qui a TOUJOURS ce site : l'accord d'un ancien propriétaire n'engage pas le nouveau."""
         pr = r.proprietaires(d)
@@ -1052,7 +1292,7 @@ def brancher(ctx):
             return {"domaine": d, "site": attente, "mien": mien, "admin_autrui": bool(tout and not mien), "hors_panneau": True,
                     "histoire": {"disponibilite": None, "reponse_moy_ms": None, "reponse_max_ms": None, "mesures": 0, "evenements": []},
                     "liens": [], "journal": db.lire("SELECT ts, acteur, verbe, domaine, detail, 'geste' source FROM journal WHERE domaine=? ORDER BY id DESC LIMIT 12", (d,)),
-                    "demande": None, "accord": None, "accords": {}, "incidents": [],
+                    "demande": None, "accord": None, "accords": {}, "incidents": [], "voisins": None, "rattaches": {"contacts": [], "notes": [], "documents": [], "sources": {}},
                     "preuve": {"compte": attente["preuve"]["compte"], "expire": attente["preuve"]["expire"], "jeton": jeton,
                                "dns": {"nom": "_cassandra." + d, "valeur": "cassandra-site=" + jeton} if jeton else None,
                                "fichier": {"adresse": "https://%s%s" % (d, CHEMIN_PREUVE), "contenu": jeton} if jeton else None},
@@ -1072,6 +1312,7 @@ def brancher(ctx):
                 "histoire": {k: h[k] for k in ("disponibilite", "reponse_moy_ms", "reponse_max_ms", "mesures")} | {"evenements": h["evenements"][:8]},
                 "liens": _liens(d), "journal": _journal(r, d, 12), "demande": ligne["demande"],
                 "accord": accords["restaurer"], "accords": accords, "preuve": None,
+                "voisins": Voisins().detail(d, not hors, r.du_panneau(d)), "rattaches": rattaches(d),
                 "incidents": [ligne_incident(i, maintenant) for i in db.lire("SELECT * FROM incidents WHERE domaine=? ORDER BY id DESC LIMIT 6", (d,))],
                 "gestes": {"retirer": bool(rows and (tout or (mien and rows[0]["origine"] != "attribue"))), "attribuer": tout,
                            "transferer": bool(tout and rows),
@@ -1458,7 +1699,8 @@ def brancher(ctx):
         vu = db.lire("SELECT up, depuis FROM etat_vu WHERE domaine=?", (d,))
         tombes = [x["domaine"] for x in db.lire("SELECT domaine FROM etat_vu WHERE up=0 AND domaine != ? ORDER BY domaine", (d,)) if r.large or x["domaine"] in r.carte]
         ouvert = i["etat"] in ("ouvert", "depannage")
-        return dict(ligne_incident(i, maintenant),
+        vo = Voisins()
+        return dict(ligne_incident(i, maintenant), maintenance=vo.maintenance(d), acceptee=vo.acceptee(d),
                     en_ligne=bool(vu and vu[0]["up"]), suivi=bool(vu),
                     mesures=[dict(m, up=bool(m["up"])) for m in db.lire("SELECT ts, code, ms, up, erreur FROM mesures WHERE domaine=? ORDER BY id DESC LIMIT 8", (d,))],
                     tombes_aussi=tombes[:20],                              # d'autres sites en panne au même moment : une cause commune, probablement
@@ -1611,6 +1853,9 @@ def brancher(ctx):
                 cases[rang(i["debut"])]["evenements"].append({"ts": i["debut"], "genre": "incident", "texte": "Incident ouvert — %s" % (i["erreur"] or ("HTTP %s" % i["code"])), "incident": i["id"]})
             if i["fin"] and a <= i["fin"] < b:
                 cases[rang(i["fin"])]["evenements"].append({"ts": i["fin"], "genre": "retour", "texte": "De nouveau en ligne après %s%s" % (li["duree"], (" — " + i["cause"]) if i["cause"] else ""), "incident": i["id"]})
+        for f in Voisins().fenetres_de(d, a, b):
+            if a <= f["debut"] < b:
+                cases[rang(f["debut"])]["evenements"].append({"ts": f["debut"], "genre": "maintenance", "texte": "Maintenance" + (" — " + f["motif"] if f["motif"] else ""), "fin": f["fin"], "incident": None})
         for e in db.lire("SELECT ts, genre, detail FROM evenements_site WHERE domaine=? AND ts >= ? AND ts < ? ORDER BY ts", (d, a, b)):
             if e["genre"] == "panne" and any(abs(e["ts"] - x) < 2 for x in debuts):
                 continue                                                # déjà dit par son incident
@@ -1713,6 +1958,15 @@ def brancher(ctx):
         attente = db.lire("SELECT COUNT(*) n FROM preuves WHERE compte=? AND cree >= ?", (c.compte or "", time.time() - PREUVE_GARDE_J * 86400))[0]["n"]
         return {"concerne": bool(r.tout or n or attente), "sites": n, "a_prouver": attente, "admin": r.tout}
 
+    def voisins(c):
+        """Relit tout de suite, auprès du Sensorium, les fenêtres de maintenance et les alertes acceptées — pour un compte qui a le droit de les lire ; sinon rien ne change.
+        L'écran l'appelle après avoir posé ou annulé une fenêtre, pour que le site se taise sans attendre le tour de la sonde."""
+        relever_sensorium()
+        ms = miroir("sensorium", perime=True)
+        ms = ms if isinstance(ms, dict) else {}
+        maintenant = time.time()
+        return {"lu": bool(ms.get("lu")), "fenetres_en_cours": sum(1 for f in ms.get("fenetres") or [] if f["debut"] <= maintenant < f["fin"]), "acceptees": len(ms.get("acceptees") or {})}
+
     def gestes(c):
         """Ce que chacun peut faire sur les sites : pour chaque geste, qui peut le faire (humain, compte, agents), à quel palier un agent le fait, et le droit exigé."""
         return {"gestes": [{"id": x.id, "libelle": x.libelle, "risque": x.risque, "qui": list(x.qui), "paliers": list(x.paliers), "droit": x.droit or ""}
@@ -1722,11 +1976,12 @@ def brancher(ctx):
     c = ctx
     c.moteur("sonde", sonde)
     c.detecteur("panne", det_panne)
+    c.detecteur("panne_proprietaire", det_panne_proprietaire)
     c.detecteur("lenteur", det_lenteur)
     c.detecteur("certificat_court", det_certificat)
     c.detecteur("adossement_demande", det_demandes)
     for cid, f in (("vue", vue), ("fiche", fiche), ("historique", historique), ("disponibilite", disponibilite), ("serie", serie), ("journal", journal), ("liens", liens), ("demandes", demandes), ("accord", accord),
-                   ("incidents", incidents), ("incident", incident), ("calendrier", calendrier), ("concerne", concerne), ("gestes", gestes)):
+                   ("incidents", incidents), ("incident", incident), ("calendrier", calendrier), ("concerne", concerne), ("gestes", gestes), ("voisins", voisins)):
         c.implementer(cid, f)
     c.implementer("prouver", prouver, prouver_ligne("compte"), defaire_prouve, simuler=lambda x, domaine="", **_: "vérifierait la preuve de propriété de %s" % domaine)
     c.implementer("relever", relever, prouver_releve, defaire_releve, simuler=lambda x, domaine="", **_: "mesurerait %s tout de suite" % domaine)

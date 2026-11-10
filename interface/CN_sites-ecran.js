@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #54081c
+// VERSION CN : 0.1.0  #b2cc6b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages du module sites (vue d'ensemble, tous les sites, la page d'un site, alertes, disponibilité, demandes, journal) ; ses pages sont les sous-entrées de « Sites » dans le menu de gauche
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.sites) qui remplace l'onglet V18 « mysites » ; tout vient des capacités sites.* ; l'état vit hors de la scène, car le shell la redessine à chaque ouverture ; window.stVue reçoit la page demandée par le menu, window.stOpen ouvre un site depuis un autre écran
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=54081c ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=b2cc6b ▼▼▼
 // Sites : l'écran du module. Il remplace l'onglet V18 « mysites » ; ses pages sont les sous-menus de « Sites » dans le menu de gauche
 // (le rail interne de l'ancien écran a disparu). Lot 1 : ce que les capacités sites.* savaient déjà rendre. Lot 2 : les incidents (une panne est un objet
 // qu'on dépanne), le calendrier d'un site, les sociétés, la preuve de propriété, les objectifs et les réglages.
@@ -41,6 +41,8 @@
   const ETATS_INC = { ouvert: ["incident ouvert", "dg"], depannage: ["dépannage en cours", "al"], retabli: ["rétabli · cause à noter", "ac"], resolu: ["résolu", "ok"] };
   const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
   const QUI = { humain: "une personne", compte: "le compte", cassandra: "Cassandra", itare: "Itare", agent: "un agent", amizo: "Amizo" };
+  const RATTACHABLES = [["contact", "un contact"], ["projet", "un projet"], ["note", "une note"], ["machine", "une machine"]];
+  const ROLES = ["autre", "technique", "propriétaire", "hébergeur", "registrar", "client", "prestataire", "facturation"];
   const REGLAGES = ["echecs_avant_panne", "lent_ms", "proteges_en_ligne", "objectif_pct", "preuve_exigee", "delai_sonde_s", "retention_j"];
   const GENRES = [["project", "projet"], ["contact", "contact"], ["machine", "machine"], ["note", "note"]];
   const PAR = 25;
@@ -74,7 +76,7 @@
 
   // L'état de l'écran vit hors de la scène : le shell redessine l'onglet à chaque ouverture, et les autres écrans (Panorama, Hébergement) ouvrent un site d'ici.
   const S = { page: "vue", sel: null, onglet: "apercu", vue: null, lu: 0, q: "", filtre: "", p: 1, jours: 30, heures: 24 * 30, jfam: "", fiche: null, histo: null, copies: null, erreur: "",
-    inc: null, soc: "", calSite: "", calMois: "", calJour: null };
+    inc: null, soc: "", calSite: "", calMois: "", calJour: null, rat: { genre: "contact", role: "autre", q: "", res: null, erreur: "" } };
   let R = null;
   const msg = (e) => String((e && e.message) || e || "erreur");
   const lire = async (cap, args) => { try { return await agir(cap, args || {}); } catch (e) { S.erreur = msg(e); return null; } };
@@ -112,6 +114,11 @@
     if (s.incident && s.incident.etat === "depannage") p.push(K.pill("dépannage · " + court(s.incident.pris_par), "al"));
     if (s.incident && s.incident.etat === "retabli") p.push(K.pill("incident à clore", "ac"));
     if (s.incident && s.incident.connu_jusqu) p.push(K.pill("panne connue", ""));
+    if (s.maintenance) p.push(K.pill("maintenance jusqu’à " + heure(s.maintenance.fin), "ac"));
+    if (s.acceptee) p.push(K.pill("alerte acceptée", ""));
+    if (s.cms) p.push(K.pill(s.cms.type + (s.cms.version ? " " + s.cms.version : ""), ""));
+    if (s.php_fin && s.php_fin.etat === "depassee") p.push(K.pill("PHP " + s.php_fin.version + " abandonné", "al"));
+    if (s.sauvegarde && s.sauvegarde.etat !== "ok") p.push(K.pill(s.sauvegarde.etat === "sans" ? "sans sauvegarde" : "sauvegarde ancienne", "al"));
     if (multi()) p.push(K.pill(s.societe ? socNom(s.societe) + (s.societe_source === "compte" ? " · par son compte" : "") : "sans société", s.societe ? "" : "al"));
     return p.join("");
   }
@@ -136,7 +143,19 @@
     else if (v.geste === "depanner" && v.incident) b = '<button class="btn mini pri" data-a="incident" data-id="' + v.incident + '">' + (v.niveau === "panne" ? "Dépanner ›" : "Clore ›") + "</button>";
     else if (v.geste === "prouver") b = '<button class="btn mini" data-a="site" data-d="' + esc(v.site) + '">Prouver ›</button>';
     else if (v.geste === "attribuer_societe") b = '<button class="btn mini" data-a="societe" data-d="' + esc(v.site) + '">Attribuer à une société…</button>';
+    else if (v.geste === "hebergement") b = '<button class="btn mini" data-a="site" data-d="' + esc(v.site) + '" data-o="heberg">Voir l’hébergement</button>';
+    else if (v.geste === "maintenance") b = '<span class="note">jusqu’à ' + esc(heure(v.jusqu_a)) + "</span>";
     return '<div class="row c2">' + K.pill(n[0], n[1]) + '<button class="nm" data-a="site" data-d="' + esc(v.site) + '" style="background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><b>' + esc(v.titre) + "</b><small>" + esc(v.detail || "") + '</small></button><span class="acts">' + b + "</span></div>";
+  }
+  // Les fenêtres de maintenance et les alertes acceptées : c'est le Sensorium qui les tient. Sites les montre, se tait avec lui, et y renvoie pour les poser.
+  const utc = (ms) => new Date(ms).toISOString().slice(0, 19).replace("T", " ");
+  function maintenances(l) {
+    const m = l.filter((s) => s.maintenance), a = l.filter((s) => s.acceptee), libres = l.filter((s) => !s.maintenance && !s.preuve);
+    return '<div class="carte"><h3>Fenêtres de maintenance</h3><p class="note">Les alertes du site se taisent, les mesures continuent. C’est le Sensorium qui les tient : une fenêtre posée là-bas vaut ici, et l’inverse.</p>' +
+      (m.length ? '<div class="rows">' + m.map((s) => '<div class="row c2">' + K.pill("en cours", "ac") + '<button class="nm" data-a="site" data-d="' + esc(s.domaine) + '" style="background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><b class="mono">' + esc(s.domaine) + "</b><small>" + esc(s.maintenance.motif || "sans motif") + (s.maintenance.par ? " · posée par " + esc(court(s.maintenance.par)) : "") + " · jusqu’à " + esc(heure(s.maintenance.fin)) + (s.maintenance.ce_site ? "" : " · elle couvre plus que ce site") + '</small></button><span class="acts">' + (admin() && s.maintenance.ce_site ? '<button class="btn mini" data-a="mnt-fin" data-id="' + esc(s.maintenance.id) + '">Annuler</button>' : "") + "</span></div>").join("") + "</div>" : '<p class="note">Aucune fenêtre en cours.</p>') +
+      (admin() && libres.length ? '<div class="barre"><select data-mnt-d aria-label="Site">' + libres.slice(0, 300).map((s) => "<option>" + esc(s.domaine) + "</option>").join("") + '</select><select data-mnt-h aria-label="Durée"><option value="1">1 h</option><option value="2" selected>2 h</option><option value="8">8 h</option><option value="24">24 h</option></select><button class="btn" data-a="mnt">Poser une fenêtre</button></div>' : "") + "</div>" +
+      '<div class="carte"><h3>Alertes acceptées</h3><p class="note">« Je sais, c’est normal » : une alerte de site acceptée dans le Sensorium se tait ici aussi, jusqu’à son échéance.</p>' +
+      (a.length ? '<div class="rows">' + a.map((s) => '<div class="row c2">' + K.pill("acceptée", "") + '<button class="nm" data-a="site" data-d="' + esc(s.domaine) + '" style="background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><b class="mono">' + esc(s.domaine) + "</b><small>" + esc(s.acceptee.raison || "sans raison notée") + (s.acceptee.par ? " · par " + esc(court(s.acceptee.par)) : "") + (s.acceptee.jusqu_a ? " · jusqu’au " + esc(heure(s.acceptee.jusqu_a)) : " · sans échéance") + '</small></button><span class="acts">' + (admin() ? '<button class="btn mini" data-a="sensorium">Ouvrir le Sensorium</button>' : "") + "</span></div>").join("") + "</div>" : '<p class="note">Aucune.</p>') + "</div>";
   }
   function journalHtml(lignes, avecSite) {
     if (!lignes || !lignes.length) return '<p class="note">Aucun geste encore.</p>';
@@ -214,7 +233,7 @@
       const dans = new Set(visibles(v.sites).map((s) => s.domaine)), vig = (v.vigilances || []).filter((x) => dans.has(x.site)), j = await lire("sites.journal", { limite: 200 });
       const coup = ((j && j.lignes) || []).filter((x) => ["panne", "retour", "decouverte"].includes(x.verbe) && dans.has(x.domaine)).slice(0, 40);
       return entete(choixSoc()) + bandeaux() + '<div class="carte"><h3>' + vig.filter((x) => x.niveau !== "info").length + " alerte(s) · " + vig.filter((x) => x.niveau === "info").length + " pour information</h3>" + (vig.length ? '<div class="rows">' + vig.map(vigilance).join("") + "</div>" : '<p class="note"><b>Rien ne demande un geste.</b></p>') + "</div>" +
-        '<div class="carte"><h3>Coupures et retours</h3>' + journalHtml(coup, true) + "</div>";
+        maintenances(visibles(v.sites)) + '<div class="carte"><h3>Coupures et retours</h3>' + journalHtml(coup, true) + "</div>";
     },
 
     async dispo() {
@@ -266,7 +285,8 @@
         '<div class="pr"><h4>Demander à Cassandra de corriger</h4><p class="note">Elle lit le diagnostic, propose un plan et attend ton accord avant d’agir. Elle agit en ton nom, avec tes droits, jamais plus.</p><div class="acts"><button class="btn pri" data-a="cassandra" data-id="' + i.id + '">Demander un plan</button></div></div>' +
         '<div><h4>Dépanner moi-même</h4><p class="note">Dire que tu t’en occupes, puis vérifier après chaque geste.</p><div class="acts">' + (i.gestes.prendre ? '<button class="btn" data-a="prendre" data-id="' + i.id + '">' + (i.pris_par ? "Je prends la suite" : "Je m’en occupe") + "</button>" : "") + '<button class="btn" data-a="relever" data-d="' + d + '">Relever à nouveau</button>' + (panneau && admin() ? '<button class="btn" data-a="hebergement" data-d="' + d + '">Hébergement</button>' : "") + (panneau ? '<button class="btn" data-a="site" data-d="' + d + '" data-o="heberg">Copies de sauvegarde</button>' : "") + '<button class="btn" data-a="certificats">Certificats</button></div></div>' +
         '<div><h4>Confier à quelqu’un</h4><p class="note">' + (contacts.length ? "Contact rattaché au site : " + contacts.map(esc).join(", ") + "." : "Aucun contact rattaché à ce site (onglet Liens de sa page).") + '</p><div class="acts"><button class="btn" data-a="tache" data-id="' + i.id + '" data-d="' + d + '">Créer une tâche</button></div></div>' +
-        '<div><h4>Le temps d’intervenir</h4><p class="note">' + (i.connu_jusqu ? "L’alerte de cette panne se tait jusqu’à " + esc(heure(i.connu_jusqu)) + ". Les mesures continuent." : "Dire que la panne est connue : son alerte se tait, l’incident reste ouvert, les mesures continuent.") + '</p><div class="acts">' + (i.connu_jusqu ? '<button class="btn" data-a="connu" data-id="' + i.id + '" data-h="0">Faire reparler l’alerte</button>' : '<button class="btn" data-a="connu" data-id="' + i.id + '" data-h="4">Connue, 4 h</button><button class="btn" data-a="connu" data-id="' + i.id + '" data-h="24">Connue, 24 h</button>') + "</div></div></div></div>";
+        '<div><h4>Le temps d’intervenir</h4><p class="note">' + (i.connu_jusqu ? "L’alerte de cette panne se tait jusqu’à " + esc(heure(i.connu_jusqu)) + ". Les mesures continuent." : "Dire que la panne est connue : son alerte se tait, l’incident reste ouvert, les mesures continuent.") + '</p><div class="acts">' + (i.connu_jusqu ? '<button class="btn" data-a="connu" data-id="' + i.id + '" data-h="0">Faire reparler l’alerte</button>' : '<button class="btn" data-a="connu" data-id="' + i.id + '" data-h="4">Connue, 4 h</button><button class="btn" data-a="connu" data-id="' + i.id + '" data-h="24">Connue, 24 h</button>') +
+        (i.maintenance ? '<span class="note">En maintenance jusqu’à ' + esc(heure(i.maintenance.fin)) + ".</span>" + (admin() && i.maintenance.ce_site ? '<button class="btn" data-a="mnt-fin" data-id="' + esc(i.maintenance.id) + '">Fin de la maintenance</button>' : "") : admin() ? '<button class="btn" data-a="mnt" data-d="' + d + '" data-h="2" data-inc="' + i.id + '">Maintenance 2 h</button>' : "") + "</div></div></div></div>";
       const clore = i.etat === "retabli" ? '<div class="carte"><h3>Clore</h3><label class="note" for="si-cause">La cause, pour la prochaine fois</label><textarea id="si-cause" data-cause placeholder="Ce qui s’est passé, ce qui l’a réglé…">' + esc(i.cause || "") + '</textarea><div class="acts"><button class="btn pri" data-a="clore" data-id="' + i.id + '">Clore l’incident</button></div></div>' :
         i.etat === "resolu" ? '<div class="carte"><h3>Cause</h3><p style="font-size:15px;color:var(--txt-strong,var(--txt));margin:0">' + esc(i.cause || "non notée") + '</p><p class="note">Clos par ' + esc(i.clos_par === "sonde" ? "la veille : le site est revenu seul" : court(i.clos_par)) + '.</p><textarea data-cause aria-label="Cause" placeholder="Noter ou corriger la cause…"></textarea><div class="acts"><button class="btn" data-a="clore" data-id="' + i.id + '">' + (i.cause ? "Corriger la cause" : "Noter la cause") + "</button></div></div>" :
         '<div class="carte"><h3>Clore</h3><p class="note">Un incident se clôt quand le site répond de nouveau. Tant qu’il ne répond pas, il reste ouvert.</p></div>';
@@ -288,18 +308,18 @@
       const c = await lire("sites.calendrier", { domaine: s.domaine, jours: Array.from({ length: nj + 1 }, (_, k) => new Date(an, mo - 1, k + 1).getTime() / 1000) });
       const choix = choixSoc() + '<select data-cal-site aria-label="Site">' + l.slice(0, 300).map((x) => '<option' + (x.domaine === s.domaine ? " selected" : "") + ">" + esc(x.domaine) + "</option>").join("") + "</select>";
       if (!c) return entete(choix) + bandeaux();
-      const SYM = { incident: "⚑", retour: "✓", panne: "●", decouverte: "◎", geste: "✎" }, LIB = { ok: "sans coupure", courte: "coupure courte", longue: "coupure longue", sans: "pas de mesure", futur: "à venir" };
-      const texte = (e) => (e.genre === "geste" ? (VERBES[e.texte] || e.texte) + (e.detail ? " · " + e.detail : "") : e.texte);
+      const SYM = { incident: "⚑", retour: "✓", panne: "●", decouverte: "◎", geste: "✎", maintenance: "■" }, LIB = { ok: "sans coupure", courte: "coupure courte", longue: "coupure longue", sans: "pas de mesure", futur: "à venir" };
+      const texte = (e) => (e.genre === "geste" ? (VERBES[e.texte] || e.texte) + (e.detail ? " · " + e.detail : "") : e.genre === "maintenance" ? e.texte + " (jusqu’à " + heure(e.fin) + ")" : e.texte);
       const cases = c.jours.map((j, k) => { const n = k + 1, estAuj = S.calMois === moisCourant && n === auj.getDate(), ev = j.evenements.slice(0, 2).map((e) => "<span>" + SYM[e.genre] + " " + esc(texte(e)) + "</span>").join("") + (!j.evenements.length && j.rates ? "<span>● " + j.rates + " mesure" + (j.rates > 1 ? "s ratées" : " ratée") + "</span>" : "") + (j.evenements.length > 2 ? "<span>+ " + (j.evenements.length - 2) + "</span>" : "");
         return '<button class="j ' + j.etat + (estAuj ? " auj" : "") + (S.calJour === n ? " sel" : "") + (j.evenements.length || j.rates ? " ev" : "") + '" data-a="cal-jour" data-n="' + n + '"' + (j.etat === "futur" ? " disabled" : "") + ' aria-label="' + n + " " + MOIS[mo - 1] + " : " + LIB[j.etat] + (j.evenements.length ? ", " + j.evenements.length + " événement(s)" : "") + '"><b>' + n + "</b>" + ev + "</button>"; }).join("");
       const sel = S.calJour ? c.jours[S.calJour - 1] : null, m = c.mois;
       const detail = !sel ? '<p class="note">Clique un jour pour voir ce qui s’y est passé.</p>' : '<div class="bandeau in"><div class="sp"><b>' + S.calJour + " " + MOIS[mo - 1] + "</b> — " + LIB[sel.etat] + (sel.mesures ? " · " + pct(sel.disponibilite) + " sur " + sel.mesures + " mesures" + (sel.rates ? " · " + sel.rates + " ratée" + (sel.rates > 1 ? "s" : "") : "") + (sel.ms_max != null ? " · au pire " + nb(sel.ms_max) + " ms" : "") : "") + "</div></div>" +
-        (sel.evenements.length ? '<div class="jl">' + sel.evenements.map((e) => '<div><span class="t">' + z(new Date(e.ts * 1000).getHours()) + ":" + z(new Date(e.ts * 1000).getMinutes()) + "</span>" + K.pill(e.genre === "geste" ? "geste" : e.genre === "incident" ? "incident" : VERBES[e.genre] || e.genre, e.genre === "incident" || e.genre === "panne" ? "dg" : e.genre === "retour" ? "ok" : "") + "<span>" + esc(texte(e)) + (e.acteur ? " · " + esc(court(e.acteur)) : "") + (e.incident ? ' · <a data-a="incident" data-id="' + e.incident + '" style="cursor:pointer;color:var(--accent)">ouvrir l’incident</a>' : "") + "</span></div>").join("") + "</div>" : sel.mesures && !sel.rates ? '<p class="note">Rien à signaler : le site a répondu toute la journée.</p>' : "");
+        (sel.evenements.length ? '<div class="jl">' + sel.evenements.map((e) => '<div><span class="t">' + z(new Date(e.ts * 1000).getHours()) + ":" + z(new Date(e.ts * 1000).getMinutes()) + "</span>" + K.pill(e.genre === "geste" ? "geste" : e.genre === "incident" ? "incident" : e.genre === "maintenance" ? "maintenance" : VERBES[e.genre] || e.genre, e.genre === "incident" || e.genre === "panne" ? "dg" : e.genre === "retour" ? "ok" : "") + "<span>" + esc(texte(e)) + (e.acteur ? " · " + esc(court(e.acteur)) : "") + (e.incident ? ' · <a data-a="incident" data-id="' + e.incident + '" style="cursor:pointer;color:var(--accent)">ouvrir l’incident</a>' : "") + "</span></div>").join("") + "</div>" : sel.mesures && !sel.rates ? '<p class="note">Rien à signaler : le site a répondu toute la journée.</p>' : "");
       const ecart = m.disponibilite != null && m.avant != null ? Math.round((m.disponibilite - m.avant) * 100) / 100 : null;
       return entete(choix) + bandeaux() +
         '<div class="carte"><div class="barre" style="justify-content:space-between"><span class="acts"><button class="btn mini" data-a="cal-mois" data-m="' + moisDe(-1) + '" aria-label="Mois précédent">‹</button><b style="min-width:140px;text-align:center">' + MOIS[mo - 1] + " " + an + '</b><button class="btn mini" data-a="cal-mois" data-m="' + moisDe(1) + '" aria-label="Mois suivant"' + (S.calMois >= moisCourant ? " disabled" : "") + '>›</button></span><button class="btn mini" data-a="site" data-d="' + esc(s.domaine) + '">La page du site</button></div>' +
         '<div class="cal">' + ["lun", "mar", "mer", "jeu", "ven", "sam", "dim"].map((x) => '<div class="ent">' + x + "</div>").join("") + '<div class="j vide"></div>'.repeat(blancs) + cases + "</div>" +
-        '<div class="leg"><span><i style="background:var(--ok)"></i>sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span><span><i style="background:var(--line-strong,var(--line))"></i>pas de mesure</span><span>⚑ incident</span><span>✓ retour</span><span>✎ geste</span></div>' + detail + "</div>" +
+        '<div class="leg"><span><i style="background:var(--ok)"></i>sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span><span><i style="background:var(--line-strong,var(--line))"></i>pas de mesure</span><span>⚑ incident</span><span>✓ retour</span><span>■ maintenance</span><span>✎ geste</span></div>' + detail + "</div>" +
         '<div class="carte"><h3>Le mois en chiffres</h3>' + (m.disponibilite == null ? '<p class="note"><b>Pas de mesure ce mois-là.</b> Les mesures se gardent ' + c.garde_j + " jours ; un mois sans mesure n’emprunte pas les chiffres d’un autre.</p>" :
           '<div class="stats"><div class="stat ' + (m.tenu ? "" : "al") + '"><b>' + pct(m.disponibilite) + '</b><span>disponibilité</span><span class="note">objectif ' + pct(m.objectif) + " · " + (m.tenu ? "tenu" : "manqué") + '</span></div><div class="stat"><b>' + pct(m.avant) + '</b><span>les ' + nj + ' jours d’avant</span><span class="note">' + (ecart == null ? "pas de mesure" : (ecart >= 0 ? "▲ +" : "▼ ") + ecart.toLocaleString("fr-FR") + " pt") + '</span></div><div class="stat ' + (m.jours_coupure ? "al" : "") + '"><b>' + m.jours_coupure + '</b><span>jours avec coupure</span><span class="note">sur ' + m.jours_mesures + " jour" + (m.jours_mesures > 1 ? "s mesurés" : " mesuré") + "</span></div><div class=\"stat\"><b>" + m.incidents + '</b><span>incidents</span><span class="note">pannes confirmées</span></div></div>') +
         '<div class="barre"><label class="note" for="si-obj">Objectif de ce site</label><input id="si-obj" type="text" inputmode="decimal" data-obj value="' + esc(String(s.objectif).replace(".", ",")) + '" style="max-width:90px" aria-label="Objectif en pourcentage"><span class="note">% de disponibilité' + (s.objectif_propre ? "" : " · celui du réglage") + '</span><button class="btn mini" data-a="objectif" data-d="' + esc(s.domaine) + '">Poser</button>' + (s.objectif_propre ? '<button class="btn mini" data-a="objectif" data-d="' + esc(s.domaine) + '" data-defaut="1">Rendre celui du réglage</button>' : "") + "</div></div>";
@@ -342,6 +362,7 @@
       if (f.preuve && S.onglet !== "journal") S.onglet = "apercu";
       const acts = (f.gestes.relever ? '<button class="btn" data-a="relever" data-d="' + esc(d) + '">Relever maintenant</button>' : '<button class="btn" data-a="recharger">Relire</button>') + (f.preuve ? "" : '<button class="btn" data-a="cal" data-d="' + esc(d) + '">Calendrier</button>') +
         (f.gestes.demander ? '<button class="btn" data-a="demander" data-d="' + esc(d) + '">Demander l’adossement</button>' : "") + (f.gestes.transferer ? '<button class="btn" data-a="transferer" data-d="' + esc(d) + '">Transférer…</button>' : "") +
+        (admin() && !f.preuve && !s.maintenance ? '<button class="btn" data-a="mnt" data-d="' + esc(d) + '">Maintenance…</button>' : "") +
         (f.gestes.attribuer_societe ? '<button class="btn" data-a="societe" data-d="' + esc(d) + '">Société…</button>' : "") +
         (f.preuve && f.gestes.attribuer ? '<button class="btn" data-a="attester" data-d="' + esc(d) + '" data-c="' + esc(f.preuve.compte) + '">Attester</button>' : f.gestes.attribuer && !(s.comptes || []).length ? '<button class="btn" data-a="attribuer" data-d="' + esc(d) + '">Attribuer…</button>' : "") +
         (f.gestes.retirer ? '<button class="btn dng" data-a="retirer" data-d="' + esc(d) + '"' + (f.preuve ? ' data-preuve="1">Annuler la déclaration' : ">Retirer de la liste") + "</button>" : "");
@@ -362,7 +383,10 @@
           (p.dns ? "<h4>1. Par le DNS — un enregistrement TXT</h4><div class=\"code\">" + esc(p.dns.nom) + "   TXT   \"" + esc(p.dns.valeur) + '"</div><h4>2. Ou par un fichier — à déposer sur le site</h4><div class="code">' + esc(p.fichier.adresse) + "   →   " + esc(p.fichier.contenu) + '</div><p class="note">L’une des deux suffit. Un enregistrement DNS met parfois quelques minutes à paraître.</p>' : '<p class="note">Le jeton à poser n’est montré qu’au compte qui a déclaré le site.</p>') +
           (f.gestes.prouver ? '<div class="acts"><button class="btn pri" data-a="prouver" data-d="' + esc(f.domaine) + '">Vérifier maintenant</button></div>' : "");
       }
-      return (inc && inc.etat !== "retabli" ? '<div class="bandeau da"><div class="sp"><b>Incident ouvert depuis ' + esc(inc.duree) + ".</b> " + esc(inc.diagnostic) + (inc.pris_par ? " " + esc(inc.pris_par === moi() ? "Tu t’en occupes." : court(inc.pris_par) + " s’en occupe.") : "") + '</div><button class="btn mini pri" data-a="incident" data-id="' + inc.id + '">Dépanner ›</button></div>' : "") +
+      const vo = f.voisins || {}, mnt = vo.maintenance, tr = vo.trafic, nm = vo.nom;
+      return (mnt ? '<div class="bandeau in"><div class="sp"><b>En maintenance jusqu’à ' + esc(heure(mnt.fin)) + ".</b> " + esc(mnt.motif || "Fenêtre posée dans le Sensorium") + (mnt.par ? " · par " + esc(court(mnt.par)) : "") + ". Ses alertes se taisent, les mesures continuent." + (mnt.ce_site ? "" : " Elle couvre plus que ce site.") + "</div>" + (admin() && mnt.ce_site ? '<button class="btn mini" data-a="mnt-fin" data-id="' + esc(mnt.id) + '">Fin de la maintenance</button>' : "") + "</div>" : "") +
+        (vo.acceptee ? '<div class="bandeau in"><div class="sp"><b>Alerte acceptée dans le Sensorium.</b> ' + esc(vo.acceptee.raison || "Sans raison notée") + (vo.acceptee.jusqu_a ? " · jusqu’au " + esc(heure(vo.acceptee.jusqu_a)) : "") + ". Une panne de ce site ne sonne pas.</div></div>" : "") +
+        (inc && inc.etat !== "retabli" ? '<div class="bandeau da"><div class="sp"><b>Incident ouvert depuis ' + esc(inc.duree) + ".</b> " + esc(inc.diagnostic) + (inc.pris_par ? " " + esc(inc.pris_par === moi() ? "Tu t’en occupes." : court(inc.pris_par) + " s’en occupe.") : "") + '</div><button class="btn mini pri" data-a="incident" data-id="' + inc.id + '">Dépanner ›</button></div>' : "") +
         (inc && inc.etat === "retabli" ? '<div class="bandeau al"><div class="sp"><b>Le site répond de nouveau.</b> L’incident attend sa cause, pour ne pas la rechercher deux fois.</div><button class="btn mini pri" data-a="incident" data-id="' + inc.id + '">Clore ›</button></div>' : "") +
         (f.admin_autrui ? '<div class="bandeau in"><div class="sp">Ce site appartient à ' + esc((s.comptes || []).join(", ") || "un compte du panneau") + ". Tu vois son état, pas son contenu.</div></div>" : "") +
         (f.demande ? '<div class="bandeau al"><div class="sp"><b>Adossement demandé</b> par ' + esc(f.demande.compte) + (f.demande.message ? " : « " + esc(f.demande.message) + " »" : "") + ".</div>" + (admin() ? '<button class="btn mini pri" data-a="repondre" data-id="' + f.demande.id + '" data-v="fait">Adossé, c’est fait</button><button class="btn mini" data-a="repondre" data-id="' + f.demande.id + '" data-v="refusee">Refuser…</button>' : "") + "</div>" : "") +
@@ -371,6 +395,9 @@
         "<dt>dernières 24 h</dt><dd>" + (h.mesures ? pct(h.disponibilite) + " · " + (h.reponse_moy_ms == null ? "—" : nb(h.reponse_moy_ms) + " ms en moyenne") + " · " + h.mesures + " mesures" : '<span class="note">pas encore de mesure</span>') + "</dd>" +
         "<dt>certificat</dt><dd>" + (typeof s.ssl_jours === "number" ? (s.ssl_jours < 0 ? "échu depuis " + (-s.ssl_jours) + " j" : "expire dans " + s.ssl_jours + " j") + ' <span class="note">' + esc({ certificats: "d’après Certificats", sonde: "lu par la sonde", panneau: "d’après le panneau" }[s.ssl_source] || "") + '</span> <button class="btn mini" data-a="certificats">Certificats</button>' : '<span class="note">pas encore lu</span>') + "</dd>" +
         "<dt>hébergement</dt><dd>" + (f.hors_panneau ? "hors panneau, déclaré à la main" : "panneau · compte « " + esc(s.proprietaire_panneau || "?") + " »" + (s.php ? " · PHP " + esc(s.php) : "")) + "</dd>" +
+        (vo.cms ? "<dt>CMS</dt><dd>" + esc(vo.cms.type) + (vo.cms.version ? " " + esc(vo.cms.version) : "") + ' <span class="note">' + [vo.cms.theme ? "thème " + vo.cms.theme : "", vo.cms.extensions != null ? vo.cms.extensions + " extension" + (vo.cms.extensions > 1 ? "s" : "") : "", "relevé par le Sensorium"].filter(Boolean).map(esc).join(" · ") + "</span></dd>" : "") +
+        (tr ? "<dt>trafic " + tr.jours + " j</dt><dd>" + nb(tr.requetes || 0) + " requêtes" + (tr.robots != null ? ' <span class="note">dont ' + nb(tr.robots) + " de robots" + ((tr.premiers_robots || []).length ? " (" + tr.premiers_robots.map(esc).join(", ") + ")" : "") + " · relevé par le Sensorium</span>" : "") + "</dd>" : "") +
+        (nm ? "<dt>nom de domaine</dt><dd>" + esc(nm.zone) + (nm.jours == null ? "" : nm.jours < 0 ? ' · <b style="color:var(--danger)">échu</b>' : " · expire dans " + nm.jours + " j") + ' <span class="note">le ' + esc(nm.expiration) + " · d’après le DNS</span></dd>" : "") +
         "<dt>objectif</dt><dd>" + pct(s.objectif) + ' de disponibilité <span class="note">' + (s.objectif_propre ? "propre à ce site" : "celui du réglage") + (d30 ? " · sur 30 j : " + (d30.disponibilite >= s.objectif ? "tenu" : "manqué") : "") + '</span> <button class="btn mini" data-a="cal" data-d="' + esc(f.domaine) + '">Calendrier</button></dd>' +
         (multi() ? "<dt>société</dt><dd>" + (s.societe ? esc(socNom(s.societe)) + ' <span class="note">' + (s.societe_source === "attribuee" ? "attribuée au site" : "celle de son compte : le site lui-même n’est pas attribué") + "</span>" : '<span class="note">aucune : ni compte ni société, seuls les superadministrateurs le voient</span>') + (f.gestes.attribuer_societe ? ' <button class="btn mini" data-a="societe" data-d="' + esc(f.domaine) + '">Attribuer…</button>' : "") + "</dd>" : "") + "</dl>" +
         (f.hors_panneau ? '<p class="note">Hors panneau : la sonde, l’historique, les rattachements et le journal.</p>' : '<div class="acts"><button class="btn" data-a="renouveler" data-d="' + esc(f.domaine) + '">Renouveler le certificat…</button><button class="btn" data-a="onglet" data-o="heberg">Copies de sauvegarde</button>' + (f.gestes.accorder ? '<button class="btn" data-a="accorder" data-d="' + esc(f.domaine) + '">Autoriser une restauration (24 h)</button>' : "") + "</div>") +
@@ -393,15 +420,36 @@
     },
     async heberg(f, s) {
       const c = S.copies && S.copies.d === f.domaine ? S.copies : null, peut = f.mien || !!f.accord;
-      return '<h4>Copies de sauvegarde</h4><p class="note">Une copie couvre tout le compte du panneau, pas ce seul site. La restaurer demande d’être le propriétaire, ou son accord.</p>' +
+      const vo = f.voisins || {}, h = vo.hebergement || {}, sv = vo.sauvegarde, pf = vo.php_fin, an = h.analyse, mo = (x) => (x == null ? "—" : x >= 1024 ? (Math.round(x / 102.4) / 10).toLocaleString("fr-FR") + " Go" : nb(Math.round(x)) + " Mo");
+      const src = vo.sources || {}, muet = (k) => src[k] && src[k] !== "ok";
+      // Ce que le panneau sait de ce site, recopié par la sonde pour que son propriétaire le lise sans avoir les droits du panneau.
+      const panneau = '<dl class="g"><dt>espace disque</dt><dd>' + (h.disque_mo == null && h.bases_mo == null ? '<span class="note">pas encore lu</span>' : mo(h.disque_mo) + " de fichiers" + (h.bases_mo != null ? " · " + mo(h.bases_mo) + " de bases" : "")) + "</dd>" +
+        "<dt>PHP</dt><dd>" + (s.php ? esc(s.php) : '<span class="note">version non lue</span>') + (pf ? ' <b style="color:var(--' + (pf.etat === "depassee" ? "danger" : "warn") + ')">' + (pf.etat === "depassee" ? "n’est plus maintenu depuis le " : "fin de support le ") + esc(pf.fin) + "</b>" : s.php && !muet("php") ? ' <span class="note">maintenu</span>' : "") + "</dd>" +
+        "<dt>sauvegarde</dt><dd>" + (!sv ? '<span class="note">le panneau n’a pas dit ce qu’il sauvegarde</span>' : sv.etat === "ok" ? "couverte par un plan" + (sv.seuil_j ? ' <span class="note">copie de moins de ' + sv.seuil_j + " j</span>" : "") : sv.etat === "sans" ? '<b style="color:var(--warn)">aucune sauvegarde connue</b> <span class="note">aucun plan du panneau ne couvre ce site</span>' : '<b style="color:var(--warn)">trop ancienne</b> <span class="note">la dernière date du ' + esc(String(sv.derniere || "?").slice(0, 10)) + "</span>") + "</dd>" +
+        "<dt>analyse antivirus</dt><dd>" + (an ? (an.actif ? "planifiée" + (an.planning ? " · " + esc(an.planning) : "") : "non planifiée") + (an.dernier ? ' <span class="note">dernière le ' + esc(String(an.dernier).slice(0, 10)) + "</span>" : ' <span class="note">jamais faite</span>') : '<span class="note">' + (muet("analyses") ? "non lue" : "aucune cible pour ce site") + "</span>") + "</dd>" +
+        "<dt>courrier</dt><dd>" + (h.courrier ? h.courrier.boites + " boîte" + (h.courrier.boites > 1 ? "s" : "") + (h.courrier.quota_mo ? " · " + mo(h.courrier.utilise_mo) + " sur " + mo(h.courrier.quota_mo) : "") : '<span class="note">' + (muet("courrier") ? "non lu" : "aucune boîte sur ce nom") + "</span>") + "</dd>" +
+        (h.erreurs ? "<dt>erreurs</dt><dd>" + nb(h.erreurs) + ' <span class="note">comptées par le panneau</span></dd>' : "") + "</dl>" +
+        ((h.bases || []).length ? "<h4>Bases de données</h4><div class=\"rows\">" + h.bases.map((b) => '<div class="row c1"><span class="nm"><b class="mono">' + esc(b.nom) + "</b><small>" + esc(b.moteur || "") + (b.derniere_copie ? " · dernière copie le " + esc(String(b.derniere_copie).slice(0, 10)) : " · pas de copie connue") + '</small></span><span class="cote">' + mo(b.taille_mo) + "</span></div>").join("") + "</div>" : "") +
+        '<p class="note">' + (vo.lu ? "Relevé du panneau par la sonde à " + esc(heure(vo.lu)) + " (une fois par heure)." : "Le panneau n’a pas encore été relevé : dans moins d’une heure.") + "</p>";
+      return panneau + '<h4>Copies de sauvegarde</h4><p class="note">Une copie couvre tout le compte du panneau, pas ce seul site. La restaurer demande d’être le propriétaire, ou son accord.</p>' +
         (!c ? '<div class="acts"><button class="btn" data-a="copies" data-d="' + esc(f.domaine) + '">Voir les copies</button></div>' : c.erreur ? '<div class="bandeau al"><div class="sp">' + esc(c.erreur) + "</div></div>" : (c.l.length ? '<div class="rows">' + c.l.map((x) => '<div class="row c2">' + K.pill(x.partielle ? "partielle" : "complète", x.partielle ? "al" : "ok") + '<span class="nm"><b>' + esc(String(x.debut || "").replace("T", " ").slice(0, 16)) + "</b><small>" + (x.compte ? "compte " + esc(x.compte) + " · " : "") + (x.octets ? nb(Math.round(x.octets / 1048576)) + " Mo" : "") + ((x.bases || []).length ? " · bases : " + esc(x.bases.join(", ")) : "") + '</small></span><button class="btn mini dng" data-a="restaurer" data-d="' + esc(f.domaine) + '" data-id="' + esc(x.id) + '"' + (peut ? "" : ' disabled title="accord du propriétaire requis"') + ">Restaurer</button></div>").join("") + "</div>" : '<p class="note">Aucune copie pour ce compte.</p>')) +
         (f.accord ? '<div class="bandeau in"><div class="sp">Accord de restauration donné par ' + esc(f.accord.par) + " jusqu’au " + esc(heure(f.accord.jusqu_a)) + ".</div></div>" : f.gestes.accorder ? '<div class="acts"><button class="btn" data-a="accorder" data-d="' + esc(f.domaine) + '">Autoriser l’administrateur à restaurer (24 h)</button></div>' : "") +
-        '<h4>Dans Hébergement</h4><p class="note">Le disque, les bases, le DNS et le courrier de ce site se lisent dans Hébergement' + (admin() ? "" : ", réservé aux administrateurs") + ".</p>" + (admin() ? '<div class="acts"><button class="btn mini" data-a="hebergement" data-d="' + esc(f.domaine) + '">Ouvrir Hébergement</button></div>' : "");
+        (admin() ? '<h4>Dans Hébergement</h4><p class="note">Pour agir sur le panneau lui-même (bases, DNS, courrier, comptes).</p><div class="acts"><button class="btn mini" data-a="hebergement" data-d="' + esc(f.domaine) + '">Ouvrir Hébergement</button></div>' : "");
     },
     async liens(f) {
       const l = f.liens || [], lib = (g) => (GENRES.find((x) => x[0] === g) || [g, g])[1];
-      return '<p class="note">Un projet, un contact, une machine ou une note rattachés à ce site.</p>' + (l.length ? '<div class="rows">' + l.map((x) => '<div class="row c2">' + K.pill(lib(x.genre), "") + '<span class="nm"><b>' + esc(x.ref) + "</b><small>" + esc(x.note || "") + (x.note ? " · " : "") + esc(heure(x.ts)) + '</small></span><button class="btn mini" data-a="delier" data-d="' + esc(f.domaine) + '" data-g="' + esc(x.genre) + '" data-r="' + esc(x.ref) + '">Retirer</button></div>').join("") + "</div>" : '<p class="note">Aucun rattachement.</p>') +
-        '<div class="acts"><button class="btn" data-a="lier" data-d="' + esc(f.domaine) + '">Rattacher…</button></div>';
+      // Chaque module porte ses liens : les contacts, les notes et les documents rattachés à ce site se lisent chez eux ; les projets et les machines, ici.
+      const ra = f.rattaches || {}, d = esc(f.domaine), R_ = S.rat, tous = l.length + (ra.contacts || []).length + (ra.notes || []).length + (ra.documents || []).length;
+      const rang = (pill, nom, sous, bouton) => '<div class="row c2">' + K.pill(pill, "") + '<span class="nm"><b>' + esc(nom) + "</b><small>" + esc(sous) + "</small></span>" + (bouton || "<span></span>") + "</div>";
+      const liste = (ra.contacts || []).map((x) => rang("contact", x.nom, [x.role && x.role !== "autre" ? x.role : "", x.societe, "dans Contacts"].filter(Boolean).join(" · "), '<button class="btn mini" data-a="rat-retirer" data-d="' + d + '" data-id="' + esc(x.id) + '">Retirer</button>')).join("") +
+        (ra.notes || []).map((x) => rang("note", x.titre || x.id, "dans Notes · " + x.id)).join("") +
+        (ra.documents || []).map((x) => rang("document", x.nom, [x.libelle, "dans la GED"].filter(Boolean).join(" · "))).join("") +
+        l.map((x) => rang(lib(x.genre), x.ref, (x.note ? x.note + " · " : "") + heure(x.ts), '<button class="btn mini" data-a="delier" data-d="' + d + '" data-g="' + esc(x.genre) + '" data-r="' + esc(x.ref) + '">Retirer</button>')).join("");
+      const res = R_.res === null ? "" : R_.erreur ? '<p class="note">' + esc(R_.erreur) + "</p>" : R_.res.length ? '<div class="rows">' + R_.res.map((x, k) => '<button class="row c1" data-a="rat-choisir" data-d="' + d + '" data-k="' + k + '"><span class="nm"><b>' + esc(x.nom) + "</b><small>" + esc(x.sous || "") + '</small></span><span class="note">rattacher</span></button>').join("") + "</div>" : '<p class="note">Rien à ce nom.</p>';
+      return '<p class="note">Les contacts, les notes et les documents rattachés à ce site se lisent dans leurs modules ; les projets et les machines se rattachent ici.</p>' + (tous ? '<div class="rows">' + liste + "</div>" : '<p class="note">Aucun rattachement.</p>') +
+        '<h4>Rattacher</h4><div class="barre"><select data-rat-genre aria-label="Quoi">' + RATTACHABLES.map((g) => '<option value="' + g[0] + '"' + (R_.genre === g[0] ? " selected" : "") + ">" + g[1] + "</option>").join("") + "</select>" +
+        (R_.genre === "contact" ? '<select data-rat-role aria-label="Rôle">' + ROLES.map((x) => "<option" + (R_.role === x ? " selected" : "") + ">" + x + "</option>").join("") + "</select>" : "") +
+        '<input type="search" data-rat-q placeholder="Chercher par nom" aria-label="Chercher" value="' + esc(R_.q) + '"><button class="btn" data-a="rat-chercher">Chercher</button><button class="btn mini" data-a="lier" data-d="' + d + '">Saisir à la main…</button></div>' + res;
     },
     async journal(f) { return journalHtml(f.journal, false) + '<div class="acts"><button class="btn mini" data-a="aller" data-f="journal">Tout le journal</button></div>'; },
   };
@@ -481,6 +529,39 @@
       const t = "Le site " + i.domaine + " est en panne depuis " + i.duree + " (incident n° " + i.id + ") : " + i.diagnostic + " Lis l’incident (sites.incident), propose-moi un plan de dépannage étape par étape, et attends mon accord avant d’agir.";
       if (typeof window.d19Demander === "function" && await window.d19Demander(t)) dire("La demande est écrite dans la conversation : relis-la, puis envoie.", "ok"); else dire("La conversation n’est pas disponible ici.", "err");
     },
+    // ── le lot 3 : la maintenance (tenue par le Sensorium) et les rattachements (portés par leurs modules) ──
+    async mnt(b) {
+      // Depuis la page d'un site ou d'un incident (le site est donné), ou depuis Alertes (le site et la durée se choisissent dans la barre).
+      const d = b.dataset.d || String((R.querySelector("[data-mnt-d]") || {}).value || ""), h0 = +(b.dataset.h || (R.querySelector("[data-mnt-h]") || {}).value || 2);
+      if (!d) return;
+      const m = await fenetre("Maintenance de " + d, champ("Durée", '<select data-h>' + [1, 2, 8, 24].map((x) => '<option value="' + x + '"' + (x === h0 ? " selected" : "") + ">" + x + " h</option>").join("") + "</select>") + champ("Motif", '<input type="text" data-n placeholder="mise à jour, déménagement…" autocomplete="off">', "Les alertes de ce site se taisent le temps voulu ; les mesures continuent. La fenêtre est posée dans le Sensorium."), "Poser la fenêtre");
+      if (!m) return; const h = +val(m, "[data-h]") || 2, motif = val(m, "[data-n]") || "intervention";
+      if (!await geste("sensorium.fenetre_poser", { portee: "site:" + d, debut: utc(Date.now() - 60000), fin: utc(Date.now() + h * 3600000), motif }, "Fenêtre posée : " + d + " se tait " + h + " h.")) return;
+      await tenter("sites.voisins");                                 // Sites relit le Sensorium tout de suite, sans attendre le tour de la sonde
+      if (b.dataset.inc) await tenter("sites.incident_noter", { id: +b.dataset.inc, texte: "Site mis en maintenance pour " + h + " h : " + motif + "." });
+      S.lu = 0; rendre();
+    },
+    async "mnt-fin"(b) { if (await geste("sensorium.fenetre_annuler", { id: +b.dataset.id }, "Fenêtre annulée : les alertes reparlent.")) { await tenter("sites.voisins"); S.lu = 0; rendre(); } },
+    sensorium: () => { if (typeof window.switchTab === "function") window.switchTab("sensorium"); },
+    async "rat-chercher"() {
+      const g = S.rat.genre, q = String((R.querySelector("[data-rat-q]") || {}).value || "").trim(), bas = q.toLowerCase(), dans = (t) => !bas || String(t || "").toLowerCase().includes(bas);
+      S.rat.q = q; S.rat.erreur = ""; S.rat.res = [];
+      try {
+        if (g === "contact") { const r = await agir("contacts.lister", { query: q, limite: 20 }); S.rat.res = ((r && r.contacts) || []).map((x) => ({ id: x.id, nom: x.display_name || "(sans nom)", sous: [x.company, (x.emails || [])[0] && ((x.emails || [])[0].email || (x.emails || [])[0])].filter((y) => typeof y === "string" && y).join(" · ") })); }
+        else if (g === "projet") { const r = await agir("projets.lister", {}); S.rat.res = ((r && r.projets) || []).filter((x) => dans(x.nom)).slice(0, 20).map((x) => ({ id: x.id, nom: x.nom, sous: [x.statut, x.domaine].filter(Boolean).join(" · ") })); }
+        else if (g === "note") { const r = await agir("notes.lister", { q: q, limite: 20 }); S.rat.res = (Array.isArray(r) ? r : (r && r.notes) || []).slice(0, 20).map((x) => ({ id: x.id, nom: x.titre || String(x.id), sous: String(x.id) })); }
+        else if (g === "machine") { const r = await agir("flotte.machines", {}); S.rat.res = ((r && r.machines) || []).filter((x) => dans(x.nom)).slice(0, 20).map((x) => ({ id: x.nom, nom: x.nom, sous: [x.type, x.hote].filter(Boolean).join(" · ") })); }
+      } catch (e) { S.rat.erreur = "Cette liste n’est pas lisible pour ce compte (" + msg(e) + "). « Saisir à la main » reste possible."; }
+      rendre();
+    },
+    async "rat-choisir"(b) {
+      const x = (S.rat.res || [])[+b.dataset.k], d = b.dataset.d, g = S.rat.genre; if (!x) return;
+      // Un contact se rattache DANS Contacts (c'est lui qui porte le lien, et Sites le relit) ; un projet, une note ou une machine, dans les liens du site.
+      const ok = g === "contact" ? await geste("contacts.lier", { id: x.id, kind: "domain", ref: d, role: S.rat.role || "autre" }, x.nom + " rattaché, dans Contacts.")
+        : await geste("sites.lier", { domaine: d, genre: { projet: "project", note: "note", machine: "machine" }[g], ref: x.nom, note: g === "note" ? String(x.id) : "" }, x.nom + " rattaché.");
+      if (ok) { S.rat.res = null; S.rat.q = ""; rendre(); }
+    },
+    async "rat-retirer"(b) { if (await geste("contacts.delier", { id: +b.dataset.id, kind: "domain", ref: b.dataset.d }, "Contact détaché.")) rendre(); },
     async regler(t) {
       const k = t.dataset.regl, v = t.type === "checkbox" ? t.checked : t.dataset.t === "entier" ? Number(t.value) : String(t.value).trim();
       if (await geste("reglages.regler", { cle: "sites." + k, valeur: v }, "Réglage enregistré.")) { S.lu = 0; } else rendre();
@@ -543,8 +624,10 @@
     R.addEventListener("change", (e) => { const t = e.target;
       if (t.matches("[data-soc]")) { S.soc = t.value; S.p = 1; S.calJour = null; rendre(); }
       else if (t.matches("[data-cal-site]")) { S.calSite = t.value; S.calJour = null; rendre(); }
+      else if (t.matches("[data-rat-genre]")) { S.rat.genre = t.value; S.rat.res = null; S.rat.erreur = ""; rendre(); }
+      else if (t.matches("[data-rat-role]")) S.rat.role = t.value;
       else if (t.matches("[data-regl]")) Promise.resolve(A.regler(t)).catch((x) => dire(msg(x), "err")); });
-    R.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.matches("[data-note]")) { const b = R.querySelector("[data-a=noter]"); if (b) b.click(); } });
+    R.addEventListener("keydown", (e) => { if (e.key !== "Enter") return; const b = e.target.matches("[data-note]") ? R.querySelector("[data-a=noter]") : e.target.matches("[data-rat-q]") ? R.querySelector("[data-a=rat-chercher]") : null; if (b) { e.preventDefault(); b.click(); } });
     const v = window.__stVue; window.__stVue = null;
     if (v) { S.page = page_(v); S.sel = null; S.inc = null; }
     await rendre();

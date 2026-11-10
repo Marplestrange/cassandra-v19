@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.7  #922c61
+# VERSION CN : 0.2.8  #673007
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La lecture du Sensorium, sans contexte : le nom d'une mesure en français, son domaine et son objet, les alertes acceptées, les fenêtres de maintenance.
 # MÉTHODE    : des fonctions pures sur des listes de lignes {wkey, value, severity…} : le module (CN_module.py) leur donne les lignes du collecteur et les lignes de sa base ; rien ici ne touche au disque, au réseau ni à l'horloge.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.7 empreinte=922c61 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.8 empreinte=673007 ▼▼▼
 """La lecture du Sensorium : tout ce que l'écran dit d'une mesure vient d'ici, et rien ici n'a d'effet de bord.
 
 Une ligne du collecteur est {wkey, value, severity, observed_at, detail}. Sa clé (« ssl.exemple.org », « service.nginx ») dit sa famille ; la famille dit son domaine ;
@@ -190,7 +190,8 @@ def appliquer_acquits(rows: list, acquits: dict) -> list:
 
 # ---------- les fenêtres de maintenance ----------
 def dans_fenetre(wkey, fenetres, maintenant: str, hote="") -> dict:
-    """La fenêtre (dict) qui couvre cette mesure à cet instant, ou None. Une portée : « * » (tout), « famille:<id> », « machine:<nom> », « domaine:<id> ».
+    """La fenêtre (dict) qui couvre cette mesure à cet instant, ou None. Une portée : « * » (tout), « famille:<id> », « machine:<nom> », « domaine:<id> »,
+    « site:<nom de domaine> » (ce seul site : sa réponse, son certificat, ses contrôles).
     Les instants sont des textes « AAAA-MM-JJ HH:MM:SS » comparables tels quels."""
     fam = famille_de(wkey)
     obj = objet_de(wkey, hote)
@@ -199,7 +200,8 @@ def dans_fenetre(wkey, fenetres, maintenant: str, hote="") -> dict:
             continue
         p = str(f.get("portee") or "")
         if p in ("*", "") or (p.startswith("famille:") and p[8:] == fam) or (p.startswith("domaine:") and p[8:] == domaine_de(fam)) \
-                or (p.startswith("machine:") and obj and obj[0] == "Machines" and obj[1].lower() == p[8:].lower()):
+                or (p.startswith("machine:") and obj and obj[0] == "Machines" and obj[1].lower() == p[8:].lower()) \
+                or (p.startswith("site:") and obj and obj[0] == "Sites" and obj[1].lower() in (p[5:].lower(), "www." + p[5:].lower())):
             return f
     return None
 

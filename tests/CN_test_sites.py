@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bee36a
+# VERSION CN : 0.1.0  #78ff87
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bee36a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=78ff87 ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -77,8 +77,13 @@ class Monde(unittest.TestCase):
         compte = self.ctx.compte
         if cap == "comptes.moi":
             return next((dict(c) for c in self.comptes if c["compte"] == compte), None)
+        voisin = getattr(self, "voisins", {}).get(cap)
+        if voisin is not None and cap.split(".")[0] in ("contacts", "notes", "ged"):      # des lectures que tout compte a pour lui-même
+            return voisin(a) if callable(voisin) else voisin
         if self.droits_reels and compte and compte != CHEF:
             return None
+        if voisin is not None:                                                             # Sensorium, panneau, DNS : des droits qu'un compte ordinaire n'a pas
+            return voisin(a) if callable(voisin) else voisin
         if cap.startswith("certificats.") and self.certificats is not None:
             return {"jours": self.seuil_certificats} if cap == "certificats.seuil" else {"certificats": [{"hote": h, "jours": j, "etat": "valide"} for h, j in self.certificats.items()]}
         if cap == "comptes.lister":
@@ -684,6 +689,26 @@ class Incidents(Monde):
         f = next(x[2] for x in self.n.detecteurs if x[0] == "sites" and x[1].id == nom)
         return f(self.ctx)
 
+    def test_le_proprietaire_est_prevenu_de_la_panne_de_son_site(self):
+        self.tomber()
+        k = self.ctx_detecter("panne_proprietaire")
+        self.assertEqual([(x["objet"], x["compte"]) for x in k], [(("site", "bea.exemple.fr"), BEA)])       # un constat adressé à son compte
+        self.assertIn("HTTP 502", k[0]["detail"])
+        self.n.tick()
+        ouverts = [e for e in self.evts("constat.ouvert") if e["donnees"]["detecteur"] == "panne_proprietaire"]
+        self.assertEqual([e["compte"] for e in ouverts], [BEA])
+        self.ex("incident_connu", id=self.liste()[0]["id"], heures=4)
+        self.assertEqual(self.ctx_detecter("panne_proprietaire"), [])                                        # une panne connue se tait pour lui aussi
+        # le site d'un administrateur : il a déjà le constat des administrateurs, pas de doublon
+        self.e("sites.attribuer", "humain", {"domaine": "chef.exemple.fr", "compte": CHEF}, compte=CHEF)
+        self.reponses["chef.exemple.fr"] = (200, 50, "")
+        self.sonde()
+        self.reponses["chef.exemple.fr"] = (500, 50, "")
+        self.sonde()
+        self.sonde()
+        self.assertEqual([x["objet"][1] for x in self.ctx_detecter("panne")], ["chef.exemple.fr"])          # celle de Béa est dite connue
+        self.assertEqual(self.ctx_detecter("panne_proprietaire"), [])
+
     def test_l_incident_d_un_autre_n_existe_pas(self):
         self.tomber()
         iid = self.liste()[0]["id"]
@@ -971,6 +996,132 @@ class Societes(Monde):
         self.assertEqual(g["attribuer_societe"]["droit"], "sites.administrer")
         self.assertNotIn("vue", g)
         self.assertIn("cassandra", g["incident_prendre"]["qui"])
+
+
+class Voisinage(Monde):
+    """Ce que les autres modules savent d'un site (Sensorium, panneau, DNS, Contacts) : Sites le lit, ne le refait pas, et le montre au propriétaire."""
+
+    def setUp(self):
+        super().setUp()
+        self.ex("declarer", domaine="bea.exemple.fr")
+        self.fenetres, self.acquits = [], {}
+        self.voisins = {
+            "sensorium.etat": lambda a: {"ok": True, "muet": False, "fenetres": [],
+                                         "rows": [{"wkey": "web." + d, "value": "ne répond pas", "severity": "info", "acquit": q} for d, q in self.acquits.items()]},
+            "sensorium.fenetres": lambda a: {"vivantes": self.fenetres, "finies": []},
+            "sensorium.entite": lambda a: [{"domain": "pan.exemple.fr", "cms_type": "WordPress", "version": "6.4", "theme": "astra", "plugins_count": 12}] if a.get("nom") == "cms_sites" else [],
+            "sensorium.secu": {"sites": [{"site": "pan.exemple.fr", "n": 4200, "b": 900}], "robots": {"pan.exemple.fr": [{"robot": "Googlebot", "n": 300}]}},
+            "fastpanel.bases": [{"nom": "pan_prod", "moteur": "mysql", "taille_mo": 120, "site": "pan.exemple.fr", "derniere_copie": "2026-11-09"}],
+            "fastpanel.mail": [{"adresse": "a@pan.exemple.fr", "domaine": "pan.exemple.fr", "quota_mo": 1000, "utilise_mo": 200},
+                               {"adresse": "b@pan.exemple.fr", "domaine": "pan.exemple.fr", "quota_mo": 500, "utilise_mo": 50}],
+            "fastpanel.audit": {"sauvegardes": {"seuil_j": 2, "sans": ["autre.exemple.fr"], "perimees": [], "total": 2}},
+            "fastpanel.php": {"fin_de_support": [{"domaine": "autre.exemple.fr", "php": "7.4", "fin": "2022-11-28"}], "bientot": [], "version_non_lue": []},
+            "fastpanel.scans_cibles": {"sites": [{"domaine": "pan.exemple.fr", "actif": True, "planning": "hebdomadaire", "dernier": "2026-11-08", "rapports": 3}]},
+            "dns.etat": {"zones": [{"domaine": "exemple.fr", "expiration": time.strftime("%Y-%m-%d", time.gmtime(time.time() + 12 * 86400))}]},
+        }
+        self.panneau[0].update({"statut": "actif", "fichiers_mo": 840, "bases_mo": 120, "erreurs": 3})
+
+    def utc(self, dans_s):
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + dans_s))
+
+    def detecter(self, nom):
+        f = next(x[2] for x in self.n.detecteurs if x[0] == "sites" and x[1].id == nom)
+        return f(self.ctx)
+
+    def tomber(self):
+        self.sonde()
+        self.reponses["bea.exemple.fr"] = (502, 60, "")
+        self.sonde()
+        self.sonde()
+
+    def test_le_proprietaire_lit_ce_que_le_panneau_et_le_sensorium_savent_de_son_site(self):
+        self.sonde()
+        self.droits_reels = True                              # Béa n'a ni « fastpanel.voir » ni « sensorium.voir_infra » : elle lit le miroir de la sonde
+        f = self.ex("fiche", domaine="pan.exemple.fr")
+        self.assertEqual(f["statut"], "faite", f)
+        v = f["resultat"]["voisins"]
+        self.assertEqual(v["cms"], {"type": "WordPress", "version": "6.4", "theme": "astra", "extensions": 12})
+        self.assertEqual((v["trafic"]["requetes"], v["trafic"]["robots"], v["trafic"]["premiers_robots"]), (4200, 900, ["Googlebot"]))
+        h = v["hebergement"]
+        self.assertEqual((h["disque_mo"], h["bases_mo"], h["erreurs"]), (840, 120, 3))
+        self.assertEqual([b["nom"] for b in h["bases"]], ["pan_prod"])
+        self.assertEqual(h["courrier"], {"boites": 2, "utilise_mo": 250, "quota_mo": 1500})
+        self.assertTrue(h["analyse"]["actif"])
+        self.assertEqual(v["sauvegarde"]["etat"], "ok")
+        self.assertEqual((v["nom"]["zone"], v["nom"]["jours"] in (11, 12)), ("exemple.fr", True))
+        vue = self.ex("vue")["resultat"]
+        ligne = next(s for s in vue["sites"] if s["domaine"] == "pan.exemple.fr")
+        self.assertEqual(ligne["cms"]["type"], "WordPress")
+        noms = [x for x in vue["vigilances"] if "expire dans" in x["titre"]]
+        self.assertEqual(len(noms), 1)                        # un nom, une alerte : pas une par site qu'il porte
+        self.assertEqual(noms[0]["niveau"], "regarder")
+        self.assertIsNone(self.ex("fiche", domaine="bea.exemple.fr")["resultat"]["voisins"]["hebergement"])     # hors panneau : pas d'hébergement à montrer
+
+    def test_un_site_sans_sauvegarde_ou_sur_un_php_abandonne_se_signale(self):
+        self.sonde()
+        vig = {x["titre"]: x for x in self.ex("vue", compte=CHEF)["resultat"]["vigilances"] if x["site"] == "autre.exemple.fr"}
+        self.assertEqual(vig["autre.exemple.fr : aucune sauvegarde connue"]["niveau"], "regarder")
+        self.assertEqual(vig["autre.exemple.fr : PHP 7.4 n'est plus maintenu"]["niveau"], "regarder")
+        self.assertFalse(any("sauvegarde" in x["titre"] for x in self.ex("vue", compte=CHEF)["resultat"]["vigilances"] if x["site"] == "bea.exemple.fr"))
+
+    def test_une_fenetre_de_maintenance_du_sensorium_fait_taire_le_site_ici_aussi(self):
+        self.tomber()
+        self.assertEqual(len(self.detecter("panne")), 1)
+        self.assertEqual(len(self.detecter("panne_proprietaire")), 1)
+        self.fenetres.append({"id": 7, "portee": "machine:nas", "debut": self.utc(-600), "fin": self.utc(3600), "motif": "disque", "annulee": ""})
+        self.sonde()
+        self.assertEqual(len(self.detecter("panne")), 1)                                     # une fenêtre sur une machine ne couvre pas ce site
+        self.fenetres.append({"id": 8, "portee": "site:bea.exemple.fr", "debut": self.utc(-600), "fin": self.utc(3600), "motif": "mise à jour", "annulee": "", "par": CHEF})
+        self.droits_reels = True
+        self.assertEqual(self.ex("voisins")["resultat"]["fenetres_en_cours"], 1)                # Béa n'a pas le droit de lire le Sensorium : rien ne change, l'ancienne fenêtre reste
+        self.assertEqual(len(self.detecter("panne")), 1)
+        self.assertEqual(self.ex("voisins", compte=CHEF)["resultat"]["fenetres_en_cours"], 2)   # l'administrateur relit tout de suite, sans attendre la sonde
+        self.droits_reels = False
+        self.assertEqual(self.detecter("panne"), [])
+        self.assertEqual(self.detecter("panne_proprietaire"), [])
+        vue = self.ex("vue")["resultat"]
+        ligne = next(s for s in vue["sites"] if s["domaine"] == "bea.exemple.fr")
+        self.assertEqual((ligne["maintenance"]["id"], ligne["maintenance"]["motif"], ligne["maintenance"]["ce_site"]), (8, "mise à jour", True))
+        self.assertEqual([x["niveau"] for x in vue["vigilances"] if x["site"] == "bea.exemple.fr" and "ne répond pas" in x["titre"]], ["info"])
+        self.assertEqual(len(self.ex("incidents", etat="ouverts")["resultat"]["incidents"]), 1)   # l'incident, lui, reste ouvert : on se tait, on n'oublie pas
+        self.assertEqual(self.ex("incident", id=1)["resultat"]["maintenance"]["id"], 8)
+        cal = self.ex("calendrier", domaine="bea.exemple.fr", jours=[time.time() - 86400, time.time() + 60])["resultat"]
+        self.assertIn("maintenance", [e["genre"] for e in cal["jours"][0]["evenements"]])
+        self.fenetres[:] = [dict(self.fenetres[1], annulee=self.utc(0))]                      # annulée : le site reparle
+        self.sonde()
+        self.assertEqual(len(self.detecter("panne")), 1)
+        self.fenetres[:] = [{"id": 9, "portee": "famille:web", "debut": self.utc(-60), "fin": self.utc(600), "motif": "", "annulee": ""}]   # tous les sites
+        self.sonde()
+        self.assertEqual(self.detecter("panne"), [])
+
+    def test_une_alerte_acceptee_dans_le_sensorium_se_tait_ici_aussi(self):
+        self.tomber()
+        self.acquits["bea.exemple.fr"] = {"raison": "site en refonte", "jusqua": self.utc(86400), "par": CHEF}
+        self.sonde()
+        self.assertEqual(self.detecter("panne"), [])
+        ligne = next(s for s in self.ex("vue")["resultat"]["sites"] if s["domaine"] == "bea.exemple.fr")
+        self.assertEqual(ligne["acceptee"]["raison"], "site en refonte")
+        self.acquits.clear()
+        self.sonde()
+        self.assertEqual(len(self.detecter("panne")), 1)
+
+    def test_les_rattachements_se_lisent_chez_ceux_qui_les_portent(self):
+        self.voisins["contacts.pour_cible"] = lambda a: {"contacts": [{"id": 3, "display_name": "Zoé Martin", "company": "Hébergeur", "role": "technique"}]} if a == {"kind": "domain", "ref": "bea.exemple.fr"} else {"contacts": []}
+        self.voisins["notes.de"] = lambda a: {"notes": [{"id": "N-0011", "titre": "Accès et particularités"}]} if a.get("ref") == "bea.exemple.fr" else {"notes": []}
+        self.droits_reels = True
+        r = self.ex("fiche", domaine="bea.exemple.fr")["resultat"]["rattaches"]
+        self.assertEqual(r["contacts"], [{"id": 3, "nom": "Zoé Martin", "societe": "Hébergeur", "role": "technique"}])
+        self.assertEqual(r["notes"], [{"id": "N-0011", "titre": "Accès et particularités"}])
+        self.assertEqual(r["documents"], [])                                                      # la GED ne répond pas : rien, et c'est dit
+        self.assertNotEqual(r["sources"]["documents"], "ok")
+
+    def test_sans_voisins_rien_ne_manque_et_rien_n_est_invente(self):
+        self.voisins = {}
+        self.sonde()
+        f = self.ex("fiche", domaine="pan.exemple.fr")["resultat"]["voisins"]
+        self.assertEqual((f["cms"], f["trafic"], f["nom"], f["sauvegarde"], f["maintenance"], f["sensorium_lu"]), (None, None, None, None, None, False))
+        self.assertEqual(f["hebergement"]["bases"], [])
+        self.assertEqual(set(f["sources"].values()), {"absent"})
 
 
 class Ecran(unittest.TestCase):

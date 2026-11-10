@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.7  #8eae1b
+# VERSION CN : 0.2.8  #62892b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.7 empreinte=8eae1b ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.8 empreinte=62892b ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.2.7"
+version = "0.2.8"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"
@@ -297,7 +297,7 @@ id = "fenetre_poser"
 libelle = "Poser une fenêtre de maintenance : les mesures qu'elle couvre se taisent le temps voulu (les relevés continuent), puis reviennent"
 risque = "faible"
 droit = "agir"
-perimetre = ["une ligne de fenêtre de maintenance"]
+perimetre = ["une ligne de fenêtre de maintenance", "une portée : tout, une famille, un domaine, une machine, ou un seul site (site:<nom de domaine>)"]
 preuve = "la fenêtre existe et n'est pas annulée"
 retour = "annuler la fenêtre"
 paliers = ["raconter", "auto"]

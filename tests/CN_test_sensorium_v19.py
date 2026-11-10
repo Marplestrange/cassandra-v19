@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #20044b
+# VERSION CN : 0.1.0  #2493b9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le Sensorium voit la V19 elle-même (unité cassandra-noyau, sonde HTTP, bases, code scellé, courtier root) et que le module relève la santé de chaque module du noyau.
 # MÉTHODE    : charge CN_sensorium.py sur une base temporaire, simule systemctl et l'API HTTP (aucun réseau, aucune commande système), fabrique de vraies bases SQLite (saines, abîmées, tronquées) et une version scellée, puis monte un vrai noyau avec ses modules pour la santé de dedans.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=20044b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2493b9 ▼▼▼
 import importlib.util
 import json
 import os
@@ -1164,6 +1164,12 @@ class Lecture(unittest.TestCase):
         self.assertIsNone(d("machine.autre.disque", f, "2026-11-02 02:00:00"))
         tout = [{"id": 3, "portee": "*", "debut": "2026-11-02 01:00:00", "fin": "2026-11-02 03:00:00"}]
         self.assertEqual(d("service.nginx", tout, "2026-11-02 02:00:00")["id"], 3)
+        site = [{"id": 5, "portee": "site:exemple.org", "debut": "2026-11-02 01:00:00", "fin": "2026-11-02 03:00:00"}]      # un seul site : sa réponse et son certificat
+        self.assertEqual(d("web.exemple.org", site, "2026-11-02 02:00:00")["id"], 5)
+        self.assertEqual(d("web.www.exemple.org", site, "2026-11-02 02:00:00")["id"], 5)
+        self.assertEqual(d("ssl.exemple.org", site, "2026-11-02 02:00:00")["id"], 5)
+        self.assertIsNone(d("web.autre.org", site, "2026-11-02 02:00:00"))
+        self.assertIsNone(d("service.nginx", site, "2026-11-02 02:00:00"))
         dom = [{"id": 4, "portee": "domaine:certificats", "debut": "2026-11-02 01:00:00", "fin": "2026-11-02 03:00:00"}]
         self.assertEqual(d("ssl.exemple.org", dom, "2026-11-02 02:00:00")["id"], 4)
         self.assertIsNone(d("service.nginx", dom, "2026-11-02 02:00:00"))

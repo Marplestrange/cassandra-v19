@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.7  #4ddd01
+# VERSION CN : 0.2.8  #5676ba
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.7 empreinte=4ddd01 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.8 empreinte=5676ba ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
@@ -72,7 +72,7 @@ def _maintenant() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
-_PORTEE = re.compile(r"^(\*|famille:[a-z0-9_]{1,30}|domaine:[a-z]{1,20}|machine:[A-Za-z0-9._-]{1,60})$")
+_PORTEE = re.compile(r"^(\*|famille:[a-z0-9_]{1,30}|domaine:[a-z]{1,20}|machine:[A-Za-z0-9._-]{1,60}|site:[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?)$")
 _INSTANT = re.compile(r"^\d{4}-\d\d-\d\d[ T]\d\d:\d\d(:\d\d)?$")
 
 
@@ -323,7 +323,7 @@ def brancher(ctx):
     def fenetre_poser(ctx, portee="*", debut="", fin="", motif="", redemarrer=False):
         portee = str(portee or "*").strip()
         if not _PORTEE.match(portee):
-            raise ValueError("portée illisible : « * », « famille:<id> », « domaine:<id> » ou « machine:<nom> »")
+            raise ValueError("portée illisible : « * », « famille:<id> », « domaine:<id> », « machine:<nom> » ou « site:<nom de domaine> »")
         d, f = _instant(debut, "début"), _instant(fin, "fin")
         if f <= d:
             raise ValueError("la fenêtre finit avant de commencer")

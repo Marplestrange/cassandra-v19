@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : sites -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.2.0  #000000 -->
+<!-- VERSION CN : 0.3.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : sites — les sites web suivis par Cassandra -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=8f3056 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.3.0 empreinte=036e18 ▼▼▼ -->
 # sites — les sites web suivis par Cassandra
 
 Porté de la V18 (`sites_vue`, `site_fiche`, `site_pass`, `site_history`, `site_availability`, demandes/accords, liens, journal), lu en entier.
@@ -39,6 +39,16 @@ Trois étendues : un compte voit **ses** sites ; l'administrateur d'une sociét�
 ## La preuve de propriété (sans le panneau)
 Le panneau dit à qui est un site ; hors de lui, rien ne le dit. Un compte qui déclare un site (réglage `preuve_exigee`, vrai par défaut) reçoit un **jeton** et doit le rendre visible, au choix : un enregistrement DNS `TXT _cassandra.<site>` valant `cassandra-site=<jeton>`, ou un fichier `https://<site>/.well-known/cassandra-site.txt` qui le contient. Tant que la preuve manque, le site n'est à personne : il n'est pas dans la table `sites`, pas mesuré, ne donne aucune portée, et un autre compte peut encore le réclamer. `prouver(domaine)` vérifie ; trouvée, le site est au compte et les autres déclarations de ce nom tombent. Une déclaration non prouvée tombe en sept jours. L'administrateur déclare sans preuve, et peut attester à la place d'un compte (il attribue). Les sites déclarés avant cette version restent à leur compte.
 
+## Les voisins : ce que les autres modules savent déjà d'un site
+Sites ne remesure rien de ce qu'un autre module tient : il le lit. Ces lectures demandent des droits sensibles (`sensorium.voir_infra`, `fastpanel.voir`) qu'un compte ordinaire n'a pas ; la sonde, qui tourne sans compte, les recopie donc dans le miroir (clés `sensorium` et `voisins`), et chacun n'y lit que ce qui touche ses sites.
+- **Sensorium, à chaque tour** : les fenêtres de maintenance (`sensorium.fenetres`) et les alertes de site acceptées (`sensorium.etat`, lignes `web.<site>`). Une fenêtre qui couvre le site (`*`, `famille:web`, `domaine:services`, ou `site:<nom>` — portée ajoutée au Sensorium 0.2.8) ou une alerte acceptée là-bas fait taire ici les constats de panne et de lenteur, pour l'administrateur comme pour le propriétaire. L'incident, lui, reste ouvert : on se tait, on n'oublie pas. Sites ne pose aucune fenêtre lui-même : l'écran appelle `sensorium.fenetre_poser` au nom de qui en a le droit, puis `sites.voisins` pour relire sans attendre la sonde.
+- **Sensorium, une fois par heure** : le CMS (`sensorium.entite cms_sites`) et le trafic sur neuf jours (`sensorium.secu`).
+- **Panneau, une fois par heure** : disque et erreurs (`fastpanel.sites`), bases, boîtes de courrier, sauvegardes (`fastpanel.audit` : sans plan, ou trop anciennes), analyses antivirus, fin de support de PHP. Des vigilances en découlent : « aucune sauvegarde connue », « PHP n'est plus maintenu ».
+- **DNS, une fois par heure** : l'échéance du nom de domaine (`dns.etat`) ; à moins de trente jours, une vigilance — une par nom, pas une par site qu'il porte.
+- **Rattachements** : les contacts (`contacts.pour_cible`), les notes (`notes.de`) et les documents (`ged.documents_de`) rattachés à un site se lisent chez eux, au nom du compte qui regarde ; chaque module porte ses liens, Sites les montre sans les recopier. Seuls les projets et les machines restent dans les liens de Sites (leurs modules n'ont pas de lien vers un site).
+- **Avis au propriétaire** : le détecteur `panne_proprietaire` ouvre un constat adressé au compte du propriétaire (le constat `panne` ne va qu'aux administrateurs).
+Une source absente ou muette laisse sa rubrique vide et le dit (`sources`) : rien n'est inventé, et Sites fonctionne sans aucune d'elles.
+
 ## Qui est concerné
 `concerne()` dit si un compte a quelque chose à voir ici (un site, une déclaration à prouver, ou il administre). Le module Affichage s'en sert : le menu ne montre « Sites » qu'à ceux-là.
 
@@ -56,7 +66,9 @@ La veille des échéances, l'alerte, le seuil et le quota d'émission sont l'aff
 
 ## Non porté (à venir)
 - **Dépannage par Cassandra** : l'écran écrit la demande dans la conversation (elle lit `sites.incident`, propose un plan, attend l'accord) ; les gestes de réparation eux-mêmes (relancer PHP, recharger nginx) restent ceux du Sensorium et de Sécurité.
-- **Fenêtres de maintenance et alertes acceptées du Sensorium**, **avis au propriétaire** (constat adressé à son compte) : lot suivant.
+- **Ce que le Sensorium n'expose pas par site** : attaques et erreurs 5xx (ses tables les ventilent par site, aucune lecture ne les rend), prévisions (elles valent pour une machine, pas pour un site). À ouvrir côté Sensorium avant de les montrer ici.
+- **Maintenance posée par un propriétaire sans le droit `sensorium.agir`** : il voit la fenêtre, il ne la pose pas ; pour une panne, il lui reste « panne connue ».
+- **Une seule sonde** : Sites et le Sensorium mesurent encore chacun la réponse d'un site ; l'alignement sur le Sensorium est le lot suivant.
 - **Rapport mensuel par courriel** (`site_rapport*`) : attend le module courrier.
 - **Captures d'écran / vignettes**, **détection du CMS** (`site_thumbnail`, `site_cms`) : à porter avec leur préalable (navigateur sans interface, lecture des fichiers du site).
 - **Vigilances d'analyse antivirus et de sauvegarde par site** : attendent les scans du panneau (`fp_scan_*`) ; l'audit des sauvegardes existe déjà côté `fastpanel`.

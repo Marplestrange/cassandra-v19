@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #52f750
+// VERSION CN : 0.1.0  #72a30a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'onglet Hébergement (V18 : /api/fp/*) -> capacités fastpanel.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=52f750 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=72a30a ▼▼▼
 /* L'onglet Hébergement (V18 : /api/fp/*) -> capacités fastpanel.* du noyau.
    Le module parle français (domaine, proprietaire, quota_go…), l'écran V18 anglais (domain, user, disk_quota_gb…) : ce fichier traduit, il n'invente rien.
    Une source qui ne répond pas rend {ok:false, reason} — l'écran en fait « Source injoignable », pas une liste vide.
@@ -188,7 +188,7 @@
     try { fiche = await agir("sites.fiche", { domaine: d }); } catch (e) {}
     const liens = (fiche && fiche.liens) || [];
     const g = (k) => liens.filter((l) => l.genre === k || l.kind === k);
-    return ok({ domain: d, site: site.domaine ? domaine18(site) : {}, project: g("projet")[0] || null, contacts: g("contact"), tasks: g("tache"), crons: [], notes: g("note"), machines: g("machine"), backups: [], journal: (fiche && fiche.journal) || [] });
+    return ok({ domain: d, site: site.domaine ? domaine18(site) : {}, project: g("project")[0] || g("projet")[0] || null, contacts: g("contact"), tasks: g("tache"), crons: [], notes: g("note"), machines: g("machine"), backups: [], journal: (fiche && fiche.journal) || [] });
   } });
   // Rattacher un domaine à un projet : c'est un lien de la fiche du site.
   P("/api/fp/domain/attach", { faire: async (req, agir) => {
@@ -197,7 +197,7 @@
       if (!d) return { ok: false, reason: "domaine requis" };
       const ref = String(b.project_id || b.project_name || "").trim();
       if (!ref) return { ok: false, reason: "projet requis" };
-      await agir("sites.lier", { domaine: d, genre: "projet", ref, note: String(b.note || "") });
+      await agir("sites.lier", { domaine: d, genre: "project", ref, note: String(b.note || "") });        // le genre que Sites connaît (« projet » était refusé : le rattachement échouait)
       return ok({ domain: d, project: ref });
     } catch (e) { return echec(e); }
   } });
