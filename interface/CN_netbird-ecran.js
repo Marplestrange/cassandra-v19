@@ -232,7 +232,7 @@
       const nonRoot = e.courtier === false, conteneurLa = e.conteneur === "en_marche" || e.conteneur === "arrete", v = S.v || {};
       const oui = (b) => '<span class="pastille ' + (b ? "ok" : "mu") + '">' + (b ? "oui" : "non") + "</span>";
       let h = aiguillage(true) + '<div class="carte"><h2 ' + H2 + ">Ce qui existe sur cette machine</h2><div class=\"hero\">" +
-        '<div><span class="lib">Client NetBird installé</span>' + oui(e.natif) + "</div><div><span class=\"lib\">Docker</span>" + oui(e.docker) + "</div>" +
+        '<div><span class="lib">Client NetBird installé</span><span class="pastille ' + (e.natif || conteneurLa ? "ok" : "mu") + '">' + (e.natif && conteneurLa ? "oui : natif et Docker" : e.natif ? "oui : natif (paquet)" : conteneurLa ? "oui : dans Docker" : "non") + "</span></div><div><span class=\"lib\">Docker</span>" + oui(e.docker) + "</div>" +
         '<div><span class="lib">Conteneur « ' + esc(e.nom_conteneur) + '»</span><span class="pastille ' + (e.conteneur === "en_marche" ? "ok" : e.conteneur === "absent" ? "mu" : "al") + '">' +
         esc({ en_marche: "en marche", arrete: "arrêté", absent: "absent", autre: "autre service (intouché)" }[e.conteneur] || e.conteneur) + "</span></div>" +
         ((e.natif || conteneurLa) ? '<div><span class="lib">Version du client</span><span class="gros" style="font-size:16px">' + esc(v.client || e.version || "—") + '</span><span class="note">' + (v.client_a_jour === true ? "à jour" : v.client_a_jour === false ? "disponible : " + esc(v.derniere) : "") + "</span></div>" : "") +
