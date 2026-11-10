@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.5  #f00222
+# VERSION CN : 0.2.6  #8765be
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.5 empreinte=f00222 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.6 empreinte=8765be ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -89,18 +89,14 @@ SCAN_PATHS = [
     "/etc/apache2/sites-enabled", "/etc/apache2/sites-available"
 ]
 
-CMS_DETECTORS = {
-    "wordpress": ["wp-config.php", "wp-content", "wp-includes"],
-    "joomla": ["configuration.php", "administrator", "media"],
-    "drupal": ["core", "sites/default/settings.php"],
-}
+# Les CMS se reconnaissent dans points/EC_sys_formes.py (opérations cms_marqueurs et cms_site) ; la lecture des racines est dans collect_cms_sites.
 
 SAFE_IDENTIFIER_RE = re.compile(r'^[a-zA-Z0-9_\-]{1,64}$')
 
 SOCKET_ALLOWED_ENTITIES = {
     "active_sessions", "open_ports", "ssl_certificates", "rclone_remotes",
     "tailscale_peers", "fail2ban_banned_ips", "oom_events", "failed_units",
-    "web_sites", "docker_containers", "network_hosts", "system_services",
+    "web_sites", "cms_sites", "docker_containers", "network_hosts", "system_services",
     "fastpanel_domains", "fastpanel_users", "fastpanel_php_versions",
     "vpn_connections", "tunnels", "disk_smart", "redis_stats", "phpfpm_pools",
     "health_scores", "databases", "cron_jobs", "ssh_sessions", "firewall_rules",
@@ -1433,6 +1429,54 @@ def collect_web_sites():
                 # ainsi. La MESURE va dans sa propre colonne.
                 site["reponse"] = "répond" if code != "000" and int(code) < 500 else ("erreur %s" % code if code != "000" else "ne répond pas")
     return sorted(sites, key=lambda x: x["domain"])
+
+
+def collect_cms_sites() -> list:
+    """Le CMS de chaque site dont on connaît la racine (table web_sites) : type et version, lus dans les fichiers du site.
+    La table cms_sites existait depuis toujours et rien ne la remplissait : l'écran Sites disait « CMS inconnu » pour tous.
+    Les LECTURES sont ici, bornées : seuls les chemins que la forme demande, jamais hors de la racine du site (un lien symbolique qui en sort est ignoré),
+    8 Ko au plus par fichier, et il n'en sort qu'un numéro de version. Ni les identifiants de base ni le contenu d'un fichier de configuration ne sont lus.
+    La reconnaissance est un POINT D'ÉVOLUTION (points/EC_sys_formes.py)."""
+    now = datetime.now().isoformat()
+    conn = get_conn()
+    try:
+        lignes = [(r[0], r[1]) for r in conn.execute("SELECT domain, document_root FROM web_sites WHERE document_root IS NOT NULL AND document_root != ''")]
+    finally:
+        conn.close()
+    if not lignes:
+        return []
+    marq = _sys_formes("cms_marqueurs")
+    vus, sortie = {}, []
+    for domaine, racine in lignes:
+        try:
+            base = os.path.realpath(str(racine))
+            if base in ("", os.sep) or not os.path.isdir(base):
+                continue
+            if base not in vus:
+                def dedans(rel, base=base):
+                    p = os.path.realpath(os.path.join(base, rel))
+                    return p if p.startswith(base + os.sep) else None
+                presents, textes = [], {}
+                for rel in marq["presence"]:
+                    p = dedans(rel)
+                    if p and os.path.exists(p):
+                        presents.append(rel)
+                for rel in marq["lecture"]:
+                    p = dedans(rel)
+                    if p and rel in presents and os.path.isfile(p):
+                        try:
+                            with open(p, "r", encoding="utf-8", errors="replace") as f:
+                                textes[rel] = f.read(8192)
+                        except OSError:
+                            pass
+                vus[base] = (presents, textes)
+            presents, textes = vus[base]
+            c = _sys_formes("cms_site", domaine=domaine, chemin=base, presents=presents, textes=textes, now=now) if presents else None
+            if c:
+                sortie.append(c)
+        except Exception as e:
+            print("[CMS] %s : %s" % (domaine, e), file=sys.stderr)
+    return sortie
 
 
 def collect_ssl_certificates():
@@ -5577,7 +5621,15 @@ def _construire_world_model():
                 return jours_ssl[nom]
             return jours_ssl.get("*." + nom.split(".", 1)[1]) if "." in nom else None      # un joker couvre le site
 
-        # Sites web : la réponse HTTP mesurée, le certificat, le serveur
+        # Sites web : la réponse HTTP mesurée, le certificat, le serveur, le CMS quand il est reconnu
+        cms_de = {}
+        try:
+            for r in _q("SELECT domain, cms_type, version FROM cms_sites"):
+                if r["domain"] and r["cms_type"]:
+                    cms_de[r["domain"].strip().lower()] = ("%s %s" % (r["cms_type"], r["version"] or "")).strip()
+        except Exception:
+            pass
+
         def _web(lignes, vus):
             for r in lignes:
                 d = (r["domain"] or "").strip()
@@ -5593,6 +5645,8 @@ def _construire_world_model():
                     morceaux.append("ssl non")
                 if r["php_version"]:
                     morceaux.append("php %s" % r["php_version"])
+                if d.lower() in cms_de:
+                    morceaux.append(cms_de[d.lower()])
                 grave = stt.startswith("ne répond") or stt.startswith("erreur")
                 U("web.%s" % d, "web", " · ".join(morceaux), vus, "warning" if grave else "info")
         _famille("web.", _q("SELECT * FROM web_sites"), _web)
@@ -6674,6 +6728,7 @@ class KnowledgeCollector:
                         _PASSES["complete"]["en_cours"] = True
                         full_tasks = [
                             ("web_sites",              collect_web_sites),
+                            ("cms_sites",              collect_cms_sites),
                             ("ssl_certificates",       collect_ssl_certificates),
                             ("failed_units",           collect_failed_units),
                             ("oom_events",             collect_oom_events),

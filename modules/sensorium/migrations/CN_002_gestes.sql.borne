@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.5  #4f134f
+# VERSION CN : 0.2.6  #4f134f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 002_gestes.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

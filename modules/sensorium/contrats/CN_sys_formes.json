@@ -47,7 +47,9 @@
      "controles_coherence",
      "controle_banniere",
      "page_de_connexion",
-     "controle_connexion"
+     "controle_connexion",
+     "cms_marqueurs",
+     "cms_site"
     ]
    }
   }
@@ -64,6 +66,7 @@
   "un certificat illisible vaut None, jamais une erreur",
   "l'état d'un certificat suit les jours restants : expiré à 0, bientôt jusqu'à 30, valide au-delà",
   "une mesure absente reste vide : rien n'est inventé",
-  "les jours restants se comptent depuis l'instant reçu : jamais l'horloge"
+  "les jours restants se comptent depuis l'instant reçu : jamais l'horloge",
+  "un site sans marqueur connu n'a pas de CMS : None, jamais un type deviné ; une version illisible reste vide"
  ]
 }

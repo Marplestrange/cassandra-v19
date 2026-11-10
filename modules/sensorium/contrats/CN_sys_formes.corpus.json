@@ -5282,6 +5282,301 @@
      "last_check": "2026-10-17T12:00:00.123456"
     }
    }
+  },
+  {
+   "cas": "cms : ce qu'il faut regarder",
+   "entree": {
+    "op": "cms_marqueurs"
+   },
+   "sortie": {
+    "valeur": {
+     "presence": [
+      "administrator",
+      "administrator/manifests/files/joomla.xml",
+      "app/AppKernel.php",
+      "classes",
+      "config/defines.inc.php",
+      "configuration.php",
+      "core/Version.php",
+      "core/lib/Drupal.php",
+      "filefunc.inc.php",
+      "lib/versioncheck.php",
+      "main.inc.php",
+      "matomo.php",
+      "occ",
+      "version.php",
+      "wp-config.php",
+      "wp-includes",
+      "wp-includes/version.php"
+     ],
+     "lecture": [
+      "administrator/manifests/files/joomla.xml",
+      "app/AppKernel.php",
+      "core/Version.php",
+      "core/lib/Drupal.php",
+      "filefunc.inc.php",
+      "version.php",
+      "wp-includes/version.php"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cms wordpress avec sa version",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "blog.exemple.test",
+    "chemin": "/var/www/bea/data/www/blog.exemple.test",
+    "presents": [
+     "wp-config.php",
+     "wp-includes",
+     "wp-includes/version.php"
+    ],
+    "textes": {
+     "wp-includes/version.php": "<?php\n/**\n * WordPress Version\n */\n$wp_version = '6.7.1';\n$wp_db_version = 58975;\n"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "blog.exemple.test",
+     "path": "/var/www/bea/data/www/blog.exemple.test",
+     "cms_type": "wordpress",
+     "version": "6.7.1",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "cms wordpress, version illisible",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "blog.exemple.test",
+    "chemin": "/srv/blog",
+    "presents": [
+     "wp-config.php",
+     "wp-includes"
+    ],
+    "textes": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "blog.exemple.test",
+     "path": "/srv/blog",
+     "cms_type": "wordpress",
+     "version": "",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "cms nextcloud",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "atelier.exemple.test",
+    "chemin": "/var/www/leo/data/www/atelier.exemple.test",
+    "presents": [
+     "occ",
+     "lib/versioncheck.php",
+     "version.php"
+    ],
+    "textes": {
+     "version.php": "<?php\n$OC_Version = array(30,0,2,2);\n$OC_VersionString = '30.0.2';\n$OC_Edition = '';\n"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "atelier.exemple.test",
+     "path": "/var/www/leo/data/www/atelier.exemple.test",
+     "cms_type": "nextcloud",
+     "version": "30.0.2",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "cms drupal",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "portail.exemple.test",
+    "chemin": "/var/www/portail/web",
+    "presents": [
+     "core/lib/Drupal.php"
+    ],
+    "textes": {
+     "core/lib/Drupal.php": "<?php\nclass Drupal {\n  /**\n   * The current system version.\n   */\n  const VERSION = '10.3.6';\n"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "portail.exemple.test",
+     "path": "/var/www/portail/web",
+     "cms_type": "drupal",
+     "version": "10.3.6",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "cms joomla",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "asso.exemple.test",
+    "chemin": "/var/www/asso",
+    "presents": [
+     "configuration.php",
+     "administrator",
+     "administrator/manifests/files/joomla.xml"
+    ],
+    "textes": {
+     "administrator/manifests/files/joomla.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<extension type=\"file\" method=\"upgrade\">\n\t<name>files_joomla</name>\n\t<version>5.2.1</version>\n"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "asso.exemple.test",
+     "path": "/var/www/asso",
+     "cms_type": "joomla",
+     "version": "5.2.1",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "cms prestashop",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "boutique.exemple.test",
+    "chemin": "/var/www/boutique",
+    "presents": [
+     "config/defines.inc.php",
+     "classes",
+     "app/AppKernel.php"
+    ],
+    "textes": {
+     "app/AppKernel.php": "<?php\nclass AppKernel extends Kernel\n{\n    const VERSION = '8.2.0';\n    const MAJOR_VERSION_STRING = '8';\n"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "boutique.exemple.test",
+     "path": "/var/www/boutique",
+     "cms_type": "prestashop",
+     "version": "8.2.0",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "cms dolibarr",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "gestion.exemple.test",
+    "chemin": "/var/www/gestion/htdocs",
+    "presents": [
+     "filefunc.inc.php",
+     "main.inc.php"
+    ],
+    "textes": {
+     "filefunc.inc.php": "<?php\nif (!defined('DOL_APPLICATION_TITLE')) {\n\tdefine('DOL_APPLICATION_TITLE', 'Dolibarr');\n}\nif (!defined('DOL_VERSION')) {\n\tdefine('DOL_VERSION', '20.0.2'); // a.b.c-alpha, a.b.c-beta, a.b.c-rcX or a.b.c\n}\n"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "gestion.exemple.test",
+     "path": "/var/www/gestion/htdocs",
+     "cms_type": "dolibarr",
+     "version": "20.0.2",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "cms matomo",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "stats.exemple.test",
+    "chemin": "/var/www/stats",
+    "presents": [
+     "matomo.php",
+     "core/Version.php"
+    ],
+    "textes": {
+     "core/Version.php": "<?php\nnamespace Piwik;\nfinal class Version\n{\n    const VERSION = '5.1.2';\n"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "stats.exemple.test",
+     "path": "/var/www/stats",
+     "cms_type": "matomo",
+     "version": "5.1.2",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "cms : un site statique n'en a pas",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "vitrine.exemple.test",
+    "chemin": "/var/www/vitrine",
+    "presents": [],
+    "textes": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "cms : un seul marqueur ne suffit pas",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "x.exemple.test",
+    "chemin": "/var/www/x",
+    "presents": [
+     "configuration.php"
+    ],
+    "textes": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "cms : la version ne sort jamais d'un texte quelconque",
+   "entree": {
+    "op": "cms_site",
+    "domaine": "y.exemple.test",
+    "chemin": "/var/www/y",
+    "presents": [
+     "wp-config.php",
+     "wp-includes",
+     "wp-includes/version.php"
+    ],
+    "textes": {
+     "wp-includes/version.php": "root:x:0:0:root:/root:/bin/bash\n$wp_version = 'pas un numero';\n"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "y.exemple.test",
+     "path": "/var/www/y",
+     "cms_type": "wordpress",
+     "version": "",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
   }
  ]
 }

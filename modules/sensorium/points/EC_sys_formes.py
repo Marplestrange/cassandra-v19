@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #154d35
+# VERSION EC : EC0 (référence 0.3.0)  #10006b
 # HÔTE CN    : CN_module.py · sys_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit du système (sorties de commandes, fichiers de configuration, JSON de smartctl) en sessions, ports, certificats, disques, état du matériel et sites web déclarés.
 # MÉTHODE    : fonctions pures, une par mesure ; le nexus lit les sources et décide des replis (who puis ss puis last ; ss puis netstat) ; l'EC ne lit jamais de fichier ni de commande.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=154d35 ▼▼▼
+# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=10006b ▼▼▼
 from datetime import datetime
 import re
 
@@ -758,7 +758,41 @@ def controle_connexion(ok, url, now):
             "valeur": ("la page de connexion s'affiche (%s)" % url) if ok else ("page de connexion introuvable sur %s" % url),
             "last_check": now}
 
+# Le CMS d'un site : reconnu à ses fichiers, jamais deviné. Chaque ligne : le type, les marqueurs qui doivent TOUS être là, le fichier qui porte
+# la version, et le motif qui l'en tire. L'ordre compte : le premier qui correspond l'emporte.
+_VERSION_CMS = r"([0-9][0-9A-Za-z.\-]{0,20})"
+_CMS = (
+    ("wordpress", ("wp-config.php", "wp-includes"), "wp-includes/version.php", r"\$wp_version\s*=\s*['\"]" + _VERSION_CMS + r"['\"]"),
+    ("nextcloud", ("occ", "lib/versioncheck.php"), "version.php", r"\$OC_VersionString\s*=\s*['\"]" + _VERSION_CMS + r"['\"]"),
+    ("drupal", ("core/lib/Drupal.php",), "core/lib/Drupal.php", r"const\s+VERSION\s*=\s*['\"]" + _VERSION_CMS + r"['\"]"),
+    ("joomla", ("configuration.php", "administrator"), "administrator/manifests/files/joomla.xml", r"<version>\s*" + _VERSION_CMS + r"\s*</version>"),
+    ("prestashop", ("config/defines.inc.php", "classes"), "app/AppKernel.php", r"const\s+VERSION\s*=\s*['\"]" + _VERSION_CMS + r"['\"]"),
+    ("dolibarr", ("filefunc.inc.php", "main.inc.php"), "filefunc.inc.php", r"define\(\s*['\"]DOL_VERSION['\"]\s*,\s*['\"]" + _VERSION_CMS + r"['\"]"),
+    ("matomo", ("matomo.php", "core/Version.php"), "core/Version.php", r"const\s+VERSION\s*=\s*['\"]" + _VERSION_CMS + r"['\"]"),
+)
+
+def cms_marqueurs():
+    """Ce que le nexus doit regarder dans la racine d'un site : les chemins dont la PRÉSENCE compte, et ceux dont il faut le début du TEXTE (la version)."""
+    presence, lecture = set(), set()
+    for _, marques, fichier, _m in _CMS:
+        presence.update(marques)
+        lecture.add(fichier)
+    return {"presence": sorted(presence | lecture), "lecture": sorted(lecture)}
+
+def cms_site(domaine, chemin, presents, textes, now):
+    """Le CMS d'un site d'après ce qui est présent dans sa racine ; None quand aucun n'est reconnu. La version reste vide quand son fichier ne la dit pas."""
+    la = set(presents or [])
+    for typ, marques, fichier, motif in _CMS:
+        if all(m in la for m in marques):
+            m = re.search(motif, str((textes or {}).get(fichier) or ""))
+            return {"domain": domaine, "path": chemin, "cms_type": typ, "version": m.group(1) if m else "", "last_check": now}
+    return None
+
 def forme(op, entree):
+    if op == "cms_marqueurs":
+        return cms_marqueurs()
+    if op == "cms_site":
+        return cms_site(entree["domaine"], entree["chemin"], entree.get("presents"), entree.get("textes"), entree["now"])
     if op == "sessions_base":
         return sessions_base(entree["who"], entree["ss"], entree["now"])
     if op == "sessions_last":
