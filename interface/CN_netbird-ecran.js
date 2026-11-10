@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #9d5054
+// VERSION CN : 0.1.0  #865d78
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=9d5054 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=865d78 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -273,8 +273,9 @@
     const oui = (b) => '<span class="pastille ' + (b ? "ok" : "mu") + '">' + (b ? "oui" : "non") + "</span>";
     const fiche = (l, v) => '<div><span class="lib">' + l + '</span><span class="gros" style="font-size:16px">' + v + "</span></div>";
     function cartePrerequis(s) {
-      return '<div class="carte"><h2 ' + H2 + ">Avant d’installer</h2><div class=\"hero\">" + fiche("Docker", oui(s.docker)) + fiche("jq (exigé par le script officiel)", oui(s.jq)) + "</div>" +
+      return '<div class="carte"><h2 ' + H2 + ">Avant d’installer</h2><div class=\"hero\">" + fiche("Docker", oui(s.docker)) + fiche("Docker Compose (exigé par le script officiel)", oui(s.compose)) + fiche("jq (exigé par le script officiel)", oui(s.jq)) + "</div>" +
         (!s.docker ? '<p class="note" style="color:var(--warn)">Docker n’est pas installé : Cassandra ne l’installe pas, installe-le d’abord (le bouton d’installation reste grisé sans lui).</p>' : "") +
+        (s.docker && !s.compose ? '<div class="acts"><span class="note" style="color:var(--warn)">Docker Compose manque : le script officiel d’installation en a besoin, et le bouton d’installation reste grisé sans lui.</span><button class="btn pri" data-a="srv-compose"' + (S.occupe ? " disabled" : "") + ">Installer Docker Compose</button></div>" : "") +
         (!s.jq ? '<div class="acts"><span class="note" style="color:var(--warn)">jq manque : le script officiel d’installation en a besoin, et le bouton d’installation reste grisé sans lui.</span><button class="btn pri" data-a="srv-jq"' + (S.occupe ? " disabled" : "") + ">Installer jq</button></div>" : "") +
         '<p class="note">Il faut aussi un nom de domaine propre au serveur NetBird (pas celui de Cassandra) qui pointe déjà vers cette machine, et les ports 80, 443 et 3478/udp ouverts (avec le proxy « nginx » ou « caddy », ton proxy existant publie le serveur : seul le port 3478/udp doit être libre).</p></div>';
     }
@@ -346,7 +347,7 @@
         '<span class="note" id="nb-s-verd">' + noteDomaines() + "</span></label>";
     }
     function carteInstallation(s) {
-      const f = S.f, d = S.dl, bloque = S.occupe || !s.docker || !s.jq;
+      const f = S.f, d = S.dl, bloque = S.occupe || !s.docker || !s.jq || !s.compose;
       const choix = [["nginx", "nginx (ton nginx publie le serveur)"], ["caddy", "caddy (ton caddy publie le serveur)"], ["traefik", "traefik (tout intégré : ports 80 et 443 libres)"]];
       let h = '<div class="carte"><h2 ' + H2 + ">Installer un serveur NetBird sur cette machine</h2>" +
         '<p class="note">Deux temps : Cassandra télécharge d’abord le script officiel de NetBird, et te montre son empreinte. Elle ne l’exécute qu’après ta confirmation, et seulement s’il n’a pas changé entre-temps.</p>' +
@@ -499,6 +500,10 @@
         return faire(() => agir("netbird.installer_natif"), "Le client NetBird natif est installé : connecte-le depuis la Vue d’ensemble.");
       }
       if (a === "natif-retirer") { if (!(await demander("Désinstaller le client NetBird natif ? La machine quitte le réseau tant qu’elle n’est pas reconnectée."))) return; return faire(() => agir("netbird.retirer_natif"), "Client natif désinstallé."); }
+      if (a === "srv-compose") {
+        if (!(await demander("Installer Docker Compose sur cette machine ? C’est un paquet de la distribution (apt, dnf ou yum), installé par le courtier : le script officiel du serveur NetBird en a besoin. Docker lui-même n’est pas touché.", "Oui, installer"))) return;
+        return faire(() => agir("netbird.serveur_installer_compose"), "Docker Compose est installé : tu peux maintenant télécharger le script du serveur.");
+      }
       if (a === "srv-jq") {
         if (!(await demander("Installer jq sur cette machine ? C’est un petit paquet de la distribution (apt, dnf ou yum), installé par le courtier : le script officiel du serveur NetBird en a besoin."))) return;
         return faire(() => agir("netbird.serveur_installer_jq"), "jq est installé : tu peux maintenant télécharger le script du serveur.");

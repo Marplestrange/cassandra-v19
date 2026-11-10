@@ -27,6 +27,7 @@ Verbes (table fermée) :
   pare_feu                                       ufw ou firewalld : actif ? et lesquels des ports NetBird sont ouverts
   pare_feu_ouvrir <traefik|nginx|caddy>          ouvre les ports publics de NetBird (443/tcp, 3478/udp, et 80/tcp avec traefik) ; rend ceux qu'elle a ouverts elle-même
   pare_feu_fermer <port/proto>…                  referme ces ports, parmi ceux de NetBird seulement
+  installer_compose                              installe Docker Compose (docker-compose-plugin, docker-compose-v2 ou docker-compose : le premier que la distribution offre)
   installer_jq                                   installe jq (exigé par le script officiel) par apt-get, dnf ou yum, et rien d'autre
   ip                                             l'adresse de cette machine, telle que la voit le réseau (pour l'enregistrement DNS)
   retirer [purger]                               docker compose down ; avec « purger » : les volumes et le dossier (les comptes et les machines du serveur sont PERDUS)
@@ -69,6 +70,7 @@ REF_IMAGE = re.compile(r"^[a-z0-9][a-z0-9./_-]{0,120}(:[A-Za-z0-9_.-]{1,127})?$"
 ID_IMAGE = re.compile(r"^sha256:[0-9a-f]{64}$")
 PORTS_NETBIRD = ("80/tcp", "443/tcp", "3478/udp")                  # les seuls ports que le pare-feu ouvre ou referme d'ici
 COMMENTAIRE_PF = "NetBird (Cassandra)"
+PLUGINS_COMPOSE = ("/usr/libexec/docker/cli-plugins/docker-compose", "/usr/lib/docker/cli-plugins/docker-compose", "/usr/local/libexec/docker/cli-plugins/docker-compose", "/usr/local/lib/docker/cli-plugins/docker-compose")
 
 executer = subprocess.run                                       # remplaçables : les bancs n'ont ni Docker, ni réseau, ni ports à eux
 ouvrir = urllib.request.urlopen
@@ -152,8 +154,18 @@ def marquer(donnees, etat):
         json.dump(dict(donnees, etat=etat), f)
 
 
+def compose_cmd():
+    """La commande Docker Compose de la machine : le greffon (`docker compose`) s'il est là, sinon l'ancien `docker-compose` ; None si aucun des deux."""
+    if any(os.path.exists(p) for p in PLUGINS_COMPOSE):
+        return ["docker", "compose"]
+    return ["docker-compose"] if shutil.which("docker-compose") is not None else None
+
+
 def compose(args, delai=60, garder=SORTIE_MAX):
-    return lancer(["docker", "compose", "-f", os.path.join(DOSSIER, "docker-compose.yml")] + args, delai, None, garder)
+    base = compose_cmd()
+    if base is None:
+        refuser("Docker Compose n'est pas installé sur cette machine")
+    return lancer(base + ["-f", os.path.join(DOSSIER, "docker-compose.yml")] + args, delai, None, garder)
 
 
 def conteneurs():
@@ -176,7 +188,7 @@ def conteneurs():
 
 def verbe_etat(a):
     docker = shutil.which("docker") is not None
-    d = {"ok": True, "docker": docker, "jq": shutil.which("jq") is not None, "installe": installe(), "partiel": partiel(), "dossier": DOSSIER, "meta": meta(), "conteneurs": []}
+    d = {"ok": True, "docker": docker, "compose": compose_cmd() is not None, "jq": shutil.which("jq") is not None, "installe": installe(), "partiel": partiel(), "dossier": DOSSIER, "meta": meta(), "conteneurs": []}
     if docker and d["installe"]:
         d["conteneurs"] = conteneurs()
     if not d["installe"]:
@@ -219,6 +231,8 @@ def verbe_installer(a):
         refuser("Docker n'est pas installé sur cette machine")
     if shutil.which("jq") is None:
         refuser("jq n'est pas installé (le script officiel l'exige) : apt install jq")
+    if compose_cmd() is None:
+        refuser("Docker Compose n'est pas installé (le script officiel l'exige) : installe le greffon docker compose, ou docker-compose")
     chemin = os.path.join(DOSSIER, SCRIPT)
     try:
         fd = os.open(chemin, os.O_RDONLY | NOFOLLOW)
@@ -595,6 +609,36 @@ def verbe_pare_feu_fermer(a):
     return {"ok": True, "outil": outil, "fermes": fermes}
 
 
+def verbe_installer_compose(a):
+    if a:
+        refuser("installer_compose n'a pas d'argument")
+    if shutil.which("docker") is None:
+        refuser("Docker n'est pas installé : Cassandra n'installe pas Docker, installe-le d'abord")
+    if compose_cmd() is not None:
+        refuser("Docker Compose est déjà installé")
+    env = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8", "DEBIAN_FRONTEND": "noninteractive"}
+    if shutil.which("apt-get") is not None:
+        for paquet in ("docker-compose-plugin", "docker-compose-v2", "docker-compose"):
+            code, sortie = lancer(["apt-cache", "policy", paquet], 30, env)
+            if code == 0 and "Candidate:" in sortie and "Candidate: (none)" not in sortie:
+                break
+        else:
+            refuser("la distribution n'offre aucun paquet Docker Compose (docker-compose-plugin, docker-compose-v2, docker-compose) : installe-le à la main")
+        commandes = [["apt-get", "update"], ["apt-get", "install", "-y", paquet]]
+    elif shutil.which("dnf") is not None or shutil.which("yum") is not None:
+        commandes = [["dnf" if shutil.which("dnf") is not None else "yum", "install", "-y", "docker-compose-plugin"]]
+    else:
+        refuser("aucun gestionnaire de paquets connu (apt-get, dnf, yum) : installe Docker Compose à la main")
+    sortie = ""
+    for c in commandes:
+        code, sortie = lancer(c, 300, env)
+        if code != 0:
+            return {"ok": False, "code": code, "sortie": sortie}
+    if compose_cmd() is None:
+        return {"ok": False, "code": 1, "sortie": sortie, "erreur": "le paquet est installé mais Docker Compose reste introuvable (ni docker compose, ni docker-compose)"}
+    return {"ok": True, "code": 0, "sortie": sortie, "commande": " ".join(compose_cmd())}
+
+
 def verbe_installer_jq(a):
     if a:
         refuser("installer_jq n'a pas d'argument")
@@ -633,7 +677,7 @@ def verbe_ip(a):
 
 
 VERBES = {"etat": verbe_etat, "telecharger": verbe_telecharger, "installer": verbe_installer, "mettre_a_jour": verbe_mettre_a_jour, "commande": verbe_commande, "nginx": verbe_nginx, "retirer": verbe_retirer, "sauvegarder": verbe_sauvegarder, "sauvegardes": verbe_sauvegardes, "restaurer": verbe_restaurer,
-          "pare_feu": verbe_pare_feu, "pare_feu_ouvrir": verbe_pare_feu_ouvrir, "pare_feu_fermer": verbe_pare_feu_fermer, "ip": verbe_ip, "installer_jq": verbe_installer_jq}
+          "pare_feu": verbe_pare_feu, "pare_feu_ouvrir": verbe_pare_feu_ouvrir, "pare_feu_fermer": verbe_pare_feu_fermer, "ip": verbe_ip, "installer_jq": verbe_installer_jq, "installer_compose": verbe_installer_compose}
 
 
 def serveur(argv):

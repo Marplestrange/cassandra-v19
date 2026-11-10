@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4dc767
+# VERSION CN : 0.1.0  #d6acda
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`, `port_libre` et `shutil` sont remplacés ; le dossier du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4dc767 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d6acda ▼▼▼
 """Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`,
 `port_libre` et `shutil` sont remplacés ; le dossier du serveur est un dossier temporaire. On vérifie surtout ce qui est REFUSÉ et que le script n'est lancé que s'il est celui qu'on a confirmé."""
 import hashlib
@@ -57,6 +57,10 @@ class Monde(unittest.TestCase):
         self.occupes = set()                                  # ("tcp", 80)…
         self.docker = self.jq = True
         self.ufw = self.firewalld = False
+        self.plugin = Path(self.tmp.name) / "docker-compose-plugin"
+        self.plugin.write_text("#!/bin/sh")                           # le greffon `docker compose` est là, sauf test contraire
+        self.m.PLUGINS_COMPOSE = (str(self.plugin),)
+        self.legacy = False                                          # l'ancien binaire `docker-compose`
         self.paquets = "apt-get"                                   # le gestionnaire de paquets de la machine du banc
         self.m.SAUVEGARDES = str(Path(self.tmp.name) / "sauvegardes")
         self.compteur = 0
@@ -65,7 +69,7 @@ class Monde(unittest.TestCase):
         self.m.executer = self.faux
         self.m.ouvrir = self.faux_ouvrir
         self.m.port_libre = lambda proto, port: (proto, port) not in self.occupes
-        self.m.shutil = types.SimpleNamespace(which=lambda x: "/usr/bin/" + x if (x == "docker" and self.docker) or (x == "jq" and self.jq) or (x == "ufw" and self.ufw) or (x == "firewall-cmd" and self.firewalld) or x == self.paquets else None, rmtree=__import__("shutil").rmtree)
+        self.m.shutil = types.SimpleNamespace(which=lambda x: "/usr/bin/" + x if (x == "docker" and self.docker) or (x == "jq" and self.jq) or (x == "ufw" and self.ufw) or (x == "firewall-cmd" and self.firewalld) or x == self.paquets or (x == "docker-compose" and self.legacy) else None, rmtree=__import__("shutil").rmtree)
 
     def faux(self, commande, capture_output=True, text=True, timeout=0, cwd=None, env=None):
         self.cmds.append(list(commande))
@@ -670,6 +674,66 @@ class PareFeu(Monde):
         self.assertEqual(r["ouverts_par_nous"], ["443/tcp", "3478/udp"])
         self.assertEqual([c for c in self.cmds if "--permanent" in c], [["firewall-cmd", "--permanent", "--add-port=443/tcp"], ["firewall-cmd", "--permanent", "--add-port=3478/udp"]])
         self.assertIn(["firewall-cmd", "--reload"], self.cmds)
+
+
+class Compose(Monde):
+    ARGS = ("installer", "v0.40.0", SHA, "netbird.exemple.fr", "admin@exemple.fr")
+    def test_sans_aucun_compose_l_installation_est_refusee_avant_de_toucher_a_quoi_que_ce_soit(self):
+        self.telecharge()
+        self.plugin.unlink()
+        r = self.lance(*self.ARGS, "nginx")
+        self.assertFalse(r["ok"])
+        self.assertIn("Docker Compose", r["erreur"])
+        self.assertFalse(self.cmds, "rien n'est lancé")
+        self.assertFalse(Path(self.dossier, "cassandra.json").exists(), "pas de pile à moitié posée : la marque n'est pas écrite")
+        self.assertFalse(self.lance("etat")["compose"])
+
+    def test_l_ancien_docker_compose_sert_quand_le_greffon_manque(self):
+        self.plugin.unlink()
+        self.legacy = True
+        self.assertTrue(self.lance("etat")["compose"])
+        self.poser()
+        self.assertTrue(self.lance("commande", "restart")["ok"])
+        self.assertEqual(self.cmds[-1][:3], ["docker-compose", "-f", os.path.join(self.dossier, "docker-compose.yml")])
+
+    def test_le_greffon_est_prefere_a_l_ancien_binaire(self):
+        self.legacy = True
+        self.poser()
+        self.lance("commande", "restart")
+        self.assertEqual(self.cmds[-1][:3], ["docker", "compose", "-f"])
+
+    def test_installer_compose_prend_le_premier_paquet_que_la_distribution_offre(self):
+        self.plugin.unlink()
+        self.sorties["apt-cache policy docker-compose-plugin"] = (0, "docker-compose-plugin:\n  Installed: (none)\n  Candidate: (none)")
+        self.sorties["apt-cache policy docker-compose-v2"] = (0, "")
+        self.sorties["apt-cache policy docker-compose"] = (0, "docker-compose:\n  Installed: (none)\n  Candidate: 1.29.2-3")
+
+        def apres_installation(commande, **kw):
+            if commande[:3] == ["apt-get", "install", "-y"]:
+                self.legacy = True
+            return self.faux(commande, **kw)
+        self.m.executer = apres_installation
+        r = self.lance("installer_compose")
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(r["commande"], "docker-compose")
+        self.assertEqual([c for c in self.cmds if c[0] == "apt-get"], [["apt-get", "update"], ["apt-get", "install", "-y", "docker-compose"]])
+
+    def test_installer_compose_refus_et_echecs(self):
+        self.assertIn("déjà installé", self.lance("installer_compose")["erreur"])
+        self.plugin.unlink()
+        self.sorties["apt-cache policy"] = (0, "x:\n  Candidate: (none)")
+        self.assertIn("aucun paquet Docker Compose", self.lance("installer_compose")["erreur"])
+        self.docker = False
+        self.assertIn("Docker n'est pas installé", self.lance("installer_compose")["erreur"])
+        self.assertFalse(self.lance("installer_compose", "x")["ok"])
+        self.assertFalse([c for c in self.cmds if c[:2] == ["apt-get", "install"]])
+
+    def test_un_paquet_installe_mais_sans_compose_est_signale(self):
+        self.plugin.unlink()
+        self.sorties["apt-cache policy"] = (0, "p:\n  Candidate: 1.0")
+        r = self.lance("installer_compose")
+        self.assertFalse(r["ok"])
+        self.assertIn("reste introuvable", r["erreur"])
 
 
 class InstallerJq(Monde):
