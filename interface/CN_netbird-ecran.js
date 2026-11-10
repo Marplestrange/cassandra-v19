@@ -578,10 +578,19 @@
         if (jeton) {
           // Dire POURQUOI le texte collé n’est pas un jeton, sans jamais le répéter : seule sa longueur et sa forme sont données.
           const raison = /\s/.test(jeton) ? "il contient un espace ou un saut de ligne : recopie seulement le jeton" : !/^[A-Za-z0-9_.-]+$/.test(jeton) ? "il contient un caractère inattendu en position " + (jeton.search(/[^A-Za-z0-9_.-]/) + 1) + " (code U+" + jeton.charCodeAt(jeton.search(/[^A-Za-z0-9_.-]/)).toString(16).toUpperCase().padStart(4, "0") + ") : un jeton NetBird n’a que des lettres, des chiffres et _" : jeton.length < 16 ? "il est trop court (" + jeton.length + " caractères)" : jeton.length > 300 ? "il est trop long (" + jeton.length + " caractères)" : !/^nbp_/.test(jeton) ? "il ne commence pas par nbp_ : ce n’est pas un jeton d’accès personnel (c’est peut-être l’identifiant du jeton, ou autre chose)" : "";
-          if (raison) { S.echec = "Ce texte n’est pas un jeton d’accès NetBird : " + raison + ". Un jeton ressemble à nbp_ suivi de lettres et de chiffres, environ 40 caractères."; dire("Jeton refusé : " + raison, "err"); dessiner(); return; }
+          if (raison) { S.echec = "Ce texte n’est pas un jeton d’accès NetBird : " + raison + ". Un jeton ressemble à nbp_ suivi de lettres et de chiffres, environ 40 caractères."; dire("Jeton refusé : " + raison, "err"); refus(); return; }
+        }
+        // La page est redessinée après un refus : on remet ce qui avait été saisi (en mémoire le temps du redessin seulement, rien n’est gardé).
+        function refus() { dessiner(); const j = racine.querySelector("#nb-j-jeton"), u = racine.querySelector("#nb-j-url"); if (j) j.value = jeton; if (u) u.value = url; }
+        const urlNette = url.replace(/\/+$/, "");
+        if (url && !/^(https:\/\/[A-Za-z0-9.-]{1,253}(:\d{1,5})?|http:\/\/(127\.0\.0\.1|localhost)(:\d{1,5})?)$/i.test(urlNette)) {
+          S.echec = "L’adresse de l’API n’est pas valide : il faut https://nom-du-serveur (par exemple https://netbird.exemple.fr), sans chemin. Laisse le champ vide pour utiliser le serveur installé par Cassandra.";
+          dire("Adresse de l’API invalide", "err"); refus(); return;
         }
         if (!jeton && !url) { dire("Rien à enregistrer", "err"); return; }
-        return faire(async () => { if (jeton) await agir("reglages.regler_secret", { cle: "netbird.jeton_api", valeur: jeton }); if (url) await agir("reglages.regler", { cle: "netbird.url_api", valeur: url }); }, "Accès à l’API enregistré.");
+        return faire(async () => { if (jeton) await agir("reglages.regler_secret", { cle: "netbird.jeton_api", valeur: jeton }); if (url) await agir("reglages.regler", { cle: "netbird.url_api", valeur: urlNette });
+          // Une adresse bien formée mais fausse (une lettre de travers) n’est pas reconnue par sa forme : on essaie vraiment l’API, et on le dit si elle ne répond pas.
+          try { await agir("netbird.api_verifier"); } catch (e) { throw new Error("Enregistré, mais l’API ne répond pas avec cette adresse et ce jeton : " + (e.message || e)); } }, "Accès à l’API enregistré et vérifié.");
       }
       if (a === "jeton-oublier") { if (!(await demander("Oublier le jeton d’accès ? Cassandra ne pourra plus administrer le réseau."))) return; return faire(() => agir("reglages.reinitialiser", { cle: "netbird.jeton_api" }), "Jeton oublié."); }
       // ---- le serveur
@@ -613,7 +622,13 @@
       if (a === "m-non") { S.edit = ""; dessiner(); return; }
       if (a === "m-ok") { const nom = val("#nb-m-nom"), id = b.dataset.id; return faire(async () => { await agir("netbird.machine_modifier", { id: id, nom: nom }); S.edit = ""; }, "Machine renommée."); }     // lu AVANT faire : faire redessine, et le champ reprendrait l’ancien nom
       if (a === "m-ssh") { const m = S.g.machines.find((x) => x.id === b.dataset.id); return faire(() => agir("netbird.machine_modifier", { id: b.dataset.id, ssh: !(m && m.ssh) }), "SSH modifié."); }
-      if (a === "m-suppr") { if (!(await demander("Retirer cette machine du réseau NetBird ? Elle devra se reconnecter avec une clé."))) return; return faire(() => agir("netbird.machine_supprimer", { id: b.dataset.id }), "Machine retirée du réseau."); }
+      if (a === "m-suppr") {
+        const m = (S.g.machines || []).find((x) => x.id === b.dataset.id), loc = await agir("netbird.etat").catch(() => null);
+        const locale = !!(m && loc && ((loc.ip && m.ip === loc.ip) || (loc.nom && String(m.nom).toLowerCase() === String(loc.nom).toLowerCase())));
+        const texte = locale
+          ? "« " + m.nom + " » est CETTE machine, celle où tourne Cassandra. La retirer du réseau coupe son client NetBird : elle perd son identité et ne se reconnecte qu’avec une nouvelle clé d’installation. Retirer quand même ?"
+          : "Retirer cette machine du réseau NetBird ? Elle devra se reconnecter avec une clé.";
+        if (!(await demander(texte, locale ? "Oui, retirer cette machine" : undefined))) return; return faire(() => agir("netbird.machine_supprimer", { id: b.dataset.id }), "Machine retirée du réseau."); }
       if (a === "cle-creer") {
         const nom = val("#nb-k-nom"), args = { nom: nom, type: val("#nb-k-type"), jours: parseInt(val("#nb-k-jours"), 10) || 30, groupes: cochees("nb-k-g") };
         if (!nom) { dire("Donne un nom à la clé", "err"); return; }
