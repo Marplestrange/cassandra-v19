@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #31dd57
+// VERSION CN : 0.1.0  #64f129
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages du module sites (vue d'ensemble, tous les sites, la page d'un site, alertes, disponibilité, demandes, journal) ; ses pages sont les sous-entrées de « Sites » dans le menu de gauche
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.sites) qui remplace l'onglet V18 « mysites » ; tout vient des capacités sites.* ; l'état vit hors de la scène, car le shell la redessine à chaque ouverture ; window.stVue reçoit la page demandée par le menu, window.stOpen ouvre un site depuis un autre écran
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=31dd57 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=64f129 ▼▼▼
 // Sites : l'écran du module. Il remplace l'onglet V18 « mysites » ; ses pages sont les sous-menus de « Sites » dans le menu de gauche
 // (le rail interne de l'ancien écran a disparu). Lot 1 : ce que les capacités sites.* savent déjà rendre, sans rien inventer.
 (function () {
@@ -320,7 +320,7 @@
   };
 
   // ── le rendu et la navigation ───────────────────────────────────────────────────────────────────────
-  let tour = 0;
+  let tour = 0, dernier = null;
   async function rendre() {
     if (!R || !document.body.contains(R)) return;
     const moi_ = ++tour, page = P[S.page] ? S.page : "vue";
@@ -330,7 +330,7 @@
     try { html = await P[page](); } catch (e) { html = '<div class="bandeau da"><div class="sp">' + esc(msg(e)) + '</div><button class="btn mini" data-a="recharger">Réessayer</button></div>'; }
     if (moi_ !== tour || !R) return;                                // une navigation plus récente a pris la main
     const q = R.querySelector("[data-q]"), foyer = q && document.activeElement === q;
-    R.innerHTML = html;
+    R.innerHTML = html; dernier = { page: S.page, sel: S.sel, onglet: S.onglet, html: html };
     if (foyer) { const n = R.querySelector("[data-q]"); if (n) { n.focus(); try { n.setSelectionRange(n.value.length, n.value.length); } catch (e) {} } }
   }
   function aller(page) { S.page = P[page] && page !== "site" ? page : "vue"; S.sel = null; S.p = 1; rendre(); const sc = R && R.closest(".tab-content"); if (sc && sc.scrollIntoView) window.scrollTo(0, 0); }
@@ -343,6 +343,8 @@
     if (!document.getElementById("si-css")) { const st = document.createElement("style"); st.id = "si-css"; st.textContent = CSS; document.head.appendChild(st); }
     const titre = corps.parentElement && corps.parentElement.querySelector(".sh-titre"); if (titre) titre.style.display = "none";      // chaque page a son propre titre
     corps.innerHTML = ""; R = document.createElement("div"); R.className = "kit si"; corps.appendChild(R);
+    // Le shell redessine l'onglet à chaque retour sur l'écran : on remet tout de suite ce qu'on montrait, puis on relit. Sans cela la page clignotait sur « Lecture des sites… ».
+    if (dernier && dernier.page === S.page && dernier.sel === S.sel && dernier.onglet === S.onglet && !window.__stVue) R.innerHTML = dernier.html;
     R.addEventListener("click", (e) => { const b = e.target.closest("[data-a]"); if (!b || b.disabled) return; const f = A[b.dataset.a]; if (f) { e.preventDefault(); Promise.resolve(f(b)).catch((x) => dire(msg(x), "err")); } });
     R.addEventListener("input", (e) => { if (e.target.matches("[data-q]")) { S.q = e.target.value; S.p = 1; rendre(); } });
     const v = window.__stVue; window.__stVue = null;
@@ -352,7 +354,7 @@
 
   // Ce que le menu de gauche et les autres écrans appellent (les noms de l'ancien écran sont gardés : Panorama, Hébergement et l'Historique s'en servent).
   window.stVue = function (vue) { if (R && document.body.contains(R)) aller(vue || "vue"); else window.__stVue = vue || "vue"; };
-  window.loadMySites = function () { S.lu = 0; if (R && document.body.contains(R)) return rendre(); };
+  window.loadMySites = function (force) { if (force) S.lu = 0; if (R && document.body.contains(R)) return rendre(); };      // sans « force », la vue lue il y a moins de trente secondes sert encore
   window.stOpen = function (domaine) { if (!actif() && typeof window.switchTab === "function") { S.page = "site"; S.sel = String(domaine || "").toLowerCase().replace(/^www\./, ""); S.onglet = "apercu"; window.switchTab("mysites"); return; } ouvrir(domaine); };
   window.stFiltre = function (f) { S.filtre = { tombes: "tombes", regarder: "regarder", panneau: "panneau", declares: "declares", sans: "sans" }[f] || ""; S.p = 1; if (R && document.body.contains(R)) aller("sites"); else window.__stVue = "sites"; };
 })();
