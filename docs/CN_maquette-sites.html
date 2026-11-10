@@ -1,0 +1,456 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : maquette-sites.html -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : maquette-sites.html -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=b8420c ▼▼▼ -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Sites</title>
+<style>
+:root{
+  --bg:#eef1f5; --bg2:#e9edf3; --surface:rgba(255,255,255,.72); --surface2:rgba(255,255,255,.5); --solid:#fff;
+  --line:rgba(16,24,40,.09); --line2:rgba(16,24,40,.16);
+  --strong:#101828; --txt:#2b3646; --soft:#5a6675; --muted:#667080;
+  --accent:#0a726b; --accent2:#0f9b90; --acc10:rgba(11,124,116,.10); --acc20:rgba(11,124,116,.20);
+  --ok:#047857; --warn:#b45309; --danger:#be123c; --info:#0369a1;
+  --ok10:rgba(4,120,87,.10); --warn10:rgba(180,83,9,.11); --dan10:rgba(190,18,60,.09); --inf10:rgba(3,105,161,.10);
+  --shadow:0 6px 24px rgba(16,24,40,.07),0 1px 2px rgba(16,24,40,.05); --lift:0 14px 40px rgba(16,24,40,.14),0 2px 6px rgba(16,24,40,.06);
+  --r:16px; --rs:10px; --barre:linear-gradient(135deg,#0a726b,#0f9b90);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0e1417; --bg2:#111a1e; --surface:rgba(28,38,44,.78); --surface2:rgba(28,38,44,.5); --solid:#182228;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.17);
+  --strong:#f1f5f7; --txt:#d3dbe0; --soft:#a6b2ba; --muted:#93a0a9;
+  --accent:#3fc7ba; --accent2:#2aa99d; --acc10:rgba(63,199,186,.12); --acc20:rgba(63,199,186,.22);
+  --ok:#34d399; --warn:#f0a94a; --danger:#fb7185; --info:#5cb8e6;
+  --ok10:rgba(52,211,153,.12); --warn10:rgba(240,169,74,.13); --dan10:rgba(251,113,133,.13); --inf10:rgba(92,184,230,.12);
+  --shadow:0 6px 24px rgba(0,0,0,.3); --lift:0 14px 40px rgba(0,0,0,.5); --barre:linear-gradient(135deg,#0b4f4a,#0d6b63);
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1417; --bg2:#111a1e; --surface:rgba(28,38,44,.78); --surface2:rgba(28,38,44,.5); --solid:#182228;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.17);
+  --strong:#f1f5f7; --txt:#d3dbe0; --soft:#a6b2ba; --muted:#93a0a9;
+  --accent:#3fc7ba; --accent2:#2aa99d; --acc10:rgba(63,199,186,.12); --acc20:rgba(63,199,186,.22);
+  --ok:#34d399; --warn:#f0a94a; --danger:#fb7185; --info:#5cb8e6;
+  --ok10:rgba(52,211,153,.12); --warn10:rgba(240,169,74,.13); --dan10:rgba(251,113,133,.13); --inf10:rgba(92,184,230,.12);
+  --shadow:0 6px 24px rgba(0,0,0,.3); --lift:0 14px 40px rgba(0,0,0,.5); --barre:linear-gradient(135deg,#0b4f4a,#0d6b63);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:linear-gradient(160deg,var(--bg2),var(--bg) 40%,var(--bg2));background-attachment:fixed;color:var(--txt);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+.mono,code,.num{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+code{font-size:.92em;color:var(--strong)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+/* barre du haut */
+.haut{background:var(--barre);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px;position:sticky;top:0;z-index:30}
+.haut b{font-weight:650;letter-spacing:.2px}
+@media (max-width:700px){.haut{flex-wrap:wrap}.haut .note{order:9;flex:1 1 100%;margin:0}}
+.haut .note{font-size:12.5px;opacity:.88;margin-right:auto}
+.haut button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:10px;padding:6px 11px;font-size:13px}
+.haut button[aria-pressed="true"]{background:#fff;color:#0a726b}
+.seg{display:inline-flex;gap:2px;background:rgba(255,255,255,.12);padding:3px;border-radius:12px}
+.seg button{border:0;background:transparent}
+/* disposition */
+.app{display:grid;grid-template-columns:262px minmax(0,1fr);gap:18px;max-width:1380px;margin:0 auto;padding:18px 16px 60px}
+@media (max-width:900px){.app{grid-template-columns:1fr}.menu{position:static!important;max-height:none!important}}
+.carte{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+/* menu de gauche */
+.menu{position:sticky;top:66px;align-self:start;padding:8px;max-height:calc(100vh - 84px);overflow:auto}
+.menu h2{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin:10px 12px 6px;font-weight:650}
+.mi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;border-radius:12px;padding:9px 12px;color:var(--txt)}
+.mi:hover{background:var(--acc10)}
+.mi .ic{width:18px;text-align:center;opacity:.75}
+.mi .chev{margin-left:auto;color:var(--muted);transition:transform .2s}
+.mi[aria-expanded="true"]{font-weight:650;color:var(--strong)}
+.mi[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.sous{margin:2px 0 6px 21px;padding-left:10px;border-left:2px solid var(--acc20);display:grid;gap:1px}
+.sous .mi{padding:7px 10px;font-size:14px}
+.sous .mi[aria-current="page"]{background:var(--solid);box-shadow:var(--shadow);color:var(--strong);font-weight:650}
+.sous .mi[aria-current="page"]::before{content:"";position:absolute;margin-left:-22px;width:2px;height:20px;background:var(--accent);border-radius:2px}
+.bad{margin-left:auto;font-size:11.5px;border-radius:999px;padding:1px 8px;background:var(--line);color:var(--soft)}
+.bad.w{background:var(--warn10);color:var(--warn)}.bad.d{background:var(--dan10);color:var(--danger)}
+.neuf{font-size:10px;letter-spacing:.5px;text-transform:uppercase;background:var(--acc10);color:var(--accent);border-radius:6px;padding:1px 5px;margin-left:6px;font-weight:650}
+/* page */
+.fil{font-size:13px;color:var(--muted);margin:2px 0 6px}
+h1{font-size:26px;margin:0 0 4px;color:var(--strong);letter-spacing:-.2px;text-wrap:balance}
+.tete{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.tete .meta{font-size:13px;color:var(--muted);margin-right:auto}
+.btn{background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:7px 13px;font-size:14px;color:var(--strong)}
+.btn:hover{border-color:var(--accent)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.p{color:#06231f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.p{color:#06231f}}
+.btn.d{color:var(--danger);border-color:var(--dan10)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.s{padding:4px 10px;font-size:13px}
+.sec{padding:16px 18px;margin-bottom:16px}
+.sec h2{font-size:16px;margin:0;color:var(--strong)}
+.sh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sh .meta{font-size:12.5px;color:var(--muted)}
+.sh .dr{margin-left:auto;display:flex;gap:6px}
+/* verdict */
+.verdict{display:flex;gap:14px;align-items:stretch;margin-bottom:14px}
+.vm{width:5px;border-radius:4px;background:var(--ok)}.vm.w{background:var(--warn)}.vm.d{background:var(--danger)}
+.verdict p{margin:0}.vt{font-size:19px;font-weight:700;color:var(--strong);text-wrap:balance}.vs{color:var(--soft);font-size:14px;margin-top:2px!important}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:11px 13px;text-align:left}
+button.kpi:hover{border-color:var(--accent)}
+.kpi span{display:block;font-size:12.5px;color:var(--muted)}
+.kpi b{display:block;font:650 22px/1.25 "JetBrains Mono",ui-monospace,monospace;color:var(--strong)}
+.kpi b.w{color:var(--warn)}.kpi b.d{color:var(--danger)}
+.kpi em{display:block;font-style:normal;font-size:12.5px;color:var(--soft)}
+/* pastilles */
+.pl{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:999px;padding:2px 9px;background:var(--line);color:var(--soft);white-space:nowrap}
+.pl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pl.ok{background:var(--ok10);color:var(--ok)}.pl.w{background:var(--warn10);color:var(--warn)}.pl.d{background:var(--dan10);color:var(--danger)}.pl.i{background:var(--inf10);color:var(--info)}
+.pl.nu::before{display:none}
+/* lignes */
+.rows{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.3fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:10px 13px;text-align:left;width:100%}
+button.row:hover{border-color:var(--accent);background:var(--solid)}
+.row .nm{min-width:0}.row .nm b{display:block;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}
+.row .nm small{color:var(--muted);font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .cote{display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:12.5px;color:var(--soft)}
+@media (max-width:700px){.row{grid-template-columns:1fr}.row .cote{align-items:flex-start;flex-direction:row;flex-wrap:wrap}}
+.pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{background:transparent;border:1px solid var(--line2);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--soft)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#06231f}
+input[type=search],input[type=text],input[type=number],select{font:inherit;color:var(--strong);background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:7px 11px;min-width:0}
+/* bande de disponibilité */
+.bande{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;height:26px;min-width:0}
+.bande i{border-radius:2px;background:var(--ok);opacity:.85}
+.bande i.w{background:var(--warn)}.bande i.d{background:var(--danger)}.bande i.n{background:var(--line2)}
+.bande i:hover{opacity:1;transform:scaleY(1.15)}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+svg.sp{width:100%;height:34px;display:block}
+/* certificats */
+.frise{position:relative;height:22px;background:var(--line);border-radius:999px;overflow:hidden}
+.frise i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--ok)}
+.frise i.w{background:var(--warn)}.frise i.d{background:var(--danger)}
+.graduation{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin:4px 0 12px}
+/* fiche (tiroir) */
+.voile{position:fixed;inset:0;background:rgba(16,24,40,.38);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.voile.on{opacity:1;pointer-events:auto}
+.tiroir{position:fixed;top:0;right:0;bottom:0;width:min(640px,100vw);background:var(--bg);z-index:41;box-shadow:var(--lift);transform:translateX(102%);transition:transform .25s cubic-bezier(.4,0,.2,1);overflow:auto;padding:18px}
+.tiroir.on{transform:none}
+.onglets{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:12px 0 14px;overflow:auto}
+.onglets button{background:transparent;border:0;border-bottom:2px solid transparent;padding:7px 11px;color:var(--soft);white-space:nowrap;font-size:14px}
+.onglets button[aria-selected="true"]{color:var(--strong);border-bottom-color:var(--accent);font-weight:650}
+dl.paires{display:grid;grid-template-columns:150px minmax(0,1fr);gap:7px 12px;margin:0;font-size:14px}
+dl.paires dt{color:var(--muted)}dl.paires dd{margin:0;color:var(--strong)}
+.encart{background:var(--acc10);border-radius:12px;padding:10px 13px;font-size:13.5px;margin:10px 0}
+.encart.w{background:var(--warn10)}.encart.d{background:var(--dan10)}
+.gest{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.jl{display:grid;gap:7px;font-size:13.5px}
+.jl div{display:grid;grid-template-columns:86px auto minmax(0,1fr);gap:9px;align-items:baseline}
+.jl .t{color:var(--muted);font-size:12.5px}
+.silence{color:var(--soft);font-size:14px;padding:6px 0}
+.grille2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.champ{display:grid;gap:4px;margin-bottom:12px;font-size:14px}.champ small{color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--strong);color:var(--bg);padding:9px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;z-index:60;max-width:90vw}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="haut">
+  <b>Cassandra</b><span class="note">Maquette interactive · module Sites · données fictives</span>
+  <span class="seg" role="group" aria-label="Portée"><button id="b-admin" aria-pressed="true" onclick="portee(true)">Administrateur</button><button id="b-compte" aria-pressed="false" onclick="portee(false)">Compte</button></span>
+  <button onclick="simuler()" id="b-sim" aria-pressed="false" title="Fait tomber un site pour voir l'écran réagir">Simuler une panne</button>
+  <button onclick="theme()" aria-label="Clair ou sombre">◐</button>
+</div>
+
+<div class="app">
+  <nav class="menu carte" aria-label="Parc">
+    <h2>Parc</h2>
+    <button class="mi"><span class="ic">▦</span>Panorama<span class="chev">›</span></button>
+    <button class="mi"><span class="ic">◍</span>Zones DNS</button>
+    <button class="mi"><span class="ic">▤</span>Flotte<span class="chev">›</span></button>
+    <button class="mi"><span class="ic">◎</span>Tailscale<span class="chev">›</span></button>
+    <button class="mi"><span class="ic">⛨</span>NetBird<span class="chev">›</span></button>
+    <button class="mi" id="m-sites" aria-expanded="true" onclick="plier()"><span class="ic">◉</span>Sites<span class="chev">›</span></button>
+    <div class="sous" id="sous"></div>
+    <button class="mi"><span class="ic">▥</span>Hébergement</button>
+    <button class="mi"><span class="ic">⇄</span>Automatismes</button>
+  </nav>
+  <main id="page" aria-live="polite"></main>
+</div>
+
+<div class="voile" id="voile" onclick="fermer()"></div>
+<aside class="tiroir" id="tiroir" aria-label="Fiche du site"></aside>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+// ───────────────────────── données fictives ─────────────────────────
+const rnd = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(42);
+const jours = (mauvais = []) => Array.from({length: 30}, (_, i) => mauvais.includes(i) ? (i % 2 ? 'd' : 'w') : 'ok');
+const rep = (base) => Array.from({length: 48}, () => Math.round(base * (0.7 + rnd() * 0.9)));
+const SITES = [
+  {d:'boutique.exemple.test', compte:'bea@exemple.test', src:'panneau', fp:'bea', up:true, code:200, ms:182, ssl:74, php:'8.3', dispo:jours([11]), rep:rep(170), sauv:0, analyse:'saine · 3 j', disque:2140, pannes:1, indispo:'12 min'},
+  {d:'blog.exemple.test', compte:'bea@exemple.test', src:'panneau', fp:'bea', up:true, code:200, ms:3460, ssl:12, php:'8.1', dispo:jours([4,5,21]), rep:rep(2900), sauv:1, analyse:'saine · 9 j', disque:860, pannes:3, indispo:'1 h 48'},
+  {d:'atelier.exemple.test', compte:'leo@exemple.test', src:'panneau', fp:'leo', up:true, code:200, ms:96, ssl:61, php:'8.3', dispo:jours(), rep:rep(95), sauv:4, analyse:'jamais', disque:5120, pannes:0, indispo:''},
+  {d:'vitrine.exemple.test', compte:'leo@exemple.test', src:'declare', up:true, code:301, ms:240, ssl:29, dispo:jours([17]), rep:rep(230), pannes:1, indispo:'7 min', demande:{id:14, msg:'Le site est chez un hébergeur mutualisé, j’aimerais le rapatrier.', quand:'hier 16:20'}},
+  {d:'intranet.exemple.test', compte:'zoe@exemple.test', src:'declare', up:true, code:401, ms:60, ssl:201, dispo:jours(), rep:rep(60), pannes:0, indispo:'', protege:true},
+  {d:'archives.exemple.test', compte:'', src:'panneau', fp:'ancien', up:true, code:200, ms:410, ssl:-2, php:'7.4', dispo:jours([27,28,29]), rep:rep(400), sauv:null, analyse:'jamais', disque:310, pannes:1, indispo:'2 jours'},
+  {d:'api.exemple.test', compte:'zoe@exemple.test', src:'panneau', fp:'zoe', up:true, douteux:true, code:null, ms:8000, ssl:88, php:'8.3', dispo:jours([29]), rep:rep(120), sauv:0, analyse:'saine · 1 j', disque:120, pannes:0, indispo:''},
+];
+const JOURNAL = [
+  {t:'04:31', v:'en attente', c:'w', d:'api.exemple.test', x:'Une mesure ratée (délai dépassé) : la panne se dit au deuxième échec.', q:'la sonde'},
+  {t:'03:22', v:'de retour', c:'ok', d:'blog.exemple.test', x:'De nouveau en ligne après 5 min (HTTP 200, 3 460 ms).', q:'la sonde'},
+  {t:'03:17', v:'coupure', c:'d', d:'blog.exemple.test', x:'Injoignable — HTTP 502', q:'la sonde'},
+  {t:'hier 16:20', v:'adossement demandé', c:'i', d:'vitrine.exemple.test', x:'Demande envoyée à l’administrateur.', q:'leo'},
+  {t:'hier 11:02', v:'accord donné', c:'i', d:'boutique.exemple.test', x:'restaurer · 24 h', q:'bea'},
+  {t:'hier 09:40', v:'rattaché', c:'', d:'boutique.exemple.test', x:'project Refonte 2027', q:'bea'},
+  {t:'11-07 08:15', v:'attribué', c:'', d:'atelier.exemple.test', x:'à leo@exemple.test', q:'chef'},
+];
+const ACCORDS = [{d:'boutique.exemple.test', par:'bea@exemple.test', geste:'restaurer', fin:'demain 11:02'}];
+const REGL = {echecs:2, lent:3000, proteges:false, interne:false, delai:8, garde:90, ssl:21};
+const ETAT = {admin:true, sec:'vue', filtre:'', q:'', groupe:true, sel:null, onglet:'etat', mois:'2026-10', panne:false, moi:'bea@exemple.test'};
+
+// ───────────────────────── outils ─────────────────────────
+const E = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $ = id => document.getElementById(id);
+const pill = (t, c) => `<span class="pl ${c||''}">${E(t)}</span>`;
+const sites = () => ETAT.admin ? SITES : SITES.filter(s => s.compte === ETAT.moi);
+function etat(s){
+  if (s.up === false) return {t: s.code ? 'code ' + s.code : 'ne répond pas', c:'d', r:0};
+  if (s.douteux) return {t:'1 échec · à confirmer', c:'w', r:1};
+  if (s.ssl < 0) return {t:'certificat échu', c:'d', r:0};
+  if (s.code === 401 && !REGL.proteges) return {t:'protégé (401)', c:'w', r:1};
+  if (s.ms >= REGL.lent) return {t:'lent · ' + s.ms.toLocaleString('fr-FR') + ' ms', c:'w', r:1};
+  if (s.ssl < REGL.ssl) return {t:'certificat ' + s.ssl + ' j', c:'w', r:1};
+  return {t:'en ligne', c:'ok', r:2};
+}
+const pct = s => Math.round(1000 * s.dispo.filter(x => x === 'ok').length / s.dispo.length) / 10 + (s.dispo.includes('w') ? 0.4 : 0);
+function alertes(){
+  const a = [];
+  sites().forEach(s => { const e = etat(s);
+    if (s.up === false) a.push({n:'d', s, t:`${s.d} ne répond pas`, x:'Injoignable depuis 12 min — HTTP 502', g:'Vérifier'});
+    if (s.ssl < 0) a.push({n:'d', s, t:`Certificat de ${s.d} : échu depuis ${-s.ssl} jour(s)`, x:'Les navigateurs refusent le site.', g:'Renouveler'});
+    else if (s.ssl < REGL.ssl) a.push({n:'w', s, t:`Certificat de ${s.d} : ${s.ssl} jours`, x:'À renouveler avant l’échéance.', g:'Renouveler'});
+    if (s.up !== false && s.ms >= REGL.lent && !s.douteux) a.push({n:'w', s, t:`${s.d} est lent (${s.ms.toLocaleString('fr-FR')} ms)`, x:`Le code est bon, mais au-delà de ${REGL.lent} ms un visiteur s’en va.`, g:'Voir la courbe'});
+    if (s.douteux) a.push({n:'i', s, t:`${s.d} : une mesure ratée`, x:`Pas encore une panne : il en faut ${REGL.echecs} de suite.`, g:'Sonder maintenant'});
+    if (s.src === 'panneau' && s.sauv == null) a.push({n:'w', s, t:`${s.d} : aucune sauvegarde connue`, x:'Aucun plan ne couvre ce compte du panneau.', g:'Ouvrir Sauvegardes'});
+  });
+  return a.sort((x, y) => 'dwi'.indexOf(x.n) - 'dwi'.indexOf(y.n));
+}
+const demandes = () => sites().filter(s => s.demande);
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2600); }
+
+// ───────────────────────── menu de gauche : les sous-menus de Sites ─────────────────────────
+const MENU = () => [
+  ['vue', 'Vue d’ensemble', ''],
+  ['sites', 'Tous les sites', String(sites().length)],
+  ['dispo', 'Disponibilité', '', true],
+  ['certs', 'Certificats', '', true],
+  ['alertes', 'Alertes', String(alertes().filter(a => a.n !== 'i').length), false, alertes().some(a => a.n === 'd') ? 'd' : (alertes().some(a => a.n === 'w') ? 'w' : '')],
+  ['demandes', ETAT.admin ? 'Demandes d’adossement' : 'Mes demandes', String(demandes().length), false, demandes().length ? 'w' : ''],
+  ['journal', 'Journal', ''],
+  ['rapports', 'Rapports', '', true],
+  ...(ETAT.admin ? [['reglages', 'Réglages de la sonde', '', true]] : []),
+];
+function menu(){
+  $('sous').innerHTML = MENU().map(([id, nom, n, neuf, c]) =>
+    `<button class="mi" ${ETAT.sec === id ? 'aria-current="page"' : ''} onclick="aller('${id}')">${E(nom)}${neuf ? '<span class="neuf">nouveau</span>' : ''}${n && n !== '0' ? `<span class="bad ${c||''}">${n}</span>` : ''}</button>`).join('');
+}
+function plier(){ const b = $('m-sites'), o = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', o); $('sous').hidden = !o; }
+function aller(sec, filtre){ ETAT.sec = sec; if (filtre !== undefined) ETAT.filtre = filtre; fermer(); rendre(); window.scrollTo({top:0}); }
+function portee(a){ ETAT.admin = a; $('b-admin').setAttribute('aria-pressed', a); $('b-compte').setAttribute('aria-pressed', !a); if (!a && ETAT.sec === 'reglages') ETAT.sec = 'vue'; fermer(); rendre(); }
+function theme(){ const r = document.documentElement, sombre = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches; r.dataset.theme = sombre ? 'light' : 'dark'; }
+function simuler(){
+  ETAT.panne = !ETAT.panne; const s = SITES[0];
+  Object.assign(s, ETAT.panne ? {up:false, code:502, ms:60} : {up:true, code:200, ms:182});
+  s.dispo[29] = ETAT.panne ? 'd' : 'ok';
+  $('b-sim').setAttribute('aria-pressed', ETAT.panne); $('b-sim').textContent = ETAT.panne ? 'Rétablir le site' : 'Simuler une panne';
+  toast(ETAT.panne ? 'boutique.exemple.test : deuxième échec de suite, la panne est dite.' : 'boutique.exemple.test : de nouveau en ligne.');
+  rendre(); if (ETAT.sel) ouvrir(ETAT.sel);
+}
+
+// ───────────────────────── morceaux communs ─────────────────────────
+const tete = (titre, meta, droite = '') => `<p class="fil">Parc › Sites › ${E(titre)}</p><div class="tete"><h1>${E(titre)}</h1><span class="meta">${meta}</span>${droite}</div>`;
+const bande = s => `<div class="bande" role="img" aria-label="Disponibilité de ${E(s.d)} sur 30 jours : ${pct(s)} %">${s.dispo.map((x, i) => `<i class="${x === 'ok' ? '' : x}" title="${30 - i === 1 ? 'aujourd’hui' : 'il y a ' + (29 - i) + ' j'} : ${x === 'ok' ? 'sans coupure' : (x === 'w' ? 'coupure courte' : 'coupure longue')}"></i>`).join('')}</div>`;
+function courbe(s, h = 34){
+  const max = Math.max(...s.rep, REGL.lent * 0.5), w = 240, pts = s.rep.map((v, i) => `${(i / (s.rep.length - 1) * w).toFixed(1)},${(h - 3 - v / max * (h - 6)).toFixed(1)}`).join(' ');
+  const seuil = REGL.lent <= max ? `<line x1="0" x2="${w}" y1="${(h - 3 - REGL.lent / max * (h - 6)).toFixed(1)}" y2="${(h - 3 - REGL.lent / max * (h - 6)).toFixed(1)}" stroke="var(--warn)" stroke-dasharray="3 3" stroke-width="1"/>` : '';
+  return `<svg class="sp" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Temps de réponse de ${E(s.d)} sur 24 h, dernier : ${s.ms} ms">${seuil}<polyline points="${pts}" fill="none" stroke="${s.ms >= REGL.lent ? 'var(--warn)' : 'var(--accent)'}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function ligne(s){
+  const e = etat(s);
+  return `<button class="row" onclick="ouvrir('${s.d}')"><div class="nm"><b><code>${E(s.d)}</code></b><small>${ETAT.admin ? E(s.compte || 'sans compte · panneau ' + s.fp) + ' · ' : ''}${s.src === 'panneau' ? 'panneau' + (s.php ? ' · PHP ' + s.php : '') : 'déclaré à la main'}</small>
+    <div class="pills">${pill(e.t, e.c)}${s.ssl >= 0 && s.ssl >= REGL.ssl ? pill('SSL ' + s.ssl + ' j', 'ok') : ''}${s.src === 'panneau' ? (s.sauv == null ? pill('aucune sauvegarde', 'w') : pill(s.sauv === 0 ? 'sauvegardé aujourd’hui' : 'sauvegardé il y a ' + s.sauv + ' j', s.sauv > 2 ? 'w' : 'ok')) : pill('hors panneau', '')}${s.demande ? pill('adossement demandé', 'i') : ''}</div></div>
+    <div>${bande(s)}</div><div class="cote"><span class="num">${pct(s).toLocaleString('fr-FR')} % · 30 j</span><span class="num">${s.code ?? '—'} · ${s.ms.toLocaleString('fr-FR')} ms</span></div></button>`;
+}
+
+// ───────────────────────── les pages ─────────────────────────
+const PAGES = {
+  vue(){
+    const l = sites(), al = alertes(), bas = l.filter(s => s.up === false), graves = al.filter(a => a.n === 'd'), moy = al.filter(a => a.n === 'w');
+    const m = graves.length ? 'd' : (moy.length ? 'w' : '');
+    const titre = bas.length ? `Un site est tombé : ${bas[0].d} (code ${bas[0].code})` : graves.length ? graves[0].t : moy.length ? `${l.length} sites répondent · ${moy.length} point${moy.length > 1 ? 's' : ''} à regarder` : `Les ${l.length} sites répondent`;
+    const sans = l.filter(s => s.src === 'panneau' && s.sauv == null).length;
+    const sous = bas.length ? `${l.length - bas.length} autres répondent. La panne est dite au ${REGL.echecs}ᵉ échec de suite, et datée du premier.` : (moy.length || graves.length) ? (al.filter(a => a.n !== 'i' && a.t !== titre).slice(0, 2).map(a => a.t).join(' ; ') || 'Rien d’autre à signaler') + '.' : `Aucune panne, aucun certificat court.${sans ? ' ' + sans + ' site(s) du panneau sans sauvegarde connue.' : ''}`;
+    const dm = Math.round(l.reduce((a, s) => a + pct(s), 0) / l.length * 10) / 10, cmin = Math.min(...l.map(s => s.ssl));
+    return tete('Vue d’ensemble', `${ETAT.admin ? 'administrateur' : 'compte ' + E(ETAT.moi)} · ${l.length} sites · relevé 04:31 · sonde toutes les 5 min`, `<button class="btn" onclick="toast('Sonde lancée : résultats dans quelques secondes.')">Sonder maintenant</button><button class="btn p" onclick="aller('sites');declarer()">Déclarer un site</button>`) + `
+    <section class="sec carte"><div class="verdict"><div class="vm ${m}"></div><div><p class="vt">${E(titre)}</p><p class="vs">${E(sous)}</p></div></div>
+      <div class="kpis">
+        <button class="kpi" onclick="aller('sites','${bas.length ? 'tombes' : ''}')"><span>En ligne</span><b class="${bas.length ? 'd' : ''}">${l.length - bas.length} / ${l.length}</b><em>${bas.length ? bas.length + ' ne répond pas' : 'tous répondent'}</em></button>
+        <button class="kpi" onclick="aller('dispo')"><span>Disponibilité 30 j</span><b>${dm.toLocaleString('fr-FR')} %</b><em>${l.reduce((a, s) => a + s.pannes, 0)} coupures sur le mois</em></button>
+        <button class="kpi" onclick="aller('certs')"><span>Certificats</span><b class="${cmin < 0 ? 'd' : cmin < REGL.ssl ? 'w' : ''}">${cmin < 0 ? '1 échu' : cmin + ' j'}</b><em>${cmin < 0 ? 'depuis ' + -cmin + ' jours' : 'le plus court'}</em></button>
+        <button class="kpi" onclick="aller('alertes')"><span>Alertes</span><b class="${graves.length ? 'd' : moy.length ? 'w' : ''}">${graves.length + moy.length}</b><em>${graves.length} grave${graves.length > 1 ? 's' : ''} · ${moy.length} à regarder</em></button>
+        <button class="kpi" onclick="aller('demandes')"><span>Demandes</span><b class="${demandes().length ? 'w' : ''}">${demandes().length}</b><em>${ETAT.admin ? 'adossement à traiter' : 'en attente'}</em></button>
+        <button class="kpi" onclick="aller('sites','sans')"><span>Sauvegardes</span><b class="${sans ? 'w' : ''}">${l.filter(s => s.src === 'panneau' && s.sauv != null).length} / ${l.filter(s => s.src === 'panneau').length}</b><em>${sans ? sans + ' site sans copie' : 'tous couverts'}</em></button>
+      </div></section>
+    <section class="sec carte"><div class="sh"><h2>Ce qui demande un geste</h2><span class="meta">le plus grave d’abord</span><span class="dr"><button class="btn s" onclick="aller('alertes')">Tout voir</button></span></div>${al.length ? `<div class="rows">${al.slice(0, 4).map(alerteHtml).join('')}</div>` : '<p class="silence"><b>Rien ne demande un geste.</b></p>'}</section>
+    <div class="grille2">
+      <section class="sec carte"><div class="sh"><h2>Les plus fragiles</h2><span class="meta">disponibilité sur 30 jours</span></div><div class="rows">${l.slice().sort((a, b) => pct(a) - pct(b)).slice(0, 3).map(s => `<button class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) auto" onclick="ouvrir('${s.d}')"><div class="nm"><b><code>${E(s.d)}</code></b></div>${bande(s)}<span class="num">${pct(s).toLocaleString('fr-FR')} %</span></button>`).join('')}</div></section>
+      <section class="sec carte"><div class="sh"><h2>Derniers événements</h2><span class="dr"><button class="btn s" onclick="aller('journal')">Tout le journal</button></span></div>${journalHtml(4)}</section>
+    </div>
+    <section class="sec carte"><div class="sh"><h2>D’où viennent les chiffres</h2><span class="meta">et leur âge</span></div><div class="rows">
+      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('sonde', 'ok')}<div class="nm"><b>La sonde de Cassandra</b><small>code, durée, certificat lu sur le port 443</small></div><span class="num">il y a 2 min</span></div>
+      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('miroir', 'ok')}<div class="nm"><b>Comptes et panneau</b><small>relus à chaque tour de sonde ; c’est ce que voit un compte ordinaire</small></div><span class="num">il y a 2 min</span></div>
+      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('panneau', '')}<div class="nm"><b>La base du panneau</b><small>propriétaire, PHP, certificat géré, sauvegardes</small></div><span class="num">04:31</span></div></div></section>`;
+  },
+  sites(){
+    let l = sites(); const q = ETAT.q.toLowerCase(), f = ETAT.filtre;
+    if (q) l = l.filter(s => (s.d + ' ' + s.compte).toLowerCase().includes(q));
+    if (f === 'tombes') l = l.filter(s => s.up === false); else if (f === 'regarder') l = l.filter(s => etat(s).r < 2); else if (f === 'panneau') l = l.filter(s => s.src === 'panneau'); else if (f === 'declares') l = l.filter(s => s.src === 'declare'); else if (f === 'sans') l = l.filter(s => s.src === 'panneau' && s.sauv == null);
+    l.sort((a, b) => etat(a).r - etat(b).r || pct(a) - pct(b));
+    const chips = [['', 'tous'], ['tombes', 'tombés'], ['regarder', 'à regarder'], ['panneau', 'du panneau'], ['declares', 'déclarés'], ['sans', 'sans sauvegarde']];
+    let corps;
+    if (!l.length) corps = '<p class="silence"><b>Aucun site</b> pour ce filtre.</p>';
+    else if (ETAT.admin && ETAT.groupe){ const g = {}; l.forEach(s => (g[s.compte || 'Sans compte Cassandra'] = g[s.compte || 'Sans compte Cassandra'] || []).push(s));
+      corps = Object.keys(g).sort().map(c => `<h2 style="font-size:12px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin:14px 2px 6px">${E(c)} · ${g[c].length}</h2><div class="rows">${g[c].map(ligne).join('')}</div>`).join(''); }
+    else corps = `<div class="rows">${l.map(ligne).join('')}</div>`;
+    return tete('Tous les sites', `${sites().length} sites · le pire d’abord · un clic ouvre la fiche`, `<button class="btn p" onclick="declarer()">Déclarer un site</button>`) + `
+    <section class="sec carte"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><input type="search" placeholder="Chercher un site${ETAT.admin ? ', un compte' : ''}" aria-label="Chercher" value="${E(ETAT.q)}" oninput="ETAT.q=this.value;rendre(true)" style="flex:1 1 220px" id="q">
+      ${ETAT.admin ? `<button class="chip" aria-pressed="${ETAT.groupe}" onclick="ETAT.groupe=!ETAT.groupe;rendre()">grouper par compte</button>` : ''}</div>
+      <div class="chips">${chips.map(c => `<button class="chip" aria-pressed="${f === c[0]}" onclick="ETAT.filtre='${c[0]}';rendre()">${c[1]}</button>`).join('')}</div>
+      <div id="decl"></div>${corps}
+      <div class="leg"><span><i style="background:var(--ok)"></i>jour sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span></div></section>`;
+  },
+  dispo(){
+    const l = sites().slice().sort((a, b) => pct(a) - pct(b));
+    return tete('Disponibilité', '30 jours, un trait par jour · temps de réponse sur 24 h', `<button class="btn" onclick="toast('Export CSV des mesures (maquette).')">Exporter</button>`) + `
+    <section class="sec carte"><div class="rows">${l.map(s => `<button class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr) auto" onclick="ouvrir('${s.d}','historique')"><div class="nm"><b><code>${E(s.d)}</code></b><small>${s.pannes} coupure${s.pannes > 1 ? 's' : ''}${s.indispo ? ' · ' + s.indispo + ' indisponible' : ''}</small></div>${bande(s)}${courbe(s)}<div class="cote"><span class="num"><b style="color:var(--strong)">${pct(s).toLocaleString('fr-FR')} %</b></span><span class="num">${s.ms.toLocaleString('fr-FR')} ms</span></div></button>`).join('')}</div>
+      <div class="leg"><span><i style="background:var(--ok)"></i>sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span><span>┄ seuil « lent » : ${REGL.lent.toLocaleString('fr-FR')} ms</span></div></section>
+    <section class="sec carte"><div class="sh"><h2>Comment c’est compté</h2></div><p class="silence">Une mesure toutes les 5 minutes. Une panne se dit au ${REGL.echecs}ᵉ échec de suite et commence au premier ; une panne qui dure encore compte jusqu’à maintenant. Un site qu’on ne mesure plus depuis deux jours sort du calcul : il n’a pas 100 %, il n’a pas de mesure.</p></section>`;
+  },
+  certs(){
+    const l = sites().slice().sort((a, b) => a.ssl - b.ssl);
+    return tete('Certificats', 'lus sur le port 443, une fois par heure · même échus', '') + `
+    <section class="sec carte"><div class="graduation"><span>aujourd’hui</span><span>30 j</span><span>60 j</span><span>90 j</span></div><div class="rows">${l.map(s => { const c = s.ssl < 0 ? 'd' : s.ssl < REGL.ssl ? 'w' : ''; return `<div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) auto"><div class="nm"><b><code>${E(s.d)}</code></b><small>${s.src === 'panneau' ? 'géré par le panneau' : 'hors panneau : à renouveler chez l’hébergeur'}</small></div>
+      <div class="frise" role="img" aria-label="${s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' jours' : 'expire dans ' + s.ssl + ' jours'}"><i class="${c}" style="width:${Math.max(3, Math.min(100, s.ssl / 90 * 100))}%"></i></div>
+      <div class="cote" style="flex-direction:row;align-items:center;gap:8px">${pill(s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : s.ssl + ' j', c || 'ok')}${s.src === 'panneau' ? `<button class="btn s ${c ? 'p' : ''}" onclick="toast('Confirmation : l’autorité limite les émissions par semaine. (maquette)')">Renouveler</button>` : ''}</div></div>`; }).join('')}</div></section>
+    <section class="sec carte"><div class="sh"><h2>Prévenir avant l’échéance</h2><span class="neuf">nouveau</span></div><p class="silence">Un rappel part au propriétaire à ${REGL.ssl} jours, puis à 7 jours, puis le jour même. Un certificat échu reste visible ici avec son nombre de jours, au lieu de disparaître de la liste.</p></section>`;
+  },
+  alertes(){
+    const al = alertes();
+    return tete('Alertes', `${al.filter(a => a.n === 'd').length} graves · ${al.filter(a => a.n === 'w').length} à regarder · ${al.filter(a => a.n === 'i').length} pour information`, `<button class="btn" onclick="toast('Fenêtre de maintenance : les alertes d’un site sont suspendues pour une durée choisie. (maquette)')">Fenêtre de maintenance<span class="neuf">nouveau</span></button>`) + `
+    <section class="sec carte">${al.length ? `<div class="rows">${al.map(alerteHtml).join('')}</div>` : '<p class="silence"><b>Rien ne demande un geste.</b></p>'}</section>
+    <section class="sec carte"><div class="sh"><h2>Qui est prévenu</h2></div><p class="silence">L’administrateur reçoit toutes les alertes ; le propriétaire reçoit celles de ses sites (panne confirmée, retour, certificat court). Une mesure ratée isolée ne prévient personne.</p></section>`;
+  },
+  demandes(){
+    const l = demandes();
+    return tete(ETAT.admin ? 'Demandes d’adossement' : 'Mes demandes', ETAT.admin ? 'un compte demande qu’un site déclaré passe au panneau' : 'une demande ouverte par site', '') + `
+    <section class="sec carte">${l.length ? l.map(s => `<div class="encart w"><b>${E(s.d)}</b> — demandé par ${E(s.compte)} ${E(s.demande.quand)}<br>« ${E(s.demande.msg)} »
+      <div class="gest">${ETAT.admin ? `<button class="btn p" onclick="repondre('${s.d}',true)">Adossé, c’est fait</button><button class="btn" onclick="repondre('${s.d}',false)">Refuser…</button>` : `<button class="btn" onclick="repondre('${s.d}',false,true)">Annuler ma demande</button>`}<button class="btn" onclick="ouvrir('${s.d}')">Ouvrir la fiche</button></div></div>`).join('') : '<p class="silence"><b>Aucune demande ouverte.</b></p>'}</section>
+    <section class="sec carte"><div class="sh"><h2>Accords en cours</h2><span class="neuf">nouveau</span><span class="meta">un propriétaire autorise un geste lourd, pour un temps borné</span></div>
+      ${ACCORDS.filter(a => ETAT.admin || a.par === ETAT.moi).length ? `<div class="rows">${ACCORDS.filter(a => ETAT.admin || a.par === ETAT.moi).map(a => `<div class="row" style="grid-template-columns:minmax(0,1fr) auto auto"><div class="nm"><b><code>${E(a.d)}</code> · ${E(a.geste)}</b><small>donné par ${E(a.par)} · tombe si le site change de compte</small></div>${pill('jusqu’à ' + a.fin, 'i')}${!ETAT.admin ? `<button class="btn s d" onclick="ACCORDS.length=0;rendre();toast('Accord révoqué.')">Révoquer</button>` : '<span></span>'}</div>`).join('')}</div>` : '<p class="silence">Aucun accord en cours.</p>'}</section>`;
+  },
+  journal(){
+    return tete('Journal', 'les gestes et la veille, fondus · un clic ouvre le site', '') + `<section class="sec carte"><div class="chips">${['tout', 'coupures', 'certificats', 'gestes', 'demandes et accords'].map((c, i) => `<button class="chip" aria-pressed="${i === 0}" onclick="toast('Filtre « ${c} » (maquette).')">${c}</button>`).join('')}</div>${journalHtml(99)}</section>`;
+  },
+  rapports(){
+    const l = sites(), s = l[0], vide = ETAT.mois < '2026-11';
+    return tete('Rapports', 'un mois, un site : ce que la sonde a vu', `<select aria-label="Mois" onchange="ETAT.mois=this.value;rendre()">${['2026-11', '2026-10', '2026-09'].map(m => `<option ${m === ETAT.mois ? 'selected' : ''}>${m}</option>`).join('')}</select>`) + `
+    <section class="sec carte"><div class="sh"><h2><code>${E(s.d)}</code> · ${ETAT.mois}</h2><span class="dr"><button class="btn s" onclick="toast('PDF du rapport (maquette).')">Télécharger</button><button class="btn s" onclick="toast('Envoi au propriétaire (maquette).')">Envoyer au propriétaire</button></span></div>
+      ${vide ? '<p class="silence"><b>Pas de mesure ce mois-là.</b> La sonde suit ce site depuis le 2 novembre : le rapport dit « pas de sonde », il n’emprunte pas les chiffres d’un autre mois.</p>' : `<div class="kpis"><div class="kpi"><span>Disponibilité</span><b>${pct(s).toLocaleString('fr-FR')} %</b><em>2 326 mesures</em></div><div class="kpi"><span>Coupures</span><b class="${s.pannes ? 'w' : ''}">${s.pannes}</b><em>${s.indispo || '0 min'} indisponible</em></div><div class="kpi"><span>Réponse</span><b>${s.ms} ms</b><em>au pire 461 ms</em></div><div class="kpi"><span>Sauvegardes</span><b>9</b><em>réussies ce mois</em></div></div>
+      <div style="margin-top:14px">${bande(s)}</div>`}</section>
+    <section class="sec carte"><div class="sh"><h2>Envoi automatique</h2><span class="neuf">nouveau</span></div><p class="silence">Le 1er de chaque mois, chaque propriétaire reçoit le rapport de ses sites. À activer compte par compte.</p></section>`;
+  },
+  reglages(){
+    const num = (k, lib, aide, min, max) => `<label class="champ"><span>${lib}</span><input type="number" min="${min}" max="${max}" value="${REGL[k]}" onchange="REGL.${k}=Math.max(${min},Math.min(${max},+this.value||${min}));rendre();toast('Réglage enregistré.')" style="max-width:140px"><small>${aide}</small></label>`;
+    const coche = (k, lib, aide) => `<label class="champ" style="grid-template-columns:auto 1fr;align-items:start;column-gap:10px"><input type="checkbox" ${REGL[k] ? 'checked' : ''} onchange="REGL.${k}=this.checked;rendre();toast('Réglage enregistré.')" style="margin-top:5px"><span>${lib}<br><small>${aide}</small></span></label>`;
+    return tete('Réglages de la sonde', 'ils changent ce que l’écran appelle une panne', '') + `<div class="grille2">
+      <section class="sec carte"><div class="sh"><h2>Quand dire qu’un site va mal</h2></div>${num('echecs', 'Mesures ratées de suite avant une panne', '1 : dès la première. 2 évite les fausses alertes.', 1, 5)}${num('lent', 'Seuil « lent », en millisecondes', 'Au-delà, le site répond mais le visiteur s’en va.', 500, 60000)}${num('ssl', 'Certificat signalé sous (jours)', '', 3, 90)}${coche('proteges', 'Un 401 ou 403 est « en ligne »', 'Pour les sites protégés par un mot de passe.')}</section>
+      <section class="sec carte"><div class="sh"><h2>Comment la sonde travaille</h2></div>${num('delai', 'Délai d’attente d’une requête (s)', '', 2, 60)}${num('garde', 'Garde des mesures (jours)', 'Le journal des gestes se garde un an au moins.', 7, 730)}${coche('interne', 'Autoriser les adresses internes', 'Fermé par défaut : la sonde ne sort que vers l’Internet public.')}
+        <div class="encart">Essaie : passe le seuil « lent » à 4000, ou coche « 401 est en ligne » — les alertes et les pastilles changent tout de suite.</div></section></div>`;
+  },
+};
+const alerteHtml = a => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(a.n === 'd' ? 'grave' : a.n === 'w' ? 'à regarder' : 'info', a.n === 'i' ? 'i' : a.n)}<button class="nm" style="background:none;border:0;text-align:left;padding:0" onclick="ouvrir('${a.s.d}')"><b>${E(a.t)}</b><small>${E(a.x)}</small></button><button class="btn s" onclick="toast('${E(a.g)} : ${a.s.d} (maquette).')">${E(a.g)}</button></div>`;
+function journalHtml(n){ const l = JOURNAL.filter(j => ETAT.admin || SITES.find(s => s.d === j.d && s.compte === ETAT.moi)).slice(0, n); return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span><a href="#" onclick="ouvrir('${j.d}');return false" style="color:inherit"><code>${E(j.d)}</code></a> · ${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : '<p class="silence">Aucun geste encore.</p>'; }
+function rendre(garderFocus){ menu(); $('page').innerHTML = PAGES[ETAT.sec](); if (garderFocus){ const q = $('q'); if (q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } } }
+
+// ───────────────────────── déclarer : les refus, dits avant d'envoyer ─────────────────────────
+function declarer(){ const z = $('decl'); if (!z) return; z.innerHTML = `<div class="encart"><label class="champ" style="margin:0"><b>Déclarer un site</b><input type="text" id="dn" placeholder="mon-site.exemple.test" oninput="jugerNom()" autocomplete="off"><small id="dj">Le nom nu ; « www. », le protocole et le chemin sont retirés.</small></label><div class="gest"><button class="btn p" id="db" disabled onclick="toast('Site déclaré : la sonde le suit au prochain tour.');$('decl').innerHTML=''">Déclarer</button><button class="btn" onclick="$('decl').innerHTML=''">Annuler</button></div></div>`; $('dn').focus(); }
+function jugerNom(){
+  let d = $('dn').value.trim().toLowerCase().replace(/^https?:\/\//, '').split(/[\/?#]/)[0].replace(/^.*@/, '').replace(/:\d+$/, '').replace(/\.$/, '').replace(/^www\./, '');
+  const partages = ['github.io', 'gouv.fr', 'co.uk', 'wordpress.com', 'netlify.app'];
+  let m = '', ok = false;
+  if (!d) m = 'Le nom nu ; « www. », le protocole et le chemin sont retirés.';
+  else if (!/^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/.test(d)) m = '✕ nom de domaine invalide';
+  else if (partages.includes(d)) m = '✕ ce nom est partagé par les sites de beaucoup de gens : déclare ton site, pas le nom qui les porte tous';
+  else if (SITES.some(s => s.d === d && s.src === 'panneau')) m = '✕ ce site est géré par le panneau : c’est à l’administrateur de te l’attribuer';
+  else if (SITES.some(s => s.d === d)) m = '✕ ce site appartient déjà à un compte';
+  else if (SITES.some(s => s.d.endsWith('.' + d))) m = '✕ des sites d’autres comptes dépendent de ce nom : c’est à l’administrateur de te l’attribuer';
+  else { m = '✓ ' + d + ' peut être déclaré'; ok = true; }
+  $('dj').textContent = m; $('dj').style.color = ok ? 'var(--ok)' : (m[0] === '✕' ? 'var(--danger)' : ''); $('db').disabled = !ok;
+}
+function repondre(d, fait, annule){ const s = SITES.find(x => x.d === d); delete s.demande; rendre(); toast(annule ? 'Demande annulée.' : fait ? 'Demande close : adossé. Le compte est prévenu.' : 'Demande refusée. Le compte lira la raison.'); }
+
+// ───────────────────────── la fiche d'un site ─────────────────────────
+function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; const s = SITES.find(x => x.d === d), e = etat(s), mien = s.compte === ETAT.moi && !ETAT.admin, hors = s.src !== 'panneau';
+  const acc = ACCORDS.find(a => a.d === d);
+  const O = [['etat', 'État'], ['historique', 'Historique'], ['gestes', 'Gestes'], ['liens', 'Rattachements'], ['journal', 'Journal']];
+  const corps = {
+    etat: `<dl class="paires"><dt>réponse</dt><dd>${s.code ?? 'sans réponse'} en ${s.ms.toLocaleString('fr-FR')} ms <small style="color:var(--muted)">sonde · il y a 2 min</small></dd>
+      <dt>disponibilité 30 j</dt><dd>${pct(s).toLocaleString('fr-FR')} % · ${s.pannes} coupure${s.pannes > 1 ? 's' : ''}${s.indispo ? ' · ' + s.indispo : ''}</dd>
+      <dt>certificat</dt><dd>${s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : 'expire dans ' + s.ssl + ' j'} <small style="color:var(--muted)">lu sur le port 443</small></dd>
+      <dt>hébergement</dt><dd>${hors ? 'hors panneau, déclaré à la main' : 'panneau · compte ' + E(s.fp) + (s.php ? ' · PHP ' + s.php : '')}</dd>
+      <dt>sauvegarde</dt><dd>${hors ? '<small style="color:var(--muted)">hors panneau</small>' : s.sauv == null ? 'aucune copie connue' : s.sauv === 0 ? 'aujourd’hui' : 'il y a ' + s.sauv + ' j'}</dd>
+      <dt>propriétaire</dt><dd>${ETAT.admin ? E(s.compte || 'aucun compte Cassandra') : 'toi'}</dd></dl>
+      ${s.douteux ? `<div class="encart w"><b>Une mesure ratée, pas encore une panne.</b> Si la prochaine échoue aussi, la panne sera dite et datée de 04:31.</div>` : ''}
+      ${ETAT.admin && s.compte ? `<div class="encart">Ce site appartient à ${E(s.compte)}. Tu vois son état, pas son contenu.</div>` : ''}`,
+    historique: `<p class="silence" style="padding-top:0">30 jours, un trait par jour</p>${bande(s)}<p class="silence">Temps de réponse, 24 h${s.ms >= REGL.lent ? ' — au-dessus du seuil « lent »' : ''}</p>${courbe(s, 70)}
+      <div class="gest"><button class="btn" onclick="aller('rapports')">Rapport du mois</button><button class="btn" onclick="toast('Ouvre les courbes de l’onglet Historique (maquette).')">Courbes détaillées</button></div>`,
+    gestes: `<div class="gest"><button class="btn p" onclick="toast('Sonde de ${d} : ${s.code ?? 'sans réponse'} en ${s.ms} ms.')">Sonder maintenant</button>${hors ? '' : `<button class="btn" onclick="toast('Confirmation demandée : émissions limitées par semaine. (maquette)')">Renouveler le certificat</button><button class="btn" ${mien || acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Choix de la copie à restaurer (maquette).')">Restaurer une sauvegarde…</button>`}</div>
+      ${hors ? '<div class="encart">Hors panneau : la sonde, l’historique et les rattachements seulement.' + (mien && !s.demande ? ' <button class="btn s" onclick="SITES.find(x=>x.d===\'' + d + '\').demande={id:99,msg:\'À rapatrier.\',quand:\'à l’instant\'};rendre();ouvrir(\'' + d + '\');toast(\'Demande envoyée à l’administrateur.\')">Demander l’adossement</button>' : '') + '</div>' : ''}
+      ${acc ? `<div class="encart">Accord de restauration donné par ${E(acc.par)} jusqu’à ${E(acc.fin)}.</div>` : (!hors && mien ? `<div class="gest"><button class="btn" onclick="ACCORDS.push({d:'${d}',par:ETAT.moi,geste:'restaurer',fin:'demain 04:31'});rendre();ouvrir('${d}');toast('Accord donné pour 24 h.')">Autoriser l’administrateur à restaurer (24 h)</button></div>` : '')}
+      ${!hors ? '<p class="silence">Redémarrer, lancer une sauvegarde, lire les journaux : pas encore portés en V19, et dits comme tels au lieu d’un bouton grisé sans raison.</p>' : ''}
+      ${ETAT.admin ? `<div class="gest"><button class="btn" onclick="toast('Transférer : les liens, accords et demande de l’ancien compte ne suivent pas. (maquette)')">Transférer à un compte…</button>${hors ? `<button class="btn d" onclick="toast('Retirer de la liste (maquette).')">Retirer de la liste</button>` : ''}</div>` : (hors && mien ? `<div class="gest"><button class="btn d" onclick="toast('Retirer de ma liste (maquette).')">Retirer de ma liste</button></div>` : '')}`,
+    liens: `<div class="rows"><div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('project', 'nu')}<div class="nm"><b>Refonte 2027</b><small>rattaché hier</small></div><button class="btn s">Retirer</button></div></div><div class="gest"><button class="btn" onclick="toast('Choisir un projet, un contact, une machine ou une note (maquette).')">Rattacher…</button></div>`,
+    journal: (() => { const l = JOURNAL.filter(j => j.d === d); return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span>${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : '<p class="silence">Aucun geste encore sur ce site.</p>'; })(),
+  };
+  $('tiroir').innerHTML = `<div class="sh"><h1 style="font-size:20px"><code>${E(d)}</code></h1><span class="dr"><button class="btn" onclick="fermer()">Fermer</button></span></div><div class="pills">${pill(e.t, e.c)}${pill(hors ? 'hors panneau' : 'panneau', 'nu')}${s.demande ? pill('adossement demandé', 'i') : ''}</div>
+    <div class="onglets" role="tablist">${O.map(o => `<button role="tab" aria-selected="${ETAT.onglet === o[0]}" onclick="ETAT.onglet='${o[0]}';ouvrir('${d}')">${o[1]}</button>`).join('')}</div><div role="tabpanel">${corps[ETAT.onglet]}</div>`;
+  $('tiroir').classList.add('on'); $('voile').classList.add('on');
+}
+function fermer(){ ETAT.sel = null; ETAT.onglet = 'etat'; $('tiroir').classList.remove('on'); $('voile').classList.remove('on'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fermer(); });
+rendre();
+</script>
+</body>
+</html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->
