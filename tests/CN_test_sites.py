@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f34898
+# VERSION CN : 0.1.0  #22a946
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f34898 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=22a946 ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -786,6 +786,25 @@ class Calendrier(Monde):
         self.assertEqual(m["disponibilite"], round(100.0 * 269 / 300, 2))
         self.assertFalse(m["tenu"])
         self.assertIsNone(m["avant"])                                                            # pas de mesure sur la période d'avant : pas de chiffre emprunté
+
+    def test_les_tendances_donnent_la_bande_la_courbe_et_l_ecart(self):
+        maintenant = time.time()
+
+        def poser(il_y_a_j, n, rates, ms=150):
+            for i in range(n):
+                self.db.ecrire("INSERT INTO mesures(ts, domaine, code, ms, up, ssl_jours, erreur) VALUES (?,?,?,?,?,?,?)",
+                               (maintenant - il_y_a_j * 86400 + i, "bea.exemple.fr", 200 if i >= rates else 502, ms, 1 if i >= rates else 0, 60, ""))
+        poser(2.5, 10, 0)            # il y a trois jours : sans coupure
+        poser(1.5, 10, 5)            # avant-hier : coupure longue
+        poser(0.5, 100, 1, 400)      # les dernières 24 heures : coupure courte
+        s = self.ex("tendances", jours=7)["resultat"]["sites"]["bea.exemple.fr"]
+        self.assertEqual(s["jours"], ["sans", "sans", "sans", "sans", "ok", "longue", "courte"])
+        self.assertEqual(s["ms"][-3:], [150, 150, 400])
+        self.assertEqual((s["disponibilite"], s["avant"]), (round(100.0 * 114 / 120, 2), None))           # pas de période d'avant : pas d'écart inventé
+        poser(9.5, 10, 0)
+        self.assertEqual(self.ex("tendances", jours=7)["resultat"]["sites"]["bea.exemple.fr"]["avant"], 100.0)
+        self.assertNotIn("bea.exemple.fr", self.ex("tendances", compte=LEO, jours=7)["resultat"]["sites"])   # chacun ses sites
+        self.assertEqual(self.ex("tendances", jours="beaucoup")["statut"], "echec")
 
     def test_un_mois_ecrit_se_lit_et_un_mois_sans_mesure_le_dit(self):
         r = self.ex("calendrier", domaine="bea.exemple.fr", mois="2026-02")

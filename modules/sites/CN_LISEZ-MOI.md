@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : sites -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.4.0  #000000 -->
+<!-- VERSION CN : 0.5.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : sites — les sites web suivis par Cassandra -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.4.0 empreinte=438e95 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.5.0 empreinte=8e2abd ▼▼▼ -->
 # sites — les sites web suivis par Cassandra
 
 Porté de la V18 (`sites_vue`, `site_fiche`, `site_pass`, `site_history`, `site_availability`, demandes/accords, liens, journal), lu en entier.
@@ -54,6 +54,9 @@ Quand le Sensorium suit un site (il est servi par la machine) et le voit tomber 
 
 ## L'aperçu d'un site
 Une fois par jour et par site qui répond (quatre au plus par tour de sonde), Sites lit les 96 premiers Ko de la page d'accueil et en garde le titre, la description, la langue, le générateur, l'icône et — si la page en déclare une sur son propre nom — l'image de présentation (table `apercus`). Les images sont lues en HTTPS, sur le site lui-même seulement, bornées (24 Ko pour l'icône, 200 Ko pour l'image) et gardées en « data: » : l'interface n'affiche aucune image venue d'ailleurs. Pour un site hébergé ailleurs, où le Sensorium n'entre pas, le générateur déclaré par la page donne le CMS. Ce n'est pas une capture d'écran : celle-ci demanderait un navigateur sans interface sur la machine.
+
+## Ce que l'écran dessine
+L'écran suit la maquette (`docs/CN_maquette-sites.html`). `tendances(jours)` lui donne, pour chaque site de la portée, de quoi dessiner sa ligne en une lecture : la bande (un état par jour — sans coupure, coupure courte, coupure longue, maintenance, pas de mesure), la durée de réponse de chaque jour (la courbe) et la disponibilité de la période d'avant (l'écart). La ligne d'un site porte en plus son poids sur le disque et l'état de son analyse antivirus, d'où les chiffres « Sauvegardes », « Analyses » et « Disque » de la vue d'ensemble et les filtres « sans sauvegarde » et « jamais analysés ». L'écran dit au menu de gauche la page montrée et les compteurs de ses sous-menus (`window.d19Suivre`).
 
 ## Qui est concerné
 `concerne()` dit si un compte a quelque chose à voir ici (un site, une déclaration à prouver, ou il administre). Le module Affichage s'en sert : le menu ne montre « Sites » qu'à ceux-là.

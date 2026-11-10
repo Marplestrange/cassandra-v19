@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #d74704
+// VERSION CN : 0.1.0  #3f00b7
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=d74704 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=3f00b7 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -300,9 +300,24 @@
     if (vue && E.actif && E.e === "agents-ia" && E.vue !== vue) { E.vue = vue; E.actif.vue = vue; change = true; }
     if (change) rendre();
   };
+  // Un écran dit au menu où il en est : la sous-entrée à allumer quand on navigue DANS l'écran, et les compteurs de ses sous-menus (« Incidents 2 », « Alertes 6 »).
+  // La disposition les garde et les repose à chaque relecture du menu. Sites s'en sert ; tout écran à sous-menus le peut.
+  window.d19Suivre = function (entreeId, vue, compteurs) {
+    if (compteurs) { E.compteurs = E.compteurs || {}; E.compteurs[entreeId] = compteurs; }
+    if (!E.d) return;
+    let change = poserCompteurs(E.d);
+    if (vue && E.actif && E.e === entreeId && E.vue !== vue) { E.vue = vue; E.actif.vue = vue; change = true; }
+    if (change) rendre();
+  };
+  function poserCompteurs(d) {
+    let change = false;
+    (d && d.groupes || []).forEach((g) => g.entrees.forEach((e) => { const par = (E.compteurs || {})[e.id]; if (par) e.enfants.forEach((f) => { const n = par[f.vue] || 0; if (f.badge && f.badge.n !== n) { f.badge.n = n; change = true; } }); }));
+    return change;
+  }
   // pour un utilisateur ordinaire, l'unique agent visible est le sien
   function agentsLibelles(d) {
     (d && d.groupes || []).forEach((g) => g.entrees.forEach((e) => { if (e.id === "agents-ia") e.enfants.forEach((f) => { if (f.vue === "itare" && !d.cassandra_ok) f.libelle = "Mon Itare"; if (f.vue === "boite") f.badge.n = E.attenteAgents || 0; }); }));
+    poserCompteurs(d);
     return d;
   }
   // Une page PROPRE (Modules et Applications, Société, Paramètres…) n'est pas une entrée de groupe : E.g / E.e gardent alors la dernière entrée visitée (« Aujourd'hui »), qu'il ne faut pas lire pour la page courante.

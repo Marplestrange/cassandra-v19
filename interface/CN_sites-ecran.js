@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #6cd834
+// VERSION CN : 0.1.0  #bfb2b7
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages du module sites (vue d'ensemble, tous les sites, la page d'un site, alertes, disponibilité, demandes, journal) ; ses pages sont les sous-entrées de « Sites » dans le menu de gauche
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.sites) qui remplace l'onglet V18 « mysites » ; tout vient des capacités sites.* ; l'état vit hors de la scène, car le shell la redessine à chaque ouverture ; window.stVue reçoit la page demandée par le menu, window.stOpen ouvre un site depuis un autre écran
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=6cd834 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=bfb2b7 ▼▼▼
 // Sites : l'écran du module. Il remplace l'onglet V18 « mysites » ; ses pages sont les sous-menus de « Sites » dans le menu de gauche
 // (le rail interne de l'ancien écran a disparu). Lot 1 : ce que les capacités sites.* savaient déjà rendre. Lot 2 : les incidents (une panne est un objet
 // qu'on dépanne), le calendrier d'un site, les sociétés, la preuve de propriété, les objectifs et les réglages.
@@ -33,7 +33,7 @@
     journal: "Les gestes faits sur les sites et ce que la veille a vu, fondus.",
     reglages: "Ce que l’écran appelle une panne, et ce que chacun — agents compris — peut faire sur les sites.",
   };
-  const ONGLETS = [["apercu", "Aperçu"], ["dispo", "Disponibilité"], ["heberg", "Hébergement"], ["liens", "Liens"], ["journal", "Journal"]];
+  const ONGLETS = [["apercu", "Aperçu"], ["dispo", "Disponibilité"], ["heberg", "Hébergement"], ["secu", "Sécurité"], ["liens", "Liens"], ["journal", "Journal"]];
   const VERBES = { declare: "déclaré", declare_annule: "déclaration annulée", declare_a_prouver: "déclaré, à prouver", prouve: "propriété prouvée", retire: "retiré", attribue: "attribué", transfere: "transféré", demande: "adossement demandé", adossement_fait: "adossé", adossement_refuse: "adossement refusé",
     accord: "accord donné", lien: "rattaché", delie: "lien retiré", panne: "coupure", retour: "de retour", decouverte: "découvert", societe: "société attribuée", objectif: "objectif posé", incident_pris: "incident pris en charge", incident_clos: "incident clos" };
   const FAMILLES = [["", "tout"], ["coupures", "coupures et incidents"], ["gestes", "gestes"], ["demandes", "demandes, preuves et accords"]];
@@ -63,6 +63,21 @@
     ".si input[type=text],.si select,.kit-m input[type=text],.kit-m select,.kit-m textarea{font:13.5px 'Inter',system-ui,sans-serif;border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:7px 11px;max-width:100%}.kit-m textarea{width:100%;min-height:70px}.kit-m .champ{display:grid;gap:4px}.kit-m .champ label{font:600 12.5px 'Inter',sans-serif;color:var(--txt-soft)}" +
     ".si .grp{font:600 11px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint);margin:10px 2px 2px}" +
     ".si .barre input[data-note]{flex:1;min-width:180px}" +
+    // La ligne d'un site, telle que la maquette la dessine : une case, la vignette, le nom et ses pastilles, la bande des trente jours, les chiffres.
+    ".si .row.site{grid-template-columns:auto minmax(0,1.6fr) minmax(0,1.2fr) auto}.si .row.site:hover{border-color:var(--accent)}.si .row.site .ouv{display:flex;gap:11px;align-items:center;background:none;border:0;text-align:left;padding:0;min-width:0;color:inherit;font:inherit;cursor:pointer}.si .row.site input[type=checkbox]{width:16px;height:16px}" +
+    ".si .vgn{position:relative;display:block;width:84px;height:56px;border-radius:9px;overflow:hidden;border:1px solid var(--line-strong,var(--line));flex:none;background:var(--surface-solid,var(--surface))}.si .vgn .plein{width:100%;height:100%;object-fit:cover;display:block}" +
+    ".si .vgn .vgi{position:absolute;inset:0;display:grid;place-items:center}.si .vgn .vgi img{width:28px;height:28px;object-fit:contain;border-radius:6px}.si .vgn.bas img{filter:grayscale(1) brightness(.8)}" +
+    ".si .vgn .ini{position:absolute;inset:0;display:grid;place-items:center;font:650 17px ui-monospace,'JetBrains Mono',Menlo,monospace;color:var(--txt-faint);background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--txt) 5%,transparent),color-mix(in srgb,var(--txt) 5%,transparent) 6px,transparent 6px,transparent 12px)}" +
+    ".si .vgn .et{position:absolute;inset:auto 0 0 0;font-size:10.5px;text-align:center;padding:2px 0;background:rgba(190,18,60,.9);color:#fff;letter-spacing:.3px}" +
+    ".si .vgn.gd{width:220px;height:112px;border-radius:14px}.si .vgn.gd .vgi img{width:56px;height:56px;border-radius:10px}.si .vgn.gd .ini{font:500 13px 'Inter',sans-serif;padding:0 16px;text-align:center}.si .vgn.gd .et{font-size:13px;padding:5px 0}" +
+    ".si .bande i.m{background:var(--info,var(--accent))}.si .bande i:hover{opacity:1;transform:scaleY(1.15)}" +
+    ".si .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.si .kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 13px;text-align:left;font:inherit;color:var(--txt)}.si button.kpi{cursor:pointer}.si button.kpi:hover{border-color:var(--accent)}" +
+    ".si .kpi span{display:block;font-size:12.5px;color:var(--txt-faint)}.si .kpi b{display:block;font:650 22px/1.25 ui-monospace,'JetBrains Mono',Menlo,monospace;color:var(--txt-strong,var(--txt))}.si .kpi b.w{color:var(--warn)}.si .kpi b.d{color:var(--danger)}.si .kpi em{display:block;font-style:normal;font-size:12.5px;color:var(--txt-soft)}" +
+    ".si details.grpd{margin-top:10px}.si details.grpd>summary{cursor:pointer;font:600 11px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint);margin:0 2px 6px}" +
+    ".si .lot{position:sticky;bottom:12px;z-index:20;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--txt-strong,var(--txt));color:var(--bg);border-radius:14px;padding:9px 14px;margin-top:12px;font-size:14px}.si .lot .btn,.si .lot select{background:transparent;color:inherit;border-color:rgba(127,127,127,.55)}.si .lot select option{color:#101828}" +
+    ".si svg.sp{width:100%;display:block}.si .delta{font-size:12px}.si .delta.h{color:var(--ok)}.si .delta.b{color:var(--danger)}.si .meta{font-size:13px;color:var(--txt-faint)}.si .sh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.si .sh h3{margin:0}.si .sh .dr{margin-left:auto;display:flex;gap:6px}" +
+    ".si .site-t{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}.si .site-t>div{flex:1;min-width:240px}.si .site-t h1{font:650 22px ui-monospace,'JetBrains Mono',Menlo,monospace;color:var(--txt-strong,var(--txt));overflow-wrap:anywhere;margin:0 0 6px}.si .meta2{font-size:13.5px;color:var(--txt-soft);margin:6px 0}.si .gest{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:10px}" +
+    ".si .row.c3{grid-template-columns:minmax(0,1fr) auto auto}.si .row.f3{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) auto}.si .row.d4{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,.9fr) auto}" +
     ".si .vg img{width:26px;height:26px;object-fit:contain;border-radius:5px}.si .vg.gd img{width:40px;height:40px}.si .apv{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.si .apv img{max-width:260px;max-height:150px;border-radius:10px;border:1px solid var(--line)}.si .apv .sp{flex:1;min-width:200px}" +
     ".si .choix{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.si .choix>div{border:1px solid var(--line);border-radius:13px;padding:13px 14px;background:var(--surface);display:flex;flex-direction:column;gap:7px}.si .choix>div.pr{border-color:var(--accent)}.si .choix h4{margin:0}" +
     ".si .code{font:500 12.5px ui-monospace,'JetBrains Mono',Menlo,monospace;background:color-mix(in srgb,var(--txt) 6%,transparent);border-radius:9px;padding:9px 11px;overflow-wrap:anywhere;user-select:all}" +
@@ -73,11 +88,12 @@
     ".si table.tab{width:100%;border-collapse:collapse;font-size:13px}.si table.tab th{text-align:left;font:600 11.5px 'Inter',sans-serif;color:var(--txt-faint);padding:6px 8px;border-bottom:1px solid var(--line)}.si table.tab td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}.si .defile{overflow-x:auto}" +
     ".si .regl{display:grid;gap:12px}.si .regl label{display:grid;gap:4px;font-size:13.5px}.si .regl label.coche{grid-template-columns:auto minmax(0,1fr);align-items:start;column-gap:10px}.si .regl input[type=number],.si .regl input[type=text]{max-width:160px}.si textarea{font:13.5px 'Inter',system-ui,sans-serif;border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:8px 11px;width:100%;min-height:64px}" +
     "@media (max-width:700px){.si .row,.si .row.c2,.si .row.c1{grid-template-columns:minmax(0,1fr)}.si .cote{align-items:flex-start;flex-direction:row;gap:10px}.si dl.g{grid-template-columns:110px minmax(0,1fr)}.si .nm b,.si .nm small{white-space:normal}.si .jl>div{grid-template-columns:auto minmax(0,1fr)}.si .jl>div>span:last-child{grid-column:1/-1}.si .jl>div>:nth-child(2){justify-self:start}" +
+    ".si .row.site{grid-template-columns:auto minmax(0,1fr)}.si .row.site .bz,.si .row.site .cote{grid-column:1/-1}.si .row.c3,.si .row.f3,.si .row.d4{grid-template-columns:minmax(0,1fr)}.si .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.si .vgn.gd{width:100%;height:auto;aspect-ratio:16/8}" +
     ".si .choix{grid-template-columns:minmax(0,1fr)}.si .cal{gap:3px}.si .cal .j{min-height:46px;padding:4px}.si .cal .j span{display:none}.si .cal .j.ev b::after{content:' •';color:var(--accent)}}";
 
   // L'état de l'écran vit hors de la scène : le shell redessine l'onglet à chaque ouverture, et les autres écrans (Panorama, Hébergement) ouvrent un site d'ici.
   const S = { page: "vue", sel: null, onglet: "apercu", vue: null, lu: 0, q: "", filtre: "", p: 1, jours: 30, heures: 24 * 30, jfam: "", fiche: null, histo: null, copies: null, erreur: "",
-    inc: null, soc: "", calSite: "", calMois: "", calJour: null, rat: { genre: "contact", role: "autre", q: "", res: null, erreur: "" } };
+    inc: null, soc: "", calSite: "", calMois: "", calJour: null, tend: null, coche: new Set(), rat: { genre: "contact", role: "autre", q: "", res: null, erreur: "" } };
   let R = null;
   const msg = (e) => String((e && e.message) || e || "erreur");
   const lire = async (cap, args) => { try { return await agir(cap, args || {}); } catch (e) { S.erreur = msg(e); return null; } };
@@ -107,20 +123,20 @@
     if (typeof s.ssl_jours === "number" && s.ssl_jours < 21) return ["certificat " + s.ssl_jours + " j", "al", 1];
     return ["en ligne", "ok", 2];
   }
-  function pastilles(s) {
+  // Les pastilles d'un site, dans l'ordre de la maquette : son état, la maintenance, le certificat, la sauvegarde, puis ce qui attend quelqu'un.
+  function pastilles(s, enTete) {
     const e = etat(s), p = [K.pill(e[0], e[1])];
+    if (s.maintenance) p.push(K.pill("en maintenance", "ac"));
     if (typeof s.ssl_jours === "number" && s.ssl_jours >= 21) p.push(K.pill("SSL " + s.ssl_jours + " j", "ok"));
-    p.push(K.pill(s.source === "panneau" ? "panneau" : "hors panneau", ""));
+    if (s.sauvegarde) p.push(s.sauvegarde.etat === "ok" ? K.pill("sauvegardé", "ok") : K.pill(s.sauvegarde.etat === "sans" ? "aucune sauvegarde" : "sauvegarde ancienne", "al"));
     if (s.demande) p.push(K.pill("adossement demandé", "ac"));
     if (s.incident && s.incident.etat === "depannage") p.push(K.pill("dépannage · " + court(s.incident.pris_par), "al"));
     if (s.incident && s.incident.etat === "retabli") p.push(K.pill("incident à clore", "ac"));
     if (s.incident && s.incident.connu_jusqu) p.push(K.pill("panne connue", ""));
-    if (s.maintenance) p.push(K.pill("maintenance jusqu’à " + heure(s.maintenance.fin), "ac"));
     if (s.acceptee) p.push(K.pill("alerte acceptée", ""));
-    if (s.cms) p.push(K.pill(s.cms.type + (s.cms.version ? " " + s.cms.version : ""), ""));
     if (s.php_fin && s.php_fin.etat === "depassee") p.push(K.pill("PHP " + s.php_fin.version + " abandonné", "al"));
-    if (s.sauvegarde && s.sauvegarde.etat !== "ok") p.push(K.pill(s.sauvegarde.etat === "sans" ? "sans sauvegarde" : "sauvegarde ancienne", "al"));
-    if (multi()) p.push(K.pill(s.societe ? socNom(s.societe) + (s.societe_source === "compte" ? " · par son compte" : "") : "sans société", s.societe ? "" : "al"));
+    if (multi() && !s.societe) p.push(K.pill("sans société", "al"));
+    if (enTete) p.push(K.pill(s.source === "panneau" ? "panneau" : "hors panneau", ""));
     return p.join("");
   }
   function incLigne(i) {
@@ -129,13 +145,51 @@
       (i.etat === "resolu" || i.etat === "retabli" ? "du " + esc(heure(i.debut)) + " au " + esc(heure(i.fin)) : "depuis " + esc(heure(i.debut)) + (i.pris_par ? " · " + esc(court(i.pris_par)) + " s’en occupe" : "")) + '</span><span class="cote"><span>' + esc(i.duree) + "</span><span>n° " + i.id + "</span></span></button>";
   }
   const initiales = (d) => String(d || "").split(".")[0].slice(0, 2).toUpperCase() || "?";
-  // La vignette d'un site : son icône quand la sonde a pu la lire (gardée en « data: », l'interface n'affiche rien venu d'ailleurs), ses initiales sinon.
   const vg = (s, cl) => '<span class="vg' + (cl ? " " + cl : "") + (s.up === false ? " dg" : "") + '">' + (s.icone && /^data:image\//.test(s.icone) ? '<img src="' + esc(s.icone) + '" alt="">' : esc(initiales(s.domaine))) + "</span>";
-  const sousTitre = (s) => [admin() ? ((s.comptes || []).join(", ") || (s.source === "panneau" ? "panneau · " + (s.proprietaire_panneau || "?") : "sans compte")) : "", s.php ? "PHP " + s.php : "", s.source === "panneau" ? "" : "déclaré à la main"].filter(Boolean).join(" · ") || "—";
+  const poids = (mo) => (mo == null ? "" : mo >= 1024 ? (Math.round(mo / 102.4) / 10).toLocaleString("fr-FR") + " Go" : nb(Math.round(mo)) + " Mo");
+  const teinte = (d) => { let h = 0; for (const c of String(d || "")) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+  const quiRegarde = () => (portee().super ? "superadministrateur" + (portee().multi ? " · " + (S.soc ? (S.soc === "-" ? "sites sans société" : socNom(S.soc)) : "toutes les sociétés") : "") : admin() ? "administrateur" + (portee().multi ? " de " + socNom(portee().societe) : "") : "compte " + moi());
+  // La vignette d'un site. Il n'y a pas de capture d'écran (pas de navigateur sur la machine) : elle montre l'image de présentation que la page déclare, à défaut
+  // son icône sur un fond à sa teinte, à défaut ses initiales. Un site en panne la porte grisée, barrée « hors ligne ».
+  function vignette(s, grand, image) {
+    const img = image && /^data:image\//.test(image) ? image : "", ico = s.icone && /^data:image\//.test(s.icone) ? s.icone : "", h = teinte(s.domaine), bas = s.up === false;
+    const corps = img ? '<img class="plein" src="' + esc(img) + '" alt="">' :
+      ico ? '<span class="vgi" style="background:linear-gradient(135deg,hsl(' + h + " 45% 92%),hsl(" + ((h + 40) % 360) + ' 50% 82%))"><img src="' + esc(ico) + '" alt=""></span>' :
+      '<span class="ini">' + (grand ? (s.preuve ? "Pas d’aperçu : le site n’est pas encore prouvé." : s.up == null ? "Pas encore d’aperçu : il viendra avec la première relève." : "Pas d’aperçu : la page n’a pas pu être lue.") : esc(initiales(s.domaine))) + "</span>";
+    return '<span class="vgn' + (grand ? " gd" : "") + (bas ? " bas" : "") + '" role="img" aria-label="Aperçu de ' + esc(s.domaine) + '">' + corps + (bas ? '<span class="et">hors ligne</span>' : "") + "</span>";
+  }
+  // La bande : un trait par jour (le pire de la journée), tirée des tendances lues une fois pour toute la liste.
+  const LIBJ = { ok: "sans coupure", courte: "coupure courte", longue: "coupure longue", maintenance: "en maintenance", sans: "pas de mesure" }, CLJ = { ok: "", courte: "w", longue: "d", maintenance: "m", sans: "n" };
+  const tendance = (d) => (S.tend && S.tend.sites && S.tend.sites[d]) || null;
+  function bande(d, n) {
+    const t = tendance(d), j = t ? t.jours.slice(-(n || t.jours.length)) : Array.from({ length: n || 30 }, () => "sans");
+    return '<div class="bande" role="img" aria-label="Disponibilité de ' + esc(d) + " sur " + j.length + " jours : " + pct(t && t.disponibilite) + '">' + j.map((x, i) => { const il = j.length - 1 - i; return '<i class="' + CLJ[x] + '" title="' + (il ? "il y a " + il + " j" : "les dernières 24 h") + " : " + LIBJ[x] + '"></i>'; }).join("") + "</div>";
+  }
+  function courbe(d, h) {
+    const t = tendance(d), v = t ? t.ms : [], pts = v.map((x, i) => [i, x]).filter((x) => x[1] != null);
+    if (pts.length < 2) return '<span class="note">pas encore de courbe</span>';
+    const lent = (S.tend && S.tend.lent_ms) || 3000, max = Math.max.apply(null, pts.map((x) => x[1]).concat([lent * 0.5])), w = 240, H = h || 34, y = (x) => (H - 3 - (x / max) * (H - 6)).toFixed(1);
+    return '<svg class="sp" style="height:' + H + 'px" viewBox="0 0 ' + w + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Temps de réponse de ' + esc(d) + ', un point par jour">' + (lent <= max ? '<line x1="0" x2="' + w + '" y1="' + y(lent) + '" y2="' + y(lent) + '" stroke="var(--warn)" stroke-dasharray="3 3" stroke-width="1"/>' : "") +
+      '<polyline points="' + pts.map((x) => ((x[0] / Math.max(1, v.length - 1)) * w).toFixed(1) + "," + y(x[1])).join(" ") + '" fill="none" stroke="' + (pts[pts.length - 1][1] >= lent ? "var(--warn)" : "var(--accent)") + '" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>';
+  }
+  const legende = () => '<div class="leg"><span><i style="background:var(--ok)"></i>sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span><span><i style="background:var(--info,var(--accent))"></i>maintenance</span><span><i style="background:var(--line-strong,var(--line))"></i>pas de mesure</span></div>';
+  const cmsTexte = (s) => (s.cms ? s.cms.type + (s.cms.version ? " " + s.cms.version : "") : "");
+  // Le sous-titre d'une ligne : à qui est le site (selon qui regarde), puis ce qu'il est — CMS, PHP, poids — ou « déclaré à la main ».
+  function sousTitre(s) {
+    const comptes = (s.comptes || []).join(", ") || (s.source === "panneau" ? "panneau · " + (s.proprietaire_panneau || "?") : "sans compte");
+    const qui = portee().super && portee().multi ? (s.societe ? socNom(s.societe) : "sans société") + " · " + comptes : admin() ? comptes : "";
+    return [qui, cmsTexte(s), s.php ? "PHP " + s.php : "", poids(s.disque_mo), s.source === "panneau" ? "" : "déclaré à la main"].filter(Boolean).join(" · ") || "panneau";
+  }
   function ligne(s) {
-    const d30 = s.dispo30;
-    return '<button class="row" data-a="site" data-d="' + esc(s.domaine) + '">' + vg(s) + '<span class="nm"><b class="mono">' + esc(s.domaine) + "</b><small>" + esc((s.titre ? s.titre + " · " : "") + sousTitre(s)) + '</small><span class="pills">' + pastilles(s) + "</span></span>" +
-      '<span class="note">' + (d30 ? d30.pannes + " coupure" + (d30.pannes > 1 ? "s" : "") + (d30.indisponible_min ? " · " + esc(d30.indisponible) : "") + " sur 30 j" : "pas encore de mesure") + '</span><span class="cote"><span>' + pct(d30 && d30.disponibilite) + " · 30 j</span><span>" + (s.code == null ? "—" : s.code) + " · " + (s.ms == null ? "—" : nb(s.ms) + " ms") + "</span></span></button>";
+    const t = tendance(s.domaine), d = esc(s.domaine), dispo = t ? t.disponibilite : s.dispo30 && s.dispo30.disponibilite;
+    return '<div class="row site"><input type="checkbox" data-coche="' + d + '" aria-label="Choisir ' + d + '"' + (S.coche.has(s.domaine) ? " checked" : "") + '><button class="ouv" data-a="site" data-d="' + d + '">' + vignette(s) +
+      '<span class="nm"><b class="mono">' + d + "</b><small>" + esc(sousTitre(s)) + '</small><span class="pills">' + pastilles(s) + '</span></span></button><div class="bz">' + bande(s.domaine, 30) + '</div><span class="cote"><span>' + pct(dispo) + " · 30 j</span><span>" + (s.code == null ? "—" : s.code) + " · " + (s.ms == null ? "—" : nb(s.ms) + " ms") + "</span></span></div>";
+  }
+  async function chargerTend(n) {
+    if (S.tend && S.tend.jours === n && Date.now() - S.tend.lu < 60000) return S.tend;
+    const t = await tenter("sites.tendances", { jours: n });
+    if (t) S.tend = Object.assign(t, { lu: Date.now() });
+    return S.tend;
   }
   function vigilance(v) {
     const n = v.niveau === "panne" ? ["grave", "dg"] : v.niveau === "regarder" ? ["à regarder", "al"] : ["info", ""];
@@ -181,53 +235,71 @@
     async vue() {
       const v = await chargerVue();
       if (!v) return entete() + bandeaux();
-      const l = visibles(v.sites), dans = new Set(l.map((s) => s.domaine)), vig = (v.vigilances || []).filter((x) => dans.has(x.site)), bas = l.filter((s) => s.up === false), graves = vig.filter((x) => x.niveau === "panne"), moy = vig.filter((x) => x.niveau === "regarder");
-      const inc = l.filter((s) => s.incident && s.incident.etat !== "retabli").length, aclore = l.filter((s) => s.incident && s.incident.etat === "retabli").length;
-      const m = graves.length ? "dg" : moy.length ? "al" : "";
-      const titre = !l.length ? (v.portee.admin ? "Aucun site connu" : "Aucun site dans ta portée") : bas.length ? (bas.length === 1 ? "Un site ne répond pas : " + bas[0].domaine : bas.length + " sites ne répondent pas") : graves.length ? graves[0].titre : moy.length ? l.length + " site" + (l.length > 1 ? "s répondent" : " répond") + " · " + moy.length + " point" + (moy.length > 1 ? "s" : "") + " à regarder" : (l.length > 1 ? "Les " + l.length + " sites répondent" : "Le site répond");
-      const sous = !l.length ? "« Déclarer un site » en ajoute un ; un administrateur peut aussi t’en attribuer." : (graves.length || moy.length) ? vig.filter((x) => x.niveau !== "info").slice(0, 2).map((x) => x.titre).join(" ; ") + "." : "Aucune panne, aucun certificat court.";
-      const mes = l.filter((s) => s.dispo30), dm = mes.length ? mes.reduce((a, s) => a + s.dispo30.disponibilite, 0) / mes.length : null;
-      const certs = l.filter((s) => typeof s.ssl_jours === "number"), cmin = certs.length ? Math.min.apply(null, certs.map((s) => s.ssl_jours)) : null;
-      const dem = l.filter((s) => s.demande).length;
-      const stat = (lib, val, note, cl, a, f) => '<button class="stat ' + (cl || "") + '" data-a="' + a + '"' + (f != null ? ' data-f="' + f + '"' : "") + ' style="cursor:pointer"><b>' + val + "</b><span>" + lib + '</span><span class="note">' + note + "</span></button>";
-      const j = await lire("sites.journal", { limite: 10 });
-      return entete(choixSoc() + '<button class="btn" data-a="recharger">Relire</button><button class="btn pri" data-a="declarer">Déclarer un site</button>') + bandeaux() +
-        '<div class="carte"><div class="verdict"><div class="vm ' + m + '"></div><div><p class="vt">' + esc(titre) + '</p><p class="note">' + esc(sous) + "</p></div></div>" +
-        '<div class="stats">' + stat("En ligne", l.filter((s) => s.up).length + " / " + l.filter((s) => s.up != null).length, bas.length ? bas.length + " en panne" : "tous répondent", bas.length ? "al" : "", "aller-sites", bas.length ? "tombes" : "") +
-        stat("Disponibilité 30 j", pct(dm), mes.length + " site" + (mes.length > 1 ? "s" : "") + " mesuré" + (mes.length > 1 ? "s" : ""), "", "aller", "dispo") +
-        stat("Certificats", cmin == null ? "—" : cmin < 0 ? "échu" : cmin + " j", cmin == null ? "pas encore lus" : "le plus court · Sécurité › Certificats", cmin != null && cmin < 21 ? "al" : "", "certificats") +
-        stat("Incidents", inc, inc ? "à dépanner" : aclore ? aclore + " à clore" : "aucun ouvert", inc || aclore ? "al" : "", "aller", "incidents") +
-        stat("Alertes", graves.length + moy.length, graves.length + " grave" + (graves.length > 1 ? "s" : "") + " · " + moy.length + " à regarder", graves.length || moy.length ? "al" : "", "aller", "alertes") +
-        stat("Demandes", dem, v.portee.admin ? "adossement à traiter" : "en attente", dem ? "al" : "", "aller", "demandes") + "</div></div>" +
-        '<div class="carte"><h3>Ce qui demande un geste</h3>' + (vig.length ? '<div class="rows">' + vig.slice(0, 5).map(vigilance).join("") + "</div>" + (vig.length > 5 ? '<button class="btn mini" data-a="aller" data-f="alertes" style="align-self:flex-start">Toutes les alertes</button>' : "") : '<p class="note"><b>Rien ne demande un geste.</b></p>') + "</div>" +
-        '<div class="g2"><div class="carte"><h3>Les plus fragiles</h3><p class="note">disponibilité sur 30 jours</p>' + (mes.length ? '<div class="rows">' + mes.slice().sort((a, b) => a.dispo30.disponibilite - b.dispo30.disponibilite).slice(0, 4).map((s) => '<button class="row c1" data-a="site" data-d="' + esc(s.domaine) + '" data-o="dispo"><span class="nm"><b class="mono">' + esc(s.domaine) + "</b><small>" + s.dispo30.pannes + " coupure" + (s.dispo30.pannes > 1 ? "s" : "") + '</small></span><span class="cote">' + pct(s.dispo30.disponibilite) + "</span></button>").join("") + "</div>" : '<p class="note">Pas encore de mesure.</p>') + "</div>" +
-        '<div class="carte"><h3>Derniers événements</h3>' + journalHtml(j && j.lignes ? j.lignes.slice(0, 5) : [], true) + '<button class="btn mini" data-a="aller" data-f="journal" style="align-self:flex-start">Tout le journal</button></div></div>' +
-        '<div class="carte"><h3>D’où viennent les chiffres</h3><div class="liste">' +
-        '<div class="li">' + K.pill("sonde", "ok") + '<div class="sp"><b>La sonde de Sites</b><span class="note">code et durée de réponse, toutes les 5 minutes</span></div><span class="note">' + esc(heure(Math.max.apply(null, l.map((s) => s.mesure || 0).concat([0])))) + "</span></div>" +
+      await chargerTend(30);
+      const l = visibles(v.sites), dans = new Set(l.map((s) => s.domaine)), vig = (v.vigilances || []).filter((x) => dans.has(x.site)), bas = l.filter((s) => s.up === false);
+      const io = l.filter((s) => s.incident && s.incident.etat !== "retabli").map((s) => s.incident), alertes_ = vig.filter((x) => !(x.geste === "depanner" && x.niveau === "panne"));
+      const graves = vig.filter((x) => x.niveau === "panne"), moy = vig.filter((x) => x.niveau === "regarder"), m = io.length || graves.length ? "dg" : moy.length ? "al" : "";
+      const titre = !l.length ? (v.portee.admin ? "Aucun site connu" : "Aucun site dans ta portée") : io.length ? (io.length === 1 ? "Un incident ouvert : " + io[0].domaine : io.length + " incidents ouverts") : graves.length ? graves[0].titre : moy.length ? l.length + " site" + (l.length > 1 ? "s répondent" : " répond") + " · " + moy.length + " point" + (moy.length > 1 ? "s" : "") + " à regarder" : (l.length > 1 ? "Les " + l.length + " sites répondent" : "Le site répond");
+      const sous = !l.length ? "« Déclarer un site » en ajoute un ; un administrateur peut aussi t’en attribuer." : io.length ? io.slice(0, 2).map((i) => i.diagnostic).join(" ") : (graves.length || moy.length) ? vig.filter((x) => x.niveau !== "info").slice(0, 2).map((x) => x.titre).join(" ; ") + "." : "Aucune panne, aucun certificat court.";
+      const mes = l.filter((s) => s.dispo30), dm = mes.length ? mes.reduce((a, s) => a + s.dispo30.disponibilite, 0) / mes.length : null, sousObj = mes.filter((s) => s.dispo30.disponibilite < s.objectif).length;
+      const certs = l.filter((s) => typeof s.ssl_jours === "number"), cmin = certs.length ? Math.min.apply(null, certs.map((s) => s.ssl_jours)) : null, pasReleve = l.filter((s) => s.up == null && !s.preuve).length;
+      const pan = l.filter((s) => s.source === "panneau"), sauv = pan.filter((s) => s.sauvegarde), sansSauv = sauv.filter((s) => s.sauvegarde.etat !== "ok").length, ana = pan.filter((s) => s.analyse), jamais = ana.filter((s) => !s.analyse.dernier).length;
+      const disque = l.reduce((a, s) => a + (s.disque_mo || 0), 0), dem = l.filter((s) => s.demande).length + l.filter((s) => s.preuve).length;
+      const kpi = (lib, val, note, cl, a, f) => "<" + (a ? 'button data-a="' + a + '"' + (f != null ? ' data-f="' + f + '"' : "") : "div") + ' class="kpi"><span>' + lib + '</span><b class="' + (cl || "") + '">' + val + "</b><em>" + note + "</em></" + (a ? "button" : "div") + ">";
+      // Par société : le superadministrateur voit d'un coup ce que chaque société a, et ce qui n'est à aucune.
+      const socs = v.portee.super && v.portee.multi && !S.soc ? (v.portee.societes || []).map((x) => [x.id, x.nom]).concat([["-", "Sans société — à attribuer"]]).map((x) => { const ls = (v.sites || []).filter((s) => (s.societe || "-") === x[0]); if (!ls.length) return ""; const b = ls.filter((s) => s.up === false).length;
+        return '<button class="row c3" data-a="soc" data-s="' + esc(x[0]) + '"><span class="nm"><b>' + esc(x[1]) + "</b><small>" + ls.length + " site" + (ls.length > 1 ? "s" : "") + "</small></span>" + (x[0] === "-" ? K.pill("à attribuer", "al") : K.pill(b ? b + " en panne" : "tout répond", b ? "dg" : "ok")) + '<span class="note">›</span></button>'; }).join("") : "";
+      const j = await lire("sites.journal", { limite: 10 }), releve = Math.max.apply(null, l.map((s) => s.mesure || 0).concat([0]));
+      return K.titre("Vue d’ensemble", quiRegarde() + " · " + l.length + " site" + (l.length > 1 ? "s" : "") + (releve ? " · relevé " + heure(releve) : "") + " · une mesure toutes les 5 minutes", choixSoc() + '<button class="btn" data-a="recharger">Relire</button><button class="btn pri" data-a="declarer">Déclarer un site</button>') + bandeaux() +
+        '<div class="carte"><div class="verdict"><div class="vm ' + m + '"></div><div><p class="vt">' + esc(titre) + '</p><p class="note">' + esc(sous) + "</p>" + (io.length ? '<div class="gest"><button class="btn pri" data-a="incident" data-id="' + io[0].id + '">Ouvrir l’incident</button>' + (io.length > 1 ? '<button class="btn" data-a="aller" data-f="incidents">Voir les ' + io.length + "</button>" : "") + "</div>" : "") + "</div></div>" +
+        '<div class="kpis">' + kpi("En ligne", l.filter((s) => s.up).length + " / " + l.filter((s) => s.up != null).length, (bas.length ? bas.length + " en panne" : "tous répondent") + (pasReleve ? " · " + pasReleve + " pas encore relevé" + (pasReleve > 1 ? "s" : "") : ""), bas.length ? "d" : "", "aller-sites", bas.length ? "tombes" : "") +
+        kpi("Incidents", io.length, io.length ? "ouverts : à dépanner" : "aucun ouvert", io.length ? "d" : "", "aller", "incidents") +
+        kpi("Disponibilité 30 j", pct(dm), !mes.length ? "pas encore de mesure" : sousObj ? sousObj + " sous leur objectif" : "tous à l’objectif", sousObj ? "w" : "", "aller", "dispo") +
+        kpi("Certificats ↗", cmin == null ? "—" : cmin < 0 ? "échu" : cmin + " j", cmin == null ? "pas encore lus" : cmin < 0 ? "depuis " + (-cmin) + " jours" : "le plus court", cmin != null && cmin < 0 ? "d" : cmin != null && cmin < 21 ? "w" : "", "certificats") +
+        kpi("Alertes", graves.length + moy.length, graves.length + " grave" + (graves.length > 1 ? "s" : "") + " · " + moy.length + " à regarder", graves.length ? "d" : moy.length ? "w" : "", "aller", "alertes") +
+        kpi("Sauvegardes", sauv.length ? (sauv.length - sansSauv) + " / " + sauv.length : "—", !pan.length ? "pas de site du panneau" : !sauv.length ? "pas encore lues" : sansSauv ? sansSauv + " sans copie récente" : "tous couverts", sansSauv ? "w" : "", "aller-sites", "sauv") +
+        kpi("Analyses", !ana.length ? "—" : jamais ? jamais + " à revoir" : "à jour", "antivirus · sites du panneau", jamais ? "w" : "", "aller-sites", "analyse") +
+        kpi("Disque", disque ? poids(disque) : "—", "fichiers et bases des sites de la machine", "") + "</div></div>" +
+        (socs ? '<div class="carte"><div class="sh"><h3>Par société</h3><span class="meta">chaque société ne voit que ses sites ; toi seul vois tout</span></div><div class="rows">' + socs + "</div></div>" : "") +
+        '<div class="carte"><div class="sh"><h3>Ce qui demande un geste</h3><span class="meta">les incidents d’abord, puis le plus grave</span><span class="dr"><button class="btn mini" data-a="aller" data-f="alertes">Toutes les alertes</button></span></div>' + (io.length || alertes_.length ? '<div class="rows">' + io.map(incLigne).join("") + alertes_.slice(0, 4).map(vigilance).join("") + "</div>" : '<p class="note"><b>Rien ne demande un geste.</b></p>') + "</div>" +
+        '<div class="g2"><div class="carte"><div class="sh"><h3>Les plus fragiles</h3><span class="meta">disponibilité sur 30 jours</span></div>' + (mes.length ? '<div class="rows">' + mes.slice().sort((a, b) => a.dispo30.disponibilite - b.dispo30.disponibilite).slice(0, 3).map((s) => '<button class="row f3" data-a="cal" data-d="' + esc(s.domaine) + '"><span class="nm"><b class="mono">' + esc(s.domaine) + "</b></span>" + bande(s.domaine, 30) + '<span class="cote">' + pct(s.dispo30.disponibilite) + "</span></button>").join("") + "</div>" : '<p class="note">Pas encore de mesure.</p>') + "</div>" +
+        '<div class="carte"><div class="sh"><h3>Derniers événements</h3><span class="dr"><button class="btn mini" data-a="aller" data-f="journal">Tout le journal</button></span></div>' + journalHtml(j && j.lignes ? j.lignes.filter((x) => dans.has(x.domaine)).slice(0, 4) : [], true) + "</div></div>" +
+        '<div class="carte"><div class="sh"><h3>D’où viennent les chiffres</h3><span class="meta">et leur âge</span></div><div class="liste">' +
+        '<div class="li">' + K.pill("sonde", "ok") + '<div class="sp"><b>La sonde de Sites</b><span class="note">code et durée de réponse, toutes les 5 minutes ; elle se tait quand le Sensorium sonne déjà</span></div><span class="note">' + esc(heure(releve)) + "</span></div>" +
+        '<div class="li">' + K.pill("sensorium", "ok") + '<div class="sp"><b>Le Sensorium</b><span class="note">maintenance, alertes acceptées, CMS, trafic, et ce qu’il voit du site depuis la machine</span></div><button class="btn mini" data-a="sensorium">Ouvrir</button></div>' +
         '<div class="li">' + K.pill("certificats", "ok") + '<div class="sp"><b>Le module Certificats</b><span class="note">échéance, quota, renouvellement : Sites les lit, ne les refait pas</span></div><button class="btn mini" data-a="certificats">Ouvrir</button></div>' +
-        '<div class="li">' + K.pill(v.portee.panneau_lu === false ? "absent" : "panneau", v.portee.panneau_lu === false ? "al" : "") + '<div class="sp"><b>FastPanel, facultatif</b><span class="note">' + (v.portee.panneau_lu === false ? "pas lu : Sites s’en passe" : "le propriétaire du panneau, PHP, les copies de sauvegarde") + "</span></div></div></div></div>";
+        '<div class="li">' + K.pill(v.portee.panneau_lu === false ? "absent" : "panneau", v.portee.panneau_lu === false ? "al" : "") + '<div class="sp"><b>FastPanel, facultatif</b><span class="note">' + (v.portee.panneau_lu === false ? "pas lu : Sites s’en passe" : "le propriétaire du panneau, le disque, les bases, les sauvegardes, les analyses") + "</span></div></div></div></div>";
     },
 
     async sites() {
       const v = await chargerVue();
       if (!v) return entete() + bandeaux();
+      await chargerTend(30);
       let l = visibles(v.sites).slice();
-      const q = S.q.trim().toLowerCase(), F = { tombes: (s) => s.up === false, regarder: (s) => etat(s)[2] < 2, panneau: (s) => s.source === "panneau", declares: (s) => s.source !== "panneau", sans: (s) => !(s.comptes || []).length,
-        sanssoc: (s) => s.societe_source !== "attribuee", aprouver: (s) => !!s.preuve };
-      if (q) l = l.filter((s) => (s.domaine + " " + (s.comptes || []).join(" ") + " " + (s.proprietaire_panneau || "")).toLowerCase().includes(q));
+      const tous = l.length, q = S.q.trim().toLowerCase(), panneau = (s) => s.source === "panneau";
+      const F = { tombes: (s) => s.up === false, regarder: (s) => etat(s)[2] < 2, panneau, declares: (s) => !panneau(s), sauv: (s) => !!s.sauvegarde && s.sauvegarde.etat !== "ok", analyse: (s) => !!s.analyse && !s.analyse.dernier,
+        sans: (s) => !(s.comptes || []).length, sanssoc: (s) => s.societe_source !== "attribuee", aprouver: (s) => !!s.preuve };
+      if (q) l = l.filter((s) => (s.domaine + " " + (s.comptes || []).join(" ") + " " + (s.proprietaire_panneau || "") + " " + (s.societe ? socNom(s.societe) : "") + " " + (s.titre || "")).toLowerCase().includes(q));
       if (F[S.filtre]) l = l.filter(F[S.filtre]);
-      l.sort((a, b) => etat(a)[2] - etat(b)[2] || ((a.dispo30 ? a.dispo30.disponibilite : 101) - (b.dispo30 ? b.dispo30.disponibilite : 101)) || a.domaine.localeCompare(b.domaine));
+      const dispo = (s) => { const t = tendance(s.domaine); return t && t.disponibilite != null ? t.disponibilite : s.dispo30 ? s.dispo30.disponibilite : 101; };
+      l.sort((a, b) => etat(a)[2] - etat(b)[2] || dispo(a) - dispo(b) || a.domaine.localeCompare(b.domaine));
       const np = Math.max(1, Math.ceil(l.length / PAR)); S.p = Math.min(S.p, np);
-      const page = l.slice((S.p - 1) * PAR, S.p * PAR);
+      const page = l.slice((S.p - 1) * PAR, S.p * PAR), parSoc = v.portee.super && v.portee.multi;
+      const cle = parSoc ? (s) => (s.societe ? socNom(s.societe) : "Sans société — à attribuer") : v.portee.admin ? (s) => (s.comptes || []).join(", ") || (panneau(s) ? "panneau · " + (s.proprietaire_panneau || "?") + " (sans compte Cassandra)" : "sans compte") : null;
       let corps;
-      if (!l.length) corps = '<div class="vide"><b>Aucun site</b><p class="note">' + (v.sites.length ? "pour ce filtre." : "« Déclarer un site » en ajoute un.") + "</p></div>";
-      else if (v.portee.admin) { const g = {}; page.forEach((s) => { const k = (s.comptes || []).join(", ") || (s.source === "panneau" ? "panneau · " + (s.proprietaire_panneau || "?") + " (sans compte Cassandra)" : "sans compte"); (g[k] = g[k] || []).push(s); }); corps = Object.keys(g).sort().map((k) => '<div class="grp">' + esc(k) + " · " + g[k].length + '</div><div class="rows">' + g[k].map(ligne).join("") + "</div>").join(""); }
+      if (!l.length) corps = '<div class="vide"><b>Aucun site</b><p class="note">' + (tous ? "pour ce filtre." : "« Déclarer un site » en ajoute un.") + "</p></div>";
+      else if (cle) { const g = {}; page.forEach((s) => { const k = cle(s); (g[k] = g[k] || []).push(s); }); corps = Object.keys(g).sort().map((k) => '<details class="grpd" open><summary>' + esc(k) + " · " + g[k].length + '</summary><div class="rows">' + g[k].map(ligne).join("") + "</div></details>").join(""); }
       else corps = '<div class="rows">' + page.map(ligne).join("") + "</div>";
-      const chips = [["", "tous"], ["tombes", "en panne"], ["regarder", "à regarder"], ["panneau", "du panneau"], ["declares", "déclarés"]].concat((v.sites || []).some((s) => s.preuve) ? [["aprouver", "à prouver"]] : [], v.portee.admin ? [["sans", "sans compte"]] : [], v.portee.super && v.portee.multi ? [["sanssoc", "non attribués à une société"]] : []);
-      return entete(choixSoc() + '<button class="btn pri" data-a="declarer">Déclarer un site</button>') + bandeaux() +
-        '<div class="carte"><div class="barre"><input type="search" data-q placeholder="Chercher un site' + (v.portee.admin ? ", un compte" : "") + '" aria-label="Chercher" value="' + esc(S.q) + '"></div>' +
+      const chips = [["", "tous"], ["tombes", "en panne"], ["regarder", "à regarder"], ["panneau", "du panneau"], ["declares", "déclarés"], ["sauv", "sans sauvegarde"], ["analyse", "jamais analysés"]].concat((v.sites || []).some((s) => s.preuve) ? [["aprouver", "à prouver"]] : [], v.portee.admin ? [["sans", "sans compte"]] : [], parSoc ? [["sanssoc", "sans société"]] : []);
+      // Les actions par lot : ce qu'on fait d'un geste sur plusieurs sites cochés.
+      [...S.coche].forEach((d) => { if (!(v.sites || []).some((s) => s.domaine === d)) S.coche.delete(d); });
+      const nc = S.coche.size, lot = !nc ? "" : '<div class="lot"><b>' + nc + " site" + (nc > 1 ? "s choisis" : " choisi") + "</b>" + (v.portee.admin ? '<button class="btn mini" data-a="lot-mnt">Maintenance 2 h</button>' : "") +
+        (parSoc ? '<select data-lot-soc aria-label="Société">' + (v.portee.societes || []).map((x) => '<option value="' + esc(x.id) + '">' + esc(x.nom) + "</option>").join("") + '</select><button class="btn mini" data-a="lot-soc">Attribuer à cette société</button>' : "") +
+        '<button class="btn mini" data-a="lot-csv">Exporter</button><button class="btn mini" data-a="lot-rien">Tout décocher</button></div>';
+      return K.titre("Tous les sites", tous + " site" + (tous > 1 ? "s" : "") + " · le pire d’abord · " + quiRegarde(), '<button class="btn pri" data-a="declarer">Déclarer un site</button>') + bandeaux() +
+        '<div class="carte"><div class="barre"><input type="search" data-q placeholder="Chercher un site' + (v.portee.admin ? ", un compte" + (parSoc ? ", une société" : "") : "") + '" aria-label="Chercher" value="' + esc(S.q) + '" style="flex:1 1 220px">' + choixSoc() + "</div>" +
         '<div class="chips">' + chips.map((c) => '<button class="chip" data-a="filtre" data-f="' + c[0] + '"' + (S.filtre === c[0] ? ' style="background:var(--accent);color:var(--on-accent,#fff);border-color:transparent"' : "") + ' aria-pressed="' + (S.filtre === c[0]) + '">' + c[1] + "</button>").join("") + "</div>" + corps +
-        (l.length > PAR ? '<div class="pied-t"><span>' + ((S.p - 1) * PAR + 1) + "–" + Math.min(l.length, S.p * PAR) + " sur " + l.length + '</span><span class="acts"><button class="btn mini" data-a="page" data-p="' + (S.p - 1) + '"' + (S.p > 1 ? "" : " disabled") + '>‹ précédents</button><button class="btn mini" data-a="page" data-p="' + (S.p + 1) + '"' + (S.p < np ? "" : " disabled") + ">suivants ›</button></span></div>" : "") + "</div>";
+        (l.length > PAR ? '<div class="pied-t"><span>' + ((S.p - 1) * PAR + 1) + "–" + Math.min(l.length, S.p * PAR) + " sur " + l.length + '</span><span class="acts"><button class="btn mini" data-a="page" data-p="' + (S.p - 1) + '"' + (S.p > 1 ? "" : " disabled") + '>‹ précédents</button><button class="btn mini" data-a="page" data-p="' + (S.p + 1) + '"' + (S.p < np ? "" : " disabled") + ">suivants ›</button></span></div>" : "") + legende() + lot + "</div>";
     },
 
     async alertes() {
@@ -246,15 +318,21 @@
     },
 
     async dispo() {
-      const v = await chargerVue(), d = await lire("sites.disponibilite", { jours: S.jours });
-      const seg = choixSoc() + '<div class="seg" role="group" aria-label="Période">' + [7, 30, 90].map((n) => '<button class="' + (S.jours === n ? "on" : "") + '" data-a="jours" data-n="' + n + '">' + n + " jours</button>").join("") + "</div>";
+      const n = [7, 30, 90].includes(S.jours) ? S.jours : 30, v = await chargerVue(), d = await lire("sites.disponibilite", { jours: n });
+      const seg = choixSoc() + '<div class="seg" role="group" aria-label="Période">' + [7, 30, 90].map((x) => '<button class="' + (n === x ? "on" : "") + '" data-a="jours" data-n="' + x + '">' + x + " jours</button>").join("") + "</div>";
       if (!d) return entete(seg) + bandeaux();
+      await chargerTend(n);
       const par = {}; visibles(v && v.sites).forEach((s) => { par[s.domaine] = s; });
-      const l = (d.sites || []).filter((s) => par[s.domaine]).sort((a, b) => a.disponibilite - b.disponibilite);
-      const cible = (s) => { const o = par[s.domaine].objectif, ec = Math.round((s.disponibilite - o) * 100) / 100; return [o, ec]; };
-      return entete(seg) + bandeaux() + '<div class="carte">' + (l.length ? '<div class="rows">' + l.map((s) => { const c = cible(s); return '<button class="row" data-a="cal" data-d="' + esc(s.domaine) + '"><span class="vg' + (s.en_panne ? " dg" : "") + '">' + esc(initiales(s.domaine)) + '</span><span class="nm"><b class="mono">' + esc(s.domaine) + "</b><small>objectif " + pct(c[0]) + " · " + (c[1] >= 0 ? "tenu" : "manqué de " + pct(-c[1]).replace(" %", " pt")) + (s.en_panne ? " · en panne en ce moment" : "") + '</small></span><span class="note">' + s.pannes + " coupure" + (s.pannes > 1 ? "s" : "") + (s.indisponible_min ? " · " + esc(s.indisponible) + " indisponible" : "") + " · " + s.mesures + ' mesures</span><span class="cote"><span><b style="color:var(--' + (c[1] >= 0 ? "txt-strong,var(--txt)" : "danger") + ')">' + pct(s.disponibilite) + "</b></span><span>" + (s.reponse_moy_ms == null ? "—" : nb(s.reponse_moy_ms) + " ms en moyenne") + "</span></span></button>"; }).join("") + "</div>" : '<p class="note">' + esc(d.raison || "Aucune mesure.") + "</p>") +
-        ((d.plus_suivis || []).length ? '<p class="note">Plus mesurés depuis deux jours, donc sans chiffre : ' + d.plus_suivis.map(esc).join(", ") + ".</p>" : "") + '<p class="note">Un clic ouvre le calendrier du site : ses coupures jour par jour, et son objectif.</p></div>' +
-        '<div class="carte"><h4>Comment c’est compté</h4><p class="note">Une mesure toutes les 5 minutes. Une panne se dit après plusieurs échecs de suite et commence au premier ; une panne qui dure encore compte jusqu’à maintenant. Un site qu’on ne mesure plus n’a pas 100 % : il n’a pas de chiffre. L’objectif par défaut est de ' + pct(portee().objectif) + " ; chaque site peut avoir le sien, posé dans son calendrier.</p></div>";
+      const l = (d.sites || []).filter((s) => par[s.domaine]).sort((a, b) => a.disponibilite - b.disponibilite), mesures = new Set(l.map((s) => s.domaine));
+      const sans = Object.keys(par).filter((x) => !mesures.has(x) && !par[x].preuve), lent = (S.tend && S.tend.lent_ms) || 3000;
+      // La ligne de la maquette : le nom et son objectif, la bande, la courbe, puis le chiffre et son écart avec la période d'avant.
+      const rang = (s) => { const o = par[s.domaine].objectif, ec = Math.round((s.disponibilite - o) * 100) / 100, t = tendance(s.domaine), av = t ? t.avant : null, dl = av == null ? null : Math.round((s.disponibilite - av) * 100) / 100;
+        return '<button class="row d4" data-a="cal" data-d="' + esc(s.domaine) + '"><span class="nm"><b class="mono">' + esc(s.domaine) + "</b><small>objectif " + pct(o) + " · " + (ec >= 0 ? "tenu" : "manqué de " + (-ec).toLocaleString("fr-FR") + " pt") + (s.en_panne ? " · en panne en ce moment" : "") + "</small></span>" + bande(s.domaine, n) + courbe(s.domaine) +
+          '<span class="cote"><span><b style="color:var(--' + (ec >= 0 ? "txt-strong,var(--txt)" : "danger") + ')">' + pct(s.disponibilite) + '</b></span><span class="delta ' + (dl == null ? "" : dl >= 0 ? "h" : "b") + '">' + (dl == null ? "pas de période d’avant" : (dl >= 0 ? "▲ +" : "▼ ") + dl.toLocaleString("fr-FR") + " pt vs les " + n + " j d’avant") + "</span></span></button>"; };
+      return K.titre("Disponibilité", "tous les sites, comparés · un trait par jour", seg) + bandeaux() + '<div class="carte">' + (l.length ? '<div class="rows">' + l.map(rang).join("") + "</div>" : '<p class="note">' + esc(d.raison || "Pas encore de mesure.") + "</p>") +
+        (sans.length ? '<p class="note">Pas encore de mesure sur cette période : ' + sans.slice(0, 6).map((x) => '<span class="mono">' + esc(x) + "</span>").join(", ") + (sans.length > 6 ? "…" : "") + ". Ils n’ont pas 100 % : ils n’ont pas de chiffre.</p>" : "") +
+        ((d.plus_suivis || []).length ? '<p class="note">Plus mesurés depuis deux jours, donc sans chiffre : ' + d.plus_suivis.map(esc).join(", ") + ".</p>" : "") + legende() + '<div class="leg"><span>┄ seuil « lent » : ' + nb(lent) + " ms</span><span>un clic ouvre le calendrier du site</span></div></div>" +
+        '<div class="carte"><h4>Comment c’est compté</h4><p class="note">Une mesure toutes les 5 minutes. Une panne se dit après plusieurs échecs de suite et commence au premier ; une panne qui dure encore compte jusqu’à maintenant. Les jours sans mesure ne comptent ni pour ni contre : un site qu’on ne mesure plus n’a pas 100 %, il n’a pas de chiffre. L’objectif par défaut est de ' + pct(portee().objectif) + " ; chaque site peut avoir le sien, posé dans son calendrier.</p></div>";
     },
 
     async demandes() {
@@ -365,21 +443,25 @@
 
     // ── la page d'un site ───────────────────────────────────────────────────────────────────────────────
     async site() {
-      await chargerVue();
+      const v = await chargerVue();
       const f = await lire("sites.fiche", { domaine: S.sel });
       const fil = '<p class="fil"><a data-a="aller" data-f="sites">‹ tous les sites</a></p>';
       if (!f) return fil + '<div class="carte vide"><b>Cette page ne s’ouvre pas</b><p class="note">' + esc(S.erreur || "site hors de ta portée") + "</p></div>";
-      S.fiche = f; const s = f.site, e = etat(s), d = f.domaine;
+      S.fiche = f; const s = f.site, e = etat(s), d = f.domaine, ap = f.apercu || {}, inc = s.incident, mnt = s.maintenance;
       if (S.onglet === "heberg" && f.hors_panneau) S.onglet = "apercu";
       if (f.preuve && S.onglet !== "journal") S.onglet = "apercu";
-      const acts = (f.gestes.relever ? '<button class="btn" data-a="relever" data-d="' + esc(d) + '">Relever maintenant</button>' : '<button class="btn" data-a="recharger">Relire</button>') + (f.preuve ? "" : '<button class="btn" data-a="cal" data-d="' + esc(d) + '">Calendrier</button>') +
-        (f.gestes.demander ? '<button class="btn" data-a="demander" data-d="' + esc(d) + '">Demander l’adossement</button>' : "") + (f.gestes.transferer ? '<button class="btn" data-a="transferer" data-d="' + esc(d) + '">Transférer…</button>' : "") +
-        (admin() && !f.preuve && !s.maintenance ? '<button class="btn" data-a="mnt" data-d="' + esc(d) + '">Maintenance…</button>' : "") +
-        (f.gestes.attribuer_societe ? '<button class="btn" data-a="societe" data-d="' + esc(d) + '">Société…</button>' : "") +
-        (f.preuve && f.gestes.attribuer ? '<button class="btn" data-a="attester" data-d="' + esc(d) + '" data-c="' + esc(f.preuve.compte) + '">Attester</button>' : f.gestes.attribuer && !(s.comptes || []).length ? '<button class="btn" data-a="attribuer" data-d="' + esc(d) + '">Attribuer…</button>' : "") +
-        (f.gestes.retirer ? '<button class="btn dng" data-a="retirer" data-d="' + esc(d) + '"' + (f.preuve ? ' data-preuve="1">Annuler la déclaration' : ">Retirer de la liste") + "</button>" : "");
-      const ap = f.apercu || {};
-      const tete = '<div class="carte"><div class="tete-s">' + vg({ domaine: d, up: s.up, icone: ap.icone || s.icone }, "gd") + '<div class="sp"><h1>' + esc(d) + "</h1>" + (ap.titre ? '<p class="note" style="margin:2px 0 6px">' + esc(ap.titre) + "</p>" : "") + '<div class="pills">' + pastilles(s) + '</div><p class="note" style="margin-top:6px">' + (f.preuve ? "Déclaré par" : "Propriétaire") + ' : <b>' + (f.mien ? "toi" : esc((s.comptes || []).join(", ") || "aucun compte Cassandra")) + "</b>" + (s.proprietaire_panneau ? " · compte « " + esc(s.proprietaire_panneau) + " » du panneau" : "") + '</p></div><div class="acts">' + acts + "</div></div>" +
+      // L'en-tête de la maquette : la vignette, le nom, ses pastilles, sa société (que le superadministrateur change sur place), son propriétaire, puis les gestes de tous les jours.
+      const socs = (v && v.portee.societes) || [], propose = s.societe && s.societe_source !== "attribuee";
+      const societe = !multi() ? "" : '<p class="meta2">Société : <b>' + (s.societe && !propose ? esc(socNom(s.societe)) : "non attribuée") + "</b>" + (propose ? " · proposée : " + esc(socNom(s.societe)) + ", celle du compte" : "") +
+        (f.gestes.attribuer_societe ? ' <select data-st-soc aria-label="Société" style="padding:3px 8px;font-size:13px">' + socs.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === s.societe ? " selected" : "") + ">" + esc(x.nom) + "</option>").join("") + '</select> <button class="btn mini" data-a="soc-poser" data-d="' + esc(d) + '">' + (s.societe && !propose ? "Changer" : "Attribuer") + "</button>" : "") + "</p>";
+      const gestes = (f.gestes.relever ? '<button class="btn pri" data-a="relever" data-d="' + esc(d) + '">Relever maintenant</button>' : "") +
+        (f.preuve ? "" : mnt ? (admin() && mnt.ce_site ? '<button class="btn" data-a="mnt-fin" data-id="' + esc(mnt.id) + '">Fin de la maintenance</button>' : "") : admin() ? '<button class="btn" data-a="mnt" data-d="' + esc(d) + '" data-h="2">Maintenance 2 h</button>' : "") +
+        (f.preuve ? "" : '<button class="btn" data-a="cal" data-d="' + esc(d) + '">Calendrier</button>') +
+        (inc && inc.etat !== "retabli" ? '<button class="btn dng" data-a="incident" data-id="' + inc.id + '">Incident ouvert ›</button>' : "") +
+        (f.preuve && f.gestes.attribuer ? '<button class="btn" data-a="attester" data-d="' + esc(d) + '" data-c="' + esc(f.preuve.compte) + '">Attester</button>' : "") +
+        (f.preuve && f.gestes.retirer ? '<button class="btn dng" data-a="retirer" data-d="' + esc(d) + '" data-preuve="1">Annuler la déclaration</button>' : "");
+      const tete = '<div class="carte"><div class="site-t">' + vignette({ domaine: d, up: s.up, icone: ap.icone || s.icone, preuve: s.preuve }, true, ap.image) + "<div><h1>" + esc(d) + "</h1>" + (ap.titre ? '<p class="note" style="margin:0 0 6px">' + esc(ap.titre) + "</p>" : "") + '<div class="pills">' + pastilles(s, true) + "</div>" + societe +
+        '<p class="meta2">' + (f.preuve ? "Déclaré par" : "Propriétaire") + " : <b>" + (f.mien ? "toi" : esc((s.comptes || []).join(", ") || "aucun compte Cassandra")) + "</b>" + (s.proprietaire_panneau ? " · compte « " + esc(s.proprietaire_panneau) + " » du panneau" : "") + (ap.ts && !ap.erreur ? " · aperçu : " + esc(heure(ap.ts)) : "") + '</p><div class="gest">' + gestes + "</div></div></div>" +
         '<div class="onglets" role="tablist">' + ONGLETS.filter((o) => (o[0] !== "heberg" || !f.hors_panneau) && (!f.preuve || o[0] === "apercu" || o[0] === "journal")).map((o) => '<button role="tab" class="' + (S.onglet === o[0] ? "on" : "") + '" aria-selected="' + (S.onglet === o[0]) + '" data-a="onglet" data-o="' + o[0] + '">' + o[1] + "</button>").join("") + "</div>";
       return fil + bandeaux() + tete + (await O[S.onglet](f, s, e)) + "</div>";
     },
@@ -397,7 +479,7 @@
           (f.gestes.prouver ? '<div class="acts"><button class="btn pri" data-a="prouver" data-d="' + esc(f.domaine) + '">Vérifier maintenant</button></div>' : "");
       }
       const vo = f.voisins || {}, mnt = vo.maintenance, tr = vo.trafic, nm = vo.nom, ap = f.apercu || {};
-      const carte = ap.image || ap.description ? '<div class="apv">' + (ap.image && /^data:image\//.test(ap.image) ? '<img src="' + esc(ap.image) + '" alt="Image de présentation du site">' : "") + '<div class="sp">' + (ap.titre ? "<b>" + esc(ap.titre) + "</b>" : "") + (ap.description ? '<p class="note">' + esc(ap.description) + "</p>" : "") + '<p class="note">Ce que la page d’accueil dit d’elle' + (ap.langue ? " (" + esc(ap.langue) + ")" : "") + " ; dernière lecture : " + esc(heure(ap.ts)) + ".</p></div></div>" : "";
+      const carte = ap.description ? '<p class="note" style="margin:0">« ' + esc(ap.description) + " » <span>— ce que la page d’accueil dit d’elle" + (ap.langue ? " (" + esc(ap.langue) + ")" : "") + "</span></p>" : "";
       return carte + (mnt ? '<div class="bandeau in"><div class="sp"><b>En maintenance jusqu’à ' + esc(heure(mnt.fin)) + ".</b> " + esc(mnt.motif || "Fenêtre posée dans le Sensorium") + (mnt.par ? " · par " + esc(court(mnt.par)) : "") + ". Ses alertes se taisent, les mesures continuent." + (mnt.ce_site ? "" : " Elle couvre plus que ce site.") + "</div>" + (admin() && mnt.ce_site ? '<button class="btn mini" data-a="mnt-fin" data-id="' + esc(mnt.id) + '">Fin de la maintenance</button>' : "") + "</div>" : "") +
         (vo.acceptee ? '<div class="bandeau in"><div class="sp"><b>Alerte acceptée dans le Sensorium.</b> ' + esc(vo.acceptee.raison || "Sans raison notée") + (vo.acceptee.jusqu_a ? " · jusqu’au " + esc(heure(vo.acceptee.jusqu_a)) : "") + ". Une panne de ce site ne sonne pas.</div></div>" : "") +
         (inc && inc.etat !== "retabli" ? '<div class="bandeau da"><div class="sp"><b>Incident ouvert depuis ' + esc(inc.duree) + ".</b> " + esc(inc.diagnostic) + (inc.pris_par ? " " + esc(inc.pris_par === moi() ? "Tu t’en occupes." : court(inc.pris_par) + " s’en occupe.") : "") + '</div><button class="btn mini pri" data-a="incident" data-id="' + inc.id + '">Dépanner ›</button></div>' : "") +
@@ -405,7 +487,7 @@
         (f.admin_autrui ? '<div class="bandeau in"><div class="sp">Ce site appartient à ' + esc((s.comptes || []).join(", ") || "un compte du panneau") + ". Tu vois son état, pas son contenu.</div></div>" : "") +
         (f.demande ? '<div class="bandeau al"><div class="sp"><b>Adossement demandé</b> par ' + esc(f.demande.compte) + (f.demande.message ? " : « " + esc(f.demande.message) + " »" : "") + ".</div>" + (admin() ? '<button class="btn mini pri" data-a="repondre" data-id="' + f.demande.id + '" data-v="fait">Adossé, c’est fait</button><button class="btn mini" data-a="repondre" data-id="' + f.demande.id + '" data-v="refusee">Refuser…</button>' : "") + "</div>" : "") +
         '<dl class="g"><dt>réponse</dt><dd>' + (s.up == null ? '<span class="note">pas encore relevé : dans moins de 5 minutes</span>' : (s.code == null ? "sans réponse" : s.code) + " en " + nb(s.ms || 0) + ' ms <span class="note">' + esc(heure(s.mesure)) + (s.erreur ? " · " + esc(s.erreur) : "") + "</span>") + "</dd>" +
-        "<dt>disponibilité 30 j</dt><dd>" + (d30 ? pct(d30.disponibilite) + " · " + d30.pannes + " coupure" + (d30.pannes > 1 ? "s" : "") + (d30.indisponible_min ? " · " + esc(d30.indisponible) : "") : '<span class="note">pas encore de mesure</span>') + "</dd>" +
+        "<dt>disponibilité 30 j</dt><dd>" + (d30 ? pct(d30.disponibilite) + " · objectif " + pct(s.objectif) + ' <span class="note">' + d30.pannes + " coupure" + (d30.pannes > 1 ? "s" : "") + (d30.indisponible_min ? " · " + esc(d30.indisponible) : "") + "</span>" : '<span class="note">pas encore de mesure</span>') + ' <button class="btn mini" data-a="onglet" data-o="dispo">détail</button></dd>' +
         "<dt>dernières 24 h</dt><dd>" + (h.mesures ? pct(h.disponibilite) + " · " + (h.reponse_moy_ms == null ? "—" : nb(h.reponse_moy_ms) + " ms en moyenne") + " · " + h.mesures + " mesures" : '<span class="note">pas encore de mesure</span>') + "</dd>" +
         "<dt>certificat</dt><dd>" + (typeof s.ssl_jours === "number" ? (s.ssl_jours < 0 ? "échu depuis " + (-s.ssl_jours) + " j" : "expire dans " + s.ssl_jours + " j") + ' <span class="note">' + esc({ certificats: "d’après Certificats", sonde: "lu par la sonde", panneau: "d’après le panneau" }[s.ssl_source] || "") + '</span> <button class="btn mini" data-a="certificats">Certificats</button>' : '<span class="note">pas encore lu</span>') + "</dd>" +
         "<dt>hébergement</dt><dd>" + (f.hors_panneau ? "hors panneau, déclaré à la main" : "panneau · compte « " + esc(s.proprietaire_panneau || "?") + " »" + (s.php ? " · PHP " + esc(s.php) : "")) + "</dd>" +
@@ -413,24 +495,29 @@
         (tr ? "<dt>trafic " + tr.jours + " j</dt><dd>" + nb(tr.requetes || 0) + " requêtes" + (tr.robots != null ? ' <span class="note">dont ' + nb(tr.robots) + " de robots" + ((tr.premiers_robots || []).length ? " (" + tr.premiers_robots.map(esc).join(", ") + ")" : "") + " · relevé par le Sensorium</span>" : "") + "</dd>" : "") +
         (nm ? "<dt>nom de domaine</dt><dd>" + esc(nm.zone) + (nm.jours == null ? "" : nm.jours < 0 ? ' · <b style="color:var(--danger)">échu</b>' : " · expire dans " + nm.jours + " j") + ' <span class="note">le ' + esc(nm.expiration) + " · d’après le DNS</span></dd>" : "") +
         "<dt>objectif</dt><dd>" + pct(s.objectif) + ' de disponibilité <span class="note">' + (s.objectif_propre ? "propre à ce site" : "celui du réglage") + (d30 ? " · sur 30 j : " + (d30.disponibilite >= s.objectif ? "tenu" : "manqué") : "") + '</span> <button class="btn mini" data-a="cal" data-d="' + esc(f.domaine) + '">Calendrier</button></dd>' +
-        (multi() ? "<dt>société</dt><dd>" + (s.societe ? esc(socNom(s.societe)) + ' <span class="note">' + (s.societe_source === "attribuee" ? "attribuée au site" : "celle de son compte : le site lui-même n’est pas attribué") + "</span>" : '<span class="note">aucune : ni compte ni société, seuls les superadministrateurs le voient</span>') + (f.gestes.attribuer_societe ? ' <button class="btn mini" data-a="societe" data-d="' + esc(f.domaine) + '">Attribuer…</button>' : "") + "</dd>" : "") + "</dl>" +
-        (f.hors_panneau ? '<p class="note">Hors panneau : la sonde, l’historique, les rattachements et le journal.</p>' : '<div class="acts"><button class="btn" data-a="renouveler" data-d="' + esc(f.domaine) + '">Renouveler le certificat…</button><button class="btn" data-a="onglet" data-o="heberg">Copies de sauvegarde</button>' + (f.gestes.accorder ? '<button class="btn" data-a="accorder" data-d="' + esc(f.domaine) + '">Autoriser une restauration (24 h)</button>' : "") + "</div>") +
+        (f.hors_panneau ? "" : "<dt>disque</dt><dd>" + (s.disque_mo != null ? poids(s.disque_mo) + ' <span class="note">fichiers et bases, d’après le panneau</span>' : '<span class="note">pas encore lu</span>') + "</dd>" +
+          "<dt>sauvegarde</dt><dd>" + (!s.sauvegarde ? '<span class="note">le panneau n’a pas dit ce qu’il sauvegarde</span>' : s.sauvegarde.etat === "ok" ? "couverte par un plan" : s.sauvegarde.etat === "sans" ? '<b style="color:var(--warn)">aucune copie connue</b>' : '<b style="color:var(--warn)">trop ancienne</b> <span class="note">la dernière date du ' + esc(String(s.sauvegarde.derniere || "?").slice(0, 10)) + "</span>") + "</dd>") + "</dl>" +
+        // Les gestes, comme la maquette les range : ceux du panneau, puis ceux de l'administration. Ce que le panneau n'offre pas encore est montré éteint, avec la raison.
+        "<h4>Gestes</h4>" + (f.hors_panneau ? '<div class="bandeau in"><div class="sp">Hors panneau : la relève, le calendrier, les incidents et les rattachements.</div>' + (f.gestes.demander ? '<button class="btn mini" data-a="demander" data-d="' + esc(f.domaine) + '">Demander l’adossement au panneau</button>' : "") + "</div>" :
+          '<div class="gest"><button class="btn" data-a="renouveler" data-d="' + esc(f.domaine) + '">Certificat : renouveler…</button><button class="btn" data-a="certificats">Certificats ↗</button><button class="btn" data-a="onglet" data-o="heberg"' + (f.mien || f.accord ? "" : ' title="la restauration demande l’accord du propriétaire"') + ">Restaurer une sauvegarde…</button>" + (f.gestes.accorder ? '<button class="btn" data-a="accorder" data-d="' + esc(f.domaine) + '">Autoriser une restauration (24 h)</button>' : "") + "</div>" +
+          '<div class="gest">' + ["Scanner", "Sauvegarder maintenant", "Journaux", "Redémarrer PHP"].map((x) => '<button class="btn" disabled title="Le panneau n’offre pas encore ce geste à Cassandra : il reste à créer côté FastPanel.">' + x + "</button>").join("") + '<span class="note">à venir : le panneau n’offre pas encore ces gestes</span></div>') +
+        '<div class="gest">' + (f.gestes.transferer ? '<button class="btn" data-a="transferer" data-d="' + esc(f.domaine) + '">Transférer à un compte…</button>' : "") + (f.gestes.attribuer && !(s.comptes || []).length ? '<button class="btn" data-a="attribuer" data-d="' + esc(f.domaine) + '">Attribuer à un compte…</button>' : "") + (f.gestes.retirer ? '<button class="btn dng" data-a="retirer" data-d="' + esc(f.domaine) + '">Retirer de la liste</button>' : "") + "</div>" +
         (f.accord ? '<div class="bandeau in"><div class="sp">Accord de restauration donné par ' + esc(f.accord.par) + " jusqu’au " + esc(heure(f.accord.jusqu_a)) + ".</div></div>" : "") +
         "<h4>Derniers événements</h4>" + ((h.evenements || []).length ? '<div class="jl">' + h.evenements.map((x) => '<div><span class="t">' + esc(heure(x.ts)) + "</span>" + K.pill(VERBES[x.genre] || x.genre, x.genre === "panne" ? "dg" : x.genre === "retour" ? "ok" : "") + "<span>" + esc(x.detail || "") + "</span></div>").join("") + "</div>" : '<p class="note">Rien sur les dernières 24 heures.</p>');
     },
-    async dispo(f) {
-      const seg = '<div class="seg" role="group" aria-label="Période">' + [[24, "24 h"], [24 * 7, "7 jours"], [24 * 30, "30 jours"], [24 * 90, "90 jours"]].map((x) => '<button class="' + (S.heures === x[0] ? "on" : "") + '" data-a="heures" data-n="' + x[0] + '">' + x[1] + "</button>").join("") + "</div>";
-      const h = await lire("sites.historique", { domaine: f.domaine, heures: S.heures });
+    async dispo(f, s) {
+      const n = [7, 30, 90].includes(S.jours) ? S.jours : 30, d = f.domaine;
+      const seg = '<div class="sh"><div class="seg" role="group" aria-label="Période">' + [7, 30, 90].map((x) => '<button class="' + (n === x ? "on" : "") + '" data-a="jours" data-n="' + x + '">' + x + ' jours</button>').join("") + '</div><span class="dr"><button class="btn mini" data-a="cal" data-d="' + esc(d) + '">Ouvrir le calendrier</button></span></div>';
+      await chargerTend(n);
+      const t = tendance(d), h = await lire("sites.historique", { domaine: d, heures: n * 24 });
       if (!h) return seg + bandeaux();
-      // Un trait par jour (par heure sur 24 h) : le pire de la tranche l'emporte, une tranche sans mesure reste grise.
-      const n = S.heures === 24 ? 24 : S.heures / 24, pas = S.heures === 24 ? 3600 : 86400, fin = Date.now() / 1000, cases = Array.from({ length: n }, () => ({ t: 0, bas: 0 }));
-      (h.points || []).forEach((p) => { const k = n - 1 - Math.floor((fin - p.ts) / pas); if (k >= 0 && k < n) { cases[k].t++; if (!p.up) cases[k].bas++; } });
-      const bande = '<div class="bande" role="img" aria-label="Disponibilité : ' + pct(h.disponibilite) + '">' + cases.map((c, i) => '<i class="' + (!c.t ? "n" : !c.bas ? "" : c.bas * 3 >= c.t ? "d" : "w") + '" title="' + (S.heures === 24 ? "il y a " + (n - 1 - i) + " h" : "il y a " + (n - 1 - i) + " j") + " : " + (!c.t ? "pas de mesure" : !c.bas ? "sans coupure" : c.bas + " mesure(s) en échec sur " + c.t) + '"></i>').join("") + "</div>";
-      return seg + (h.mesures ? '<div class="stats"><div class="stat"><b>' + pct(h.disponibilite) + "</b><span>disponibilité</span></div><div class=\"stat\"><b>" + h.mesures + '</b><span>mesures</span></div><div class="stat"><b>' + (h.reponse_moy_ms == null ? "—" : nb(h.reponse_moy_ms) + " ms") + '</b><span>réponse moyenne</span></div><div class="stat"><b>' + (h.reponse_max_ms == null ? "—" : nb(h.reponse_max_ms) + " ms") + "</b><span>au pire</span></div></div>" + bande +
-        '<div class="leg"><span><i style="background:var(--ok)"></i>sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span><span><i style="background:var(--line-strong,var(--line))"></i>pas de mesure</span></div>' : '<p class="note"><b>Pas encore de mesure</b> sur cette période. Le site n’a pas 100 % : il n’a pas de chiffre.</p>') +
+      const v = t ? t.disponibilite : h.disponibilite, av = t ? t.avant : null, ec = v != null && av != null ? Math.round((v - av) * 100) / 100 : null, lent = (S.tend && S.tend.lent_ms) || 3000, ni = (f.incidents || []).filter((i) => i.debut >= Date.now() / 1000 - n * 86400).length;
+      return seg + (v == null ? '<p class="note"><b>Pas encore de mesure</b> sur cette période. Le site n’a pas 100 % : il n’a pas de chiffre.</p>' :
+        '<div class="kpis"><div class="kpi"><span>Disponibilité · ' + n + ' j</span><b class="' + (v < s.objectif ? "w" : "") + '">' + pct(v) + "</b><em>objectif " + pct(s.objectif) + " · " + (v >= s.objectif ? "tenu" : "manqué") + '</em></div><div class="kpi"><span>Les ' + n + " j d’avant</span><b>" + pct(av) + "</b><em>" + (ec == null ? "pas de mesure" : (ec >= 0 ? "▲ +" : "▼ ") + ec.toLocaleString("fr-FR") + " pt") + '</em></div><div class="kpi"><span>Réponse</span><b class="' + ((s.ms || 0) >= lent ? "w" : "") + '">' + (h.reponse_moy_ms == null ? "—" : nb(h.reponse_moy_ms) + " ms") + "</b><em>en moyenne · seuil « lent » : " + nb(lent) + ' ms</em></div><div class="kpi"><span>Incidents</span><b class="' + (ni ? "w" : "") + '">' + ni + "</b><em>sur " + n + " jours</em></div></div>" +
+        '<p class="note">' + n + " jours, un trait par jour</p>" + bande(d, n) + legende() + '<p class="note">Temps de réponse, un point par jour</p>' + courbe(d, 70)) +
         "<h4>Coupures et retours</h4>" + ((h.evenements || []).length ? '<div class="jl">' + h.evenements.slice(0, 30).map((x) => '<div><span class="t">' + esc(heure(x.ts)) + "</span>" + K.pill(VERBES[x.genre] || x.genre, x.genre === "panne" ? "dg" : x.genre === "retour" ? "ok" : "") + "<span>" + esc(x.detail || "") + "</span></div>").join("") + "</div>" : '<p class="note">Aucune sur cette période.</p>') +
         "<h4>Incidents</h4>" + ((f.incidents || []).length ? '<div class="rows">' + f.incidents.map(incLigne).join("") + "</div>" : '<p class="note">Aucun incident sur ce site.</p>') +
-        '<div class="acts"><button class="btn mini" data-a="cal" data-d="' + esc(f.domaine) + '">Calendrier du site</button><button class="btn mini" data-a="courbes">Courbes détaillées (Historique)</button></div>';
+        '<div class="acts"><button class="btn mini" data-a="courbes">Courbes détaillées (Historique)</button></div>';
     },
     async heberg(f, s) {
       const c = S.copies && S.copies.d === f.domaine ? S.copies : null, peut = f.mien || !!f.accord;
@@ -449,6 +536,20 @@
         (!c ? '<div class="acts"><button class="btn" data-a="copies" data-d="' + esc(f.domaine) + '">Voir les copies</button></div>' : c.erreur ? '<div class="bandeau al"><div class="sp">' + esc(c.erreur) + "</div></div>" : (c.l.length ? '<div class="rows">' + c.l.map((x) => '<div class="row c2">' + K.pill(x.partielle ? "partielle" : "complète", x.partielle ? "al" : "ok") + '<span class="nm"><b>' + esc(String(x.debut || "").replace("T", " ").slice(0, 16)) + "</b><small>" + (x.compte ? "compte " + esc(x.compte) + " · " : "") + (x.octets ? nb(Math.round(x.octets / 1048576)) + " Mo" : "") + ((x.bases || []).length ? " · bases : " + esc(x.bases.join(", ")) : "") + '</small></span><button class="btn mini dng" data-a="restaurer" data-d="' + esc(f.domaine) + '" data-id="' + esc(x.id) + '"' + (peut ? "" : ' disabled title="accord du propriétaire requis"') + ">Restaurer</button></div>").join("") + "</div>" : '<p class="note">Aucune copie pour ce compte.</p>')) +
         (f.accord ? '<div class="bandeau in"><div class="sp">Accord de restauration donné par ' + esc(f.accord.par) + " jusqu’au " + esc(heure(f.accord.jusqu_a)) + ".</div></div>" : f.gestes.accorder ? '<div class="acts"><button class="btn" data-a="accorder" data-d="' + esc(f.domaine) + '">Autoriser l’administrateur à restaurer (24 h)</button></div>' : "") +
         (admin() ? '<h4>Dans Hébergement</h4><p class="note">Pour agir sur le panneau lui-même (bases, DNS, courrier, comptes).</p><div class="acts"><button class="btn mini" data-a="hebergement" data-d="' + esc(f.domaine) + '">Ouvrir Hébergement</button></div>' : "");
+    },
+    // L'onglet Sécurité de la maquette : le trafic, puis tout ce qui expire, puis ce que les agents peuvent faire sur ce site.
+    async secu(f, s) {
+      const vo = f.voisins || {}, t = vo.trafic, nm = vo.nom, pf = vo.php_fin, an = (vo.hebergement || {}).analyse, j = s.ssl_jours;
+      const rang = (nom, sous, pastille, bouton) => '<div class="row c3"><span class="nm"><b>' + nom + "</b><small>" + sous + "</small></span>" + pastille + (bouton || "<span></span>") + "</div>";
+      return "<h4>Trafic, 9 jours</h4>" + (t ? '<div class="kpis"><div class="kpi"><span>Requêtes</span><b>' + nb(t.requetes || 0) + "</b><em>sur " + t.jours + ' jours</em></div><div class="kpi"><span>Dont robots</span><b>' + (t.robots == null ? "—" : nb(t.robots)) + "</b><em>" + (t.requetes ? Math.round(100 * (t.robots || 0) / t.requetes) + " % du trafic" : "") + '</em></div><div class="kpi"><span>Robots</span><b style="font:600 15px \'Inter\',sans-serif">' + esc((t.premiers_robots || []).join(", ") || "—") + "</b><em>les plus actifs</em></div></div>" +
+          '<p class="note">Relevé par le Sensorium. Les tentatives repoussées, site par site, ne sont pas encore lisibles : il les compte, mais ne les rend pas.</p>' : '<p class="note">' + (f.hors_panneau ? "Ce site n’est pas sur cette machine : le Sensorium ne voit pas son trafic." : "Pas encore de trafic relevé pour ce site (moins de cent requêtes en neuf jours, ou Sensorium non lu).") + "</p>") +
+        '<h4>Ce qui expire</h4><div class="rows">' +
+        rang("Certificat", "échéance, quota d’émission, renouvellement", typeof j === "number" ? K.pill(j < 0 ? "échu depuis " + (-j) + " j" : j + " j", j < 0 ? "dg" : j < 21 ? "al" : "ok") : K.pill("pas encore lu", ""), '<button class="btn mini" data-a="certificats">Certificats ↗</button>') +
+        rang("Nom de domaine", nm ? esc(nm.zone) + " · s’il expire, le site et son courrier disparaissent" : "s’il expire, le site et son courrier disparaissent", nm && nm.jours != null ? K.pill(nm.jours < 0 ? "échu" : nm.jours + " j", nm.jours < 10 ? "dg" : nm.jours < 30 ? "al" : "ok") : K.pill("pas encore lu", ""), '<span class="note">d’après le DNS</span>') +
+        (s.php ? rang("PHP " + esc(s.php), pf ? (pf.etat === "depassee" ? "plus de correctifs de sécurité depuis le " + esc(pf.fin) : "fin des correctifs de sécurité le " + esc(pf.fin)) : "version maintenue", K.pill(pf ? (pf.etat === "depassee" ? "fin de support" : "bientôt en fin de support") : "maintenu", pf ? "al" : "ok"), '<span class="note">d’après le panneau</span>') : "") +
+        (f.hors_panneau ? "" : rang("Analyse antivirus", an && an.planning ? "planifiée · " + esc(an.planning) : "dernier rapport du panneau", K.pill(!an ? "non lue" : an.dernier ? String(an.dernier).slice(0, 10) : "jamais analysé", !an ? "" : an.dernier ? "ok" : "al"), '<span class="note">d’après le panneau</span>')) + "</div>" +
+        (vo.acceptee || vo.maintenance ? "<h4>Ce qui se tait</h4>" + (vo.maintenance ? '<p class="note">En maintenance jusqu’à ' + esc(heure(vo.maintenance.fin)) + " : " + esc(vo.maintenance.motif || "fenêtre posée dans le Sensorium") + ".</p>" : "") + (vo.acceptee ? '<p class="note">Alerte acceptée dans le Sensorium : ' + esc(vo.acceptee.raison || "sans raison notée") + ".</p>" : "") : "") +
+        '<h4>Les agents, sur ce site</h4><p class="note">Cassandra et Itare peuvent lire son état, le relever et le rattacher ; dépanner et transférer leur demandent un accord (palier « raconter »). Ils n’ont jamais plus de droits que le compte au nom duquel ils agissent. <button class="btn mini" data-a="aller" data-f="reglages">Régler</button></p>';
     },
     async liens(f) {
       const l = f.liens || [], lib = (g) => (GENRES.find((x) => x[0] === g) || [g, g])[1];
@@ -544,6 +645,27 @@
       const t = "Le site " + i.domaine + " est en panne depuis " + i.duree + " (incident n° " + i.id + ") : " + i.diagnostic + vu + " Lis l’incident (sites.incident), propose-moi un plan de dépannage étape par étape en disant ce que tu peux faire toi-même et ce qui me revient, et attends mon accord avant d’agir.";
       if (typeof window.d19Demander === "function" && await window.d19Demander(t)) dire("La demande est écrite dans la conversation : relis-la, puis envoie.", "ok"); else dire("La conversation n’est pas disponible ici.", "err");
     },
+    // ── la société choisie, et les actions par lot sur les sites cochés ──
+    soc: (b) => { S.soc = b.dataset.s || ""; S.p = 1; aller("sites"); },
+    async "soc-poser"(b) { const v = String((R.querySelector("[data-st-soc]") || {}).value || ""); if (v && await geste("sites.attribuer_societe", { domaine: b.dataset.d, societe: v }, "Site attribué à " + socNom(v) + ".")) { S.lu = 0; rendre(); } },
+    "lot-rien": () => { S.coche.clear(); rendre(); },
+    async "lot-soc"() {
+      const v = String((R.querySelector("[data-lot-soc]") || {}).value || ""), l = [...S.coche]; if (!v || !l.length) return;
+      let n = 0; for (const d of l) { if (await tenter("sites.attribuer_societe", { domaine: d, societe: v })) n++; }
+      dire(n + " site" + (n > 1 ? "s attribués" : " attribué") + " à " + socNom(v) + (n < l.length ? " ; " + (l.length - n) + " l’étaient déjà ou ont été refusés." : "."), n ? "ok" : "err"); S.coche.clear(); S.lu = 0; rendre();
+    },
+    async "lot-mnt"() {
+      const l = [...S.coche]; if (!l.length || !await K.confirmer("Maintenance de " + l.length + " site" + (l.length > 1 ? "s" : ""), '<p class="note">Une fenêtre de deux heures est posée dans le Sensorium pour chacun : ses alertes se taisent, les mesures continuent.</p>', "Poser les fenêtres")) return;
+      let n = 0; for (const d of l) { if (await tenter("sensorium.fenetre_poser", { portee: "site:" + d, debut: utc(Date.now() - 60000), fin: utc(Date.now() + 7200000), motif: "intervention" })) n++; }
+      await tenter("sites.voisins"); dire(n ? "Fenêtre posée sur " + n + " site" + (n > 1 ? "s" : "") + "." : "Aucune fenêtre posée : ce geste demande le droit d’agir dans le Sensorium.", n ? "ok" : "err"); S.coche.clear(); S.lu = 0; rendre();
+    },
+    "lot-csv": () => {
+      // L'export se fait ici, dans le navigateur, à partir de ce que l'écran montre déjà : rien ne part ailleurs.
+      const l = ((S.vue && S.vue.sites) || []).filter((s) => S.coche.has(s.domaine)), q = (x) => '"' + String(x == null ? "" : x).replace(/"/g, '""') + '"';
+      const lignes = [["site", "état", "code", "réponse (ms)", "disponibilité 30 j (%)", "certificat (j)", "société", "comptes", "CMS", "PHP"]].concat(l.map((s) => [s.domaine, etat(s)[0], s.code, s.ms, s.dispo30 ? s.dispo30.disponibilite : "", s.ssl_jours, s.societe ? socNom(s.societe) : "", (s.comptes || []).join(" "), cmsTexte(s), s.php]));
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + lignes.map((r) => r.map(q).join(";")).join("\r\n")], { type: "text/csv;charset=utf-8" })); a.download = "sites.csv"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      dire(l.length + " site" + (l.length > 1 ? "s exportés" : " exporté") + ".", "ok");
+    },
     // ── le lot 3 : la maintenance (tenue par le Sensorium) et les rattachements (portés par leurs modules) ──
     async mnt(b) {
       // Depuis la page d'un site ou d'un incident (le site est donné), ou depuis Alertes (le site et la durée se choisissent dans la barre).
@@ -626,6 +748,11 @@
     if (moi_ !== tour || !R) return;                                // une navigation plus récente a pris la main
     const q = R.querySelector("[data-q]"), foyer = q && document.activeElement === q;
     R.innerHTML = html; dernier = { cle: cle(), html: html };
+    // Le menu de gauche suit : la sous-entrée de la page montrée s'allume, et ses sous-menus portent leurs compteurs, comme dans la maquette.
+    if (typeof window.d19Suivre === "function" && S.vue) {
+      const l = S.vue.sites || [], vig = S.vue.vigilances || [];
+      try { window.d19Suivre("sites", { site: "sites", incident: "incidents" }[S.page] || S.page, { sites: l.length, incidents: l.filter((s) => s.incident && s.incident.etat !== "retabli").length, alertes: vig.filter((x) => x.niveau !== "info").length, demandes: l.filter((s) => s.demande).length + l.filter((s) => s.preuve).length }); } catch (e) { /* le menu n'est pas monté (essai hors de l'application) */ }
+    }
     if (foyer) { const n = R.querySelector("[data-q]"); if (n) { n.focus(); try { n.setSelectionRange(n.value.length, n.value.length); } catch (e) {} } }
   }
   const cle = () => [S.page, S.sel, S.onglet, S.inc, S.calSite, S.calMois, S.soc].join("|");
@@ -648,6 +775,7 @@
     R.addEventListener("change", (e) => { const t = e.target;
       if (t.matches("[data-soc]")) { S.soc = t.value; S.p = 1; S.calJour = null; rendre(); }
       else if (t.matches("[data-cal-site]")) { S.calSite = t.value; S.calJour = null; rendre(); }
+      else if (t.matches("[data-coche]")) { if (t.checked) S.coche.add(t.dataset.coche); else S.coche.delete(t.dataset.coche); rendre(); }
       else if (t.matches("[data-rat-genre]")) { S.rat.genre = t.value; S.rat.res = null; S.rat.erreur = ""; rendre(); }
       else if (t.matches("[data-rat-role]")) S.rat.role = t.value;
       else if (t.matches("[data-regl]")) Promise.resolve(A.regler(t)).catch((x) => dire(msg(x), "err")); });
@@ -661,7 +789,7 @@
   window.stVue = function (vue) { if (R && document.body.contains(R)) aller(vue || "vue"); else window.__stVue = vue || "vue"; };
   window.loadMySites = function (force) { if (force) S.lu = 0; if (R && document.body.contains(R)) return rendre(); };      // sans « force », la vue lue il y a moins de trente secondes sert encore
   window.stOpen = function (domaine) { if (!actif() && typeof window.switchTab === "function") { S.page = "site"; S.sel = String(domaine || "").toLowerCase().replace(/^www\./, ""); S.onglet = "apercu"; window.switchTab("mysites"); return; } ouvrir(domaine); };
-  window.stFiltre = function (f) { S.filtre = { tombes: "tombes", regarder: "regarder", panneau: "panneau", declares: "declares", sans: "sans" }[f] || ""; S.p = 1; if (R && document.body.contains(R)) aller("sites"); else window.__stVue = "sites"; };
+  window.stFiltre = function (f) { S.filtre = { tombes: "tombes", regarder: "regarder", panneau: "panneau", declares: "declares", sans: "sans", sauv: "sauv", analyse: "analyse", sanssoc: "sanssoc", aprouver: "aprouver" }[f] || ""; S.p = 1; if (R && document.body.contains(R)) aller("sites"); else window.__stVue = "sites"; };
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 

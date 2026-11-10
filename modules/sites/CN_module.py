@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.4.0  #628f8a
+# VERSION CN : 0.5.0  #cba0db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sites.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=628f8a ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=cba0db ▼▼▼
 """Le module Sites.
 
 Ce qu'il tient de la V18 (sites, site_pass, site_fiche, site_history/availability, demandes, accords, liens) et les leçons qu'il garde :
@@ -805,10 +805,14 @@ def brancher(ctx):
                 return {"etat": "perimee", "derniere": s["perimees"][d], "seuil_j": s.get("seuil_j")}
             return {"etat": "ok", "derniere": None, "seuil_j": s.get("seuil_j")}
 
-        def resume(self, d, panneau):
-            """Ce qui entre dans la ligne d'un site : court, pour la liste et les alertes."""
+        def resume(self, d, panneau, ligne_panneau=None):
+            """Ce qui entre dans la ligne d'un site : court, pour la liste, les chiffres de la vue d'ensemble et les alertes."""
+            p = ligne_panneau or {}
+            poids = [p.get(k) for k in ("fichiers_mo", "bases_mo") if isinstance(p.get(k), (int, float))]
             return {"maintenance": self.maintenance(d), "acceptee": self.acceptee(d), "cms": (self.v.get("cms") or {}).get(d), "nom": self.nom(d),
-                    "sauvegarde": self.sauvegarde(d) if panneau else None, "php_fin": (self.v.get("php") or {}).get(d) if panneau else None}
+                    "sauvegarde": self.sauvegarde(d) if panneau else None, "php_fin": (self.v.get("php") or {}).get(d) if panneau else None,
+                    "disque_mo": round(sum(poids), 2) if poids else None,
+                    "analyse": ((self.v.get("analyses") or {}).get(d) or ({"actif": False, "dernier": None} if (self.v.get("sources") or {}).get("analyses") == "ok" else None)) if panneau else None}
 
         def detail(self, d, panneau, ligne_panneau):
             """Ce qui entre dans la fiche d'un site : tout ce que les voisins en savent, et de quand date la lecture."""
@@ -1241,13 +1245,13 @@ def brancher(ctx):
             lignes.append({"domaine": p["domaine"], "source": "declare", "origine": "declare", "up": None, "code": None, "ms": None, "erreur": "", "ssl_jours": None, "ssl_etat": None, "ssl_source": "",
                            "php": "", "proprietaire_panneau": "", "mesure": None, "dispo30": None, "comptes": [p["compte"]] if tout else None, "demande": None,
                            "societe": r.societe_du_compte(p["compte"]), "societe_source": "compte", "objectif": defaut, "objectif_propre": False, "incident": None,
-                           "maintenance": None, "acceptee": None, "cms": None, "nom": None, "sauvegarde": None, "php_fin": None, "titre": "", "icone": "",
+                           "maintenance": None, "acceptee": None, "cms": None, "nom": None, "sauvegarde": None, "php_fin": None, "disque_mo": None, "analyse": None, "titre": "", "icone": "",
                            "preuve": {"compte": p["compte"], "expire": p["cree"] + PREUVE_GARDE_J * 86400, "jeton": p["jeton"] if p["compte"] == compte else None}})
         for d in sorted(carte):
             e = carte[d]
             m = mesures.get(d)
             p = e["panneau"] or {}
-            res, a = vo.resume(d, bool(e["panneau"])), ap.get(d) or {}
+            res, a = vo.resume(d, bool(e["panneau"]), e["panneau"]), ap.get(d) or {}
             if not res["cms"] and a.get("generateur"):
                 res["cms"] = cms_du_generateur(a["generateur"])                # hors de la machine, le Sensorium n'y entre pas : reste ce que la page déclare d'elle-même
             lignes.append({**res, "titre": a.get("titre", ""), "icone": a.get("icone", ""),
@@ -1316,6 +1320,40 @@ def brancher(ctx):
         sites, plus = disponibilites(j, set(r.carte))
         return {"jours": j, "sites": sites, "plus_suivis": plus,
                 "raison": "" if sites else "Aucune mesure enregistrée — la sonde n'a pas encore tourné."}
+
+    def tendances(c, jours=30):
+        """Pour chaque site de la portée, de quoi dessiner sa ligne : une bande (un état par jour sur `jours` jours — ok, courte, longue, maintenance, sans),
+        la durée de réponse moyenne de chaque jour (la courbe), et sa disponibilité sur la période et sur celle d'avant (l'écart). Les jours sont des tranches
+        de 24 heures qui finissent maintenant : la dernière case est « les dernières 24 heures »."""
+        carte = Regard(c.compte).carte
+        n = nombre(jours, 30, 7, 90, "jours")
+        maintenant = time.time()
+        a0 = maintenant - 2 * n * 86400
+        par = {}
+        for x in db.lire("SELECT domaine, CAST((ts - ?) / 86400 AS INTEGER) k, COUNT(*) n, COALESCE(SUM(up),0) u, AVG(CASE WHEN up=1 THEN ms END) m FROM mesures WHERE ts >= ? GROUP BY domaine, k", (a0, a0)):
+            if x["domaine"] in carte:
+                par.setdefault(x["domaine"], {})[min(int(x["k"]), 2 * n - 1)] = x
+        vo, sortie = Voisins(), {}
+        for d in carte:
+            lignes = par.get(d) or {}
+            etats, durees, tot, bons = [], [], 0, 0
+            for k in range(n, 2 * n):
+                x = lignes.get(k)
+                if not x:
+                    etats.append("sans")
+                    durees.append(None)
+                    continue
+                tot, bons = tot + x["n"], bons + x["u"]
+                pct = 100.0 * x["u"] / x["n"]
+                e = "ok" if x["u"] == x["n"] else ("courte" if pct >= COUPURE_COURTE_PCT else "longue")
+                if vo.fenetres_de(d, a0 + k * 86400, a0 + (k + 1) * 86400):
+                    e = "maintenance"                                    # une fenêtre a couvert ce jour : ses coupures étaient voulues
+                etats.append(e)
+                durees.append(int(x["m"]) if x["m"] is not None else None)
+            avant = [lignes[k] for k in range(0, n) if k in lignes]
+            ta, ba = sum(x["n"] for x in avant), sum(x["u"] for x in avant)
+            sortie[d] = {"jours": etats, "ms": durees, "disponibilite": round(100.0 * bons / tot, 2) if tot else None, "avant": round(100.0 * ba / ta, 2) if ta else None}
+        return {"jours": n, "sites": sortie, "lent_ms": entier("lent_ms", 3000)}
 
     def serie(c, mesure="", depuis="", jusqu_a=""):
         """Les points de la sonde pour l'historique : une courbe PAR SITE de la portée du compte (l'administrateur voit l'état de tous, jamais leur contenu).
@@ -2148,7 +2186,7 @@ def brancher(ctx):
     c.detecteur("certificat_court", det_certificat)
     c.detecteur("adossement_demande", det_demandes)
     for cid, f in (("vue", vue), ("fiche", fiche), ("historique", historique), ("disponibilite", disponibilite), ("serie", serie), ("journal", journal), ("liens", liens), ("demandes", demandes), ("accord", accord),
-                   ("incidents", incidents), ("incident", incident), ("calendrier", calendrier), ("concerne", concerne), ("gestes", gestes), ("voisins", voisins)):
+                   ("incidents", incidents), ("incident", incident), ("calendrier", calendrier), ("concerne", concerne), ("gestes", gestes), ("voisins", voisins), ("tendances", tendances)):
         c.implementer(cid, f)
     c.implementer("prouver", prouver, prouver_ligne("compte"), defaire_prouve, simuler=lambda x, domaine="", **_: "vérifierait la preuve de propriété de %s" % domaine)
     c.implementer("relever", relever, prouver_releve, defaire_releve, simuler=lambda x, domaine="", **_: "mesurerait %s tout de suite" % domaine)
