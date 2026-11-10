@@ -5577,6 +5577,63 @@
      "last_check": "2026-10-17T12:00:00.123456"
     }
    }
+  },
+  {
+   "cas": "nginx : la racine posée par une variable (forme de FastPanel)",
+   "entree": {
+    "op": "sites_nginx",
+    "contenu": "server {\n    server_name blog.exemple.test www.blog.exemple.test ;\n    listen 203.0.113.24:443 ssl;\n    ssl_certificate \"/var/www/httpd-cert/blog.exemple.test.crt\";\n    set $root_path /var/www/bea/data/www/blog.exemple.test;\n    root $root_path;\n    disable_symlinks if_not_owner from=$root_path;\n}\n"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "blog.exemple.test",
+      true,
+      "/var/www/bea/data/www/blog.exemple.test",
+      "203.0.113.24"
+     ],
+     [
+      "www.blog.exemple.test",
+      true,
+      "/var/www/bea/data/www/blog.exemple.test",
+      "203.0.113.24"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "nginx : une variable de racine que le fichier ne pose pas",
+   "entree": {
+    "op": "sites_nginx",
+    "contenu": "server {\n    server_name c.test;\n    root $racine_ailleurs;\n}\n"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "c.test",
+      false,
+      "",
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "nginx : une variable entre guillemets",
+   "entree": {
+    "op": "sites_nginx",
+    "contenu": "server {\n    server_name d.test;\n    set $root_path \"/srv/d\";\n    root $root_path;\n}\n"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "d.test",
+      false,
+      "/srv/d",
+      ""
+     ]
+    ]
+   }
   }
  ]
 }

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5b7327
+# VERSION CN : 0.1.0  #e5047f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la détection du CMS par le collecteur : la table cms_sites existait et rien ne la remplissait. Le collecteur est chargé sur une base temporaire ; les racines des sites sont de vrais dossiers temporaires : aucune commande, aucun rés
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5b7327 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e5047f ▼▼▼
 """Bancs de la détection du CMS par le collecteur : la table cms_sites existait et rien ne la remplissait.
 Le collecteur est chargé sur une base temporaire ; les racines des sites sont de vrais dossiers temporaires : aucune commande, aucun réseau."""
 import os
@@ -84,6 +84,12 @@ class Cms(unittest.TestCase):
         except (OSError, NotImplementedError):
             self.skipTest("liens symboliques indisponibles sur ce poste")
         self.assertEqual(self.relever(), {})                                     # wp-includes mène dehors : le marqueur ne compte pas, donc pas de CMS
+
+    def test_la_racine_posee_par_une_variable_nginx_est_resolue(self):
+        """FastPanel écrit « set $root_path /chemin; root $root_path; » : sans cela la racine valait « $root_path » et aucun CMS n'était jamais trouvé."""
+        conf = "server {\n    server_name blog.exemple.test;\n    set $root_path /var/www/bea/data/www/blog.exemple.test;\n    root $root_path;\n}\n"
+        self.assertEqual(self.m._sys_formes("sites_nginx", contenu=conf), [["blog.exemple.test", False, "/var/www/bea/data/www/blog.exemple.test", ""]])
+        self.assertEqual(self.m._sys_formes("sites_nginx", contenu="server {\n    server_name c.test;\n    root $ailleurs;\n}\n")[0][2], "")
 
     def test_la_table_est_remplie_et_lisible_par_le_socket(self):
         self.site("blog.exemple.test", {"wp-config.php": "<?php", "wp-includes/version.php": "<?php\n$wp_version = '6.7.1';\n"})

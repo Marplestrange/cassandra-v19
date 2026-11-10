@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #10006b
+# VERSION EC : EC0 (référence 0.3.0)  #6de053
 # HÔTE CN    : CN_module.py · sys_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit du système (sorties de commandes, fichiers de configuration, JSON de smartctl) en sessions, ports, certificats, disques, état du matériel et sites web déclarés.
 # MÉTHODE    : fonctions pures, une par mesure ; le nexus lit les sources et décide des replis (who puis ss puis last ; ss puis netstat) ; l'EC ne lit jamais de fichier ni de commande.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=10006b ▼▼▼
+# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=6de053 ▼▼▼
 from datetime import datetime
 import re
 
@@ -261,6 +261,13 @@ def sites_nginx(contenu):
     ssl = bool(re.search(r"ssl_certificate", contenu))
     root_m = re.search(r"root\s+([^;]+);", contenu)
     root = root_m.group(1).strip() if root_m else ""
+    if root.startswith("$"):
+        # FastPanel écrit « set $root_path /chemin; root $root_path; » : la racine est la VALEUR de la variable, pas son nom.
+        # Une variable que le fichier ne pose pas reste sans racine : rien n'est inventé.
+        var_m = re.search(r"set\s+" + re.escape(root) + r"\s+([^;]+);", contenu)
+        root = var_m.group(1).strip().strip("\"'") if var_m else ""
+        if root.startswith("$"):
+            root = ""
     ip_m = re.search(r"^\s*listen\s+(\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-fA-F:]+\]):\d+", contenu, re.M)
     ip = ip_m.group(1) if ip_m else ""
     trouves = []

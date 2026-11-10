@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.6  #a6de37
+# VERSION CN : 0.2.7  #a6de37
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La preuve que le Sensorium fonctionne : le service est actif, le collecteur répond, ET le noyau (qui n'est pas root) l'entend aussi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.6 empreinte=a6de37 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.7 empreinte=a6de37 ▼▼▼
 # La preuve que le Sensorium fonctionne : le service est actif, le collecteur répond, ET le noyau (qui n'est pas root) l'entend aussi.
 set -u
 sock="/run/sensorium/knowledge.sock"
