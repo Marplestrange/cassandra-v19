@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9a2ddd
+# VERSION CN : 0.1.0  #c9f321
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9a2ddd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c9f321 ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -590,6 +590,40 @@ class AccordsLiensJournal(Monde):
         self.assertTrue(f["gestes"]["demander"] and f["gestes"]["retirer"] and not f["gestes"]["attribuer"])
         fa = self.ex("fiche", compte=CHEF, domaine="bea.exemple.fr")["resultat"]
         self.assertTrue(fa["admin_autrui"] and fa["gestes"]["attribuer"] and fa["gestes"]["transferer"])
+
+
+
+class Ecran(unittest.TestCase):
+    """L'écran du module est bien branché : son script est servi, le menu de gauche lui donne ses sous-entrées, le shell remplace l'onglet V18."""
+
+    def lire(self, *chemin):
+        return RACINE.joinpath(*chemin).read_text(encoding="utf-8")
+
+    def test_le_script_est_charge_par_la_page_et_par_l_assembleur(self):
+        self.assertIn('<script src="/sites-ecran.js"></script>', self.lire("interface", "CN_index.html"))
+        self.assertIn('<script src="/sites-ecran.js"></script>', self.lire("outils", "ui", "CN_assembler.py"))
+        self.assertTrue((RACINE / "interface" / "CN_sites-ecran.js").is_file())
+
+    def test_le_shell_remplace_l_onglet_v18_sans_le_supprimer(self):
+        self.assertIn('remplacerV18("mysites", "sites")', self.lire("interface", "CN_shell.js"))
+        ecran = self.lire("interface", "CN_sites-ecran.js")
+        self.assertIn("CASS.sceneSurMesure.sites", ecran)
+        for nom in ("window.stVue", "window.stOpen", "window.loadMySites", "window.stFiltre"):       # Panorama, Hébergement et l'Historique les appellent
+            self.assertIn(nom, ecran, nom)
+        self.assertIn("function stRendre", self.lire("interface", "CN_app.js"), "le code V18 reste en place : rien n'est retiré sans validation")
+
+    def test_le_menu_de_gauche_porte_les_pages_de_sites(self):
+        sys.path.insert(0, str(RACINE / "modules" / "affichage" / "points"))
+        import EC_disposition as d
+        r = d.disposition([], ["sites"], {}, {})
+        sites = next(e for g in r["groupes"] for e in g["entrees"] if e["id"] == "sites")
+        vues = [f["vue"] for f in sites["enfants"]]
+        self.assertEqual(vues, ["vue", "sites", "alertes", "dispo", "demandes", "journal"])
+        self.assertTrue(all(f["onglet"] == "mysites" for f in sites["enfants"]))
+        ecran = self.lire("interface", "CN_sites-ecran.js")
+        for v in vues:                                                                                # chaque sous-entrée a sa page dans l'écran
+            self.assertRegex(ecran, r"(?m)^\s+(async )?%s\(\)" % v, v)
+        self.assertIn('entreeId === "sites"', self.lire("interface", "CN_disposition.js"))
 
 
 if __name__ == "__main__":

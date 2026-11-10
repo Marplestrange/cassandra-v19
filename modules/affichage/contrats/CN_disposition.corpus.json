@@ -2756,7 +2756,110 @@
           "n": 0,
           "niveau": "danger"
          },
-         "enfants": []
+         "enfants": [
+          {
+           "id": "sites.vue",
+           "libelle": "Vue d’ensemble",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "vue",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.sites",
+           "libelle": "Tous les sites",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "sites",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.alertes",
+           "libelle": "Alertes",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "alertes",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.dispo",
+           "libelle": "Disponibilité",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "dispo",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.demandes",
+           "libelle": "Demandes",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "demandes",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.journal",
+           "libelle": "Journal",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "journal",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 60,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
         }
        ]
       },
@@ -3015,7 +3118,110 @@
           "n": 0,
           "niveau": ""
          },
-         "enfants": []
+         "enfants": [
+          {
+           "id": "sites.vue",
+           "libelle": "Vue d’ensemble",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "vue",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.sites",
+           "libelle": "Tous les sites",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "sites",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.alertes",
+           "libelle": "Alertes",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "alertes",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.dispo",
+           "libelle": "Disponibilité",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "dispo",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.demandes",
+           "libelle": "Demandes",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "demandes",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.journal",
+           "libelle": "Journal",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "journal",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 60,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
         }
        ]
       }

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a389b9
+// VERSION CN : 0.1.0  #f2918a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a389b9 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f2918a ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -235,7 +235,7 @@
   async function remplacerV18(onglet, mid) {
     const racine = document.getElementById("tab-" + onglet), dessin = (CASS.sceneSurMesure || {})[mid];
     if (!racine || !dessin) return;
-    racine.innerHTML = '<div class="sh-scene"><h2 class="sh-titre">' + esc({ evolution: "Évolution", sensorium: "Sensorium" }[onglet] || onglet) + '</h2><div class="sh-corps"></div></div>';
+    racine.innerHTML = '<div class="sh-scene"><h2 class="sh-titre">' + esc({ evolution: "Évolution", sensorium: "Sensorium", mysites: "Sites" }[onglet] || onglet) + '</h2><div class="sh-corps"></div></div>';
     try {
       const moi = CASS.moi || (CASS.moi = await (await fetch("/api/moi", { headers: { "X-Session-Token": token() } })).json());
       await dessin(racine.querySelector(".sh-corps"), { ecran: mid + ":cockpit", moi: moi });
@@ -246,6 +246,7 @@
     const r = switchTabOrigine.apply(this, arguments);
     if (typeof name === "string" && name.indexOf("mod-") === 0) dessinerScene(name);
     if (name === "evolution") remplacerV18("evolution", "evolution");               // l'ancienne page V18 de l'évolution cède la place à l'écran du module
+    if (name === "mysites") remplacerV18("mysites", "sites");                         // de même pour Sites (interface/CN_sites-ecran.js) : ses pages sont les sous-menus du menu de gauche
     if (name === "sensorium") remplacerV18("sensorium", "sensorium");               // de même pour le Sensorium (interface/CN_sensorium-ecran.js) ; le code V18 reste dans app.js
     return r;
   };

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.7.0  #0b1d4b
+# VERSION CN : 0.7.1  #0b1d4b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : suggestions_plan.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)
