@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.1.4  #5fcb8b
+# VERSION CN : 0.2.0  #0c6d99
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.4 empreinte=5fcb8b ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=0c6d99 ▼▼▼
 [module]
 id = "sites"
 nom = "Sites"
-version = "0.1.4"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes."
 confiance = "interne"
@@ -95,8 +95,22 @@ minimum = 3
 maximum = 90
 portee = "societe"
 
+[[reglages]]
+id = "objectif_pct"
+libelle = "Objectif de disponibilité par défaut, en pourcentage (de 90 à 100 ; chaque site peut avoir le sien)"
+type = "texte"
+defaut = "99.9"
+portee = "societe"
+
+[[reglages]]
+id = "preuve_exigee"
+libelle = "Exiger une preuve de propriété (un enregistrement DNS ou un fichier) de qui déclare un site hors du panneau"
+type = "booleen"
+defaut = true
+portee = "societe"
+
 [evenements]
-emet = ["site.panne", "site.retour", "site.declare", "site.retire", "site.attribue", "site.transfere", "site.demande", "site.adossement", "site.accord"]
+emet = ["site.panne", "site.retour", "site.declare", "site.retire", "site.attribue", "site.transfere", "site.demande", "site.adossement", "site.accord", "site.societe"]
 
 [[moteurs]]
 id = "sonde"
@@ -168,18 +182,124 @@ risque = "lecture"
 
 
 [[capacites]]
+id = "incidents"
+libelle = "Les incidents (pannes confirmées) des sites de la portée de ce compte : ouverts, rétablis à clore, résolus avec leur cause"
+risque = "lecture"
+
+[[capacites]]
+id = "incident"
+libelle = "Un incident : son diagnostic, ses dernières mesures, sa chronologie, ce que ce compte peut faire dessus"
+risque = "lecture"
+
+[[capacites]]
+id = "calendrier"
+libelle = "Tout ce qui est arrivé à un site, jour par jour, sur un mois : coupures, incidents, gestes, et le mois en chiffres face à son objectif"
+risque = "lecture"
+
+[[capacites]]
+id = "concerne"
+libelle = "Ce compte est-il concerné par les sites (il en a un, en déclare un, ou administre) : le menu ne montre « Sites » qu'à ceux-là"
+risque = "lecture"
+
+[[capacites]]
+id = "gestes"
+libelle = "Ce que chacun peut faire sur les sites : qui (humain, compte, agents), à quel palier, avec quel droit"
+risque = "lecture"
+
+[[capacites]]
 id = "declarer"
-libelle = "Déclarer un site qu'on possède hors du panneau : la sonde le suivra"
+libelle = "Déclarer un site qu'on possède hors du panneau : après la preuve de propriété, la sonde le suivra"
 risque = "faible"
-perimetre = ["un nom de domaine valide, pas déjà à un autre compte, pas géré par le panneau", "ni un nom partagé (github.io, gouv.fr…) ni le parent du site d'un autre compte"]
-preuve = "relire la ligne du site : domaine et compte conformes"
-retour = "retirer ce site de la liste de ce compte"
+perimetre = ["un nom de domaine valide, pas déjà à un autre compte, pas géré par le panneau", "ni un nom partagé (github.io, gouv.fr…) ni le parent du site d'un autre compte", "tant que la preuve manque, le site n'est à personne et n'est pas mesuré"]
+preuve = "relire la ligne du site, ou sa déclaration en attente de preuve : domaine et compte conformes"
+retour = "retirer ce site (ou sa déclaration) de la liste de ce compte"
 paliers = ["raconter", "auto", "maitre"]
 qui = ["humain", "compte", "cassandra", "itare"]
 
 [[capacites]]
+id = "prouver"
+libelle = "Vérifier la preuve de propriété d'un site déclaré : le jeton du compte, dans le DNS (TXT _cassandra.<site>) ou dans un fichier servi par le site"
+risque = "faible"
+perimetre = ["une déclaration en attente de ce compte, de moins de sept jours", "une question DNS et une requête HTTPS vers le site, rien d'autre", "trouvée, les autres déclarations de ce nom tombent"]
+preuve = "relire la ligne du site : il est à ce compte"
+retour = "remettre le site en attente de preuve"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "relever"
+libelle = "Mesurer un site tout de suite, sans attendre le tour de la sonde"
+risque = "faible"
+perimetre = ["un site suivi de la portée de ce compte", "une mesure au plus toutes les trente secondes par site", "la même requête que la sonde"]
+preuve = "la mesure est dans l'historique du site"
+retour = "aucun : une mesure ne se retire pas, elle s'ajoute à l'historique"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "objectif"
+libelle = "Poser l'objectif de disponibilité d'un site (de 90 à 100 %), ou lui rendre celui du réglage"
+risque = "faible"
+perimetre = ["un site suivi de la portée de ce compte"]
+preuve = "relire l'objectif du site"
+retour = "remettre l'objectif d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "attribuer_societe"
+libelle = "Attribuer un site à une société : ses administrateurs le voient alors, quel que soit son compte (réservé au superadministrateur)"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["un site suivi", "une société de l'instance, ou aucune pour lui rendre celle de son compte", "le superadministrateur seulement"]
+preuve = "relire la société du site"
+retour = "remettre la société d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "incident_prendre"
+libelle = "Prendre en charge un incident : « je m'en occupe »"
+risque = "faible"
+perimetre = ["un incident ouvert d'un site de la portée de ce compte"]
+preuve = "l'incident est en dépannage, pris par ce compte"
+retour = "rendre l'incident à son état d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "incident_noter"
+libelle = "Ajouter une note à la chronologie d'un incident"
+risque = "faible"
+perimetre = ["un incident d'un site de la portée de ce compte", "500 caractères au plus"]
+preuve = "la note est dans la chronologie"
+retour = "retirer la note"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "incident_connu"
+libelle = "Dire qu'une panne est connue : son alerte se tait quelques heures, l'incident reste ouvert"
+risque = "faible"
+perimetre = ["un incident ouvert d'un site de la portée de ce compte", "de 1 heure à 7 jours, ou 0 pour que l'alerte reparle", "les mesures continuent"]
+preuve = "l'échéance du silence est celle demandée"
+retour = "remettre l'échéance d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "incident_clore"
+libelle = "Clore un incident dont le site répond de nouveau, en notant sa cause (ou noter la cause d'un incident déjà clos)"
+risque = "faible"
+perimetre = ["un incident rétabli ou résolu d'un site de la portée de ce compte", "jamais un incident dont le site ne répond pas encore"]
+preuve = "l'incident est résolu, avec cette cause"
+retour = "rendre l'incident à son état et à sa cause d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
 id = "retirer"
-libelle = "Retirer un site déclaré de la liste d'un compte (jamais un site du panneau)"
+libelle = "Retirer un site déclaré (ou une déclaration en attente de preuve) de la liste d'un compte (jamais un site du panneau)"
 risque = "faible"
 perimetre = ["un site déclaré par ce compte", "son historique est gardé", "ses liens sont mis de côté, ses accords tombent, sa demande ouverte se ferme"]
 preuve = "le site n'est plus dans la liste du compte"
@@ -264,7 +384,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 [permissions]
 stockage = true
 lectures = true
-reseau = ["les sites suivis (et leur « www. »), en HTTPS sur le port 443 : une requête GET, 2 Ko lus, les redirections suivies seulement vers le même site ; jamais une adresse interne, sauf réglage « sonde_interne »"]
+reseau = ["les sites suivis (et leur « www. »), en HTTPS sur le port 443 : une requête GET, 2 Ko lus, les redirections suivies seulement vers le même site ; jamais une adresse interne, sauf réglage « sonde_interne »", "pour une preuve de propriété : une question DNS TXT aux serveurs de noms de la machine, et le fichier /.well-known/cassandra-site.txt du site (256 octets lus)"]
 
 [[capacites]]
 id = "serie"

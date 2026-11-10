@@ -2792,6 +2792,23 @@
            "enfants": []
           },
           {
+           "id": "sites.incidents",
+           "libelle": "Incidents",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "incidents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
            "id": "sites.alertes",
            "libelle": "Alertes",
            "icone": "",
@@ -2801,7 +2818,7 @@
            "vue": "alertes",
            "role": "utilisateur",
            "droit": "",
-           "ordre": 30,
+           "ordre": 40,
            "badge": {
             "n": 0,
             "niveau": ""
@@ -2818,7 +2835,24 @@
            "vue": "dispo",
            "role": "utilisateur",
            "droit": "",
-           "ordre": 40,
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.calendrier",
+           "libelle": "Calendrier",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "calendrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 60,
            "badge": {
             "n": 0,
             "niveau": ""
@@ -2827,7 +2861,7 @@
           },
           {
            "id": "sites.demandes",
-           "libelle": "Demandes",
+           "libelle": "Demandes et preuves",
            "icone": "",
            "module": "sites",
            "ecran": "",
@@ -2835,7 +2869,7 @@
            "vue": "demandes",
            "role": "utilisateur",
            "droit": "",
-           "ordre": 50,
+           "ordre": 70,
            "badge": {
             "n": 0,
             "niveau": ""
@@ -2852,7 +2886,24 @@
            "vue": "journal",
            "role": "utilisateur",
            "droit": "",
-           "ordre": 60,
+           "ordre": 80,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.reglages",
+           "libelle": "Réglages",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "reglages",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 90,
            "badge": {
             "n": 0,
             "niveau": ""
@@ -3154,6 +3205,23 @@
            "enfants": []
           },
           {
+           "id": "sites.incidents",
+           "libelle": "Incidents",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "incidents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
            "id": "sites.alertes",
            "libelle": "Alertes",
            "icone": "",
@@ -3163,7 +3231,7 @@
            "vue": "alertes",
            "role": "utilisateur",
            "droit": "",
-           "ordre": 30,
+           "ordre": 40,
            "badge": {
             "n": 0,
             "niveau": ""
@@ -3180,7 +3248,24 @@
            "vue": "dispo",
            "role": "utilisateur",
            "droit": "",
-           "ordre": 40,
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.calendrier",
+           "libelle": "Calendrier",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "calendrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 60,
            "badge": {
             "n": 0,
             "niveau": ""
@@ -3189,7 +3274,7 @@
           },
           {
            "id": "sites.demandes",
-           "libelle": "Demandes",
+           "libelle": "Demandes et preuves",
            "icone": "",
            "module": "sites",
            "ecran": "",
@@ -3197,7 +3282,7 @@
            "vue": "demandes",
            "role": "utilisateur",
            "droit": "",
-           "ordre": 50,
+           "ordre": 70,
            "badge": {
             "n": 0,
             "niveau": ""
@@ -3214,7 +3299,24 @@
            "vue": "journal",
            "role": "utilisateur",
            "droit": "",
-           "ordre": 60,
+           "ordre": 80,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "sites.reglages",
+           "libelle": "Réglages",
+           "icone": "",
+           "module": "sites",
+           "ecran": "",
+           "onglet": "mysites",
+           "vue": "reglages",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 90,
            "badge": {
             "n": 0,
             "niveau": ""

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #79da82
+// VERSION CN : 0.1.0  #d74704
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=79da82 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d74704 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -735,6 +735,14 @@
       + '<form id="d19-f"><button type="button" class="d19-ib d19-sugbtn' + (E.sug ? " on" : "") + '" data-sug="1" aria-label="Idées et gestes">' + ico("spark") + '</button><input id="d19-in" placeholder="' + (m === "inv" ? "Écrire au fil…" : "Demander à " + esc(NOMS[m]) + "…") + '" autocomplete="off" value="' + esc(E.brouillon) + '"><button class="d19-btn">Envoyer</button></form>';
     const mm = $("#d19-msgs"); if (mm) mm.scrollTop = mm.scrollHeight;
   }
+  // Un autre écran (un incident de Sites, par exemple) écrit une demande dans le champ de la conversation et ouvre le panneau : la personne la relit, la corrige,
+  // puis l'envoie elle-même. Rien ne part sans elle.
+  window.d19Demander = async function (texte) {
+    E.brouillon = String(texte || "").replace(/\s+/g, " ").trim();
+    if (E.panel) rendrePanel(); else await ouvrirPanel(true);
+    const i = $("#d19-in"); if (i) { i.value = E.brouillon; i.focus(); }
+    return !!i;
+  };
   async function ouvrirPanel(v) {
     const avant = E.panel; E.panel = v === undefined ? !E.panel : v; if (E.panel === avant) return;
     $("#d19-cass").classList.toggle("ouvert", E.panel);

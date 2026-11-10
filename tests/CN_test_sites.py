@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c9f321
+# VERSION CN : 0.1.0  #bee36a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c9f321 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bee36a ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -55,6 +55,7 @@ class Monde(unittest.TestCase):
         self.n.brancher()
         self.assertTrue(self.n.activer("sites")["ok"])
         self.n.droits.regler_admin(CHEF, True)
+        self.n.reglages.poser("sites.preuve_exigee", False, "")     # la preuve de propriété a ses bancs à elle (classe Preuve) ; ailleurs un site déclaré est tout de suite au compte
         self.ctx = self.n.executeur.contextes["sites"]
         self.comptes = [{"compte": CHEF, "sites": [], "fp_account": ""}, {"compte": BEA, "sites": [], "fp_account": "bea"}, {"compte": LEO, "sites": ["fiche.exemple.fr"], "fp_account": ""}]
         self.panneau = [{"domaine": "pan.exemple.fr", "proprietaire": "bea", "ssl": {"etat": "actif", "jours": 80}, "php": "8.3"},
@@ -593,6 +594,385 @@ class AccordsLiensJournal(Monde):
 
 
 
+class Incidents(Monde):
+    """Une panne est un objet : elle s'ouvre confirmée, se dépanne, se clôt avec sa cause."""
+
+    def setUp(self):
+        super().setUp()
+        self.ex("declarer", domaine="bea.exemple.fr")
+        self.sonde()
+
+    def tomber(self):
+        self.reponses["bea.exemple.fr"] = (502, 60, "")
+        self.sonde()
+        self.sonde()
+
+    def revenir(self):
+        self.reponses.pop("bea.exemple.fr")
+        self.sonde()
+
+    def liste(self, etat="ouverts", compte=BEA):
+        return self.ex("incidents", compte=compte, etat=etat)["resultat"]["incidents"]
+
+    def test_une_panne_confirmee_ouvre_un_incident_avec_son_diagnostic(self):
+        self.reponses["bea.exemple.fr"] = (502, 60, "")
+        self.sonde()
+        self.assertEqual(self.liste(), [])                                       # une mesure ratée n'ouvre rien
+        self.sonde()
+        i = self.liste()
+        self.assertEqual([(x["domaine"], x["etat"]) for x in i], [("bea.exemple.fr", "ouvert")])
+        self.assertIn("HTTP 502", i[0]["diagnostic"])
+        self.sonde()
+        self.assertEqual(len(self.liste()), 1)                                   # une panne qui dure n'en ouvre pas un second
+        v = self.ex("vue")["resultat"]
+        ligne = next(s for s in v["sites"] if s["domaine"] == "bea.exemple.fr")
+        self.assertEqual(ligne["incident"]["id"], i[0]["id"])
+        self.assertEqual(v["portee"]["incidents_ouverts"], 1)
+        vig = next(x for x in v["vigilances"] if x["niveau"] == "panne")
+        self.assertEqual((vig["geste"], vig["incident"]), ("depanner", i[0]["id"]))
+        self.assertEqual(self.evts("site.panne")[0]["donnees"]["incident"], i[0]["id"])
+
+    def test_revenu_seul_l_incident_se_clot_seul_et_sa_cause_se_note_apres(self):
+        self.tomber()
+        self.revenir()
+        self.assertEqual(self.liste(), [])
+        r = self.liste("resolus")
+        self.assertEqual([(x["etat"], x["clos_par"], x["cause"]) for x in r], [("resolu", "sonde", "")])
+        self.assertEqual(self.ex("incident_clore", id=r[0]["id"])["statut"], "echec")           # déjà clos : il faut une cause à noter
+        self.assertEqual(self.ex("incident_clore", id=r[0]["id"], cause="pic de charge")["statut"], "faite")
+        self.assertEqual(self.liste("resolus")[0]["cause"], "pic de charge")
+
+    def test_pris_en_charge_il_attend_sa_cause_puis_se_clot_et_se_defait(self):
+        self.tomber()
+        iid = self.liste()[0]["id"]
+        p = self.ex("incident_prendre", id=iid)
+        self.assertEqual(p["statut"], "faite", p)
+        self.assertEqual(self.liste()[0]["etat"], "depannage")
+        self.assertEqual(self.ex("incident_prendre", id=iid)["statut"], "echec")               # il s'en occupe déjà
+        self.assertEqual(self.ex("incident_clore", id=iid, cause="x")["statut"], "echec")       # le site ne répond pas encore
+        self.assertEqual(self.ex("incident_noter", id=iid, texte="PHP saturé, je relance")["statut"], "faite")
+        self.revenir()
+        self.assertEqual(self.liste()[0]["etat"], "retabli")                                    # quelqu'un s'en occupait : il attend sa cause
+        v = self.ex("vue")["resultat"]
+        self.assertTrue(any(x["geste"] == "depanner" and x["niveau"] == "regarder" for x in v["vigilances"]))
+        self.assertEqual(v["portee"]["incidents_ouverts"], 0)
+        r = self.ex("incident_clore", id=iid, cause="PHP saturé")
+        self.assertEqual(r["statut"], "faite", r)
+        d = self.ex("incident", id=iid)["resultat"]
+        self.assertEqual((d["etat"], d["cause"], d["clos_par"]), ("resolu", "PHP saturé", BEA))
+        self.assertEqual([f["genre"] for f in d["faits"]], ["ouvert", "pris", "note", "retour", "clos"])
+        self.assertTrue(d["gestes"]["cause"])
+        self.n.catalogue.get("sites.incident_clore").defaire(self.ctx, r["resultat"])
+        self.assertEqual(self.ex("incident", id=iid)["resultat"]["etat"], "retabli")
+        self.n.catalogue.get("sites.incident_prendre").defaire(self.ctx, p["resultat"])         # il n'est plus « en dépannage » : rien à rendre
+        self.assertEqual(self.ex("incident", id=iid)["resultat"]["etat"], "retabli")
+
+    def test_une_panne_connue_se_tait_sans_se_fermer(self):
+        self.tomber()
+        iid = self.liste()[0]["id"]
+        self.assertEqual(len(self.ctx_detecter("panne")), 1)
+        r = self.ex("incident_connu", id=iid, heures=4)
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual(self.ctx_detecter("panne"), [])                                        # le constat se tait…
+        self.assertEqual(self.liste()[0]["etat"], "ouvert")                                     # … l'incident reste ouvert
+        self.assertIsNotNone(self.liste()[0]["connu_jusqu"])
+        self.assertEqual(self.ex("incident_connu", id=iid, heures=0)["statut"], "faite")
+        self.assertEqual(len(self.ctx_detecter("panne")), 1)
+        self.assertEqual(self.ex("incident_connu", id=iid, heures="beaucoup")["statut"], "echec")
+
+    def ctx_detecter(self, nom):
+        f = next(x[2] for x in self.n.detecteurs if x[0] == "sites" and x[1].id == nom)
+        return f(self.ctx)
+
+    def test_l_incident_d_un_autre_n_existe_pas(self):
+        self.tomber()
+        iid = self.liste()[0]["id"]
+        self.assertEqual(self.liste(compte=LEO), [])
+        for cap, args in (("incident", {}), ("incident_prendre", {}), ("incident_noter", {"texte": "x"}), ("incident_connu", {}), ("incident_clore", {"cause": "x"})):
+            self.assertEqual(self.ex(cap, compte=LEO, id=iid, **args)["statut"], "echec", cap)
+        self.assertEqual(len(self.liste(compte=CHEF)), 1)                                       # l'administrateur voit l'état de tous
+
+    def test_relever_mesure_tout_de_suite_et_peut_fermer_la_panne(self):
+        self.tomber()
+        iid = self.liste()[0]["id"]
+        self.ctx.stockage.ecrire("UPDATE mesures SET ts = ts - 120")
+        self.reponses.pop("bea.exemple.fr")
+        r = self.ex("relever", domaine="bea.exemple.fr")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertTrue(r["resultat"]["up"])
+        self.assertFalse(r["resultat"]["recente"])
+        self.assertEqual(self.liste(), [])                                                      # la relève a vu le retour : l'incident s'est clos seul
+        self.assertIn("releve", [f["genre"] for f in self.ex("incident", id=iid)["resultat"]["faits"]])
+        self.assertTrue(self.ex("relever", domaine="bea.exemple.fr")["resultat"]["recente"])    # pas deux mesures en trente secondes
+        self.assertEqual(self.ex("relever", compte=LEO, domaine="bea.exemple.fr")["statut"], "echec")
+        self.assertEqual(self.ex("relever", domaine="inconnu.bea.exemple.fr")["statut"], "echec")   # un sous-domaine qu'on ne suit pas ne se mesure pas
+
+    def test_un_site_deja_en_panne_recoit_son_incident_et_un_site_retire_le_perd(self):
+        self.tomber()
+        self.ctx.stockage.ecrire("DELETE FROM incident_faits")
+        self.ctx.stockage.ecrire("DELETE FROM incidents")                                       # comme une base d'avant les incidents
+        self.sonde()
+        i = self.liste()
+        self.assertEqual(len(i), 1)
+        depuis = self.ctx.stockage.lire("SELECT depuis FROM etat_vu WHERE domaine='bea.exemple.fr'")[0]["depuis"]
+        self.assertEqual(i[0]["debut"], depuis)                                                 # daté du début de la panne, pas de ce tour
+        self.assertEqual(self.ex("retirer", domaine="bea.exemple.fr")["statut"], "faite")
+        self.sonde()
+        r = self.ex("incidents", compte=CHEF, etat="resolus")["resultat"]["incidents"]
+        self.assertEqual([(x["etat"], x["cause"]) for x in r], [("resolu", "Le site n'est plus suivi.")])
+
+
+class Calendrier(Monde):
+    def setUp(self):
+        super().setUp()
+        self.ex("declarer", domaine="bea.exemple.fr")
+        self.db = self.ctx.stockage
+
+    def jours(self, n=3):
+        """Les `n` derniers jours, finissant maintenant : n débuts de journée puis la fin."""
+        fin = time.time() + 60
+        return [fin - (n - k) * 86400 for k in range(n)] + [fin]
+
+    def test_chaque_jour_dit_son_etat_et_ce_qui_s_y_est_passe(self):
+        b = self.jours(3)
+        # avant-hier : 100 mesures bonnes ; hier : 100 dont 30 ratées (coupure longue) ; aujourd'hui : 100 dont 1 ratée (courte)
+        for k, rates in ((0, 0), (1, 30), (2, 1)):
+            for i in range(100):
+                self.db.ecrire("INSERT INTO mesures(ts, domaine, code, ms, up, ssl_jours, erreur) VALUES (?,?,?,?,?,?,?)",
+                               (b[k] + 100 + i * 60, "bea.exemple.fr", 200 if i >= rates else 502, 120 + i, 1 if i >= rates else 0, 60, ""))
+        iid = self.db.ecrire("INSERT INTO incidents(domaine, debut, fin, etat, diagnostic, code, erreur, cause) VALUES (?,?,?,?,?,?,?,?)",
+                             ("bea.exemple.fr", b[1] + 100, b[1] + 1900, "resolu", "x", 502, "", "PHP saturé"))
+        self.db.ecrire("INSERT INTO evenements_site(ts, domaine, genre, detail, duree_min) VALUES (?,?,?,?,?)", (b[1] + 100, "bea.exemple.fr", "panne", "Injoignable", 0))
+        self.ex("lier", domaine="bea.exemple.fr", genre="note", ref="à surveiller")
+        r = self.ex("calendrier", domaine="bea.exemple.fr", jours=b)
+        self.assertEqual(r["statut"], "faite", r)
+        c = r["resultat"]
+        self.assertEqual([j["etat"] for j in c["jours"]], ["ok", "longue", "courte"])
+        self.assertEqual([j["rates"] for j in c["jours"]], [0, 30, 1])
+        hier = c["jours"][1]["evenements"]
+        self.assertEqual([(e["genre"], e["incident"]) for e in hier], [("incident", iid), ("retour", iid)])       # la panne n'est pas dite deux fois
+        self.assertIn("PHP saturé", hier[1]["texte"])
+        self.assertIn("geste", [e["genre"] for e in c["jours"][2]["evenements"]])                # le lien posé aujourd'hui (et la déclaration)
+        m = c["mois"]
+        self.assertEqual((m["jours_mesures"], m["jours_coupure"], m["incidents"]), (3, 2, 1))
+        self.assertEqual(m["disponibilite"], round(100.0 * 269 / 300, 2))
+        self.assertFalse(m["tenu"])
+        self.assertIsNone(m["avant"])                                                            # pas de mesure sur la période d'avant : pas de chiffre emprunté
+
+    def test_un_mois_ecrit_se_lit_et_un_mois_sans_mesure_le_dit(self):
+        r = self.ex("calendrier", domaine="bea.exemple.fr", mois="2026-02")
+        self.assertEqual(r["statut"], "faite", r)
+        c = r["resultat"]
+        self.assertEqual(len(c["jours"]), 28)
+        self.assertEqual({j["etat"] for j in c["jours"]}, {"sans"})
+        self.assertIsNone(c["mois"]["disponibilite"])
+        self.assertIsNone(c["mois"]["tenu"])
+        self.assertEqual(len(self.ex("calendrier", domaine="bea.exemple.fr", mois="2024-02")["resultat"]["jours"]), 29)
+        self.assertEqual(self.ex("calendrier", domaine="bea.exemple.fr", mois="fevrier")["statut"], "echec")
+        self.assertEqual(self.ex("calendrier", compte=LEO, domaine="bea.exemple.fr")["statut"], "echec")
+
+    def test_l_objectif_se_pose_par_site_et_se_defait(self):
+        v = self.ex("vue")["resultat"]
+        self.assertEqual(v["portee"]["objectif"], 99.9)
+        self.assertFalse(v["sites"][0]["objectif_propre"])
+        r = self.ex("objectif", domaine="bea.exemple.fr", pct="99,5")
+        self.assertEqual(r["statut"], "faite", r)
+        ligne = next(s for s in self.ex("vue")["resultat"]["sites"] if s["domaine"] == "bea.exemple.fr")
+        self.assertEqual((ligne["objectif"], ligne["objectif_propre"]), (99.5, True))
+        self.assertEqual(self.ex("calendrier", domaine="bea.exemple.fr")["resultat"]["mois"]["objectif"], 99.5)
+        for mauvais in (50, 101, "haut"):
+            self.assertEqual(self.ex("objectif", domaine="bea.exemple.fr", pct=mauvais)["statut"], "echec", mauvais)
+        self.assertEqual(self.ex("objectif", compte=LEO, domaine="bea.exemple.fr", pct=99)["statut"], "echec")
+        self.n.catalogue.get("sites.objectif").defaire(self.ctx, r["resultat"])
+        self.assertEqual(self.ex("vue")["resultat"]["sites"][0]["objectif"], 99.9)
+        self.n.reglages.poser("sites.objectif_pct", "99", "")
+        self.assertEqual(self.ex("vue")["resultat"]["portee"]["objectif"], 99.0)
+
+
+class Preuve(Monde):
+    """Hors du panneau, rien ne dit à qui est un site : c'est la preuve qui le dit."""
+
+    def setUp(self):
+        super().setUp()
+        self.n.reglages.poser("sites.preuve_exigee", True, "")
+        self.visible = {}                                    # {domaine: jeton visible dans le DNS ou le fichier}
+        self.mod._preuve_trouvee = lambda d, jeton, delai, interne=False: "dns" if self.visible.get(d) == jeton else ""
+
+    def test_un_site_declare_n_est_a_personne_tant_qu_il_n_est_pas_prouve(self):
+        r = self.ex("declarer", domaine="bea.exemple.fr")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual(r["resultat"]["preuve"], "attente")
+        jeton = r["resultat"]["jeton"]
+        self.assertEqual(r["resultat"]["dns"], {"nom": "_cassandra.bea.exemple.fr", "valeur": "cassandra-site=" + jeton})
+        self.assertEqual(self.ctx.stockage.lire("SELECT 1 FROM sites WHERE domaine='bea.exemple.fr'"), [])
+        v = self.ex("vue")["resultat"]
+        ligne = next(s for s in v["sites"] if s["domaine"] == "bea.exemple.fr")
+        self.assertEqual(ligne["preuve"]["jeton"], jeton)
+        self.assertTrue(any(x["geste"] == "prouver" for x in v["vigilances"]))
+        self.sonde()
+        self.assertEqual(self.ctx.stockage.lire("SELECT 1 FROM mesures WHERE domaine='bea.exemple.fr'"), [])       # pas mesuré tant qu'il n'est à personne
+        f = self.ex("fiche", domaine="bea.exemple.fr")["resultat"]
+        self.assertTrue(f["gestes"]["prouver"])
+        self.assertEqual(f["preuve"]["fichier"]["adresse"], "https://bea.exemple.fr/.well-known/cassandra-site.txt")
+        self.assertEqual(self.ex("historique", domaine="bea.exemple.fr")["statut"], "echec")                       # ni portée, ni sous-domaines
+        self.assertTrue(self.ex("concerne")["resultat"]["concerne"])
+        # l'administrateur voit la déclaration en attente, sans le jeton
+        va = self.ex("vue", compte=CHEF)["resultat"]
+        self.assertIsNone(next(s for s in va["sites"] if s["domaine"] == "bea.exemple.fr")["preuve"]["jeton"])
+        self.assertEqual([p["compte"] for p in self.ex("demandes", compte=CHEF)["resultat"]["preuves"]], [BEA])
+
+    def test_la_preuve_trouvee_donne_le_site_et_fait_tomber_les_autres_declarations(self):
+        jb = self.ex("declarer", domaine="bea.exemple.fr")["resultat"]["jeton"]
+        rl = self.ex("declarer", compte=LEO, domaine="bea.exemple.fr")
+        self.assertEqual(rl["statut"], "faite", rl)                                             # un autre peut encore le réclamer
+        self.assertNotEqual(rl["resultat"]["jeton"], jb)
+        self.assertEqual(self.ex("prouver", domaine="bea.exemple.fr")["statut"], "echec")       # rien n'est encore visible
+        self.assertEqual(self.ctx.stockage.lire("SELECT essais FROM preuves WHERE compte=?", (BEA,))[0]["essais"], 1)
+        self.visible["bea.exemple.fr"] = jb
+        self.assertEqual(self.ex("prouver", compte=LEO, domaine="bea.exemple.fr")["statut"], "echec")   # le jeton visible n'est pas le sien
+        r = self.ex("prouver", domaine="bea.exemple.fr")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual(r["resultat"]["par"], "dns")
+        self.assertEqual(self.ctx.stockage.lire("SELECT compte FROM sites WHERE domaine='bea.exemple.fr'")[0]["compte"], BEA)
+        self.assertEqual(self.ctx.stockage.lire("SELECT 1 FROM preuves"), [])
+        self.assertEqual(self.ex("declarer", compte=LEO, domaine="bea.exemple.fr")["statut"], "echec")   # prouvé : il est à quelqu'un
+        self.assertIsNone(next(s for s in self.ex("vue")["resultat"]["sites"] if s["domaine"] == "bea.exemple.fr")["preuve"])
+        self.n.catalogue.get("sites.prouver").defaire(self.ctx, r["resultat"])
+        self.assertEqual(self.ctx.stockage.lire("SELECT 1 FROM sites WHERE domaine='bea.exemple.fr'"), [])
+        self.assertEqual({p["compte"] for p in self.ctx.stockage.lire("SELECT compte FROM preuves")}, {BEA, LEO})
+
+    def test_une_declaration_se_retire_s_atteste_ou_tombe_seule(self):
+        r = self.ex("declarer", domaine="bea.exemple.fr")
+        ret = self.ex("retirer", domaine="bea.exemple.fr")
+        self.assertEqual(ret["statut"], "faite", ret)
+        self.assertEqual(self.ctx.stockage.lire("SELECT 1 FROM preuves"), [])
+        self.n.catalogue.get("sites.retirer").defaire(self.ctx, ret["resultat"])
+        self.assertEqual(len(self.ctx.stockage.lire("SELECT 1 FROM preuves")), 1)
+        # l'administrateur atteste : il attribue, la preuve n'a plus lieu d'être
+        a = self.e("sites.attribuer", "humain", {"domaine": "bea.exemple.fr", "compte": BEA}, compte=CHEF)
+        self.assertEqual(a["statut"], "faite", a)
+        self.assertEqual(self.ctx.stockage.lire("SELECT 1 FROM preuves"), [])
+        self.assertEqual(self.ctx.stockage.lire("SELECT origine FROM sites WHERE domaine='bea.exemple.fr'")[0]["origine"], "attribue")
+        # une déclaration de plus de sept jours tombe au tour de sonde
+        self.ex("declarer", domaine="vieux.exemple.fr")
+        self.ctx.stockage.ecrire("UPDATE preuves SET cree = cree - 8 * 86400")
+        self.assertNotIn("vieux.exemple.fr", {s["domaine"] for s in self.ex("vue")["resultat"]["sites"]})
+        self.sonde()
+        self.assertEqual(self.ctx.stockage.lire("SELECT 1 FROM preuves"), [])
+        self.assertEqual(r["resultat"]["compte"], BEA)
+
+    def test_l_administrateur_declare_sans_preuve(self):
+        r = self.ex("declarer", compte=CHEF, domaine="chef.exemple.fr")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertNotIn("preuve", r["resultat"])
+        self.assertEqual(self.ctx.stockage.lire("SELECT compte FROM sites WHERE domaine='chef.exemple.fr'")[0]["compte"], CHEF)
+
+    def test_la_preuve_se_lit_dans_le_dns_ou_dans_un_fichier(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("sites_seul", RACINE / "modules" / "sites" / "CN_module.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m._txt_dns = lambda nom, delai=4: ["v=spf1 -all", "cassandra-site=abc123"] if nom == "_cassandra.x.exemple.fr" else []
+        m._fichier_preuve = lambda d, delai, interne=False: "def456\n" if d == "y.exemple.fr" else ""
+        self.assertEqual(m._preuve_trouvee("x.exemple.fr", "abc123", 5), "dns")
+        self.assertEqual(m._preuve_trouvee("www.x.exemple.fr", "abc123", 5), "dns")
+        self.assertEqual(m._preuve_trouvee("x.exemple.fr", "autre", 5), "")
+        self.assertEqual(m._preuve_trouvee("y.exemple.fr", "def456", 5), "fichier")
+        self.assertEqual(m._preuve_trouvee("y.exemple.fr", "def45", 5), "")                     # un jeton entier, pas un morceau
+        self.assertIn("HTTP 502", m.diagnostic(502, ""))
+        self.assertIn("DNS", m.diagnostic(None, "[Errno -2] Name or service not known"))
+        self.assertIn("délai", m.diagnostic(None, "timed out"))
+
+
+class Societes(Monde):
+    """Chaque société ne voit que ses sites, ses administrateurs aussi ; seul le superadministrateur les voit toutes."""
+
+    INES, MAX = "ines@x.fr", "max@x.fr"
+
+    def setUp(self):
+        super().setUp()
+        idt = self.n.identite
+        self.nord = idt.societe_creer("Nord")["societe"]
+        self.sud = idt.societe_creer("Sud")["societe"]
+        self.soc = {CHEF: "1", BEA: self.nord, self.INES: self.nord, LEO: self.sud, self.MAX: self.sud}
+        idt.societe_de = lambda c: self.soc.get(c, "1")
+        idt.est_superadmin = lambda c: c == CHEF
+        idt.module_ouvert = lambda *a, **k: True
+        self.ctx._intro["societe_de"] = idt.societe_de
+        self.n.droits.regler_admin(self.INES, True)
+        self.n.droits.regler_admin(self.MAX, True)
+        self.comptes += [{"compte": self.INES, "sites": [], "fp_account": ""}, {"compte": self.MAX, "sites": [], "fp_account": ""}]
+        self.ex("declarer", domaine="bea.exemple.fr")                       # Nord, par son compte
+        self.ex("declarer", compte=LEO, domaine="leo.exemple.fr")           # Sud, par son compte ; fiche.exemple.fr aussi (fiche de Léo)
+
+    def doms(self, compte):
+        return {s["domaine"] for s in self.ex("vue", compte=compte)["resultat"]["sites"]}
+
+    def test_l_administrateur_d_une_societe_ne_voit_que_les_sites_de_sa_societe(self):
+        self.assertEqual(self.doms(self.INES), {"bea.exemple.fr", "pan.exemple.fr"})                       # ceux des comptes de Nord
+        self.assertEqual(self.doms(self.MAX), {"leo.exemple.fr", "fiche.exemple.fr"})
+        self.assertEqual(self.doms(CHEF), {"bea.exemple.fr", "pan.exemple.fr", "leo.exemple.fr", "fiche.exemple.fr", "autre.exemple.fr"})
+        p = self.ex("vue", compte=self.INES)["resultat"]["portee"]
+        self.assertEqual((p["admin"], p["super"], p["multi"], p["societe"]), (True, False, True, self.nord))
+        self.assertTrue(self.ex("vue", compte=CHEF)["resultat"]["portee"]["super"])
+        self.assertEqual(self.doms(BEA), {"bea.exemple.fr", "pan.exemple.fr"})                             # un compte : les siens, comme avant
+
+    def test_hors_de_sa_societe_rien_ne_se_lit_ni_ne_se_fait(self):
+        for cap in ("fiche", "historique", "journal", "calendrier"):
+            self.assertEqual(self.ex(cap, compte=self.INES, domaine="leo.exemple.fr")["statut"], "echec", cap)
+            self.assertEqual(self.ex(cap, compte=self.INES, domaine="bea.exemple.fr")["statut"], "faite", cap)
+        self.assertEqual(self.e("sites.retirer", "humain", {"domaine": "leo.exemple.fr"}, compte=self.INES)["statut"], "echec")
+        self.assertEqual(self.e("sites.transferer", "humain", {"domaine": "leo.exemple.fr", "vers": BEA}, compte=self.INES)["statut"], "echec")
+        self.assertEqual(self.e("sites.attribuer", "humain", {"domaine": "autre.exemple.fr", "compte": BEA}, compte=self.INES)["statut"], "echec")   # un site du panneau sans société
+        self.assertEqual(self.e("sites.attribuer", "humain", {"domaine": "neuf.exemple.fr", "compte": BEA}, compte=self.INES)["statut"], "faite")    # un nom que personne ne suit
+        self.ex("demander", compte=LEO, domaine="leo.exemple.fr", message="au panneau")
+        self.assertEqual(self.ex("demandes", compte=self.INES)["resultat"]["demandes"], [])
+        did = self.ex("demandes", compte=self.MAX)["resultat"]["demandes"][0]["id"]
+        self.assertEqual(self.e("sites.repondre_demande", "humain", {"id": did, "decision": "fait"}, compte=self.INES)["statut"], "echec")
+        lignes = self.ex("journal", compte=self.INES)["resultat"]["lignes"]
+        self.assertTrue(lignes)
+        self.assertNotIn("leo.exemple.fr", {x["domaine"] for x in lignes})
+
+    def test_le_superadministrateur_attribue_un_site_a_une_societe(self):
+        v = self.ex("vue", compte=CHEF)["resultat"]
+        s = {x["domaine"]: x for x in v["sites"]}
+        self.assertEqual((s["bea.exemple.fr"]["societe"], s["bea.exemple.fr"]["societe_source"]), (self.nord, "compte"))
+        self.assertEqual((s["autre.exemple.fr"]["societe"], s["autre.exemple.fr"]["societe_source"]), ("", ""))
+        self.assertEqual({x["id"] for x in v["portee"]["societes"]}, {"1", self.nord, self.sud})
+        self.assertTrue(any(x["geste"] == "attribuer_societe" and x["site"] == "autre.exemple.fr" for x in v["vigilances"]))
+        self.assertEqual(self.e("sites.attribuer_societe", "humain", {"domaine": "autre.exemple.fr", "societe": self.sud}, compte=self.INES)["statut"], "echec")   # réservé
+        self.assertEqual(self.e("sites.attribuer_societe", "humain", {"domaine": "autre.exemple.fr", "societe": "nulle-part"}, compte=CHEF)["statut"], "echec")
+        r = self.e("sites.attribuer_societe", "humain", {"domaine": "autre.exemple.fr", "societe": self.sud}, compte=CHEF)
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertIn("autre.exemple.fr", self.doms(self.MAX))
+        self.assertNotIn("autre.exemple.fr", self.doms(self.INES))
+        # un site de Nord attribué à Sud : les administrateurs de Sud le voient, son compte aussi, plus ceux de Nord
+        self.assertEqual(self.e("sites.attribuer_societe", "humain", {"domaine": "bea.exemple.fr", "societe": self.sud}, compte=CHEF)["statut"], "faite")
+        self.assertIn("bea.exemple.fr", self.doms(self.MAX))
+        self.assertNotIn("bea.exemple.fr", self.doms(self.INES))
+        self.assertIn("bea.exemple.fr", self.doms(BEA))
+        self.n.catalogue.get("sites.attribuer_societe").defaire(self.ctx, r["resultat"])
+        self.assertNotIn("autre.exemple.fr", self.doms(self.MAX))
+        self.assertFalse(any(x["geste"] == "attribuer_societe" for x in self.ex("vue", compte=self.INES)["resultat"]["vigilances"]))
+
+    def test_une_instance_a_une_seule_societe_ne_cloisonne_rien(self):
+        self.ctx._intro["societes"] = lambda: ["1"]
+        self.assertEqual(self.doms(self.INES), self.doms(CHEF))
+        p = self.ex("vue", compte=self.INES)["resultat"]["portee"]
+        self.assertEqual((p["multi"], p["societes"]), (False, []))
+        self.assertFalse(any(x["geste"] == "attribuer_societe" for x in self.ex("vue", compte=CHEF)["resultat"]["vigilances"]))
+
+    def test_qui_est_concerne(self):
+        self.comptes.append({"compte": "nul@x.fr", "sites": [], "fp_account": ""})
+        self.assertEqual(self.ex("concerne", compte="nul@x.fr")["resultat"], {"concerne": False, "sites": 0, "a_prouver": 0, "admin": False})
+        self.assertTrue(self.ex("concerne", compte=BEA)["resultat"]["concerne"])
+        self.assertTrue(self.ex("concerne", compte=self.INES)["resultat"]["admin"])
+        g = {x["id"]: x for x in self.ex("gestes")["resultat"]["gestes"]}
+        self.assertEqual(g["attribuer_societe"]["droit"], "sites.administrer")
+        self.assertNotIn("vue", g)
+        self.assertIn("cassandra", g["incident_prendre"]["qui"])
+
+
 class Ecran(unittest.TestCase):
     """L'écran du module est bien branché : son script est servi, le menu de gauche lui donne ses sous-entrées, le shell remplace l'onglet V18."""
 
@@ -618,12 +998,49 @@ class Ecran(unittest.TestCase):
         r = d.disposition([], ["sites"], {}, {})
         sites = next(e for g in r["groupes"] for e in g["entrees"] if e["id"] == "sites")
         vues = [f["vue"] for f in sites["enfants"]]
-        self.assertEqual(vues, ["vue", "sites", "alertes", "dispo", "demandes", "journal"])
+        self.assertEqual(vues, ["vue", "sites", "incidents", "alertes", "dispo", "calendrier", "demandes", "journal", "reglages"])
         self.assertTrue(all(f["onglet"] == "mysites" for f in sites["enfants"]))
         ecran = self.lire("interface", "CN_sites-ecran.js")
         for v in vues:                                                                                # chaque sous-entrée a sa page dans l'écran
             self.assertRegex(ecran, r"(?m)^\s+(async )?%s\(\)" % v, v)
         self.assertIn('entreeId === "sites"', self.lire("interface", "CN_disposition.js"))
+
+
+class MenuConcerne(unittest.TestCase):
+    """Le menu de gauche ne montre « Sites » qu'à un compte concerné : il a un site, ou il administre."""
+
+    MODULES = ("droits", "comptes", "menus", "affichage", "jour", "salon", "sites")
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        base = Path(cls.tmp.name)
+        for m in cls.MODULES:
+            shutil.copytree(RACINE / "modules" / m, base / "modules" / m, ignore=shutil.ignore_patterns("__pycache__"))
+        cls.n = moteur.Noyau(base / "d", base / "modules", {}, gerer_modules=True)
+        cls.n.brancher()
+        for m in cls.MODULES:
+            assert cls.n.activer(m)["ok"], m
+        cls.n.droits.regler_admin(CHEF, True)
+        r = cls.n.lancer("menus.reconstruire_regulierement")
+        assert r.get("statut") == "fait", r
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.n.arreter()
+        cls.tmp.cleanup()
+
+    def entrees(self, compte):
+        r = self.n.executeur.executer("affichage.lire_disposition", "humain", {}, compte=compte)
+        self.assertEqual(r["statut"], "faite", r)
+        return {e["id"] for g in r["resultat"]["groupes"] for e in g["entrees"]}
+
+    def test_l_entree_sites_ne_parait_que_pour_un_compte_concerne(self):
+        self.assertIn("sites", self.entrees(CHEF))                      # l'administrateur administre : il la voit toujours
+        self.assertNotIn("sites", self.entrees(BEA))                    # aucun site : on ne lui montre pas un écran vide
+        self.n.executeur.contextes["sites"].stockage.ecrire("INSERT INTO sites(domaine, compte, origine, cree, par) VALUES (?,?,?,?,?)", ("bea.exemple.fr", BEA, "attribue", time.time(), CHEF))
+        self.assertIn("sites", self.entrees(BEA))                       # dès qu'un site lui est attribué, l'entrée paraît
+        self.assertNotIn("sites", self.entrees(LEO))
 
 
 if __name__ == "__main__":

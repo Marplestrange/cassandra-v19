@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.7.1  #114c20
+# VERSION CN : 0.7.2  #dc87e2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.7.1 empreinte=114c20 ▼▼▼
+# ▼▼▼ BORNE CN version=0.7.2 empreinte=dc87e2 ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et
@@ -53,6 +53,8 @@ _COULEUR = re.compile(r"^#[0-9a-fA-F]{6}$")
 VERSION_AFFICHEE = "19.0"
 INTERLOCUTEURS = ("itare", "cassandra", "inv")
 RANG_NIVEAU = {"": 0, "alerte": 1, "danger": 2}
+# Les entrées qui ne paraissent que pour un compte concerné, et la lecture qui le dit : on ne montre pas un écran vide à qui n'a rien à y voir.
+CONCERNE = {"sites": "sites.concerne"}
 PERSONNELS = ("tache", "rappel", "event", "decision", "mandat", "note", "mail")      # ce qu'Itare voit : le poste de travail du compte, jamais l'état du parc
 MAX_EPINGLES = 12
 # L'organisation, en quatre rubriques : l'organisation elle-même, ses réseaux sociaux, ses heures d'ouverture, ses sous-traitants.
@@ -413,13 +415,31 @@ def brancher(ctx):
                     niv = x["badge"]["niveau"]
         return niv
 
-    def _filtrer(sortie, admin, detenus):
-        """Le nexus retire ce que le rôle ou le droit ne permet pas, puis recalcule lui-même les niveaux : le point d'évolution ne décide d'aucun accès."""
+    def _non_concernes(ctx, sortie, admin):
+        """Les entrées à ne pas montrer à ce compte parce qu'il n'y a rien à y voir pour lui : son module sait le dire (une lecture « concerne » qui rend {"concerne": faux}).
+        On ne masque que sur un « non » explicite : une lecture absente, refusée ou muette laisse l'entrée en place. L'administrateur voit toujours tout."""
+        if admin:
+            return set()
+        presentes = {e["id"] for g in sortie["groupes"] for e in g["entrees"]}
+        masques = set()
+        for entree, capacite in CONCERNE.items():
+            if entree not in presentes:
+                continue
+            try:
+                r = ctx.executer_lecture(capacite)
+            except (PermissionError, KeyError, ValueError):
+                r = None
+            if isinstance(r, dict) and r.get("concerne") is False:
+                masques.add(entree)
+        return masques
+
+    def _filtrer(sortie, admin, detenus, masques=()):
+        """Le nexus retire ce que le rôle ou le droit ne permet pas (et ce qui ne concerne pas ce compte), puis recalcule lui-même les niveaux : le point d'évolution ne décide d'aucun accès."""
         groupes = []
         for g in sortie["groupes"]:
             xs = []
             for e in g["entrees"]:
-                if not _permis(e, admin, detenus):
+                if not _permis(e, admin, detenus) or e["id"] in masques:
                     continue
                 e = dict(e, enfants=[f for f in e["enfants"] if _permis(f, admin, detenus)])
                 xs.append(e)
@@ -463,7 +483,8 @@ def brancher(ctx):
         detenus = _droits_du(ctx, compte)
         _, alertes = _alertes_du_jour(ctx)
         entree = {"entrees": _aplatir(m["arbre"]), "modules": sorted(x.id for x in ctx.manifestes_actifs()), "badges": m.get("badges", {}), "signaux": alertes}
-        sortie = _filtrer(ctx.point("disposition", entree)["valeur"], admin, detenus)
+        brut = ctx.point("disposition", entree)["valeur"]
+        sortie = _filtrer(brut, admin, detenus, _non_concernes(ctx, brut, admin) if compte == (ctx.compte or "") else ())
         return {"etag": _empreinte([m.get("etag", ""), sortie]), "groupes": sortie["groupes"], "avatar": sortie["avatar"], "orphelines": sortie["orphelines"],
                 "niveau": sortie["niveau"], "cassandra_ok": admin, "organisation": _organisation(ctx), "epingles": _epingles_de(ctx, compte),
                 "version": VERSION_AFFICHEE}
