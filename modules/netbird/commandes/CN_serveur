@@ -740,6 +740,8 @@ def verbe_proxy_publier(a):
         avant = f.read()
     bloc = MARQUE_DEBUT + NL_ + ("http2 on;" + NL_ if v and v >= (1, 25, 1) else "") + NL_.join(ROUTES) + NL_ + MARQUE_FIN + NL_
     base = sans_bloc(avant)
+    if "location ~ ^/(api|oauth2)/" in base and "127.0.0.1:8081" in base:
+        refuser("ce site contient déjà des routes NetBird ajoutées à la main (sans les marques de Cassandra) : elles font le même travail, ou nginx refuserait le doublon ; retire-les du fichier d'inclusion pour que Cassandra prenne le relais")
     with open(chemin, "w") as f:
         f.write(base + (NL_ if base.strip() else "") + bloc)
     erreur = recharger_nginx(chemin, avant)

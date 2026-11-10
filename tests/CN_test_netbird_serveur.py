@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9484ef
+# VERSION CN : 0.1.0  #d034a5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`, `port_libre` et `shutil` sont remplacés ; le dossier du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9484ef ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d034a5 ▼▼▼
 """Bancs de la commande root `serveur` du module netbird : installer, mettre à jour et retirer un SERVEUR NetBird auto-hébergé. Ni Docker, ni réseau, ni ports ici : `executer`, `ouvrir`,
 `port_libre` et `shutil` sont remplacés ; le dossier du serveur est un dossier temporaire. On vérifie surtout ce qui est REFUSÉ et que le script n'est lancé que s'il est celui qu'on a confirmé."""
 import hashlib
@@ -729,6 +729,15 @@ class ProxyFastpanel(Monde):
         self.assertIn("pas un site FASTPANEL", self.lance("proxy_publier", "autre.exemple.fr")["erreur"])
         for argv in (("proxy_publier",), ("proxy_publier", "pas un domaine"), ("proxy_publier", "../x"), ("proxy_publier", "a.fr", "b.fr"), ("proxy_etat",), ("proxy_retirer", "a;b.fr")):
             self.assertFalse(self.lance(*argv)["ok"], argv)
+        self.assertFalse([c for c in self.cmds if c[0] == "systemctl"])
+
+    def test_des_routes_deja_posees_a_la_main_ne_sont_pas_doublees(self):
+        main = "location ~ ^/(api|oauth2)/ {" + chr(10) + "    proxy_pass http://127.0.0.1:8081;" + chr(10) + "}" + chr(10)
+        self.inc.write_text(main)
+        r = self.lance("proxy_publier", "netbird.exemple.fr")
+        self.assertFalse(r["ok"])
+        self.assertIn("ajoutées à la main", r["erreur"])
+        self.assertEqual(self.inc.read_text(), main, "le fichier n'est pas touché")
         self.assertFalse([c for c in self.cmds if c[0] == "systemctl"])
 
     def test_un_lien_a_la_place_du_fichier_est_refuse(self):
