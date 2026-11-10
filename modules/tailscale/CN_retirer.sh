@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.5.0  #bc6434
+# VERSION CN : 0.5.1  #bc6434
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Retire le droit de pilotage donné à l'utilisateur de Cassandra. Ne déconnecte PAS la machine et ne désinstalle PAS Tailscale : le réseau privé est à l'administrateur.
 # MÉTHODE    : `tailscale set --operator=` (vide).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=bc6434 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=bc6434 ▼▼▼
 set -u
 # la minuterie d'abord : sinon elle rendrait aussitôt le droit qu'on retire
 if command -v systemctl >/dev/null 2>&1; then
