@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #024f12
+// VERSION CN : 0.1.0  #673786
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=024f12 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=673786 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -572,7 +572,11 @@
       if (a === "cle-ok") { S.cle = null; dessiner(); return; }
       if (a === "jeton-enregistrer") {
         const jeton = val("#nb-j-jeton"), url = val("#nb-j-url");
-        if (jeton && !/^[A-Za-z0-9_.-]{16,300}$/.test(jeton)) { dire("Un jeton d’accès personnel NetBird (nbp_…)", "err"); return; }
+        if (jeton) {
+          // Dire POURQUOI le texte collé n’est pas un jeton, sans jamais le répéter : seule sa longueur et sa forme sont données.
+          const raison = /\s/.test(jeton) ? "il contient un espace ou un saut de ligne : recopie seulement le jeton" : !/^[A-Za-z0-9_.-]+$/.test(jeton) ? "il contient un caractère inattendu (un jeton NetBird n’a que des lettres, des chiffres et _)" : jeton.length < 16 ? "il est trop court (" + jeton.length + " caractères)" : jeton.length > 300 ? "il est trop long (" + jeton.length + " caractères)" : !/^nbp_/.test(jeton) ? "il ne commence pas par nbp_ : ce n’est pas un jeton d’accès personnel (c’est peut-être l’identifiant du jeton, ou autre chose)" : "";
+          if (raison) { S.echec = "Ce texte n’est pas un jeton d’accès NetBird : " + raison + ". Un jeton ressemble à nbp_ suivi de lettres et de chiffres, environ 40 caractères."; dire("Jeton refusé : " + raison, "err"); dessiner(); return; }
+        }
         if (!jeton && !url) { dire("Rien à enregistrer", "err"); return; }
         return faire(async () => { if (jeton) await agir("reglages.regler_secret", { cle: "netbird.jeton_api", valeur: jeton }); if (url) await agir("reglages.regler", { cle: "netbird.url_api", valeur: url }); }, "Accès à l’API enregistré.");
       }
