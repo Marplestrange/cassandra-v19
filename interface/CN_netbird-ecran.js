@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #865d78
+// VERSION CN : 0.1.0  #305d33
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=865d78 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=305d33 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -361,9 +361,15 @@
       else h += '<div class="acts"><button class="btn pri" data-a="srv-telecharger"' + (bloque ? " disabled" : "") + ">Télécharger le script et voir son empreinte</button></div>";
       return h + "</div>";
     }
+    function carteRetrait() {
+      return '<div class="carte"><h2 ' + H2 + ">Retirer le serveur</h2><p class=\"note\">Arrête les conteneurs. Les données (comptes, machines, clés) sont gardées : réinstaller retrouve le réseau tel quel.</p><div class=\"acts\">" +
+        (S.couper ? '<span class="confirme"><label class="coche"><input type="checkbox" id="nb-s-purge"><span>Supprimer aussi les données : tous les comptes, machines et clés sont retirés du serveur. Une sauvegarde est faite avant, hors du dossier du serveur ; sans elle, rien n’est supprimé.</span></label> <button class="btn dng" data-a="srv-retirer-oui">Oui, retirer</button><button class="btn" data-a="deconnecter-non">Non</button></span>'
+          : '<button class="btn dng" data-a="srv-retirer"' + (S.occupe ? " disabled" : "") + ">Retirer le serveur…</button>") + "</div></div>";
+    }
     function carteServeur(s) {
       const m = s.meta || {}, url = m.domaine ? "https://" + m.domaine : "";
       const avisPartiel = s.partiel ? '<div class="carte" role="alert" style="color:var(--warn)"><b>Installation inachevée.</b> Le script d’installation a échoué ou n’a pas eu le temps de finir : la pile est à moitié posée. Retire-la avec ses données (en bas de page), puis recommence l’installation.</div>' : "";
+      if (s.partiel) return avisPartiel + cartePrerequis(s) + carteRetrait();
       let h = avisPartiel + '<div class="carte"><div class="hero"><div><span class="lib">Serveur</span><span class="pastille ' + (s.conteneurs.some((c) => c.etat === "running") ? "ok" : "al") + '">' + (s.conteneurs.some((c) => c.etat === "running") ? "En marche" : "Arrêté") + "</span></div>" +
         fiche("Domaine", esc(m.domaine || "—")) + fiche("Version", esc(m.version || "—")) + fiche("Proxy", esc(m.proxy || "—")) + fiche("API", s.api_joignable ? "joignable ✓" : "ne répond pas ✗") + "</div>" +
         (s.conteneurs.length ? '<div class="pairs">' + s.conteneurs.map((c) => '<div class="pair" style="grid-template-columns:auto minmax(0,1fr) minmax(0,auto)"><span class="pt' + (c.etat === "running" ? " on" : "") + '"></span><span class="nom">' + esc(c.service) + '</span><span class="note" style="overflow-wrap:anywhere">' + esc(c.etat) + " · " + esc(c.image) + "</span></div>").join("") + "</div>" : "") + "</div>";
@@ -371,9 +377,7 @@
       h += carteMajServeur(s) + carteDns(s) + carteSauvegardes();
       h += cartePorts() + '<div class="carte"><h2 ' + H2 + ">Entretien</h2><div class=\"acts\"><button class=\"btn\" data-a=\"srv-journaux\"" + (S.occupe ? " disabled" : "") + ">Voir les journaux</button><button class=\"btn\" data-a=\"srv-redemarrer\"" + (S.occupe ? " disabled" : "") + ">Redémarrer</button>" +
         (m.proxy === "nginx" ? '<button class="btn" data-a="srv-nginx"' + (S.occupe ? " disabled" : "") + ">Voir la conf nginx</button>" : "") + "</div>" + carteTexte() + "</div>";
-      h += '<div class="carte"><h2 ' + H2 + ">Retirer le serveur</h2><p class=\"note\">Arrête les conteneurs. Les données (comptes, machines, clés) sont gardées : réinstaller retrouve le réseau tel quel.</p><div class=\"acts\">" +
-        (S.couper ? '<span class="confirme"><label class="coche"><input type="checkbox" id="nb-s-purge"><span>Supprimer aussi les données : tous les comptes, machines et clés sont retirés du serveur. Une sauvegarde est faite avant, hors du dossier du serveur ; sans elle, rien n’est supprimé.</span></label> <button class="btn dng" data-a="srv-retirer-oui">Oui, retirer</button><button class="btn" data-a="deconnecter-non">Non</button></span>'
-          : '<button class="btn dng" data-a="srv-retirer"' + (S.occupe ? " disabled" : "") + ">Retirer le serveur…</button>") + "</div></div>";
+      h += carteRetrait();
       return h;
     }
     function carteTexte() {
