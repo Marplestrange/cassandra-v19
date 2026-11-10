@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-sites.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=652d7d ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0567de ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -185,156 +185,318 @@ dl.paires dt{color:var(--muted)}dl.paires dd{margin:0;color:var(--strong)}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--strong);color:var(--bg);padding:9px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;z-index:60;max-width:90vw}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ── deuxième version : incidents, calendrier, sociétés, page d'un site, échelle, téléphone ── */
+.bande i.m{background:var(--info)}
+.row.site{grid-template-columns:auto minmax(0,1.6fr) minmax(0,1.2fr) auto}
+.row.site:hover{border-color:var(--accent)}
+.row.site .ouv{display:flex;gap:11px;align-items:center;background:none;border:0;text-align:left;padding:0;min-width:0;color:inherit}
+.ouv .nm{display:block;min-width:0}
+@media (max-width:700px){.row.site{grid-template-columns:auto minmax(0,1fr)}.row.site>.bz,.row.site>.cote{grid-column:1/-1}}
+details.grp{margin-bottom:8px}
+details.grp>summary{cursor:pointer;font-size:12px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);padding:8px 2px;list-style:none;display:flex;gap:8px;align-items:center;font-weight:650}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::before{content:"▸";transition:transform .15s}
+details.grp[open]>summary::before{transform:rotate(90deg)}
+.lot{position:sticky;bottom:12px;z-index:20;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--strong);color:var(--bg);border-radius:14px;padding:9px 14px;box-shadow:var(--lift);margin-top:12px;font-size:14px}
+.lot .btn,.lot select{background:transparent;color:inherit;border-color:rgba(127,127,127,.55)}
+.lot select option{color:#101828}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;font-size:13px;color:var(--muted);margin-top:10px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.cal .ent{font-size:11.5px;color:var(--muted);text-align:center;padding-bottom:2px}
+.cal .j{min-height:66px;border:1px solid var(--line);border-left:4px solid var(--line2);border-radius:10px;background:var(--surface2);padding:5px 6px;text-align:left;font-size:11.5px;color:var(--soft);display:flex;flex-direction:column;gap:2px;min-width:0}
+.cal .j b{font:600 12px "JetBrains Mono",ui-monospace,monospace;color:var(--strong)}
+.cal .j.ok{border-left-color:var(--ok)}
+.cal .j.w{border-left-color:var(--warn);background:var(--warn10)}
+.cal .j.d{border-left-color:var(--danger);background:var(--dan10)}
+.cal .j.m{border-left-color:var(--info);background:var(--inf10)}
+.cal .j.vide{visibility:hidden}
+.cal .j.futur{opacity:.4;cursor:default}
+.cal .j.sel{outline:2px solid var(--accent);outline-offset:1px}
+.cal .j.auj b::after{content:" · auj.";font:500 10.5px Inter,sans-serif;color:var(--accent)}
+.cal .j span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+@media (max-width:700px){.cal .j{min-height:46px;padding:4px}.cal .j span{display:none}.cal .j i{display:inline}}
+.choix{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.choix .c{border:1px solid var(--line2);border-radius:14px;padding:13px 14px;background:var(--surface2);display:flex;flex-direction:column;gap:8px}
+.choix .c.pr{border-color:var(--accent);background:var(--acc10)}
+.choix h3{margin:0;font-size:15px;color:var(--strong)}
+.choix p{margin:0;font-size:13.5px;color:var(--soft)}
+.etapes{display:grid;gap:6px;margin:4px 0;padding:0;list-style:none;font-size:14px}
+.etapes li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;align-items:baseline}
+.etapes li::before{content:"○";color:var(--muted)}
+.etapes li.fait::before{content:"✓";color:var(--ok);font-weight:700}
+.etapes li.cours::before{content:"…";color:var(--accent);font-weight:700}
+.chrono{display:grid;gap:9px;font-size:13.5px;border-left:2px solid var(--line2);padding-left:14px;margin-left:5px}
+.chrono div{position:relative}
+.chrono div::before{content:"";position:absolute;left:-19px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.chrono .t{color:var(--muted);font-size:12.5px;margin-right:8px}
+textarea{font:inherit;color:var(--strong);background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:8px 11px;width:100%;min-height:70px;resize:vertical}
+.wrap{overflow-x:auto}
+table.tab{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+table.tab th,table.tab td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.tab th{color:var(--muted);font-weight:600;font-size:12px}
+.site-t{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}
+.site-t .vg.gd{margin:0}
+@media (max-width:700px){.site-t{grid-template-columns:1fr}}
+.retour{background:none;border:0;color:var(--accent);padding:0;font-size:13.5px;margin-bottom:8px}
+.code{font:13px "JetBrains Mono",ui-monospace,monospace;background:var(--solid);border:1px solid var(--line);border-radius:10px;padding:8px 10px;overflow-x:auto;white-space:pre;color:var(--strong)}
+.meta2{font-size:13.5px;color:var(--soft);margin:4px 0}
+.delta{font-size:12px}.delta.h{color:var(--ok)}.delta.b{color:var(--danger)}
+/* téléphone : du menu de gauche ne restent que les sous-menus de Sites, en bande qui défile */
+@media (max-width:900px){
+  .haut{position:static;flex-wrap:wrap}
+  .haut .note{order:9;flex:1 1 100%;margin:0}
+  .seg{flex-wrap:wrap}
+  .app{padding:12px 10px 50px;gap:12px}
+  .menu{padding:6px;overflow:visible}
+  .menu>h2,.menu>.mi,.menu .legende{display:none}
+  .menu .sous{display:flex;gap:4px;overflow-x:auto;margin:0;padding:2px;border:0}
+  .menu .sous .mi{white-space:nowrap;width:auto;flex:none}
+  .sous .mi[aria-current="page"]::before{display:none}
+  h1{font-size:22px}
+  .sec{padding:13px 12px}
+  dl.paires{grid-template-columns:110px minmax(0,1fr)}
+}
+main{min-width:0}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .menu{min-width:0}
+  .seg{max-width:100%}
+  .tete .meta{flex:1 1 100%;margin:0}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .row .cote{align-items:flex-start}
+  .jl div{grid-template-columns:auto minmax(0,1fr)}
+  .jl div>span:last-child{grid-column:1/-1}
+  .onglets{flex-wrap:nowrap}
+}
+.gest{align-items:center}
+@media (max-width:700px){
+  .row[style]{grid-template-columns:minmax(0,1fr) !important;gap:6px}
+  .row[style]>.pl,.row[style]>.de,.row[style]>.ac{justify-self:start}
+  .row[style] .cote{flex-direction:row;flex-wrap:wrap;gap:8px}
+  .row .nm b,.row .nm small{white-space:normal}
+  .choix{grid-template-columns:minmax(0,1fr)}
+}
 </style>
 </head>
 <body>
 <div class="haut">
   <b>Cassandra</b><span class="note">Maquette interactive · module Sites · données fictives</span>
-  <span class="seg" role="group" aria-label="Portée"><button id="b-admin" aria-pressed="true" onclick="portee(true)">Administrateur</button><button id="b-compte" aria-pressed="false" onclick="portee(false)">Compte</button></span>
+  <span class="seg" role="group" aria-label="Qui regarde" id="roles"></span>
   <button onclick="sansPanneau()" id="b-pan" aria-pressed="false" title="Montre l'écran quand FastPanel n'est ni installé ni actif">Sans FastPanel</button>
   <button onclick="simuler()" id="b-sim" aria-pressed="false" title="Fait tomber un site pour voir l'écran réagir">Simuler une panne</button>
   <button onclick="theme()" aria-label="Clair ou sombre">◐</button>
 </div>
-
 <div class="app">
-  <nav class="menu carte" aria-label="Parc">
-    <h2>Parc</h2>
-    <button class="mi"><span class="ic">▦</span>Panorama<span class="chev">›</span></button>
-    <button class="mi"><span class="ic">◍</span>Zones DNS</button>
-    <button class="mi"><span class="ic">▤</span>Flotte<span class="chev">›</span></button>
-    <button class="mi"><span class="ic">◎</span>Tailscale<span class="chev">›</span></button>
-    <button class="mi"><span class="ic">⛨</span>NetBird<span class="chev">›</span></button>
-    <button class="mi" id="m-sites" aria-expanded="true" onclick="plier()"><span class="ic">◉</span>Sites<span class="chev">›</span></button>
-    <div class="sous" id="sous"></div>
-    <button class="mi"><span class="ic">▥</span>Hébergement</button>
-    <button class="mi"><span class="ic">⇄</span>Automatismes</button>
-    <div class="legende"><b>Les étiquettes</b>
-      <div><span class="neuf">nouveau</span>à coder dans Sites</div>
-      <div><span class="de">module</span>existe déjà ailleurs : Sites s’y branche</div>
-      <div><span class="ac">à créer</span>n’existe nulle part aujourd’hui</div></div>
-  </nav>
-  <main id="page" aria-live="polite"></main>
+  <nav class="menu carte" aria-label="Parc" id="menu"></nav>
+  <main id="page"></main>
 </div>
-
-<div class="voile" id="voile" onclick="fermer()"></div>
-<aside class="tiroir" id="tiroir" aria-label="Fiche du site"></aside>
 <div class="zoom" id="zoom" onclick="this.classList.remove('on')" aria-label="Aperçu agrandi"></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-// ───────────────────────── données fictives ─────────────────────────
+// ═══════════════════════════ le temps : la maquette est figée au mardi 10 novembre 2026 ═══════════════════════════
+const AUJ = new Date(2026, 10, 10), JOUR = 86400000;
+const ilYA = d => Math.round((AUJ - d) / JOUR);
+const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const rnd = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(42);
-const jours = (mauvais = []) => Array.from({length: 30}, (_, i) => mauvais.includes(i) ? (i % 2 ? 'd' : 'w') : 'ok');
-const rep = (base) => Array.from({length: 48}, () => Math.round(base * (0.7 + rnd() * 0.9)));
+// 90 jours d'état, du plus ancien au plus récent. `suivi` : depuis combien de jours on mesure ; `marques` : {il y a n jours : état}.
+// États : ok, w (coupure courte), d (coupure longue), m (maintenance), n (pas de mesure).
+const J = (suivi, marques = {}) => Array.from({length: 90}, (_, i) => { const il = 89 - i; return il >= suivi ? 'n' : (marques[il] || 'ok'); });
+const rep = base => Array.from({length: 48}, () => Math.round(base * (0.7 + rnd() * 0.9)));
+
+// ═══════════════════════════ données fictives ═══════════════════════════
+const SOCIETES = ['Atelier Nord', 'Studio Sud', 'Maison Est'];
+const SOC_DE = {'bea@exemple.test': 'Atelier Nord', 'leo@exemple.test': 'Atelier Nord', 'zoe@exemple.test': 'Studio Sud'};
+const MOI = {super: 'chef@exemple.test', admin: 'ines@exemple.test', compte: 'bea@exemple.test', sans: 'max@exemple.test'};
+const SOC_ADMIN = 'Atelier Nord';
 const SITES = [
-  {d:'boutique.exemple.test', compte:'bea@exemple.test', src:'panneau', fp:'bea', up:true, code:200, ms:182, ssl:74, php:'8.3', dispo:jours([11]), rep:rep(170), sauv:0, analyse:'saine · 3 j', disque:2140, pannes:1, indispo:'12 min'},
-  {d:'blog.exemple.test', compte:'bea@exemple.test', src:'panneau', fp:'bea', up:true, code:200, ms:3460, ssl:12, php:'8.1', dispo:jours([4,5,21]), rep:rep(2900), sauv:1, analyse:'saine · 9 j', disque:860, pannes:3, indispo:'1 h 48'},
-  {d:'atelier.exemple.test', compte:'leo@exemple.test', src:'panneau', fp:'leo', up:true, code:200, ms:96, ssl:61, php:'8.3', dispo:jours(), rep:rep(95), sauv:4, analyse:'jamais', disque:5120, pannes:0, indispo:''},
-  {d:'vitrine.exemple.test', compte:'leo@exemple.test', src:'declare', up:true, code:301, ms:240, ssl:29, dispo:jours([17]), rep:rep(230), pannes:1, indispo:'7 min', demande:{id:14, msg:'Le site est chez un hébergeur mutualisé, j’aimerais le rapatrier.', quand:'hier 16:20'}},
-  {d:'intranet.exemple.test', compte:'zoe@exemple.test', src:'declare', up:true, code:401, ms:60, ssl:201, dispo:jours(), rep:rep(60), pannes:0, indispo:'', protege:true},
-  {d:'archives.exemple.test', compte:'', src:'panneau', fp:'ancien', up:true, code:200, ms:410, ssl:-2, php:'7.4', dispo:jours([27,28,29]), rep:rep(400), sauv:null, analyse:'jamais', disque:310, pannes:1, indispo:'2 jours'},
-  {d:'api.exemple.test', compte:'zoe@exemple.test', src:'panneau', fp:'zoe', up:true, douteux:true, code:null, ms:8000, ssl:88, php:'8.3', dispo:jours([29]), rep:rep(120), sauv:0, analyse:'saine · 1 j', disque:120, pannes:0, indispo:''},
+  {d:'boutique.exemple.test', compte:'bea@exemple.test', soc:'Atelier Nord', src:'panneau', fp:'bea', up:true, code:200, ms:182, ssl:74, php:'8.3', cms:'WooCommerce 9.4', disque:2140, suivi:90, dispo:J(90, {18:'w'}), rep:rep(170), sauv:0, analyse:'saine · 3 j', objectif:99.9, domaine:212, trafic:[48200, 310, 'GPTBot, bingbot']},
+  {d:'blog.exemple.test', compte:'bea@exemple.test', soc:'Atelier Nord', src:'panneau', fp:'bea', up:false, code:502, ms:60, ssl:12, php:'8.1', cms:'WordPress 6.7', disque:860, suivi:90, dispo:J(90, {0:'d', 25:'w', 24:'w', 8:'w', 61:'d'}), rep:rep(900), sauv:1, analyse:'saine · 9 j', objectif:99.5, domaine:41, trafic:[21900, 1840, 'robots inconnus, AhrefsBot'], renouv:63},
+  {d:'atelier.exemple.test', compte:'leo@exemple.test', soc:'Atelier Nord', src:'panneau', fp:'leo', up:true, code:200, ms:3460, ssl:61, php:'8.3', cms:'Nextcloud 30', disque:5120, suivi:90, dispo:J(90, {3:'m', 40:'w'}), rep:rep(2900), sauv:4, analyse:'jamais', objectif:99.9, domaine:300, trafic:[9100, 22, 'aucun'], renouv:29},
+  {d:'vitrine.exemple.test', compte:'leo@exemple.test', soc:'', src:'declare', up:true, code:301, ms:240, ssl:29, cms:'site statique', suivi:90, dispo:J(90, {7:'w'}), rep:rep(230), objectif:99, domaine:19, preuve:'ok', demande:{id:14, msg:'Le site est chez un hébergeur mutualisé, j’aimerais le rapatrier.', quand:'hier 16:20'}},
+  {d:'portfolio.exemple.test', compte:'bea@exemple.test', soc:'Atelier Nord', src:'declare', up:null, code:null, ms:0, ssl:null, suivi:0, dispo:J(0), rep:[], objectif:99, preuve:'attente', jeton:'7f3a9c21'},
+  {d:'intranet.exemple.test', compte:'zoe@exemple.test', soc:'Studio Sud', src:'declare', up:true, code:401, ms:60, ssl:201, suivi:90, dispo:J(90), rep:rep(60), objectif:99, domaine:150, preuve:'ok', protege:true},
+  {d:'evenement.exemple.test', compte:'zoe@exemple.test', soc:'Studio Sud', src:'declare', up:null, code:null, ms:0, ssl:null, suivi:0, dispo:J(0), rep:[], objectif:99, preuve:'ok'},
+  {d:'api.exemple.test', compte:'zoe@exemple.test', soc:'Studio Sud', src:'panneau', fp:'zoe', up:true, douteux:true, code:null, ms:8000, ssl:88, php:'8.3', disque:120, suivi:34, dispo:J(34, {0:'w'}), rep:rep(120), sauv:0, analyse:'saine · 1 j', objectif:99.9, domaine:260, trafic:[130400, 96, 'aucun']},
+  {d:'archives.exemple.test', compte:'', soc:'', src:'panneau', fp:'ancien', up:true, code:200, ms:410, ssl:-2, php:'7.4', cms:'WordPress 5.9', disque:310, suivi:90, dispo:J(90, {2:'d', 1:'d', 0:'d'}), rep:rep(400), sauv:null, analyse:'jamais', objectif:99, domaine:8, trafic:[640, 410, 'robots inconnus'], phpFin:true},
 ];
-const CMS = {'boutique.exemple.test':'WooCommerce 9.4', 'blog.exemple.test':'WordPress 6.7', 'atelier.exemple.test':'Nextcloud 30', 'archives.exemple.test':'WordPress 5.9', 'vitrine.exemple.test':'site statique'};
-SITES.forEach((s, i) => { s.cms = CMS[s.d] || ''; s.gabarit = i % 3; s.capture = s.code === 401 ? '' : (i === 3 ? 'hier 22:10' : 'aujourd’hui 03:00'); });
+SITES.forEach((s, i) => { s.gabarit = i % 3; s.capture = s.up == null || s.code === 401 ? '' : 'aujourd’hui 03:00'; });
+let _masse = null;
+function MASSE(){
+  if (_masse) return _masse;
+  _masse = Array.from({length: 193}, (_, i) => { const n = String(i + 1).padStart(3, '0'), soc = SOCIETES[i % 3], bas = i % 41 === 7, lent = i % 23 === 5;
+    return {d:`client-${n}.exemple.test`, compte:`client${1 + i % 28}@exemple.test`, soc, src: i % 5 ? 'panneau' : 'declare', fp:'c' + (1 + i % 28), up: !bas, code: bas ? 503 : 200, ms: lent ? 3900 : 90 + (i * 37) % 400, ssl: 20 + (i * 13) % 70, php:['8.3', '8.2', '8.1'][i % 3], cms:['WordPress 6.7', '', 'PrestaShop 8.2'][i % 3], disque: 100 + (i * 91) % 4000, suivi:90, dispo:J(90, bas ? {0:'d'} : (i % 9 ? {} : {[i % 30]:'w'})), rep:rep(lent ? 3500 : 150), sauv: i % 17 ? i % 3 : null, analyse:'saine · 4 j', objectif:99.9, domaine: 30 + (i * 7) % 300, preuve:'ok', gabarit: i % 3, capture:'aujourd’hui 03:00'}; });
+  return _masse;
+}
+// Le journal : il = il y a combien de jours (pour le calendrier)
 const JOURNAL = [
-  {t:'04:31', v:'en attente', c:'w', d:'api.exemple.test', x:'Une mesure ratée (délai dépassé) : la panne se dit au deuxième échec.', q:'la sonde'},
-  {t:'03:22', v:'de retour', c:'ok', d:'blog.exemple.test', x:'De nouveau en ligne après 5 min (HTTP 200, 3 460 ms).', q:'la sonde'},
-  {t:'03:17', v:'coupure', c:'d', d:'blog.exemple.test', x:'Injoignable — HTTP 502', q:'la sonde'},
-  {t:'hier 16:20', v:'adossement demandé', c:'i', d:'vitrine.exemple.test', x:'Demande envoyée à l’administrateur.', q:'leo'},
-  {t:'hier 11:02', v:'accord donné', c:'i', d:'boutique.exemple.test', x:'restaurer · 24 h', q:'bea'},
-  {t:'hier 09:40', v:'rattaché', c:'', d:'boutique.exemple.test', x:'project Refonte 2027', q:'bea'},
-  {t:'hier 03:00', v:'sauvegarde lancée', c:'ok', d:'boutique.exemple.test', x:'plan « nuit » · 2,1 Go · copie complète', q:'le panneau'},
-  {t:'11-08 14:12', v:'certificat renouvelé', c:'ok', d:'atelier.exemple.test', x:'Let’s Encrypt · 3 émissions restantes cette semaine', q:'leo'},
-  {t:'11-08 02:30', v:'analyse lancée', c:'ok', d:'blog.exemple.test', x:'antivirus : saine, 18 204 fichiers', q:'Cassandra'},
-  {t:'11-07 19:41', v:'statut (outil)', c:'', d:'boutique.exemple.test', x:'demandé dans une conversation', q:'Itare'},
-  {t:'11-07 08:15', v:'attribué', c:'', d:'atelier.exemple.test', x:'à leo@exemple.test', q:'chef'},
+  {t:'04:31', il:0, v:'en attente', c:'w', d:'api.exemple.test', x:'Une mesure ratée (délai dépassé) : la panne se dit au deuxième échec.', q:'le Sensorium'},
+  {t:'03:17', il:0, v:'coupure', c:'d', d:'blog.exemple.test', x:'Injoignable — HTTP 502', q:'le Sensorium'},
+  {t:'02:40', il:0, v:'relève interrompue', c:'', d:'boutique.exemple.test', x:'Sensorium relancé par Cassandra : 6 min sans mesure, pour tous les sites.', q:'Cassandra'},
+  {t:'hier 16:20', il:1, v:'adossement demandé', c:'i', d:'vitrine.exemple.test', x:'Demande envoyée à l’administrateur.', q:'leo'},
+  {t:'hier 11:02', il:1, v:'accord donné', c:'i', d:'boutique.exemple.test', x:'restaurer · 24 h', q:'bea'},
+  {t:'hier 09:40', il:1, v:'rattaché', c:'', d:'boutique.exemple.test', x:'projet Refonte 2027', q:'bea'},
+  {t:'hier 03:00', il:1, v:'sauvegarde lancée', c:'ok', d:'boutique.exemple.test', x:'plan « nuit » · 2,1 Go · copie complète', q:'le panneau'},
+  {t:'11-08 14:12', il:2, v:'certificat renouvelé', c:'ok', d:'atelier.exemple.test', x:'Let’s Encrypt · 3 émissions restantes cette semaine', q:'leo'},
+  {t:'11-08 02:30', il:2, v:'analyse lancée', c:'ok', d:'blog.exemple.test', x:'antivirus : saine, 18 204 fichiers', q:'Cassandra'},
+  {t:'11-07 19:41', il:3, v:'statut (outil)', c:'', d:'boutique.exemple.test', x:'demandé dans une conversation', q:'Itare'},
+  {t:'11-07 08:15', il:3, v:'attribué', c:'', d:'atelier.exemple.test', x:'à leo@exemple.test', q:'chef'},
+];
+// Les incidents : une panne est un objet, avec son diagnostic, ses actions, sa chronologie et sa cause.
+const INC = [
+  {id:41, d:'blog.exemple.test', debut:'aujourd’hui 03:17', depuis:'1 h 14', etat:'ouvert', code:502, plan:null, note:'',
+   diag:'Le serveur web répond 502 : le service PHP 8.1 du site ne répond plus. Ses 12 processus sont tous occupés depuis 03:15.',
+   preuves:[['HTTP', '502 Bad Gateway', 'd'], ['PHP 8.1 (pool « blog »)', '12 / 12 processus occupés', 'd'], ['Certificat', '12 jours restants', 'w'], ['DNS', 'résout correctement', 'ok'], ['Disque du compte', '860 Mo, pas plein', 'ok']],
+   chrono:[['03:12', 'Première mesure ratée : pas encore une panne.'], ['03:17', 'Deuxième échec de suite : la panne est dite, datée de 03:12.'], ['03:17', 'Prévenus : bea@exemple.test (propriétaire) et les administrateurs d’Atelier Nord, dans Cassandra.']]},
+  {id:40, d:'archives.exemple.test', debut:'11-08 00:00', fin:'', depuis:'2 jours', etat:'ouvert', code:200, plan:null, note:'',
+   diag:'Le site répond, mais son certificat est échu depuis 2 jours : les navigateurs le refusent. Personne n’en est propriétaire dans Cassandra.',
+   preuves:[['HTTP', '200 en 410 ms', 'ok'], ['Certificat', 'échu depuis 2 jours', 'd'], ['PHP', '7.4 — fin de support', 'w'], ['Propriétaire', 'aucun compte, aucune société', 'w']],
+   chrono:[['11-08 00:00', 'Le certificat est échu.'], ['11-08 00:05', 'Prévenus : les super-administrateurs (le site n’a pas de société).']]},
+  {id:39, d:'vitrine.exemple.test', debut:'11-03 14:02', fin:'11-03 14:09', duree:'7 min', etat:'resolu', cause:'Redémarrage chez l’hébergeur.', par:'revenu seul', chrono:[['14:02', 'Panne dite.'], ['14:09', 'De nouveau en ligne.'], ['14:30', 'Cause notée par leo.']]},
+  {id:38, d:'boutique.exemple.test', debut:'10-23 09:40', fin:'10-23 09:52', duree:'12 min', etat:'resolu', cause:'Pool PHP saturé pendant une mise à jour.', par:'Cassandra, approuvé par bea', chrono:[['09:40', 'Panne dite.'], ['09:44', 'bea demande à Cassandra de corriger ; plan approuvé.'], ['09:52', 'Pool relancé, site en ligne.']]},
 ];
 const ACCORDS = [{d:'boutique.exemple.test', par:'bea@exemple.test', geste:'restaurer', fin:'demain 11:02'}];
-const REGL = {echecs:2, lent:3000, proteges:false, interne:false, delai:8, garde:90, ssl:21};
-// Ce que le Sensorium tient déjà et que Sites lui emprunte : alertes acceptées, fenêtres de maintenance, sites suivis, dépendances.
 const ACCEPTEES = {};
 const FENETRES = [{d:'atelier.exemple.test', fin:'aujourd’hui 06:00', raison:'mise à jour de Nextcloud', par:'leo'}];
 const SUIVIS = new Set(['boutique.exemple.test']);
-const OBJETS = [['machine', 'la machine argos', s => s.src === 'panneau'], ['zone', 'la zone DNS exemple.test', s => true], ['compte', 'le compte « bea » du panneau', s => s.fp === 'bea'], ['api', 'api.exemple.test', s => s.d === 'boutique.exemple.test' || s.d === 'atelier.exemple.test']];
-const ETAT = {impact:'machine', admin:true, sec:'vue', filtre:'', q:'', groupe:true, sel:null, onglet:'etat', mois:'2026-10', panne:false, moi:'bea@exemple.test'};
+const REGL = {echecs:2, lent:3000, ssl:21, proteges:false, objectif:99.9, prudence:true};
+const OBJETS = [['machine', 'la machine argos', s => (s.src0 || s.src) === 'panneau'], ['zone', 'la zone DNS exemple.test', s => true], ['compte', 'le compte « bea » du panneau', s => s.fp === 'bea'], ['api', 'api.exemple.test', s => s.d === 'boutique.exemple.test' || s.d === 'atelier.exemple.test']];
+const CIBLES = {projet:['Refonte 2027', 'Boutique de Noël', 'Migration PHP 8.3'], contact:['Zoé Martin', 'Paul Renard', 'Hébergeur Exemple SARL'], note:['Accès et particularités', 'Compte rendu du 4 novembre'], document:['Contrat d’hébergement.pdf', 'Charte graphique.pdf'], machine:['argos', 'athena', 'orion']};
+const ETAT = {role:'super', soc:'', sec:'vue', sel:null, onglet:'apercu', inc:null, filtre:'', q:'', periode:30, calSite:'boutique.exemple.test', calMois:'2026-11', calJour:null, sans:false, panne:false, masse:false, pg:{}, coche:new Set(), jfam:'tout', impact:'machine', declare:false, plie:false};
 
-// ───────────────────────── outils ─────────────────────────
-const E = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// ═══════════════════════════ outils ═══════════════════════════
+const E = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
 const $ = id => document.getElementById(id);
-const pill = (t, c) => `<span class="pl ${c||''}">${E(t)}</span>`;
-const sites = () => ETAT.admin ? SITES : SITES.filter(s => s.compte === ETAT.moi);
+const pill = (t, c) => `<span class="pl ${c || ''}">${E(t)}</span>`;
+const tag = (t, c = 'de') => `<span class="${c}">${E(t)}</span>`;
+const G = c => `style="grid-template-columns:${c}"`;
+const go = v => v >= 1024 ? (Math.round(v / 102.4) / 10).toLocaleString('fr-FR') + ' Go' : v + ' Mo';
+const nb = v => Number(v).toLocaleString('fr-FR');
+const fpct = v => v == null ? '—' : v.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + ' %';
+const admin = () => ETAT.role === 'super' || ETAT.role === 'admin';
+const tous = () => ETAT.masse ? SITES.concat(MASSE()) : SITES;
+const trouver = d => tous().find(s => s.d === d) || SITES.find(s => s.d === d);
+function sites(){
+  const r = ETAT.role;
+  if (r === 'sans') return [];
+  if (r === 'compte') return tous().filter(s => s.compte === MOI.compte);
+  if (r === 'admin') return tous().filter(s => s.soc === SOC_ADMIN);
+  return ETAT.soc ? tous().filter(s => (s.soc || 'aucune') === ETAT.soc) : tous();
+}
+const visible = d => sites().some(s => s.d === d);
+const enMaintenance = d => FENETRES.some(f => f.d === d);
+const hors = s => s.src !== 'panneau';
+const lieu = s => ETAT.sans ? ((s.src0 || s.src) === 'panneau' ? 'sur cette machine' : 'hébergé ailleurs') : 'hors panneau';
 function etat(s){
-  if (s.up === false) return {t: s.code ? 'code ' + s.code : 'ne répond pas', c:'d', r:0};
+  if (s.preuve === 'attente') return {t:'preuve en attente', c:'i', r:1};
+  if (s.up == null) return {t:'pas encore relevé', c:'', r:1};
+  if (s.up === false) return {t:'en panne · ' + (s.code ? 'code ' + s.code : 'ne répond pas'), c:'d', r:0};
   if (s.douteux) return {t:'1 échec · à confirmer', c:'w', r:1};
   if (s.ssl < 0) return {t:'certificat échu', c:'d', r:0};
   if (s.code === 401 && !REGL.proteges) return {t:'protégé (401)', c:'w', r:1};
-  if (s.ms >= REGL.lent) return {t:'lent · ' + s.ms.toLocaleString('fr-FR') + ' ms', c:'w', r:1};
-  if (s.ssl < REGL.ssl) return {t:'certificat ' + s.ssl + ' j', c:'w', r:1};
+  if (s.ms >= REGL.lent) return {t:'lent · ' + nb(s.ms) + ' ms', c:'w', r:1};
+  if (s.ssl != null && s.ssl < REGL.ssl) return {t:'certificat ' + s.ssl + ' j', c:'w', r:1};
   return {t:'en ligne', c:'ok', r:2};
 }
-const pct = s => Math.round(1000 * s.dispo.filter(x => x === 'ok').length / s.dispo.length) / 10 + (s.dispo.includes('w') ? 0.4 : 0);
+// La disponibilité sur les n derniers jours (ou sur la période d'avant, avec `decal`), sans compter les jours sans mesure ni la maintenance.
+function pct(s, n = ETAT.periode, decal = 0){
+  if (n + decal > 90) return null;
+  const a = s.dispo.slice(90 - n - decal, 90 - decal).filter(x => x !== 'n' && x !== 'm');
+  if (!a.length) return null;
+  return Math.round(a.reduce((t, x) => t + (x === 'ok' ? 1 : x === 'w' ? 0.985 : 0.62), 0) / a.length * 10000) / 100;
+}
+const incidents = (ouverts) => INC.filter(i => visible(i.d) && (ouverts == null || (i.etat !== 'resolu') === ouverts));
 function alertes(){
   const a = [];
-  sites().forEach(s => { const e = etat(s);
-    if (s.up === false) a.push({n:'d', s, t:`${s.d} ne répond pas`, x:'Injoignable depuis 12 min — HTTP 502', g:'Vérifier'});
-    if (s.ssl < 0) a.push({n:'d', s, t:`Certificat de ${s.d} : échu depuis ${-s.ssl} jour(s)`, x:'Les navigateurs refusent le site. Lu dans Sécurité › Certificats.', g:'Ouvrir dans Certificats', cert:1});
-    else if (s.ssl < REGL.ssl) a.push({n:'w', s, t:`Certificat de ${s.d} : ${s.ssl} jours`, x:'À renouveler avant l’échéance. Lu dans Sécurité › Certificats.', g:'Ouvrir dans Certificats', cert:1});
-    if (s.up !== false && s.ms >= REGL.lent && !s.douteux) a.push({n:'w', s, t:`${s.d} est lent (${s.ms.toLocaleString('fr-FR')} ms)`, x:`Le code est bon, mais au-delà de ${REGL.lent} ms un visiteur s’en va.`, g:'Voir la courbe'});
-    if (s.douteux) a.push({n:'i', s, t:`${s.d} : une mesure ratée`, x:`Pas encore une panne : il en faut ${REGL.echecs} de suite.`, g:'Sonder maintenant'});
-    if (s.src === 'panneau' && s.sauv == null) a.push({n:'w', s, t:`${s.d} : aucune sauvegarde connue`, x:'Aucun plan ne couvre ce compte du panneau.', g:'Ouvrir Sauvegardes'});
+  sites().forEach(s => {
+    if (s.ssl != null && s.ssl < 0) a.push({n:'d', s, t:`Certificat de ${s.d} : échu depuis ${-s.ssl} jour(s)`, x:'Les navigateurs refusent le site.', g:'Ouvrir dans Certificats', de:'certificats'});
+    else if (s.ssl != null && s.ssl < REGL.ssl) a.push({n:'w', s, t:`Certificat de ${s.d} : ${s.ssl} jours`, x:'À renouveler avant l’échéance.', g:'Ouvrir dans Certificats', de:'certificats'});
+    if (s.up && s.ms >= REGL.lent && !s.douteux) a.push({n:'w', s, t:`${s.d} est lent (${nb(s.ms)} ms)`, x:`Le code est bon, mais au-delà de ${nb(REGL.lent)} ms un visiteur s’en va.`, g:'Voir la courbe', de:'sensorium'});
+    if (s.douteux) a.push({n:'i', s, t:`${s.d} : une mesure ratée`, x:`Pas encore une panne : il en faut ${REGL.echecs} de suite.`, g:'Relever maintenant', de:'sensorium'});
+    if (s.src === 'panneau' && s.sauv == null) a.push({n:'w', s, t:`${s.d} : aucune sauvegarde connue`, x:'Aucun plan ne couvre ce compte du panneau.', g:'Ouvrir Sauvegardes', de:'sensorium'});
+    if (s.phpFin) a.push({n:'w', s, t:`${s.d} : PHP ${s.php} n’est plus maintenu`, x:'Plus de correctifs de sécurité : à passer en 8.3.', g:'Voir l’hébergement', de:'fastpanel'});
+    if (s.domaine != null && s.domaine < 30) a.push({n: s.domaine < 10 ? 'd' : 'w', s, t:`Le nom ${s.d} expire dans ${s.domaine} jours`, x:'S’il n’est pas renouvelé, le site et son courrier disparaissent.', g:'Voir le nom de domaine', de:'dns'});
+    if (s.preuve === 'attente') a.push({n:'i', s, t:`${s.d} : preuve de propriété en attente`, x:'Le site n’est pas encore à toi tant qu’elle n’est pas vérifiée.', g:'Prouver', de:''});
+    if (admin() && !s.soc) a.push({n:'i', s, t:`${s.d} n’est attribué à aucune société`, x: s.compte ? `Son compte (${s.compte}) est de ${SOC_DE[s.compte] || '?'}, mais le site lui-même n’est pas attribué.` : 'Ni compte ni société : seuls les super-administrateurs le voient.', g:'Attribuer', de:''});
   });
   a.sort((x, y) => 'dwi'.indexOf(x.n) - 'dwi'.indexOf(y.n));
-  alertes.tues = a.filter(x => ACCEPTEES[x.t] || FENETRES.some(f => f.d === x.s.d));
+  alertes.tues = a.filter(x => ACCEPTEES[x.t] || enMaintenance(x.s.d));
   return alertes.liste = a.filter(x => !alertes.tues.includes(x));
 }
 const demandes = () => sites().filter(s => s.demande);
-function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2600); }
-
-// ───────────────────────── menu de gauche : les sous-menus de Sites ─────────────────────────
-const MENU = () => [
-  ['vue', 'Vue d’ensemble', ''],
-  ['sites', 'Tous les sites', String(sites().length)],
-  ['dispo', 'Disponibilité', '', true],
-  ['alertes', 'Alertes', String(alertes().filter(a => a.n !== 'i').length), false, alertes().some(a => a.n === 'd') ? 'd' : (alertes().some(a => a.n === 'w') ? 'w' : '')],
-  ['demandes', ETAT.admin ? 'Demandes d’adossement' : 'Mes demandes', String(demandes().length), false, demandes().length ? 'w' : ''],
-  ['journal', 'Journal', ''],
-  ['rapports', 'Rapports', '', true],
-  ...(ETAT.admin ? [['reglages', 'Seuils d’alerte', '']] : []),
-];
-function menu(){
-  $('sous').innerHTML = MENU().map(([id, nom, n, neuf, c]) =>
-    `<button class="mi" ${ETAT.sec === id ? 'aria-current="page"' : ''} onclick="aller('${id}')">${E(nom)}${neuf ? '<span class="neuf">nouveau</span>' : ''}${n && n !== '0' ? `<span class="bad ${c||''}">${n}</span>` : ''}</button>`).join('');
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 3000); }
+function pager(liste, cle, par = 25){
+  const n = Math.max(1, Math.ceil(liste.length / par)), p = Math.min(ETAT.pg[cle] || 0, n - 1);
+  const html = liste.length > par ? `<div class="pager"><span>${p * par + 1}–${Math.min(liste.length, (p + 1) * par)} sur ${liste.length}</span><button class="btn s" ${p ? '' : 'disabled'} onclick="ETAT.pg['${cle}']=${p - 1};rendre()">‹ précédents</button><button class="btn s" ${p < n - 1 ? '' : 'disabled'} onclick="ETAT.pg['${cle}']=${p + 1};rendre()">suivants ›</button></div>` : '';
+  return {page: liste.slice(p * par, (p + 1) * par), html};
 }
-function plier(){ const b = $('m-sites'), o = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', o); $('sous').hidden = !o; }
-function aller(sec, filtre){ ETAT.sec = sec; if (filtre !== undefined) ETAT.filtre = filtre; fermer(); rendre(); window.scrollTo({top:0}); }
-// Sans FastPanel : il n'y a plus de « site du panneau ». Ce que le Sensorium lit de la machine (PHP, disque, CMS) reste ; ce qui est au panneau (ses sauvegardes, ses gestes) disparaît.
+
+// ═══════════════════════════ les adresses : chaque page a la sienne ═══════════════════════════
+function aller(sec, a, b){
+  ETAT.sec = sec;
+  if (sec === 'site'){ ETAT.sel = a; if (b) ETAT.onglet = b; }
+  if (sec === 'incident') ETAT.inc = +a;
+  if (sec === 'calendrier' && a){ ETAT.calSite = a; if (b) ETAT.calMois = b; ETAT.calJour = null; }
+  if (sec === 'sites' && a !== undefined) ETAT.filtre = a;
+  try { history.pushState(null, '', '#' + [sec, a, b].filter(Boolean).join('/')); } catch (e) {}
+  rendre(); window.scrollTo(0, 0);
+}
+function lire(){
+  const [sec, a, b] = decodeURIComponent(location.hash.slice(1)).split('/');
+  if (PAGES[sec]){ ETAT.sec = sec; if (sec === 'site'){ ETAT.sel = a; if (b) ETAT.onglet = b; } if (sec === 'incident') ETAT.inc = +a; if (sec === 'calendrier' && a){ ETAT.calSite = a; if (b) ETAT.calMois = b; } }
+  rendre();
+}
+window.addEventListener('popstate', lire);
+
+// ═══════════════════════════ la barre du haut ═══════════════════════════
+function role(r){ ETAT.role = r; ETAT.soc = ''; ETAT.coche.clear(); if (['site', 'incident'].includes(ETAT.sec) || (r === 'compte' && ETAT.sec === 'reglages')) ETAT.sec = 'vue'; rendre(); }
+function theme(){ const r = document.documentElement, sombre = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches; r.dataset.theme = sombre ? 'light' : 'dark'; }
 function sansPanneau(){
   ETAT.sans = !ETAT.sans; $('b-pan').setAttribute('aria-pressed', ETAT.sans);
-  SITES.forEach(s => { s.src0 = s.src0 || s.src; s.src = ETAT.sans ? 'declare' : s.src0; });
-  fermer(); rendre(); toast(ETAT.sans ? 'FastPanel absent : Sites continue avec les sites déclarés et ce que le Sensorium relève.' : 'FastPanel présent.');
+  tous().forEach(s => { s.src0 = s.src0 || s.src; s.src = ETAT.sans ? 'declare' : s.src0; });
+  rendre(); toast(ETAT.sans ? 'FastPanel absent : Sites continue avec les sites déclarés et ce que le Sensorium relève.' : 'FastPanel présent.');
 }
-const lieu = s => ETAT.sans ? ((s.src0 || s.src) === 'panneau' ? 'sur cette machine' : 'hébergé ailleurs') : 'hors panneau';
-function portee(a){ ETAT.admin = a; $('b-admin').setAttribute('aria-pressed', a); $('b-compte').setAttribute('aria-pressed', !a); if (!a && ETAT.sec === 'reglages') ETAT.sec = 'vue'; fermer(); rendre(); }
-function theme(){ const r = document.documentElement, sombre = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches; r.dataset.theme = sombre ? 'light' : 'dark'; }
 function simuler(){
-  ETAT.panne = !ETAT.panne; const s = SITES[0];
-  Object.assign(s, ETAT.panne ? {up:false, code:502, ms:60} : {up:true, code:200, ms:182});
-  s.dispo[29] = ETAT.panne ? 'd' : 'ok';
+  ETAT.panne = !ETAT.panne; const s = SITES[0], i = INC.findIndex(x => x.id === 42);
+  if (ETAT.panne){
+    Object.assign(s, {up:false, code:502, ms:60}); s.dispo[89] = 'd';
+    if (i < 0) INC.unshift({id:42, il:0, d:s.d, debut:'aujourd’hui 04:31', depuis:'à l’instant', etat:'ouvert', code:502, plan:null, note:'',
+      diag:'Le serveur web répond 502 : le service PHP 8.3 du site ne répond plus.', preuves:[['HTTP', '502 Bad Gateway', 'd'], ['PHP 8.3 (pool « boutique »)', 'ne répond plus', 'd'], ['Certificat', '74 jours restants', 'ok'], ['DNS', 'résout correctement', 'ok']],
+      chrono:[['04:26', 'Première mesure ratée : pas encore une panne.'], ['04:31', 'Deuxième échec de suite : la panne est dite.'], ['04:31', 'Prévenus : bea@exemple.test et les administrateurs d’Atelier Nord.']]});
+  } else { Object.assign(s, {up:true, code:200, ms:182}); s.dispo[89] = 'ok'; if (i >= 0) INC.splice(i, 1); if (ETAT.inc === 42 && ETAT.sec === 'incident') ETAT.sec = 'incidents'; }
   $('b-sim').setAttribute('aria-pressed', ETAT.panne); $('b-sim').textContent = ETAT.panne ? 'Rétablir le site' : 'Simuler une panne';
-  toast(ETAT.panne ? 'boutique.exemple.test : deuxième échec de suite, la panne est dite.' : 'boutique.exemple.test : de nouveau en ligne.');
-  rendre(); if (ETAT.sel) ouvrir(ETAT.sel);
+  toast(ETAT.panne ? 'boutique.exemple.test : deuxième échec de suite, la panne est dite et un incident s’ouvre.' : 'boutique.exemple.test : de nouveau en ligne.');
+  rendre();
 }
 
-// ───────────────────────── morceaux communs ─────────────────────────
-const tete = (titre, meta, droite = '') => `<p class="fil">Parc › Sites › ${E(titre)}</p><div class="tete"><h1>${E(titre)}</h1><span class="meta">${meta}</span>${droite}</div>`;
-const bande = s => `<div class="bande" role="img" aria-label="Disponibilité de ${E(s.d)} sur 30 jours : ${pct(s)} %">${s.dispo.map((x, i) => `<i class="${x === 'ok' ? '' : x}" title="${30 - i === 1 ? 'aujourd’hui' : 'il y a ' + (29 - i) + ' j'} : ${x === 'ok' ? 'sans coupure' : (x === 'w' ? 'coupure courte' : 'coupure longue')}"></i>`).join('')}</div>`;
-function courbe(s, h = 34){
-  const max = Math.max(...s.rep, REGL.lent * 0.5), w = 240, pts = s.rep.map((v, i) => `${(i / (s.rep.length - 1) * w).toFixed(1)},${(h - 3 - v / max * (h - 6)).toFixed(1)}`).join(' ');
-  const seuil = REGL.lent <= max ? `<line x1="0" x2="${w}" y1="${(h - 3 - REGL.lent / max * (h - 6)).toFixed(1)}" y2="${(h - 3 - REGL.lent / max * (h - 6)).toFixed(1)}" stroke="var(--warn)" stroke-dasharray="3 3" stroke-width="1"/>` : '';
-  return `<svg class="sp" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Temps de réponse de ${E(s.d)} sur 24 h, dernier : ${s.ms} ms">${seuil}<polyline points="${pts}" fill="none" stroke="${s.ms >= REGL.lent ? 'var(--warn)' : 'var(--accent)'}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+// ═══════════════════════════ le menu de gauche ═══════════════════════════
+const MENU = () => { const io = incidents(true).length, al = alertes().filter(a => a.n !== 'i'), nd = demandes().length + sites().filter(s => s.preuve === 'attente').length;
+  return [['vue', 'Vue d’ensemble'], ['sites', 'Tous les sites', sites().length], ['incidents', 'Incidents', io, io ? 'd' : '', 1], ['alertes', 'Alertes', al.length, al.some(a => a.n === 'd') ? 'd' : (al.length ? 'w' : '')],
+    ['dispo', 'Disponibilité', 0, '', 1], ['calendrier', 'Calendrier', 0, '', 1], ['demandes', admin() ? 'Demandes et preuves' : 'Mes demandes', nd, nd ? 'w' : ''], ['journal', 'Journal'], ['reglages', 'Réglages']]; };
+function menu(){
+  const autre = (ic, nom, chev) => `<button class="mi"><span class="ic">${ic}</span>${nom}${chev ? '<span class="chev">›</span>' : ''}</button>`;
+  const ici = ETAT.sec === 'site' ? 'sites' : ETAT.sec === 'incident' ? 'incidents' : ETAT.sec;
+  const sous = ETAT.role === 'sans' ? '' : `<button class="mi" aria-expanded="${!ETAT.plie}" onclick="ETAT.plie=!ETAT.plie;menu()"><span class="ic">◉</span>Sites<span class="chev">›</span></button>
+    <div class="sous" ${ETAT.plie ? 'hidden' : ''}>${MENU().map(([id, nom, n, c, neuf]) => `<button class="mi" ${ici === id ? 'aria-current="page"' : ''} onclick="aller('${id}')">${E(nom)}${neuf ? '<span class="neuf">nouveau</span>' : ''}${n ? `<span class="bad ${c || ''}">${n}</span>` : ''}</button>`).join('')}</div>`;
+  $('menu').innerHTML = `<h2>Parc</h2>${autre('▦', 'Panorama', 1)}${autre('◍', 'Zones DNS')}${autre('▤', 'Flotte', 1)}${autre('◎', 'Tailscale', 1)}${autre('⛨', 'NetBird', 1)}${sous}${autre('▥', 'Hébergement')}${autre('⇄', 'Automatismes')}
+    <div class="legende"><b>Les étiquettes</b><div><span class="neuf">nouveau</span>à coder dans Sites</div><div><span class="de">module</span>existe déjà ailleurs : Sites s’y branche</div><div><span class="ac">à créer</span>n’existe nulle part aujourd’hui</div></div>`;
+  $('roles').innerHTML = [['super', 'Super-admin'], ['admin', 'Admin de société'], ['compte', 'Compte'], ['sans', 'Compte sans site']].map(r => `<button aria-pressed="${ETAT.role === r[0]}" onclick="role('${r[0]}')">${r[1]}</button>`).join('');
 }
-// L'aperçu d'un site : une capture (ici dessinée, pour rester en données fictives), grise et barrée quand le site est tombé, remplacée par ses initiales quand il n'y en a pas.
+
+// ═══════════════════════════ morceaux communs ═══════════════════════════
+const tete = (titre, meta, droite = '', fil = '') => `<p class="fil">Parc › Sites${fil} › ${E(titre)}</p><div class="tete"><h1>${E(titre)}</h1><span class="meta">${meta}</span>${droite}</div>`;
+const quiRegarde = () => ETAT.role === 'super' ? 'super-administrateur · toutes les sociétés' : ETAT.role === 'admin' ? 'administrateur de ' + SOC_ADMIN : 'compte ' + MOI.compte;
+function bande(s, n = ETAT.periode){
+  const lib = {ok:'sans coupure', w:'coupure courte', d:'coupure longue', m:'en maintenance', n:'pas de mesure'};
+  return `<div class="bande" role="img" aria-label="Disponibilité de ${E(s.d)} sur ${n} jours : ${fpct(pct(s, n))}">${s.dispo.slice(90 - n).map((x, i) => { const il = n - 1 - i; return `<i class="${x === 'ok' ? '' : x}" title="${il ? 'il y a ' + il + ' j' : 'aujourd’hui'} : ${lib[x]}"></i>`; }).join('')}</div>`;
+}
+function courbe(s, h = 34){
+  if (!s.rep.length) return '<span class="silence" style="font-size:12.5px">pas encore de mesure</span>';
+  const max = Math.max(...s.rep, REGL.lent * 0.5), w = 240, y = v => (h - 3 - v / max * (h - 6)).toFixed(1);
+  const seuil = REGL.lent <= max ? `<line x1="0" x2="${w}" y1="${y(REGL.lent)}" y2="${y(REGL.lent)}" stroke="var(--warn)" stroke-dasharray="3 3" stroke-width="1"/>` : '';
+  return `<svg class="sp" style="height:${h}px" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Temps de réponse de ${E(s.d)} sur 24 h">${seuil}<polyline points="${s.rep.map((v, i) => (i / (s.rep.length - 1) * w).toFixed(1) + ',' + y(v)).join(' ')}" fill="none" stroke="${s.ms >= REGL.lent ? 'var(--warn)' : 'var(--accent)'}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
 function teinte(d){ let h = 0; for (const c of d) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
 function vignette(s, grand, zoom){
   const h = teinte(s.d), bas = s.up === false, a = `hsl(${h} 55% 42%)`, b = `hsl(${(h + 40) % 360} 60% 62%)`, f = `hsl(${h} 30% 96%)`, g = `hsl(${h} 20% 84%)`;
@@ -342,217 +504,413 @@ function vignette(s, grand, zoom){
     `<rect x="0" y="9" width="160" height="38" fill="url(#g${h})"/><rect x="12" y="19" width="62" height="6" rx="2" fill="#fff" opacity=".95"/><rect x="12" y="29" width="40" height="4" rx="2" fill="#fff" opacity=".7"/><rect x="12" y="37" width="24" height="6" rx="3" fill="#fff"/>` + [0, 1, 2].map(i => `<rect x="${12 + i * 47}" y="54" width="41" height="28" rx="3" fill="#fff" stroke="${g}"/><rect x="${16 + i * 47}" y="58" width="33" height="13" rx="2" fill="${g}"/><rect x="${16 + i * 47}" y="75" width="22" height="3" rx="1.5" fill="${g}"/>`).join(''),
     `<rect x="12" y="16" width="70" height="7" rx="2" fill="${a}"/>` + [0, 1, 2, 3].map(i => `<rect x="12" y="${30 + i * 15}" width="24" height="11" rx="2" fill="${i % 2 ? g : b}"/><rect x="41" y="${31 + i * 15}" width="${70 - i * 9}" height="3.5" rx="1.5" fill="${a}" opacity=".75"/><rect x="41" y="${37 + i * 15}" width="${54 + i * 6}" height="2.5" rx="1" fill="${g}"/>`).join('') + `<rect x="122" y="16" width="28" height="72" rx="3" fill="#fff" stroke="${g}"/>`,
     `<rect x="0" y="9" width="30" height="91" fill="${a}"/>` + [0, 1, 2, 3, 4].map(i => `<rect x="5" y="${16 + i * 9}" width="20" height="3.5" rx="1.5" fill="#fff" opacity="${i ? .55 : .95}"/>`).join('') + [0, 1, 2].map(i => `<rect x="${37 + i * 40}" y="15" width="34" height="20" rx="3" fill="#fff" stroke="${g}"/><rect x="${41 + i * 40}" y="27" width="${14 + i * 5}" height="4" rx="2" fill="${b}"/>`).join('') + `<rect x="37" y="41" width="114" height="46" rx="3" fill="#fff" stroke="${g}"/><polyline points="42,78 58,66 72,72 88,54 104,60 120,48 146,52" fill="none" stroke="${a}" stroke-width="2"/>`,
-  ][s.gabarit];
+  ][s.gabarit || 0];
   const svg = `<svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="g${h}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="160" height="100" fill="${f}"/>${corps}<rect width="160" height="9" fill="#e7ebef"/><circle cx="5" cy="4.5" r="1.6" fill="#f87171"/><circle cx="10" cy="4.5" r="1.6" fill="#fbbf24"/><circle cx="15" cy="4.5" r="1.6" fill="#34d399"/><rect x="24" y="2" width="96" height="5" rx="2.5" fill="#fff"/></svg>`;
-  const sans = !s.capture;
-  const clic = zoom ? '' : grand ? `onclick="agrandir('${s.d}')" title="cliquer pour agrandir"` : '';
-  return `<div class="vg ${grand ? 'gd' : ''} ${bas ? 'bas' : ''}" ${clic} role="img" aria-label="Aperçu de ${E(s.d)}${sans ? ' : pas de capture' : ', capture : ' + s.capture}">${sans ? `<span class="ini">${grand ? 'Pas d’aperçu : le site demande un mot de passe (401), la capture ne passe pas.' : E(s.d.slice(0, 2).toUpperCase())}</span>` : svg}${bas ? '<span class="et">hors ligne</span>' : ''}</div>`;
+  const sansCapture = !s.capture, pourquoi = s.code === 401 ? 'Pas d’aperçu : le site demande un mot de passe, la capture ne passe pas.' : 'Pas encore d’aperçu : il viendra avec la première relève.';
+  const clic = zoom || sansCapture ? '' : grand ? `onclick="agrandir('${s.d}')" title="cliquer pour agrandir"` : '';
+  return `<div class="vg ${grand ? 'gd' : ''} ${bas ? 'bas' : ''}" ${clic} role="img" aria-label="Aperçu de ${E(s.d)}${sansCapture ? ' : pas de capture' : ''}">${sansCapture ? `<span class="ini">${grand ? pourquoi : E(s.d.slice(0, 2).toUpperCase())}</span>` : svg}${bas ? '<span class="et">hors ligne</span>' : ''}</div>`;
 }
-function agrandir(d){ const z = $('zoom'); z.innerHTML = vignette(SITES.find(x => x.d === d), true, true); z.classList.add('on'); }
+function agrandir(d){ const z = $('zoom'); z.innerHTML = vignette(trouver(d), true, true); z.classList.add('on'); }
+function sousTitre(s){
+  const qui = ETAT.role === 'super' ? (s.soc || 'sans société') + ' · ' + (s.compte || 'sans compte') : ETAT.role === 'admin' ? (s.compte || 'sans compte') : '';
+  return [qui, s.cms, s.php ? 'PHP ' + s.php : '', s.disque ? go(s.disque) : '', hors(s) ? (ETAT.sans ? lieu(s) : 'déclaré à la main') : ''].filter(Boolean).map(E).join(' · ') || 'panneau';
+}
+function pastilles(s){
+  const e = etat(s), p = [pill(e.t, e.c)];
+  if (enMaintenance(s.d)) p.push(pill('en maintenance', 'i'));
+  if (s.ssl != null && s.ssl >= REGL.ssl) p.push(pill('SSL ' + s.ssl + ' j', 'ok'));
+  if (!hors(s)) p.push(s.sauv == null ? pill('aucune sauvegarde', 'w') : pill(s.sauv === 0 ? 'sauvegardé aujourd’hui' : 'sauvegardé il y a ' + s.sauv + ' j', s.sauv > 2 ? 'w' : 'ok'));
+  if (s.demande) p.push(pill('adossement demandé', 'i'));
+  if (admin() && !s.soc) p.push(pill('sans société', 'w'));
+  return p.join('');
+}
 function ligne(s){
-  const e = etat(s);
-  const go = v => v >= 1024 ? (Math.round(v / 102.4) / 10).toLocaleString('fr-FR') + ' Go' : v + ' Mo';
-  return `<button class="row site" onclick="ouvrir('${s.d}')">${vignette(s)}<div class="nm"><b><code>${E(s.d)}</code></b><small>${ETAT.admin ? E(s.compte || 'sans compte · panneau ' + s.fp) + ' · ' : ''}${[s.cms, s.php ? 'PHP ' + s.php : '', s.disque ? go(s.disque) : '', s.src === 'panneau' ? '' : 'déclaré à la main'].filter(Boolean).join(' · ') || 'panneau'}</small>
-    <div class="pills">${pill(e.t, e.c)}${s.ssl >= 0 && s.ssl >= REGL.ssl ? pill('SSL ' + s.ssl + ' j', 'ok') : ''}${s.src === 'panneau' ? (s.sauv == null ? pill('aucune sauvegarde', 'w') : pill(s.sauv === 0 ? 'sauvegardé aujourd’hui' : 'sauvegardé il y a ' + s.sauv + ' j', s.sauv > 2 ? 'w' : 'ok')) : pill(lieu(s), '')}${s.demande ? pill('adossement demandé', 'i') : ''}</div></div>
-    <div>${bande(s)}</div><div class="cote"><span class="num">${pct(s).toLocaleString('fr-FR')} % · 30 j</span><span class="num">${s.code ?? '—'} · ${s.ms.toLocaleString('fr-FR')} ms</span></div></button>`;
+  return `<div class="row site"><input type="checkbox" aria-label="Choisir ${E(s.d)}" ${ETAT.coche.has(s.d) ? 'checked' : ''} onchange="this.checked ? ETAT.coche.add('${s.d}') : ETAT.coche.delete('${s.d}');rendre()">
+    <button class="ouv" onclick="aller('site','${s.d}')">${vignette(s)}<span class="nm"><b><code>${E(s.d)}</code></b><small>${sousTitre(s)}</small><span class="pills">${pastilles(s)}</span></span></button>
+    <div class="bz">${bande(s, 30)}</div><div class="cote"><span class="num">${fpct(pct(s, 30))} · 30 j</span><span class="num">${s.code ?? '—'} · ${s.up == null ? '—' : nb(s.ms) + ' ms'}</span></div></div>`;
 }
+function alerteHtml(a){
+  const i = alertes.liste.indexOf(a);
+  const act = a.de === 'certificats' ? `versModule('Sécurité › Certificats','${a.s.d}')` : a.g === 'Attribuer' || a.g === 'Prouver' ? `aller('site','${a.s.d}')` : a.g === 'Voir la courbe' ? `aller('site','${a.s.d}','dispo')` : a.g.startsWith('Voir') ? `aller('site','${a.s.d}','${a.de === 'dns' ? 'secu' : 'heberg'}')` : `toast('${E(a.g)} : ${a.s.d} (maquette).')`;
+  return `<div class="row" ${G('auto minmax(0,1fr) auto')}>${pill(a.n === 'd' ? 'grave' : a.n === 'w' ? 'à regarder' : 'info', a.n === 'i' ? 'i' : a.n)}<button class="nm" style="background:none;border:0;text-align:left;padding:0" onclick="aller('site','${a.s.d}')"><b>${E(a.t)}</b><small>${E(a.x)}${a.de ? ' ' + tag(a.de) : ''}</small></button>
+    <span style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><button class="btn s" onclick="${act}">${E(a.g)}</button>${a.n === 'i' ? '' : `<button class="btn s" title="« Je sais, c’est normal » : elle se tait jusqu’à l’échéance et revient si son chiffre monte" onclick="accepter(${i})">Accepter</button>`}</span></div>`;
+}
+function incidentLigne(i){
+  const s = trouver(i.d), ouvert = i.etat !== 'resolu';
+  return `<button class="row" ${G('auto minmax(0,1fr) auto')} onclick="aller('incident','${i.id}')">${pill(ouvert ? (i.etat === 'depannage' ? 'dépannage en cours' : 'ouvert') : 'résolu', ouvert ? 'd' : 'ok')}<div class="nm"><b><code>${E(i.d)}</code> — ${ouvert ? E(s && s.up === false ? 'en panne' : 'à traiter') + ' depuis ' + E(i.depuis) : 'coupure de ' + E(i.duree)}</b><small>${ouvert ? E(i.diag) : E(i.cause || 'cause non notée') + ' · ' + E(i.par)}</small></div><span class="num" style="font-size:12.5px;color:var(--soft)">${E(i.debut)}</span></button>`;
+}
+function journalHtml(n, fam, domaine){
+  const l = JOURNAL.filter(j => visible(j.d) && (!domaine || j.d === domaine) && (!fam || fam === 'tout' || famille(j) === fam)).slice(0, n);
+  return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span>${domaine ? '' : `<a href="#site/${j.d}" onclick="aller('site','${j.d}');return false" style="color:inherit"><code>${E(j.d)}</code></a> · `}${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : `<p class="silence">${fam && fam !== 'tout' ? '<b>Rien dans cette famille.</b>' : 'Aucun geste encore.'}</p>`;
+}
+const FAMILLES = ['tout', 'coupures', 'sauvegardes', 'certificats', 'analyses', 'gestes de l’écran', 'demandes et accords', 'outils de Cassandra'];
+const famille = j => /coupure|retour|attente|relève/.test(j.v) ? 'coupures' : /sauvegarde/.test(j.v) ? 'sauvegardes' : /certificat/.test(j.v) ? 'certificats' : /analyse/.test(j.v) ? 'analyses' : /adossement|accord/.test(j.v) ? 'demandes et accords' : /outil/.test(j.v) ? 'outils de Cassandra' : 'gestes de l’écran';
+const periodes = () => `<span class="chips" style="margin:0">${[7, 30, 90].map(n => `<button class="chip" aria-pressed="${ETAT.periode === n}" onclick="ETAT.periode=${n};rendre()">${n} jours</button>`).join('')}</span>`;
+const legende = () => `<div class="leg"><span><i style="background:var(--ok)"></i>sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span><span><i style="background:var(--info)"></i>maintenance</span><span><i style="background:var(--line2)"></i>pas de mesure</span></div>`;
+function versModule(m, d){ toast('Ouvre ' + m + (d ? ' sur ' + d : '') + ' (maquette).'); }
+function accepter(i){ const a = alertes.liste[i]; if (!a) return; ACCEPTEES[a.t] = {d: a.s.d, jusqu: 'dans 7 jours'}; rendre(); toast('Alerte acceptée pour 7 jours. Elle reviendra si son chiffre monte.'); }
+function maintenance(d, duree){ if (!d) return; if (!enMaintenance(d)) FENETRES.push({d, fin: 'dans ' + duree, raison: 'intervention', par: MOI[ETAT.role].split('@')[0]}); rendre(); toast('Fenêtre de maintenance posée sur ' + d + ' : ses alertes se taisent, le Sensorium continue de mesurer.'); }
+function finMaintenance(d){ const i = FENETRES.findIndex(x => x.d === d); if (i >= 0) FENETRES.splice(i, 1); rendre(); toast('Fenêtre annulée : les alertes reparlent.'); }
 
-// ───────────────────────── les pages ─────────────────────────
+// ═══════════════════════════ les pages ═══════════════════════════
 const PAGES = {
   vue(){
-    const l = sites(), al = alertes(), bas = l.filter(s => s.up === false), graves = al.filter(a => a.n === 'd'), moy = al.filter(a => a.n === 'w');
-    const m = graves.length ? 'd' : (moy.length ? 'w' : '');
-    const titre = bas.length ? `Un site est tombé : ${bas[0].d} (code ${bas[0].code})` : graves.length ? graves[0].t : moy.length ? `${l.length} sites répondent · ${moy.length} point${moy.length > 1 ? 's' : ''} à regarder` : `Les ${l.length} sites répondent`;
-    const sans = l.filter(s => s.src === 'panneau' && s.sauv == null).length;
-    const sous = bas.length ? `${l.length - bas.length} autres répondent. La panne est dite au ${REGL.echecs}ᵉ échec de suite, et datée du premier.` : (moy.length || graves.length) ? (al.filter(a => a.n !== 'i' && a.t !== titre).slice(0, 2).map(a => a.t).join(' ; ') || 'Rien d’autre à signaler') + '.' : `Aucune panne, aucun certificat court.${sans ? ' ' + sans + ' site(s) du panneau sans sauvegarde connue.' : ''}`;
-    const dm = Math.round(l.reduce((a, s) => a + pct(s), 0) / l.length * 10) / 10, cmin = Math.min(...l.map(s => s.ssl));
-    return tete('Vue d’ensemble', `${ETAT.admin ? 'administrateur' : 'compte ' + E(ETAT.moi)} · ${l.length} sites · relevé 04:31 · relève du Sensorium toutes les 5 min`, `<button class="btn" onclick="toast('Relève demandée au Sensorium : résultats dans quelques secondes.')">Relever maintenant</button><button class="btn p" onclick="aller('sites');declarer()">Déclarer un site</button>`) + `
-    ${ETAT.sans ? `<div class="bandeau"><b>FastPanel n’est pas installé.</b> Sites fonctionne quand même : l’état, la disponibilité, les certificats, les alertes, le journal et les rattachements viennent du Sensorium, de Certificats et des comptes. Ne manquent que ce qui appartient au panneau : ses sauvegardes, ses analyses, et ses gestes (restaurer, renouveler par le panneau).</div>` : ''}
-    <section class="sec carte"><div class="verdict"><div class="vm ${m}"></div><div><p class="vt">${E(titre)}</p><p class="vs">${E(sous)}</p></div></div>
+    const l = sites(), al = alertes(), io = incidents(true), graves = al.filter(a => a.n === 'd'), moy = al.filter(a => a.n === 'w'), bas = l.filter(s => s.up === false);
+    const m = io.length || graves.length ? 'd' : (moy.length ? 'w' : '');
+    const titre = io.length ? (io.length === 1 ? `Un incident ouvert : ${io[0].d}` : `${io.length} incidents ouverts`) : graves.length ? graves[0].t : moy.length ? `${l.length} sites répondent · ${moy.length} point${moy.length > 1 ? 's' : ''} à regarder` : `Les ${l.length} sites répondent`;
+    const sous = io.length ? io.slice(0, 2).map(i => i.diag).join(' ') : (graves.length || moy.length) ? al.filter(a => a.n !== 'i').slice(0, 2).map(a => a.t).join(' ; ') + '.' : 'Aucune panne, aucun certificat court.';
+    const mes = l.filter(s => pct(s, 30) != null), dm = mes.length ? Math.round(mes.reduce((a, s) => a + pct(s, 30), 0) / mes.length * 100) / 100 : null, sousObj = mes.filter(s => pct(s, 30) < s.objectif).length;
+    const pan = l.filter(s => !hors(s)), sansSauv = pan.filter(s => s.sauv == null).length, certs = l.filter(s => s.ssl != null), cmin = certs.length ? Math.min(...certs.map(s => s.ssl)) : null;
+    const parSoc = ETAT.role === 'super' && !ETAT.soc ? `<section class="sec carte"><div class="sh"><h2>Par société</h2><span class="meta">chaque société ne voit que ses sites ; toi seul vois tout</span></div><div class="rows">${SOCIETES.concat(['aucune']).map(so => { const ls = tous().filter(s => (s.soc || 'aucune') === so); if (!ls.length) return ''; const b = ls.filter(s => s.up === false).length;
+      return `<button class="row" ${G('minmax(0,1fr) auto auto')} onclick="ETAT.soc='${so}';aller('sites','')"><div class="nm"><b>${so === 'aucune' ? 'Sans société — à attribuer' : E(so)}</b><small>${ls.length} site${ls.length > 1 ? 's' : ''}</small></div>${so === 'aucune' ? pill('à attribuer', 'w') : pill(b ? b + ' en panne' : 'tout répond', b ? 'd' : 'ok')}<span class="num">›</span></button>`; }).join('')}</div></section>` : '';
+    return tete('Vue d’ensemble', `${quiRegarde()} · ${l.length} sites · relevé 04:31 · relève du Sensorium toutes les 5 min`, `<button class="btn" onclick="toast('Relève demandée au Sensorium : résultats dans quelques secondes.')">Relever maintenant</button><button class="btn p" onclick="ETAT.declare=true;aller('sites')">Déclarer un site</button>`) + `
+    ${ETAT.sans ? `<div class="bandeau"><b>FastPanel n’est pas installé.</b> Sites fonctionne quand même : l’état, la disponibilité, les incidents, le calendrier, les alertes et les rattachements viennent du Sensorium, de Certificats et des comptes. Ne manquent que ce qui appartient au panneau : ses sauvegardes, ses analyses, ses gestes. Sans lui, c’est la preuve de propriété qui dit à qui est un site.</div>` : ''}
+    ${l.length ? '' : '<div class="bandeau"><b>Aucun site dans cette vue.</b></div>'}
+    <section class="sec carte"><div class="verdict"><div class="vm ${m}"></div><div><p class="vt">${E(titre)}</p><p class="vs">${E(sous)}</p>${io.length ? `<div class="gest"><button class="btn p" onclick="aller('incident','${io[0].id}')">Ouvrir l’incident</button>${io.length > 1 ? `<button class="btn" onclick="aller('incidents')">Voir les ${io.length}</button>` : ''}</div>` : ''}</div></div>
       <div class="kpis">
-        <button class="kpi" onclick="aller('sites','${bas.length ? 'tombes' : ''}')"><span>En ligne</span><b class="${bas.length ? 'd' : ''}">${l.length - bas.length} / ${l.length}</b><em>${bas.length ? bas.length + ' ne répond pas' : 'tous répondent'}</em></button>
-        <button class="kpi" onclick="aller('dispo')"><span>Disponibilité 30 j</span><b>${dm.toLocaleString('fr-FR')} %</b><em>${l.reduce((a, s) => a + s.pannes, 0)} coupures sur le mois</em></button>
-        <button class="kpi" onclick="versCertificats()" title="Ouvre Sécurité › Certificats"><span>Certificats ↗</span><b class="${cmin < 0 ? 'd' : cmin < REGL.ssl ? 'w' : ''}">${cmin < 0 ? '1 échu' : cmin + ' j'}</b><em>${cmin < 0 ? 'depuis ' + -cmin + ' jours' : 'le plus court'}</em></button>
+        <button class="kpi" onclick="aller('sites','${bas.length ? 'tombes' : ''}')"><span>En ligne</span><b class="${bas.length ? 'd' : ''}">${l.filter(s => s.up).length} / ${l.filter(s => s.up != null).length}</b><em>${bas.length ? bas.length + ' en panne' : 'tous répondent'}${l.some(s => s.up == null) ? ' · ' + l.filter(s => s.up == null).length + ' pas encore relevé' : ''}</em></button>
+        <button class="kpi" onclick="aller('incidents')"><span>Incidents</span><b class="${io.length ? 'd' : ''}">${io.length}</b><em>${io.length ? 'ouverts : à dépanner' : 'aucun ouvert'}</em></button>
+        <button class="kpi" onclick="aller('dispo')"><span>Disponibilité 30 j</span><b class="${sousObj ? 'w' : ''}">${fpct(dm)}</b><em>${sousObj ? sousObj + ' sous leur objectif' : 'tous à l’objectif'}</em></button>
+        <button class="kpi" onclick="versModule('Sécurité › Certificats')" title="Ouvre Sécurité › Certificats"><span>Certificats ↗</span><b class="${cmin != null && cmin < 0 ? 'd' : cmin != null && cmin < REGL.ssl ? 'w' : ''}">${cmin == null ? '—' : cmin < 0 ? '1 échu' : cmin + ' j'}</b><em>${cmin == null ? '' : cmin < 0 ? 'depuis ' + -cmin + ' jours' : 'le plus court'}</em></button>
         <button class="kpi" onclick="aller('alertes')"><span>Alertes</span><b class="${graves.length ? 'd' : moy.length ? 'w' : ''}">${graves.length + moy.length}</b><em>${graves.length} grave${graves.length > 1 ? 's' : ''} · ${moy.length} à regarder</em></button>
-        <button class="kpi" onclick="aller('demandes')"><span>Demandes</span><b class="${demandes().length ? 'w' : ''}">${demandes().length}</b><em>${ETAT.admin ? 'adossement à traiter' : 'en attente'}</em></button>
-        <button class="kpi" onclick="aller('sites','sans')"><span>Sauvegardes</span><b class="${sans ? 'w' : ''}">${l.filter(s => s.src === 'panneau' && s.sauv != null).length} / ${l.filter(s => s.src === 'panneau').length}</b><em>${sans ? sans + ' site sans copie' : 'tous couverts'}</em></button>
-        <button class="kpi" onclick="aller('sites','analyse')"><span>Analyses</span><b class="${l.some(s => s.analyse === 'jamais') ? 'w' : ''}">${l.filter(s => s.analyse === 'jamais').length ? l.filter(s => s.analyse === 'jamais').length + ' à revoir' : 'à jour'}</b><em>antivirus · sites du panneau</em></button>
-        <div class="kpi"><span>Disque</span><b>${(Math.round(l.reduce((a, s) => a + (s.disque || 0), 0) / 102.4) / 10).toLocaleString('fr-FR')} Go</b><em>fichiers des sites du panneau</em></div>
+        <button class="kpi" onclick="aller('sites','sans')"><span>Sauvegardes</span><b class="${sansSauv ? 'w' : ''}">${pan.length ? (pan.length - sansSauv) + ' / ' + pan.length : '—'}</b><em>${pan.length ? (sansSauv ? sansSauv + ' sans copie' : 'tous couverts') : 'pas de panneau'}</em></button>
+        <button class="kpi" onclick="aller('sites','analyse')"><span>Analyses</span><b class="${pan.some(s => s.analyse === 'jamais') ? 'w' : ''}">${pan.length ? (pan.filter(s => s.analyse === 'jamais').length ? pan.filter(s => s.analyse === 'jamais').length + ' à revoir' : 'à jour') : '—'}</b><em>antivirus · sites du panneau</em></button>
+        <div class="kpi"><span>Disque</span><b>${go(l.reduce((a, s) => a + (s.disque || 0), 0))}</b><em>fichiers des sites de la machine</em></div>
       </div></section>
-    <section class="sec carte"><div class="sh"><h2>Ce qui demande un geste</h2><span class="meta">le plus grave d’abord</span><span class="dr"><button class="btn s" onclick="aller('alertes')">Tout voir</button></span></div>${al.length ? `<div class="rows">${al.slice(0, 4).map(alerteHtml).join('')}</div>` : '<p class="silence"><b>Rien ne demande un geste.</b></p>'}</section>
+    ${parSoc}
+    <section class="sec carte"><div class="sh"><h2>Ce qui demande un geste</h2><span class="meta">les incidents d’abord, puis le plus grave</span><span class="dr"><button class="btn s" onclick="aller('alertes')">Toutes les alertes</button></span></div>
+      ${io.length || al.length ? `<div class="rows">${io.map(incidentLigne).join('')}${al.slice(0, 4).map(alerteHtml).join('')}</div>` : '<p class="silence"><b>Rien ne demande un geste.</b></p>'}</section>
     <div class="grille2">
-      <section class="sec carte"><div class="sh"><h2>Les plus fragiles</h2><span class="meta">disponibilité sur 30 jours</span></div><div class="rows">${l.slice().sort((a, b) => pct(a) - pct(b)).slice(0, 3).map(s => `<button class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) auto" onclick="ouvrir('${s.d}')"><div class="nm"><b><code>${E(s.d)}</code></b></div>${bande(s)}<span class="num">${pct(s).toLocaleString('fr-FR')} %</span></button>`).join('')}</div></section>
+      <section class="sec carte"><div class="sh"><h2>Les plus fragiles</h2><span class="meta">disponibilité sur 30 jours</span></div><div class="rows">${mes.slice().sort((a, b) => pct(a, 30) - pct(b, 30)).slice(0, 3).map(s => `<button class="row" ${G('minmax(0,1fr) minmax(0,1.2fr) auto')} onclick="aller('calendrier','${s.d}')"><div class="nm"><b><code>${E(s.d)}</code></b></div>${bande(s, 30)}<span class="num">${fpct(pct(s, 30))}</span></button>`).join('') || '<p class="silence">Pas encore de mesure.</p>'}</div></section>
       <section class="sec carte"><div class="sh"><h2>Derniers événements</h2><span class="dr"><button class="btn s" onclick="aller('journal')">Tout le journal</button></span></div>${journalHtml(4)}</section>
     </div>
-    <section class="sec carte"><div class="sh"><h2>Si ceci tombe, qui est touché ?</h2><span class="de">Sensorium</span><span class="meta">les dépendances déclarées : hébergé par, certifié par, résolu par</span></div>
+    <section class="sec carte"><div class="sh"><h2>Si ceci tombe, qui est touché ?</h2>${tag('Sensorium')}<span class="meta">les dépendances déclarées : hébergé par, certifié par, résolu par</span></div>
       <div class="chips">${OBJETS.map(o => `<button class="chip" aria-pressed="${ETAT.impact === o[0]}" onclick="ETAT.impact='${o[0]}';rendre()">${E(o[1])}</button>`).join('')}</div>
-      ${(() => { const o = OBJETS.find(x => x[0] === ETAT.impact), l = sites().filter(o[2]); return l.length ? `<p class="silence" style="padding-top:0"><b>${l.length} site${l.length > 1 ? 's' : ''}</b> sur ${sites().length} dépend${l.length > 1 ? 'ent' : ''} de ${E(o[1])}.</p><div class="pills">${l.map(s => `<button class="chip" onclick="ouvrir('${s.d}','dependances')"><code>${E(s.d)}</code></button>`).join('')}</div>` : `<p class="silence">Aucun de ${ETAT.admin ? 'ces' : 'tes'} sites ne dépend de ${E(o[1])}.</p>`; })()}</section>
+      ${(() => { const o = OBJETS.find(x => x[0] === ETAT.impact), ls = l.filter(o[2]); return ls.length ? `<p class="silence" style="padding-top:0"><b>${ls.length} site${ls.length > 1 ? 's' : ''}</b> sur ${l.length} dépend${ls.length > 1 ? 'ent' : ''} de ${E(o[1])}.</p><div class="pills">${ls.slice(0, 12).map(s => `<button class="chip" onclick="aller('site','${s.d}','liens')"><code>${E(s.d)}</code></button>`).join('')}${ls.length > 12 ? `<span class="silence">et ${ls.length - 12} autres</span>` : ''}</div>` : `<p class="silence">Aucun de ces sites ne dépend de ${E(o[1])}.</p>`; })()}</section>
     <section class="sec carte"><div class="sh"><h2>D’où viennent les chiffres</h2><span class="meta">et leur âge</span></div><div class="rows">
-      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('sensorium', 'ok')}<div class="nm"><b>Le Sensorium</b><small>il relève : réponse et durée, pannes et retours, PHP, disque, CMS, bases, courrier, sauvegardes. Sites le questionne, il ne sonde plus de son côté</small></div><span class="num">il y a 2 min</span></div>
-      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('comptes', 'ok')}<div class="nm"><b>Les comptes</b><small>à qui est chaque site : c’est ce qui fait que chacun voit tout de ses sites, et rien de ceux des autres</small></div><span class="num">il y a 2 min</span></div>
-      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('certificats', 'ok')}<div class="nm"><b>Le module Certificats</b><small>échéance du certificat servi, quota d’émission, renouvellement : Sites les lit, ne les refait pas</small></div><span class="num">il y a 38 min</span></div>
-      <div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(ETAT.sans ? 'absent' : 'panneau', ETAT.sans ? 'w' : '')}<div class="nm"><b>FastPanel, facultatif</b><small>${ETAT.sans ? 'pas installé : Sites s’en passe' : 'quand il est là : le propriétaire du panneau, ses copies de sauvegarde, ses gestes'}</small></div><span class="num">${ETAT.sans ? '—' : '04:31'}</span></div></div></section>`;
+      <div class="row" ${G('auto minmax(0,1fr) auto')}>${pill('sensorium', 'ok')}<div class="nm"><b>Le Sensorium</b><small>il relève : réponse et durée, pannes et retours, PHP, disque, CMS, bases, courrier, sauvegardes, attaques. Sites le questionne, il ne sonde plus de son côté. Relancé par Cassandra cette nuit à 02:40 : 6 minutes sans mesure.</small></div><span class="num">il y a 2 min</span></div>
+      <div class="row" ${G('auto minmax(0,1fr) auto')}>${pill('comptes', 'ok')}<div class="nm"><b>Les comptes et les sociétés</b><small>à qui est chaque site : c’est ce qui fait que chacun voit tout de ses sites, et rien de ceux des autres</small></div><span class="num">il y a 2 min</span></div>
+      <div class="row" ${G('auto minmax(0,1fr) auto')}>${pill('certificats', 'ok')}<div class="nm"><b>Le module Certificats</b><small>échéance, quota d’émission, renouvellement : Sites les lit, ne les refait pas</small></div><span class="num">il y a 38 min</span></div>
+      <div class="row" ${G('auto minmax(0,1fr) auto')}>${pill(ETAT.sans ? 'absent' : 'panneau', ETAT.sans ? 'w' : '')}<div class="nm"><b>FastPanel, facultatif</b><small>${ETAT.sans ? 'pas installé : Sites s’en passe' : 'quand il est là : le propriétaire du panneau, ses copies de sauvegarde, ses gestes'}</small></div><span class="num">${ETAT.sans ? '—' : '04:31'}</span></div></div></section>`;
   },
+
   sites(){
     let l = sites(); const q = ETAT.q.toLowerCase(), f = ETAT.filtre;
-    if (q) l = l.filter(s => (s.d + ' ' + s.compte).toLowerCase().includes(q));
-    if (f === 'tombes') l = l.filter(s => s.up === false); else if (f === 'regarder') l = l.filter(s => etat(s).r < 2); else if (f === 'panneau') l = l.filter(s => s.src === 'panneau'); else if (f === 'declares') l = l.filter(s => s.src === 'declare'); else if (f === 'sans') l = l.filter(s => s.src === 'panneau' && s.sauv == null); else if (f === 'analyse') l = l.filter(s => s.analyse === 'jamais'); else if (f === 'sanscompte') l = l.filter(s => !s.compte);
-    l.sort((a, b) => etat(a).r - etat(b).r || pct(a) - pct(b));
-    const chips = [['', 'tous'], ['tombes', 'tombés'], ['regarder', 'à regarder'], ['panneau', 'du panneau'], ['declares', 'déclarés'], ['sans', 'sans sauvegarde'], ['analyse', 'jamais analysés']].concat(ETAT.admin ? [['sanscompte', 'sans compte']] : []);
+    if (q) l = l.filter(s => (s.d + ' ' + s.compte + ' ' + s.soc).toLowerCase().includes(q));
+    const F = {tombes: s => s.up === false, regarder: s => etat(s).r < 2, panneau: s => !hors(s), declares: s => hors(s), sans: s => !hors(s) && s.sauv == null, analyse: s => !hors(s) && s.analyse === 'jamais', sanssoc: s => !s.soc};
+    if (F[f]) l = l.filter(F[f]);
+    l = l.slice().sort((a, b) => etat(a).r - etat(b).r || (pct(a, 30) ?? 101) - (pct(b, 30) ?? 101));
+    const chips = [['', 'tous'], ['tombes', 'en panne'], ['regarder', 'à regarder'], ['panneau', 'du panneau'], ['declares', 'déclarés'], ['sans', 'sans sauvegarde'], ['analyse', 'jamais analysés']].concat(admin() ? [['sanssoc', 'sans société']] : []);
+    const pg = pager(l, 'sites'), cle = ETAT.role === 'super' ? (s => s.soc || 'Sans société — à attribuer') : ETAT.role === 'admin' ? (s => s.compte || 'Sans compte') : null;
     let corps;
     if (!l.length) corps = '<p class="silence"><b>Aucun site</b> pour ce filtre.</p>';
-    else if (ETAT.admin && ETAT.groupe){ const g = {}; l.forEach(s => (g[s.compte || 'Sans compte Cassandra'] = g[s.compte || 'Sans compte Cassandra'] || []).push(s));
-      corps = Object.keys(g).sort().map(c => `<h2 style="font-size:12px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin:14px 2px 6px">${E(c)} · ${g[c].length}</h2><div class="rows">${g[c].map(ligne).join('')}</div>`).join(''); }
-    else corps = `<div class="rows">${l.map(ligne).join('')}</div>`;
-    return tete('Tous les sites', `${sites().length} sites · le pire d’abord · un clic ouvre la fiche`, `<button class="btn p" onclick="declarer()">Déclarer un site</button>`) + `
-    <section class="sec carte"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><input type="search" placeholder="Chercher un site${ETAT.admin ? ', un compte' : ''}" aria-label="Chercher" value="${E(ETAT.q)}" oninput="ETAT.q=this.value;rendre(true)" style="flex:1 1 220px" id="q">
-      ${ETAT.admin ? `<button class="chip" aria-pressed="${ETAT.groupe}" onclick="ETAT.groupe=!ETAT.groupe;rendre()">grouper par compte</button>` : ''}</div>
-      <div class="chips">${chips.map(c => `<button class="chip" aria-pressed="${f === c[0]}" onclick="ETAT.filtre='${c[0]}';rendre()">${c[1]}</button>`).join('')}</div>
-      <div id="decl"></div>${corps}
-      <div class="leg"><span><i style="background:var(--ok)"></i>jour sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span></div></section>`;
+    else if (cle){ const g = {}; pg.page.forEach(s => (g[cle(s)] = g[cle(s)] || []).push(s)); corps = Object.keys(g).sort().map(c => `<details class="grp" open><summary>${E(c)} · ${g[c].length}</summary><div class="rows">${g[c].map(ligne).join('')}</div></details>`).join(''); }
+    else corps = `<div class="rows">${pg.page.map(ligne).join('')}</div>`;
+    const nc = ETAT.coche.size, lot = nc ? `<div class="lot"><b>${nc} site${nc > 1 ? 's' : ''} choisi${nc > 1 ? 's' : ''}</b><button class="btn s" onclick="[...ETAT.coche].forEach(d => { if (!enMaintenance(d)) FENETRES.push({d, fin:'dans 2 h', raison:'intervention', par:'toi'}); });ETAT.coche.clear();rendre();toast('Fenêtre de maintenance posée sur ${nc} site(s).')">Maintenance 2 h</button><button class="btn s" onclick="[...ETAT.coche].forEach(d => SUIVIS.add(d));ETAT.coche.clear();rendre();toast('${nc} site(s) suivis.')">Suivre</button>
+      ${ETAT.role === 'super' ? `<select id="lot-soc" aria-label="Société">${SOCIETES.map(s => `<option>${s}</option>`).join('')}</select><button class="btn s" onclick="const so=$('lot-soc').value;[...ETAT.coche].forEach(d => trouver(d).soc = so);ETAT.coche.clear();rendre();toast('Site(s) attribué(s) à ' + so + '.')">Attribuer à cette société</button>` : ''}
+      <button class="btn s" onclick="toast('Export CSV des sites choisis (maquette).')">Exporter</button><button class="btn s" onclick="ETAT.coche.clear();rendre()">Tout décocher</button></div>` : '';
+    return tete('Tous les sites', `${sites().length} sites · le pire d’abord · ${quiRegarde()}`, `${admin() ? `<button class="btn" aria-pressed="${ETAT.masse}" onclick="ETAT.masse=!ETAT.masse;ETAT.pg={};rendre()" title="Ajoute 193 sites fictifs pour juger l’écran à l’échelle">${ETAT.masse ? 'Revenir à 9 sites' : 'Essayer avec 200 sites'}</button>` : ''}<button class="btn p" onclick="ETAT.declare=!ETAT.declare;rendre()">Déclarer un site</button>`) + `
+    <section class="sec carte"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><input type="search" id="q" placeholder="Chercher un site${admin() ? ', un compte, une société' : ''}" aria-label="Chercher" value="${E(ETAT.q)}" oninput="ETAT.q=this.value;ETAT.pg={};rendre('q')" style="flex:1 1 220px">
+      ${ETAT.role === 'super' ? `<select aria-label="Société" onchange="ETAT.soc=this.value;ETAT.pg={};rendre()"><option value="">toutes les sociétés</option>${SOCIETES.map(s => `<option ${ETAT.soc === s ? 'selected' : ''}>${s}</option>`).join('')}<option value="aucune" ${ETAT.soc === 'aucune' ? 'selected' : ''}>sans société</option></select>` : ''}</div>
+      <div class="chips">${chips.map(c => `<button class="chip" aria-pressed="${f === c[0]}" onclick="ETAT.filtre='${c[0]}';ETAT.pg={};rendre()">${c[1]}</button>`).join('')}</div>
+      ${ETAT.declare ? formDeclarer() : ''}${corps}${pg.html}${legende()}${lot}</section>`;
   },
-  dispo(){
-    const l = sites().slice().sort((a, b) => pct(a) - pct(b));
-    return tete('Disponibilité', '30 jours, un trait par jour · temps de réponse sur 24 h', `<button class="btn" onclick="toast('Export CSV des mesures (maquette).')">Exporter</button>`) + `
-    <section class="sec carte"><div class="rows">${l.map(s => `<button class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr) auto" onclick="ouvrir('${s.d}','historique')"><div class="nm"><b><code>${E(s.d)}</code></b><small>${s.pannes} coupure${s.pannes > 1 ? 's' : ''}${s.indispo ? ' · ' + s.indispo + ' indisponible' : ''}</small></div>${bande(s)}${courbe(s)}<div class="cote"><span class="num"><b style="color:var(--strong)">${pct(s).toLocaleString('fr-FR')} %</b></span><span class="num">${s.ms.toLocaleString('fr-FR')} ms</span></div></button>`).join('')}</div>
-      <div class="leg"><span><i style="background:var(--ok)"></i>sans coupure</span><span><i style="background:var(--warn)"></i>coupure courte</span><span><i style="background:var(--danger)"></i>coupure longue</span><span>┄ seuil « lent » : ${REGL.lent.toLocaleString('fr-FR')} ms</span></div></section>
-    <section class="sec carte"><div class="sh"><h2>Ce qui s’annonce</h2><span class="de">Sensorium</span><span class="meta">la pente des trente derniers jours, jamais une date inventée</span></div><div class="rows">
-      ${[['blog.exemple.test', 'w', 'Temps de réponse en hausse', 'à ce rythme, au-dessus de 5 s dans environ 12 jours'], ['atelier.exemple.test', 'w', 'Disque du compte qui se remplit', '5 Go sur 8 : plein dans environ 40 jours'], ['boutique.exemple.test', '', 'Rien ne s’annonce', 'la tendance est plate : aucune prévision, plutôt qu’une date fausse']].filter(x => sites().some(s => s.d === x[0])).map(x => `<button class="row" style="grid-template-columns:auto minmax(0,1fr)" onclick="ouvrir('${x[0]}','historique')">${pill(x[1] ? 'à prévoir' : 'stable', x[1] || 'ok')}<div class="nm"><b><code>${x[0]}</code> · ${x[2]}</b><small>${x[3]}</small></div></button>`).join('') || '<p class="silence">Rien ne s’annonce.</p>'}</div></section>
-    <section class="sec carte"><div class="sh"><h2>Comment c’est compté</h2></div><p class="silence">Une mesure toutes les 5 minutes. Une panne se dit au ${REGL.echecs}ᵉ échec de suite et commence au premier ; une panne qui dure encore compte jusqu’à maintenant. Un site qu’on ne mesure plus depuis deux jours sort du calcul : il n’a pas 100 %, il n’a pas de mesure.</p></section>`;
+
+  incidents(){
+    const o = incidents(true), r = incidents(false);
+    return tete('Incidents', `${o.length} ouvert${o.length > 1 ? 's' : ''} · ${r.length} résolu${r.length > 1 ? 's' : ''} sur 30 jours`, '') + `
+    <section class="sec carte"><div class="sh"><h2>Ouverts</h2><span class="meta">une panne est un objet : un diagnostic, des actions, une chronologie, une cause</span></div>${o.length ? `<div class="rows">${o.map(incidentLigne).join('')}</div>` : '<p class="silence"><b>Aucun incident ouvert.</b> « Simuler une panne », en haut, en ouvre un.</p>'}</section>
+    <section class="sec carte"><div class="sh"><h2>Résolus</h2><span class="meta">avec leur cause, pour ne pas la rechercher deux fois</span></div>${r.length ? `<div class="rows">${r.map(incidentLigne).join('')}</div>` : '<p class="silence">Aucun.</p>'}</section>`;
   },
+
+  incident(){
+    const i = INC.find(x => x.id === ETAT.inc);
+    if (!i || !visible(i.d)) return tete('Incident', '', '') + '<section class="sec carte"><p class="silence">Cet incident n’est pas dans ta vue.</p></section>';
+    const s = trouver(i.d), ouvert = i.etat !== 'resolu', mien = s.compte === MOI[ETAT.role], contact = 'Zoé Martin, hébergeur';
+    const plan = ['Relancer le service PHP de ce site (lui seul, pas les autres).', 'Demander une relève au Sensorium et attendre deux mesures bonnes.', 'Si le 502 persiste : recharger nginx.', 'Te rendre compte, et noter la cause dans l’incident.'];
+    const blocPlan = !i.plan ? '' : `<div class="encart"><b>${i.plan.fait >= plan.length ? 'Plan terminé.' : i.plan.accord ? 'Cassandra exécute le plan…' : 'Ce que Cassandra propose de faire'}</b> ${tag('agents')}<ol class="etapes">${plan.map((p, k) => `<li class="${k < i.plan.fait ? 'fait' : (i.plan.accord && k === i.plan.fait ? 'cours' : '')}">${p}</li>`).join('')}</ol>
+      ${i.plan.accord ? '' : `<p class="silence" style="padding:0">Palier « raconter » : elle dit ce qu’elle ferait et attend ton accord. Elle agit en ton nom, avec tes droits, jamais plus.</p><div class="gest"><button class="btn p" onclick="incApprouver(${i.id})">Approuver et lancer</button><button class="btn" onclick="incAnnulerPlan(${i.id})">Non, je m’en occupe</button></div>`}</div>`;
+    return `<p class="fil">Parc › Sites › Incidents › n° ${i.id}</p><button class="retour" onclick="aller('incidents')">‹ tous les incidents</button>
+    <div class="tete"><h1><code>${E(i.d)}</code></h1><span class="meta">${pill(ouvert ? (i.etat === 'depannage' ? 'dépannage en cours' : 'incident ouvert') : 'résolu', ouvert ? 'd' : 'ok')} ${ouvert ? 'depuis ' + E(i.depuis) + ' · début ' + E(i.debut) : 'du ' + E(i.debut) + ' au ' + E(i.fin) + ' · ' + E(i.duree)}</span><button class="btn" onclick="aller('site','${i.d}')">La page du site</button></div>
+    ${ouvert ? `<section class="sec carte"><div class="sh"><h2>Ce qui se passe</h2>${tag('Sensorium')}</div><p class="vs" style="color:var(--strong);font-size:15px;margin:0 0 10px">${E(i.diag)}</p><div class="rows">${i.preuves.map(p => `<div class="row" ${G('minmax(0,1fr) auto')}><div class="nm"><b>${E(p[0])}</b></div>${pill(p[1], p[2])}</div>`).join('')}</div></section>
+    <section class="sec carte"><div class="sh"><h2>Que faire</h2><span class="meta">dépanner, pas seulement accuser réception</span></div>${blocPlan}
+      <div class="choix">
+        <div class="c pr"><h3>Demander à Cassandra de corriger</h3><p>Elle propose un plan, tu l’approuves, elle l’exécute et te rend compte. Chaque étape se défait.</p><div class="gest"><button class="btn p" ${i.plan ? 'disabled' : ''} onclick="incDemander(${i.id})">Demander un plan</button></div></div>
+        <div class="c"><h3>Dépanner moi-même</h3><p>Les gestes qui répondent à cette panne, un par un.</p><div class="gest"><button class="btn s" onclick="incGeste(${i.id},'Relancer PHP')">Relancer PHP ${tag('à créer', 'ac')}</button><button class="btn s" onclick="incGeste(${i.id},'Recharger nginx')">Recharger nginx ${tag('Sensorium')}</button><button class="btn s" onclick="incJournaux(${i.id})">Voir les journaux ${tag('à créer', 'ac')}</button>${hors(s) ? '' : `<button class="btn s" onclick="incGeste(${i.id},'Restaurer la dernière copie')">Restaurer la dernière copie</button>`}<button class="btn s" onclick="incGeste(${i.id},'Relever à nouveau')">Relever à nouveau</button></div><div id="inc-log"></div></div>
+        <div class="c"><h3>Confier à quelqu’un</h3><p>Créer une tâche pour un collègue, ou prévenir le contact rattaché au site (${contact}).</p><div class="gest"><button class="btn s" onclick="incNoter(${i.id},'Tâche créée et confiée à leo.');toast('Tâche créée dans le module Tâches.')">Créer une tâche ${tag('tâches')}</button><button class="btn s" onclick="incNoter(${i.id},'Contact prévenu : ${contact}.');toast('Message préparé pour ${contact}.')">Prévenir le contact ${tag('contacts')}</button></div></div>
+        <div class="c"><h3>Le temps d’intervenir</h3><p>Taire les alertes de ce site sans arrêter les mesures, ou dire que la panne est connue.</p><div class="gest">${enMaintenance(i.d) ? `<button class="btn s" onclick="finMaintenance('${i.d}')">Fin de la maintenance</button>` : `<button class="btn s" onclick="maintenance('${i.d}','2 h');incNoter(${i.id},'Site mis en maintenance pour 2 h.')">Maintenance 2 h ${tag('Sensorium')}</button>`}<button class="btn s" onclick="incNoter(${i.id},'Panne connue : acceptée pour 24 h.');toast('Panne acceptée : elle se tait 24 h, l’incident reste ouvert.')">C’est connu, je gère</button></div></div>
+      </div></section>` : `<section class="sec carte"><div class="sh"><h2>Cause</h2></div><p class="vs" style="color:var(--strong);font-size:15px;margin:0">${E(i.cause || 'non notée')}</p><p class="silence">Résolu par : ${E(i.par)}.</p></section>`}
+    <div class="grille2">
+      <section class="sec carte"><div class="sh"><h2>Chronologie</h2><span class="meta">qui a su, qui a fait quoi</span></div><div class="chrono">${i.chrono.map(c => `<div><span class="t num">${E(c[0])}</span>${E(c[1])}</div>`).join('')}</div></section>
+      <section class="sec carte"><div class="sh"><h2>${ouvert ? 'Clore' : 'Note'}</h2></div>
+        ${ouvert ? `<label class="champ"><span>La cause, pour la prochaine fois</span><textarea id="inc-note" placeholder="Ce qui s’est passé, ce qui l’a réglé…">${E(i.note)}</textarea></label><div class="gest"><button class="btn p" ${s.up === false ? 'disabled title="Le site ne répond pas encore"' : ''} onclick="incClore(${i.id})">Clore l’incident</button><button class="btn" onclick="aller('calendrier','${i.d}')">Voir dans le calendrier</button></div>${s.up === false ? '<p class="silence">Un incident se clôt quand le site répond de nouveau.</p>' : ''}` : `<p class="silence" style="padding-top:0">Cet incident est clos. Il reste dans le calendrier du site.</p><div class="gest"><button class="btn" onclick="aller('calendrier','${i.d}')">Voir dans le calendrier</button></div>`}</section>
+    </div>`;
+  },
+
   alertes(){
-    const al = alertes();
-    return tete('Alertes', `${al.filter(a => a.n === 'd').length} graves · ${al.filter(a => a.n === 'w').length} à regarder · ${al.filter(a => a.n === 'i').length} pour information`, '') + `
+    const al = alertes(), tues = alertes.tues.filter(a => ACCEPTEES[a.t]);
+    return tete('Alertes', `${al.filter(a => a.n === 'd').length} graves · ${al.filter(a => a.n === 'w').length} à regarder · ${al.filter(a => a.n === 'i').length} pour information · les pannes sont dans Incidents`, '') + `
     <section class="sec carte">${al.length ? `<div class="rows">${al.map(alerteHtml).join('')}</div>` : '<p class="silence"><b>Rien ne demande un geste.</b></p>'}</section>
-    <section class="sec carte"><div class="sh"><h2>Fenêtres de maintenance</h2><span class="de">Sensorium</span><span class="meta">les alertes du site se taisent, la sonde continue de mesurer</span></div>
-      ${FENETRES.filter(f => ETAT.admin || sites().some(s => s.d === f.d)).length ? `<div class="rows">${FENETRES.filter(f => ETAT.admin || sites().some(s => s.d === f.d)).map(f => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('en cours', 'i')}<div class="nm"><b><code>${E(f.d)}</code></b><small>${E(f.raison)} · posée par ${E(f.par)} · jusqu’à ${E(f.fin)}</small></div><button class="btn s" onclick="FENETRES.splice(FENETRES.findIndex(x => x.d === '${f.d}'), 1);rendre();toast('Fenêtre annulée : les alertes reparlent.')">Annuler</button></div>`).join('')}</div>` : '<p class="silence">Aucune fenêtre en cours.</p>'}
-      <div class="gest" style="align-items:center"><select id="fm-d" aria-label="Site">${sites().filter(s => !FENETRES.some(f => f.d === s.d)).map(s => `<option>${E(s.d)}</option>`).join('')}</select><select id="fm-t" aria-label="Durée"><option>1 h</option><option selected>2 h</option><option>une nuit</option><option>24 h</option></select><button class="btn" onclick="maintenance($('fm-d').value, $('fm-t').value)">Poser une fenêtre</button></div></section>
-    <section class="sec carte"><div class="sh"><h2>Alertes acceptées</h2><span class="de">Sensorium</span><span class="meta">« je sais, c’est normal » : elles se taisent jusqu’à l’échéance</span></div>
-      ${Object.keys(ACCEPTEES).filter(k => ETAT.admin || sites().some(s => s.d === ACCEPTEES[k].d)).length ? `<div class="rows">${Object.keys(ACCEPTEES).filter(k => ETAT.admin || sites().some(s => s.d === ACCEPTEES[k].d)).map((k, i) => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('acceptée', '')}<div class="nm"><b>${E(k)}</b><small>jusqu’à ${E(ACCEPTEES[k].jusqu)} · revient si son chiffre monte</small></div><button class="btn s" onclick="delete ACCEPTEES[Object.keys(ACCEPTEES)[${i}]];rendre();toast('Elle redevient une alerte.')">Ne plus accepter</button></div>`).join('')}</div>` : '<p class="silence">Aucune. Le bouton « Accepter » d’une alerte la range ici.</p>'}</section>
-    <section class="sec carte"><div class="sh"><h2>Coupures et retours</h2><span class="meta">la veille, 30 jours</span></div>${journalHtml(40, 'coupures')}</section>
-    <section class="sec carte"><div class="sh"><h2>Qui est prévenu</h2></div><p class="silence" style="padding-top:0">L’administrateur reçoit toutes les alertes ; le propriétaire reçoit celles de ses sites (panne confirmée, retour, certificat court). Une mesure ratée isolée ne prévient personne.</p>
+    <section class="sec carte"><div class="sh"><h2>Fenêtres de maintenance</h2>${tag('Sensorium')}<span class="meta">les alertes du site se taisent, les mesures continuent</span></div>
+      ${FENETRES.filter(f => visible(f.d)).length ? `<div class="rows">${FENETRES.filter(f => visible(f.d)).map(f => `<div class="row" ${G('auto minmax(0,1fr) auto')}>${pill('en cours', 'i')}<div class="nm"><b><code>${E(f.d)}</code></b><small>${E(f.raison)} · posée par ${E(f.par)} · jusqu’à ${E(f.fin)}</small></div><button class="btn s" onclick="finMaintenance('${f.d}')">Annuler</button></div>`).join('')}</div>` : '<p class="silence">Aucune fenêtre en cours.</p>'}
+      <div class="gest" style="align-items:center"><select id="fm-d" aria-label="Site">${sites().filter(s => !enMaintenance(s.d)).slice(0, 40).map(s => `<option>${E(s.d)}</option>`).join('')}</select><select id="fm-t" aria-label="Durée"><option>1 h</option><option selected>2 h</option><option>une nuit</option><option>24 h</option></select><button class="btn" onclick="maintenance($('fm-d').value, $('fm-t').value)">Poser une fenêtre</button></div></section>
+    <section class="sec carte"><div class="sh"><h2>Alertes acceptées</h2>${tag('Sensorium')}<span class="meta">« je sais, c’est normal » : elles se taisent jusqu’à l’échéance</span></div>
+      ${tues.length ? `<div class="rows">${tues.map(a => `<div class="row" ${G('auto minmax(0,1fr) auto')}>${pill('acceptée', '')}<div class="nm"><b>${E(a.t)}</b><small>jusqu’à ${E(ACCEPTEES[a.t].jusqu)} · revient si son chiffre monte</small></div><button class="btn s" onclick="delete ACCEPTEES[${JSON.stringify(a.t).replace(/"/g, '&quot;')}];rendre();toast('Elle redevient une alerte.')">Ne plus accepter</button></div>`).join('')}</div>` : '<p class="silence">Aucune. Le bouton « Accepter » d’une alerte la range ici.</p>'}</section>
+    <section class="sec carte"><div class="sh"><h2>Qui est prévenu, et comment</h2></div><p class="silence" style="padding-top:0">Le propriétaire reçoit les alertes de ses sites ; les administrateurs de sa société aussi ; les super-administrateurs reçoivent celles des sites sans société. Une mesure ratée isolée ne prévient personne.</p>
       <div class="rows">
-        <label class="row" style="grid-template-columns:auto minmax(0,1fr) auto"><input type="checkbox" checked disabled><div class="nm"><b>Dans Cassandra (la cloche)</b><small>toujours : c’est le seul canal qui marche aujourd’hui</small></div><span class="de">notifications</span></label>
-        <label class="row" style="grid-template-columns:auto minmax(0,1fr) auto"><input type="checkbox" onchange="toast(this.checked ? 'Tu recevras un courriel à chaque panne et à chaque retour.' : 'Plus de courriel.')"><div class="nm"><b>Par courriel</b><small>à l’adresse de contact du compte ; demande un serveur d’envoi de l’instance</small></div><span class="ac">à créer</span></label>
-        <label class="row" style="grid-template-columns:auto minmax(0,1fr) auto"><input type="checkbox" onchange="toast(this.checked ? 'Tu recevras un message Telegram pour les pannes.' : 'Plus de message Telegram.')"><div class="nm"><b>Par Telegram</b><small>les pannes seulement, par le robot du compte</small></div><span class="ac">à créer</span></label>
+        <label class="row" ${G('auto minmax(0,1fr) auto')}><input type="checkbox" checked disabled><div class="nm"><b>Dans Cassandra (la cloche)</b><small>toujours : c’est le seul canal qui marche aujourd’hui</small></div>${tag('notifications')}</label>
+        <label class="row" ${G('auto minmax(0,1fr) auto')}><input type="checkbox" onchange="toast(this.checked ? 'Tu recevras un courriel à chaque incident et à chaque retour.' : 'Plus de courriel.')"><div class="nm"><b>Par courriel</b><small>à l’adresse de contact du compte ; demande un serveur d’envoi de l’instance</small></div>${tag('à créer', 'ac')}</label>
+        <label class="row" ${G('auto minmax(0,1fr) auto')}><input type="checkbox" onchange="toast(this.checked ? 'Tu recevras un message Telegram pour les incidents.' : 'Plus de message Telegram.')"><div class="nm"><b>Par Telegram</b><small>les incidents seulement, par le robot du compte</small></div>${tag('à créer', 'ac')}</label>
       </div></section>`;
   },
+
+  dispo(){
+    const n = ETAT.periode, l = sites().filter(s => pct(s, n) != null).sort((a, b) => pct(a, n) - pct(b, n)), sansMesure = sites().filter(s => pct(s, n) == null), pg = pager(l, 'dispo');
+    return tete('Disponibilité', `tous les sites, comparés · un trait par jour`, periodes()) + `
+    <section class="sec carte"><div class="rows">${pg.page.map(s => { const v = pct(s, n), av = pct(s, n, n), ec = v - s.objectif, d = av == null ? null : Math.round((v - av) * 100) / 100;
+      return `<button class="row" ${G('minmax(0,1fr) minmax(0,1.6fr) minmax(0,.9fr) auto')} onclick="aller('calendrier','${s.d}')"><div class="nm"><b><code>${E(s.d)}</code></b><small>objectif ${fpct(s.objectif)} · ${ec >= 0 ? 'tenu' : 'manqué de ' + fpct(Math.round(-ec * 100) / 100)}</small></div>${bande(s, n)}${courbe(s)}<div class="cote"><span class="num"><b style="color:var(--${ec >= 0 ? 'strong' : 'danger'})">${fpct(v)}</b></span><span class="delta ${d == null ? '' : d >= 0 ? 'h' : 'b'}">${d == null ? 'pas de période d’avant' : (d >= 0 ? '▲ +' : '▼ ') + d.toLocaleString('fr-FR') + ' pt vs les ' + n + ' j d’avant'}</span></div></button>`; }).join('') || '<p class="silence">Pas encore de mesure.</p>'}</div>${pg.html}
+      ${sansMesure.length ? `<p class="silence">Pas encore de mesure sur cette période : ${sansMesure.slice(0, 6).map(s => '<code>' + E(s.d) + '</code>').join(', ')}${sansMesure.length > 6 ? '…' : ''}. Ils n’ont pas 100 % : ils n’ont pas de chiffre.</p>` : ''}${legende()}<div class="leg"><span>┄ seuil « lent » : ${nb(REGL.lent)} ms</span></div></section>
+    <section class="sec carte"><div class="sh"><h2>Ce qui s’annonce</h2>${tag('Sensorium')}<span class="meta">la pente des trente derniers jours, jamais une date inventée</span></div><div class="rows">
+      ${[['atelier.exemple.test', 'w', 'Temps de réponse en hausse', 'à ce rythme, au-dessus de 5 s dans environ 12 jours'], ['atelier.exemple.test', 'w', 'Disque du compte qui se remplit', '5 Go sur 8 : plein dans environ 40 jours'], ['boutique.exemple.test', '', 'Rien ne s’annonce', 'la tendance est plate : aucune prévision, plutôt qu’une date fausse']].filter(x => visible(x[0])).map(x => `<button class="row" ${G('auto minmax(0,1fr)')} onclick="aller('site','${x[0]}','dispo')">${pill(x[1] ? 'à prévoir' : 'stable', x[1] || 'ok')}<div class="nm"><b><code>${x[0]}</code> · ${x[2]}</b><small>${x[3]}</small></div></button>`).join('') || '<p class="silence">Rien ne s’annonce.</p>'}</div></section>
+    <section class="sec carte"><div class="sh"><h2>Comment c’est compté</h2></div><p class="silence">Une mesure toutes les 5 minutes. Une panne se dit au ${REGL.echecs}ᵉ échec de suite et commence au premier ; une panne qui dure encore compte jusqu’à maintenant. Les jours de maintenance et les jours sans mesure ne comptent ni pour ni contre.</p></section>`;
+  },
+
+  calendrier(){
+    const l = sites(); if (!l.length) return tete('Calendrier', '', '') + '<section class="sec carte"><p class="silence">Aucun site.</p></section>';
+    const s = l.find(x => x.d === ETAT.calSite) || l[0], [an, mo] = ETAT.calMois.split('-').map(Number), premier = new Date(an, mo - 1, 1), nj = new Date(an, mo, 0).getDate(), vide = (premier.getDay() + 6) % 7;
+    const moisDe = k => { const d = new Date(an, mo - 1 + k, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+    const jours = Array.from({length: nj}, (_, k) => { const d = new Date(an, mo - 1, k + 1), il = ilYA(d); return {d, il, e: il < 0 ? 'futur' : il > 89 ? 'n' : s.dispo[89 - il], ev: evenements(s, il)}; });
+    const sym = {d:'●', w:'●', m:'■', n:'○', s:'◆', c:'▲', g:'✎', i:'⚑'};
+    const cases = jours.map(j => `<button class="j ${j.e === 'ok' ? 'ok' : j.e} ${j.il === 0 ? 'auj' : ''} ${ETAT.calJour === iso(j.d) ? 'sel' : ''}" ${j.e === 'futur' ? 'disabled' : ''} onclick="ETAT.calJour='${iso(j.d)}';rendre()" aria-label="${j.d.getDate()} ${MOIS[mo - 1]} : ${j.ev.map(x => x[1]).join(', ') || 'rien à signaler'}"><b>${j.d.getDate()}</b>${j.ev.slice(0, 3).map(x => `<span><i style="font-style:normal">${sym[x[0]]}</i> ${E(x[1])}</span>`).join('')}</button>`).join('');
+    const sel = jours.find(j => iso(j.d) === ETAT.calJour);
+    const mesures = jours.filter(j => ['ok', 'w', 'd'].includes(j.e)), v = mesures.length ? Math.round(mesures.reduce((t, j) => t + (j.e === 'ok' ? 1 : j.e === 'w' ? 0.985 : 0.62), 0) / mesures.length * 10000) / 100 : null;
+    const coup = jours.filter(j => j.e === 'w' || j.e === 'd').length, sauv = jours.filter(j => j.ev.some(x => x[0] === 's')).length;
+    const avant = (() => { const d0 = new Date(an, mo - 2, 1), n0 = new Date(an, mo - 1, 0).getDate(), a = Array.from({length: n0}, (_, k) => { const il = ilYA(new Date(d0.getFullYear(), d0.getMonth(), k + 1)); return il < 0 || il > 89 ? null : s.dispo[89 - il]; }).filter(x => ['ok', 'w', 'd'].includes(x)); return a.length ? Math.round(a.reduce((t, x) => t + (x === 'ok' ? 1 : x === 'w' ? 0.985 : 0.62), 0) / a.length * 10000) / 100 : null; })();
+    return tete('Calendrier', 'tout ce qui est arrivé à un site, jour par jour', `<select aria-label="Site" onchange="aller('calendrier', this.value, ETAT.calMois)">${l.slice(0, 60).map(x => `<option ${x.d === s.d ? 'selected' : ''}>${E(x.d)}</option>`).join('')}</select>`) + `
+    <section class="sec carte"><div class="sh"><button class="btn s" ${moisDe(-1) < '2026-08' ? 'disabled' : ''} onclick="aller('calendrier','${s.d}','${moisDe(-1)}')" aria-label="Mois précédent">‹</button><h2 style="min-width:150px;text-align:center">${MOIS[mo - 1]} ${an}</h2><button class="btn s" ${moisDe(1) > '2026-11' ? 'disabled' : ''} onclick="aller('calendrier','${s.d}','${moisDe(1)}')" aria-label="Mois suivant">›</button><span class="dr"><button class="btn s" onclick="aller('site','${s.d}')">La page du site</button></span></div>
+      <div class="cal">${['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'].map(x => `<div class="ent">${x}</div>`).join('')}${'<div class="j vide"></div>'.repeat(vide)}${cases}</div>
+      <div class="leg"><span>● coupure</span><span>⚑ incident</span><span>■ maintenance</span><span>◆ sauvegarde</span><span>▲ certificat</span><span>✎ geste</span><span>○ pas de mesure</span></div>
+      ${sel ? `<div class="encart"><b>${sel.d.getDate()} ${MOIS[mo - 1]}</b>${sel.ev.length ? `<div class="jl" style="margin-top:8px">${sel.ev.map(x => `<div><span class="t">${sym[x[0]]}</span><span></span><span>${E(x[1])}${x[2] ? ` · <a href="#incident/${x[2]}" onclick="aller('incident','${x[2]}');return false">ouvrir l’incident</a>` : ''}</span></div>`).join('')}</div>` : ' — rien à signaler : le site a répondu toute la journée.'}</div>` : '<p class="silence">Clique un jour pour voir ce qui s’y est passé.</p>'}</section>
+    <section class="sec carte"><div class="sh"><h2>Le mois en chiffres</h2><span class="dr"><button class="btn s" onclick="toast('PDF du rapport (maquette).')">Télécharger</button><button class="btn s" onclick="toast('Envoi au propriétaire (maquette).')">Envoyer au propriétaire ${tag('à créer', 'ac')}</button></span></div>
+      ${v == null ? '<p class="silence"><b>Pas de mesure ce mois-là.</b> Le rapport dit « pas de mesure » ; il n’emprunte pas les chiffres d’un autre mois.</p>' : `<div class="kpis"><div class="kpi"><span>Disponibilité</span><b class="${v < s.objectif ? 'w' : ''}">${fpct(v)}</b><em>objectif ${fpct(s.objectif)} · ${v >= s.objectif ? 'tenu' : 'manqué'}</em></div><div class="kpi"><span>Mois d’avant</span><b>${fpct(avant)}</b><em>${avant == null ? 'pas de mesure' : (v >= avant ? '▲ +' : '▼ ') + (Math.round((v - avant) * 100) / 100).toLocaleString('fr-FR') + ' pt'}</em></div><div class="kpi"><span>Jours avec coupure</span><b class="${coup ? 'w' : ''}">${coup}</b><em>sur ${mesures.length} jours mesurés</em></div><div class="kpi"><span>Sauvegardes</span><b>${sauv || '—'}</b><em>${sauv ? 'réussies ce mois' : hors(s) ? 'hors panneau' : 'aucune'}</em></div></div>`}
+      <label class="champ" style="margin:14px 0 0;max-width:320px"><span>Objectif de ce site</span><span style="display:flex;gap:8px;align-items:center"><input type="number" step="0.1" min="90" max="100" value="${s.objectif}" style="max-width:110px" onchange="trouver('${s.d}').objectif=Math.max(90,Math.min(100,+this.value||99));rendre()"> % de disponibilité</span></label></section>`;
+  },
+
   demandes(){
-    const l = demandes();
-    return tete(ETAT.admin ? 'Demandes d’adossement' : 'Mes demandes', ETAT.admin ? 'un compte demande qu’un site déclaré passe au panneau' : 'une demande ouverte par site', '') + `
-    <section class="sec carte">${l.length ? l.map(s => `<div class="encart w"><b>${E(s.d)}</b> — demandé par ${E(s.compte)} ${E(s.demande.quand)}<br>« ${E(s.demande.msg)} »
-      <div class="gest">${ETAT.admin ? `<button class="btn p" onclick="repondre('${s.d}',true)">Adossé, c’est fait</button><button class="btn" onclick="repondre('${s.d}',false)">Refuser…</button>` : `<button class="btn" onclick="repondre('${s.d}',false,true)">Annuler ma demande</button>`}<button class="btn" onclick="ouvrir('${s.d}')">Ouvrir la fiche</button></div></div>`).join('') : '<p class="silence"><b>Aucune demande ouverte.</b></p>'}</section>
+    const l = demandes(), pr = sites().filter(s => s.preuve === 'attente'), ac = ACCORDS.filter(a => visible(a.d));
+    return tete(admin() ? 'Demandes et preuves' : 'Mes demandes', admin() ? 'ce qui attend une réponse de ta part' : 'ce que tu as demandé, et ce qu’on attend de toi', '') + `
+    <section class="sec carte"><div class="sh"><h2>Adossement au panneau</h2><span class="meta">un compte demande qu’un site déclaré passe au panneau</span></div>${l.length ? l.map(s => `<div class="encart w"><b>${E(s.d)}</b> — demandé par ${E(s.compte)} ${E(s.demande.quand)}<br>« ${E(s.demande.msg)} »
+      <div class="gest">${admin() ? `<button class="btn p" onclick="repondre('${s.d}',true)">Adossé, c’est fait</button><button class="btn" onclick="repondre('${s.d}',false)">Refuser…</button>` : `<button class="btn" onclick="repondre('${s.d}',false,true)">Annuler ma demande</button>`}<button class="btn" onclick="aller('site','${s.d}')">La page du site</button></div></div>`).join('') : '<p class="silence">Aucune demande ouverte.</p>'}</section>
+    <section class="sec carte"><div class="sh"><h2>Preuves de propriété en attente</h2>${tag('à créer', 'ac')}<span class="meta">sans panneau pour dire à qui est un site, c’est la preuve qui le dit</span></div>${pr.length ? `<div class="rows">${pr.map(s => `<button class="row" ${G('minmax(0,1fr) auto')} onclick="aller('site','${s.d}')"><div class="nm"><b><code>${E(s.d)}</code></b><small>déclaré par ${E(s.compte)} · la preuve expire dans 6 jours</small></div>${pill('à prouver', 'i')}</button>`).join('')}</div>` : '<p class="silence">Aucune.</p>'}</section>
     <section class="sec carte"><div class="sh"><h2>Accords en cours</h2><span class="neuf">nouveau</span><span class="meta">un propriétaire autorise un geste lourd, pour un temps borné</span></div>
-      ${ACCORDS.filter(a => ETAT.admin || a.par === ETAT.moi).length ? `<div class="rows">${ACCORDS.filter(a => ETAT.admin || a.par === ETAT.moi).map(a => `<div class="row" style="grid-template-columns:minmax(0,1fr) auto auto"><div class="nm"><b><code>${E(a.d)}</code> · ${E(a.geste)}</b><small>donné par ${E(a.par)} · tombe si le site change de compte</small></div>${pill('jusqu’à ' + a.fin, 'i')}${!ETAT.admin ? `<button class="btn s d" onclick="ACCORDS.length=0;rendre();toast('Accord révoqué.')">Révoquer</button>` : '<span></span>'}</div>`).join('')}</div>` : '<p class="silence">Aucun accord en cours.</p>'}</section>`;
+      ${ac.length ? `<div class="rows">${ac.map(a => `<div class="row" ${G('minmax(0,1fr) auto auto')}><div class="nm"><b><code>${E(a.d)}</code> · ${E(a.geste)}</b><small>donné par ${E(a.par)} · tombe si le site change de compte</small></div>${pill('jusqu’à ' + a.fin, 'i')}${a.par === MOI[ETAT.role] ? `<button class="btn s d" onclick="ACCORDS.splice(ACCORDS.findIndex(x => x.d === '${a.d}'), 1);rendre();toast('Accord révoqué.')">Révoquer</button>` : '<span></span>'}</div>`).join('')}</div>` : '<p class="silence">Aucun accord en cours.</p>'}</section>`;
   },
+
   journal(){
-    return tete('Journal', 'les gestes et la veille, fondus · un clic ouvre le site', '') + `<section class="sec carte"><div class="chips">${FAMILLES.map(c => `<button class="chip" aria-pressed="${(ETAT.jfam || 'tout') === c}" onclick="ETAT.jfam='${c}';rendre()">${c}</button>`).join('')}</div>${journalHtml(99, ETAT.jfam)}</section>`;
+    return tete('Journal', 'les gestes et la veille, fondus · un clic ouvre le site', '') + `<section class="sec carte"><div class="chips">${FAMILLES.map(c => `<button class="chip" aria-pressed="${ETAT.jfam === c}" onclick="ETAT.jfam='${c}';rendre()">${c}</button>`).join('')}</div>${journalHtml(99, ETAT.jfam)}</section>`;
   },
-  rapports(){
-    const l = sites(), s = l[0], vide = ETAT.mois < '2026-11';
-    return tete('Rapports', 'un mois, un site : ce que la sonde a vu', `<select aria-label="Mois" onchange="ETAT.mois=this.value;rendre()">${['2026-11', '2026-10', '2026-09'].map(m => `<option ${m === ETAT.mois ? 'selected' : ''}>${m}</option>`).join('')}</select>`) + `
-    <section class="sec carte"><div class="sh"><h2><code>${E(s.d)}</code> · ${ETAT.mois}</h2><span class="dr"><button class="btn s" onclick="toast('PDF du rapport (maquette).')">Télécharger</button><button class="btn s" onclick="toast('Envoi au propriétaire (maquette).')">Envoyer au propriétaire</button></span></div>
-      ${vide ? '<p class="silence"><b>Pas de mesure ce mois-là.</b> La sonde suit ce site depuis le 2 novembre : le rapport dit « pas de sonde », il n’emprunte pas les chiffres d’un autre mois.</p>' : `<div class="kpis"><div class="kpi"><span>Disponibilité</span><b>${pct(s).toLocaleString('fr-FR')} %</b><em>2 326 mesures</em></div><div class="kpi"><span>Coupures</span><b class="${s.pannes ? 'w' : ''}">${s.pannes}</b><em>${s.indispo || '0 min'} indisponible</em></div><div class="kpi"><span>Réponse</span><b>${s.ms} ms</b><em>au pire 461 ms</em></div><div class="kpi"><span>Sauvegardes</span><b>9</b><em>réussies ce mois</em></div></div>
-      <div style="margin-top:14px">${bande(s)}</div>`}</section>
-    <section class="sec carte"><div class="sh"><h2>Envoi automatique</h2><span class="ac">à créer</span></div><p class="silence">Le 1er de chaque mois, chaque propriétaire reçoit le rapport de ses sites. À activer compte par compte.</p></section>`;
-  },
+
   reglages(){
-    const num = (k, lib, aide, min, max) => `<label class="champ"><span>${lib}</span><input type="number" min="${min}" max="${max}" value="${REGL[k]}" onchange="REGL.${k}=Math.max(${min},Math.min(${max},+this.value||${min}));rendre();toast('Réglage enregistré.')" style="max-width:140px"><small>${aide}</small></label>`;
+    const num = (k, lib, aide, min, max, pas = 1) => `<label class="champ"><span>${lib}</span><input type="number" step="${pas}" min="${min}" max="${max}" value="${REGL[k]}" onchange="REGL.${k}=Math.max(${min},Math.min(${max},+this.value||${min}));rendre();toast('Réglage enregistré.')" style="max-width:140px"><small>${aide}</small></label>`;
     const coche = (k, lib, aide) => `<label class="champ" style="grid-template-columns:auto 1fr;align-items:start;column-gap:10px"><input type="checkbox" ${REGL[k] ? 'checked' : ''} onchange="REGL.${k}=this.checked;rendre();toast('Réglage enregistré.')" style="margin-top:5px"><span>${lib}<br><small>${aide}</small></span></label>`;
-    return tete('Seuils d’alerte', 'ils changent ce que l’écran appelle une panne · réglés ici pour les sites, tenus par le Sensorium <span class="de">Sensorium</span>', '') + `<div class="grille2">
-      <section class="sec carte"><div class="sh"><h2>Quand dire qu’un site va mal</h2></div>${num('echecs', 'Mesures ratées de suite avant une panne', '1 : dès la première. 2 évite les fausses alertes.', 1, 5)}${num('lent', 'Seuil « lent », en millisecondes', 'Au-delà, le site répond mais le visiteur s’en va.', 500, 60000)}${coche('proteges', 'Un 401 ou 403 est « en ligne »', 'Pour les sites protégés par un mot de passe.')}</section>
-      <section class="sec carte"><div class="sh"><h2>Comment la sonde travaille</h2></div>${num('delai', 'Délai d’attente d’une requête (s)', '', 2, 60)}${num('garde', 'Garde des mesures (jours)', 'Le journal des gestes se garde un an au moins.', 7, 730)}${coche('interne', 'Autoriser les adresses internes', 'Fermé par défaut : la sonde ne sort que vers l’Internet public.')}
-        <div class="encart">Le seuil d’alerte des certificats ne se règle pas ici : il est dans Sécurité › Certificats › Réglages, un seul endroit pour tous les écrans.</div><div class="encart">Essaie : passe le seuil « lent » à 4000, ou coche « 401 est en ligne » — les alertes et les pastilles changent tout de suite.</div></section></div>`;
+    const gestes = [['Déclarer un site', 'humain, compte, Cassandra, Itare', 'raconter', '—'], ['Retirer un site', 'humain, compte, Cassandra, Itare', 'raconter', '—'], ['Attribuer à un compte ou à une société', 'humain, Cassandra, Itare', 'raconter', 'administrer'], ['Transférer', 'humain, Cassandra', 'raconter', 'administrer'], ['Demander l’adossement', 'humain, compte, Cassandra, Itare', 'auto', '—'], ['Répondre à une demande', 'humain, Cassandra', 'raconter', 'administrer'], ['Donner un accord', 'humain, compte — jamais un agent', '—', '—'], ['Rattacher, détacher', 'humain, compte, Cassandra, Itare', 'auto', '—'], ['Dépanner un incident', 'humain, Cassandra', 'raconter', 'à créer']];
+    const agents = `<section class="sec carte"><div class="sh"><h2>Ce que les agents peuvent faire sur ${admin() ? 'les sites' : 'tes sites'}</h2>${tag('noyau')}</div>
+      <p class="silence" style="padding-top:0">Un agent agit toujours au nom d’un compte et n’a jamais plus de droits que lui. Chaque geste dit qui peut le faire. Au palier « raconter », l’agent dit ce qu’il ferait et attend un accord ; à « auto », il le fait et en rend compte.</p>
+      <div class="wrap"><table class="tab"><thead><tr><th>Geste</th><th>Qui peut</th><th>Palier des agents</th><th>Droit exigé</th></tr></thead><tbody>${gestes.map(g => `<tr><td>${g[0]}</td><td>${g[1]}</td><td>${g[2] === '—' ? '—' : admin() ? `<select aria-label="Palier" onchange="toast('Palier réglé : ' + this.value + '.')"><option ${g[2] === 'raconter' ? 'selected' : ''}>raconter</option><option ${g[2] === 'auto' ? 'selected' : ''}>auto</option></select>` : g[2]}</td><td>${g[3] === 'à créer' ? tag('à créer', 'ac') : g[3]}</td></tr>`).join('')}</tbody></table></div>
+      ${coche('prudence', 'Mes agents racontent toujours avant d’agir sur mes sites', 'Plus strict que le palier, jamais plus large : un compte ne peut pas donner à ses agents ce que l’administrateur leur refuse.')}</section>`;
+    return tete('Réglages', admin() ? 'ce que l’écran appelle une panne, et ce que les agents peuvent faire' : 'ce que tes agents peuvent faire sur tes sites', '') + (admin() ? `<div class="grille2">
+      <section class="sec carte"><div class="sh"><h2>Seuils d’alerte</h2>${tag('Sensorium')}</div>${num('echecs', 'Mesures ratées de suite avant une panne', '1 : dès la première. 2 évite les fausses alertes.', 1, 5)}${num('lent', 'Seuil « lent », en millisecondes', 'Au-delà, le site répond mais le visiteur s’en va.', 500, 60000)}${coche('proteges', 'Un 401 ou 403 est « en ligne »', 'Pour les sites protégés par un mot de passe.')}
+        <div class="encart">Le seuil des certificats se règle dans Sécurité › Certificats. Essaie : passe « lent » à 4000, ou coche « 401 est en ligne » — alertes et pastilles changent tout de suite.</div></section>
+      <section class="sec carte"><div class="sh"><h2>Objectifs</h2><span class="neuf">nouveau</span></div>${num('objectif', 'Objectif de disponibilité par défaut (%)', 'Chaque site peut avoir le sien, réglé dans son calendrier.', 90, 100, 0.1)}
+        <div class="sh" style="margin-top:14px"><h2>Qui voit le menu Sites</h2><span class="neuf">nouveau</span></div><p class="silence" style="padding-top:0">Le menu n’apparaît que pour un compte concerné : il a un site (déclaré, attribué, ou du panneau par son compte lié), ou il administre une société qui en a. Les autres ne le voient pas.</p></section></div>` : '') + agents;
+  },
+
+  site(){
+    const s = trouver(ETAT.sel);
+    if (!s || !visible(s.d)) return tete('Site', '', '') + '<section class="sec carte"><p class="silence">Ce site n’est pas dans ta vue.</p></section>';
+    const e = etat(s), mien = s.compte === MOI[ETAT.role], d = s.d, io = INC.find(i => i.d === d && i.etat !== 'resolu'), acc = ACCORDS.find(a => a.d === d);
+    const O = [['apercu', 'Aperçu'], ['dispo', 'Disponibilité'], ['heberg', 'Hébergement'], ['secu', 'Sécurité'], ['liens', 'Liens'], ['journal', 'Journal']];
+    if (!O.some(o => o[0] === ETAT.onglet)) ETAT.onglet = 'apercu';
+    return `<p class="fil">Parc › Sites › Tous les sites › ${E(d)}</p><button class="retour" onclick="aller('sites')">‹ tous les sites</button>
+    <section class="sec carte"><div class="site-t">${vignette(s, true)}<div>
+      <div class="tete" style="margin-bottom:6px"><h1 style="font-size:22px"><code>${E(d)}</code></h1></div>
+      <div class="pills">${pastilles(s)}${pill(hors(s) ? lieu(s) : 'panneau', 'nu')}</div>
+      <p class="meta2">Société : <b>${E(s.soc || 'non attribuée')}</b>${!s.soc && s.compte && SOC_DE[s.compte] ? ` · proposée : ${E(SOC_DE[s.compte])}, celle du compte` : ''}${ETAT.role === 'super' ? ` <select id="st-soc" aria-label="Société" style="padding:3px 8px;font-size:13px">${SOCIETES.map(x => `<option ${x === (s.soc || SOC_DE[s.compte]) ? 'selected' : ''}>${x}</option>`).join('')}</select> <button class="btn s" onclick="trouver('${d}').soc=$('st-soc').value;rendre();toast('Site attribué à ' + $('st-soc').value + '.')">${s.soc ? 'Changer' : 'Attribuer'}</button>` : ''}</p>
+      <p class="meta2">Propriétaire : <b>${mien ? 'toi' : E(s.compte || 'aucun compte Cassandra')}</b>${!hors(s) ? ' · compte « ' + E(s.fp) + ' » du panneau' : ''}${s.capture ? ' · capture : ' + E(s.capture) + ' ' + tag('à créer', 'ac') : ''}</p>
+      <div class="gest"><button class="btn p" onclick="relever('${d}')">Relever maintenant</button>${enMaintenance(d) ? `<button class="btn" onclick="finMaintenance('${d}')">Fin de la maintenance</button>` : `<button class="btn" onclick="maintenance('${d}','2 h')">Maintenance 2 h</button>`}<button class="btn" aria-pressed="${SUIVIS.has(d)}" title="Recevoir un avis à chaque changement d’état (Sensorium)" onclick="SUIVIS.has('${d}') ? SUIVIS.delete('${d}') : SUIVIS.add('${d}');rendre();toast(SUIVIS.has('${d}') ? 'Tu seras prévenu à chaque changement d’état.' : 'Tu ne suis plus ce site.')">${SUIVIS.has(d) ? '★ Suivi' : '☆ Suivre'}</button><button class="btn" onclick="aller('calendrier','${d}')">Calendrier</button>${io ? `<button class="btn d" onclick="aller('incident','${io.id}')">Incident ouvert ›</button>` : ''}</div></div></div>
+      <div class="onglets" role="tablist">${O.map(o => `<button role="tab" aria-selected="${ETAT.onglet === o[0]}" onclick="aller('site','${d}','${o[0]}')">${o[1]}</button>`).join('')}</div>
+      <div role="tabpanel">${ONGLETS[ETAT.onglet](s, {mien, acc, io, e})}</div></section>`;
   },
 };
-const alerteHtml = a => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(a.n === 'd' ? 'grave' : a.n === 'w' ? 'à regarder' : 'info', a.n === 'i' ? 'i' : a.n)}<button class="nm" style="background:none;border:0;text-align:left;padding:0" onclick="ouvrir('${a.s.d}')"><b>${E(a.t)}</b><small>${E(a.x)}</small></button><span style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><button class="btn s" onclick="${a.cert ? `versCertificats('${a.s.d}')` : `toast('${E(a.g)} : ${a.s.d} (maquette).')`}">${E(a.g)}${a.cert ? ' ↗' : ''}</button>${a.n === 'i' ? '' : `<button class="btn s" title="« Je sais, c’est normal » : l’alerte se tait jusqu’à l’échéance, et revient si son chiffre monte" onclick="accepter(${alertes.liste.indexOf(a)})">Accepter</button>`}</span></div>`;
-function accepter(i){ const a = alertes.liste[i]; if (!a) return; ACCEPTEES[a.t] = {d: a.s.d, jusqu: 'dans 7 jours'}; rendre(); toast('Alerte acceptée pour 7 jours. Elle reviendra si son chiffre monte.'); }
-function maintenance(d, duree){ if (!d) return; if (!FENETRES.some(f => f.d === d)) FENETRES.push({d, fin: 'dans ' + duree, raison: 'intervention', par: ETAT.admin ? 'chef' : 'bea'}); rendre(); toast('Fenêtre de maintenance posée sur ' + d + ' : ses alertes se taisent, la sonde continue.'); }
-const FAMILLES = ['tout', 'coupures', 'sauvegardes', 'certificats', 'analyses', 'gestes de l’écran', 'demandes et accords', 'outils de Cassandra'];
-const famille = j => /coupure|retour|attente/.test(j.v) ? 'coupures' : /sauvegarde/.test(j.v) ? 'sauvegardes' : /certificat/.test(j.v) ? 'certificats' : /analyse/.test(j.v) ? 'analyses' : /adossement|accord/.test(j.v) ? 'demandes et accords' : /outil/.test(j.v) ? 'outils de Cassandra' : 'gestes de l’écran';
-function journalHtml(n, fam){ const l = JOURNAL.filter(j => (ETAT.admin || SITES.find(s => s.d === j.d && s.compte === ETAT.moi)) && (!fam || fam === 'tout' || famille(j) === fam)).slice(0, n); return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span><a href="#" onclick="ouvrir('${j.d}');return false" style="color:inherit"><code>${E(j.d)}</code></a> · ${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : `<p class="silence">${fam && fam !== 'tout' ? '<b>Rien dans cette famille.</b>' : 'Aucun geste encore.'}</p>`; }
-function rendre(garderFocus){ menu(); $('page').innerHTML = PAGES[ETAT.sec](); if (garderFocus){ const q = $('q'); if (q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } } }
 
-// ───────────────────────── déclarer : les refus, dits avant d'envoyer ─────────────────────────
-function declarer(){ const z = $('decl'); if (!z) return; z.innerHTML = `<div class="encart"><label class="champ" style="margin:0"><b>Déclarer un site</b><input type="text" id="dn" placeholder="mon-site.exemple.test" oninput="jugerNom()" autocomplete="off"><small id="dj">Le nom nu ; « www. », le protocole et le chemin sont retirés.</small></label><div class="gest"><button class="btn p" id="db" disabled onclick="toast('Site déclaré : la sonde le suit au prochain tour.');$('decl').innerHTML=''">Déclarer</button><button class="btn" onclick="$('decl').innerHTML=''">Annuler</button></div></div>`; $('dn').focus(); }
+// ═══════════════════════════ les onglets de la page d'un site ═══════════════════════════
+const ONGLETS = {
+  apercu(s, c){
+    const d = s.d;
+    const preuve = s.preuve === 'attente' ? `<div class="encart"><b>Prouve que ce site est à toi</b> ${tag('à créer', 'ac')}<p style="margin:6px 0">Avec le panneau, le propriétaire est connu. Sans lui, il faut une preuve : tant qu’elle manque, le site n’est à personne et un autre peut encore le réclamer. Deux façons, au choix :</p>
+        <p style="margin:6px 0 2px"><b>1. Par le DNS</b> — un enregistrement TXT :</p><div class="code">_cassandra.${E(d)}   TXT   "cassandra-site=${E(s.jeton || '7f3a9c21')}"</div>
+        <p style="margin:10px 0 2px"><b>2. Par un fichier</b> — à déposer sur le site :</p><div class="code">https://${E(d)}/.well-known/cassandra-site.txt   →   ${E(s.jeton || '7f3a9c21')}</div>
+        <div class="gest"><button class="btn p" onclick="prouver('${d}')">Vérifier maintenant</button><span class="silence" style="padding:0">La demande expire dans 6 jours.</span></div></div>` : '';
+    const pasReleve = s.preuve !== 'attente' && s.up == null ? `<div class="encart"><b>Pas encore relevé.</b> Le Sensorium le prendra à son prochain tour, dans moins de 5 minutes. D’ici là il n’a ni état ni disponibilité : pas 100 %, pas de chiffre. <button class="btn s" onclick="relever('${d}')">Relever maintenant</button></div>` : '';
+    return `${c.io ? `<div class="encart d"><b>Incident ouvert depuis ${E(c.io.depuis)}.</b> ${E(c.io.diag)} <button class="btn s" onclick="aller('incident','${c.io.id}')">Dépanner ›</button></div>` : ''}${preuve}${pasReleve}
+      ${s.douteux ? `<div class="encart w"><b>Une mesure ratée, pas encore une panne.</b> Si la prochaine échoue aussi, un incident s’ouvrira, daté de 04:31.</div>` : ''}
+      ${admin() && !s.soc ? `<div class="encart w"><b>Ce site n’est attribué à aucune société.</b> ${s.compte ? 'Son compte en a une, mais le site lui-même ne l’est pas : aucun administrateur de société ne le voit.' : 'Il n’a ni compte ni société.'} ${ETAT.role === 'super' ? 'Attribue-le ci-dessus.' : ''}</div>` : ''}
+      <dl class="paires">
+        <dt>réponse</dt><dd>${s.up == null ? '<small style="color:var(--muted)">pas encore relevé</small>' : `${s.code ?? 'sans réponse'} en ${nb(s.ms)} ms <small style="color:var(--muted)">Sensorium · il y a 2 min</small>`}</dd>
+        <dt>disponibilité 30 j</dt><dd>${fpct(pct(s, 30))}${pct(s, 30) != null ? ` · objectif ${fpct(s.objectif)}` : ''} <button class="btn s" onclick="aller('site','${d}','dispo')">détail</button></dd>
+        <dt>certificat</dt><dd>${s.ssl == null ? '<small style="color:var(--muted)">pas encore lu</small>' : (s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : 'expire dans ' + s.ssl + ' j')} ${tag('certificats')}</dd>
+        <dt>hébergement</dt><dd>${hors(s) ? E(lieu(s)) + (ETAT.sans ? '' : ', déclaré à la main') : 'panneau · compte ' + E(s.fp)}${s.php ? ' · PHP ' + E(s.php) : ''}</dd>
+        <dt>CMS</dt><dd>${E(s.cms || 'aucun reconnu')} ${tag('Sensorium')}</dd>
+        <dt>disque</dt><dd>${s.disque ? go(s.disque) : '<small style="color:var(--muted)">pas sur cette machine</small>'}</dd>
+        <dt>sauvegarde</dt><dd>${hors(s) ? '<small style="color:var(--muted)">hors panneau</small>' : s.sauv == null ? 'aucune copie connue' : s.sauv === 0 ? 'aujourd’hui' : 'il y a ' + s.sauv + ' j'}</dd>
+        <dt>nom de domaine</dt><dd>${s.domaine == null ? '<small style="color:var(--muted)">pas encore lu</small>' : 'expire dans ' + s.domaine + ' jours'} ${tag('dns')}</dd>
+      </dl>
+      <h2 style="font-size:14px;margin:18px 0 0">Gestes</h2>
+      ${hors(s) ? `<div class="encart">${ETAT.sans ? 'Sans panneau' : 'Hors panneau'} : la relève, le calendrier, les incidents et les rattachements.${c.mien && !s.demande && !ETAT.sans && s.preuve !== 'attente' ? ` <button class="btn s" onclick="trouver('${d}').demande={id:99,msg:'À rapatrier.',quand:'à l’instant'};rendre();toast('Demande envoyée à l’administrateur.')">Demander l’adossement au panneau</button>` : ''}</div>`
+        : `<div class="gest"><button class="btn" onclick="versModule('Sécurité › Certificats','${d}')">Certificat : renouveler, quota ↗</button><button class="btn" ${c.mien || c.acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="aller('site','${d}','heberg')">Restaurer une sauvegarde…</button></div>
+        <div class="gest"><button class="btn" onclick="toast('Analyse antivirus lancée (maquette).')">Scanner</button><button class="btn" onclick="toast('Lance le plan de sauvegarde du compte (maquette).')">Sauvegarder maintenant</button><button class="btn" onclick="toast('Les 200 dernières lignes du journal du site (maquette).')">Journaux</button><button class="btn d" onclick="toast('Confirmation demandée avant de redémarrer PHP. (maquette)')">Redémarrer PHP</button> ${tag('à créer', 'ac')}</div>`}
+      <div class="gest">${admin() ? `<button class="btn" onclick="toast('Transférer : les liens, accords et demande de l’ancien compte ne suivent pas. (maquette)')">Transférer à un compte…</button>` : ''}${hors(s) && (admin() || c.mien) ? `<button class="btn d" onclick="toast('Retirer de la liste (maquette).')">Retirer de la liste</button>` : ''}</div>`;
+  },
+  dispo(s){
+    const n = ETAT.periode, v = pct(s, n), av = pct(s, n, n);
+    return `<div class="sh">${periodes()}<span class="dr"><button class="btn s" onclick="aller('calendrier','${s.d}')">Ouvrir le calendrier</button></span></div>
+      ${v == null ? '<p class="silence"><b>Pas encore de mesure.</b></p>' : `<div class="kpis"><div class="kpi"><span>Disponibilité · ${n} j</span><b class="${v < s.objectif ? 'w' : ''}">${fpct(v)}</b><em>objectif ${fpct(s.objectif)} · ${v >= s.objectif ? 'tenu' : 'manqué'}</em></div><div class="kpi"><span>Les ${n} j d’avant</span><b>${fpct(av)}</b><em>${av == null ? 'pas de mesure' : (v >= av ? '▲ +' : '▼ ') + (Math.round((v - av) * 100) / 100).toLocaleString('fr-FR') + ' pt'}</em></div><div class="kpi"><span>Réponse</span><b class="${s.ms >= REGL.lent ? 'w' : ''}">${nb(s.ms)} ms</b><em>seuil « lent » : ${nb(REGL.lent)} ms</em></div><div class="kpi"><span>Incidents</span><b>${INC.filter(i => i.d === s.d).length}</b><em>sur 30 jours</em></div></div>
+      <p class="silence">${n} jours, un trait par jour</p>${bande(s, n)}${legende()}<p class="silence">Temps de réponse, 24 h</p>${courbe(s, 70)}`}`;
+  },
+  heberg(s, c){
+    const d = s.d;
+    if (hors(s)) return `<p class="silence" style="padding-top:0">${(s.src0 || s.src) === 'panneau' ? 'Sans FastPanel, le DNS et le courrier du domaine se lisent de l’extérieur.' : 'Ce site n’est pas sur cette machine : voici ce que le monde en voit.'} ${tag('à créer', 'ac')}</p>
+      <h2 style="font-size:14px;margin:6px 0 8px">Résolution publique</h2><div class="rows">${[['A', '@', '198.51.100.7'], ['CNAME', 'www', E(d) + '.'], ['MX', '@', '10 mx.hebergeur.exemple.']].map(r => `<div class="row" ${G('auto minmax(0,1fr)')}>${pill(r[0], 'nu')}<div class="nm"><b>${r[1]}</b><small class="mono">${r[2]}</small></div></div>`).join('')}</div>
+      <h2 style="font-size:14px;margin:16px 0 8px">Courrier du domaine</h2><div class="pills">${pill('SPF présent', 'ok')}${pill('DKIM présent', 'ok')}${pill('DMARC absent', 'w')}</div>`;
+    const copies = [['aujourd’hui 03:00 → 03:12', 'complète', '2,1 Go'], ['hier 03:00 → 03:11', 'complète', '2,1 Go'], ['11-08 03:00 → 03:04', 'partielle', '640 Mo']].slice(s.sauv ? 1 : 0);
+    return `<h2 style="font-size:14px;margin:0 0 8px">Copies de sauvegarde ${tag('Sensorium')}</h2><p class="silence" style="padding-top:0">Une copie couvre tout le compte du panneau, pas ce seul site.</p>
+      ${s.sauv == null ? '<div class="encart w"><b>Aucune copie connue.</b> Aucun plan de sauvegarde ne couvre ce compte du panneau.</div>' : `<div class="rows">${copies.map(x => `<div class="row" ${G('auto minmax(0,1fr) auto')}>${pill(x[1], x[1] === 'complète' ? 'ok' : 'w')}<div class="nm"><b>${x[0]}</b><small>${x[2]}</small></div><button class="btn s d" ${c.mien || c.acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Confirmation : les fichiers et bases du compte seront remplacés. (maquette)')">Restaurer</button></div>`).join('')}</div>`}
+      ${c.acc ? `<div class="encart">Accord de restauration donné par ${E(c.acc.par)} jusqu’à ${E(c.acc.fin)}.</div>` : (c.mien ? `<div class="gest"><button class="btn" onclick="ACCORDS.push({d:'${d}',par:MOI[ETAT.role],geste:'restaurer',fin:'demain 04:31'});rendre();toast('Accord donné pour 24 h.')">Autoriser l’administrateur à restaurer (24 h)</button></div>` : '<p class="silence">Restaurer demande l’accord du propriétaire.</p>')}
+      <h2 style="font-size:14px;margin:18px 0 8px">Bases ${tag('Sensorium')}</h2><div class="rows"><div class="row" ${G('auto minmax(0,1fr) auto')}>${pill('MariaDB', 'nu')}<div class="nm"><b>${E(d.split('.')[0])}_prod</b><small>utilisateur ${E(s.fp)}_app</small></div><span class="num">184 Mo</span></div></div>
+      <h2 style="font-size:14px;margin:18px 0 8px">DNS du domaine ${tag('dns')}</h2><div class="rows">${[['A', '@', '203.0.113.24'], ['AAAA', '@', '2001:db8::24'], ['CNAME', 'www', E(d) + '.'], ['MX', '@', '10 mail.exemple.test.']].map(r => `<div class="row" ${G('auto minmax(0,1fr)')}>${pill(r[0], 'nu')}<div class="nm"><b>${r[1]}</b><small class="mono">${r[2]}</small></div></div>`).join('')}</div>
+      <h2 style="font-size:14px;margin:18px 0 8px">Courrier du domaine ${tag('Sensorium')}</h2><div class="rows">${[['contact', '412 Mo sur 2 Go'], ['facturation', '96 Mo sur 1 Go']].map(x => `<div class="row" ${G('auto minmax(0,1fr)')}>${pill('actif', 'ok')}<div class="nm"><b>${x[0]}@${E(d)}</b><small>${x[1]}</small></div></div>`).join('')}</div>
+      <div class="gest">${['Fiche du domaine', 'Sauvegardes', 'Bases', 'Analyses'].map(x => `<button class="btn s" onclick="versModule('Hébergement › ${x}','${d}')">${x} ↗</button>`).join('')}</div>`;
+  },
+  secu(s){
+    const t = s.trafic;
+    return `<h2 style="font-size:14px;margin:0 0 8px">Trafic et attaques, 9 jours ${tag('Sensorium')}</h2>
+      ${t ? `<div class="kpis"><div class="kpi"><span>Requêtes</span><b>${nb(t[0])}</b><em>sur 9 jours</em></div><div class="kpi"><span>Tentatives repoussées</span><b class="${t[1] > 1000 ? 'w' : ''}">${nb(t[1])}</b><em>${t[1] > 1000 ? 'ce site est visé' : 'bruit de fond'}</em></div><div class="kpi"><span>Robots</span><b style="font-size:15px;font-family:inherit">${E(t[2])}</b><em>les plus actifs</em></div></div>` : '<p class="silence">Ce site n’est pas sur cette machine : le Sensorium ne voit pas son trafic.</p>'}
+      <h2 style="font-size:14px;margin:18px 0 8px">Ce qui expire</h2><div class="rows">
+        <div class="row" ${G('minmax(0,1fr) auto auto')}><div class="nm"><b>Certificat</b><small>échéance, quota d’émission, renouvellement</small></div>${s.ssl == null ? pill('pas encore lu', '') : pill(s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : s.ssl + ' j', s.ssl < 0 ? 'd' : s.ssl < REGL.ssl ? 'w' : 'ok')}<button class="btn s" onclick="versModule('Sécurité › Certificats','${s.d}')">Certificats ↗</button></div>
+        <div class="row" ${G('minmax(0,1fr) auto auto')}><div class="nm"><b>Nom de domaine</b><small>s’il expire, le site et son courrier disparaissent</small></div>${s.domaine == null ? pill('pas encore lu', '') : pill(s.domaine + ' j', s.domaine < 10 ? 'd' : s.domaine < 30 ? 'w' : 'ok')}${tag('dns')}</div>
+        ${s.php ? `<div class="row" ${G('minmax(0,1fr) auto auto')}><div class="nm"><b>PHP ${E(s.php)}</b><small>${s.phpFin ? 'plus de correctifs de sécurité : à passer en 8.3' : 'version maintenue'}</small></div>${pill(s.phpFin ? 'fin de support' : 'maintenu', s.phpFin ? 'w' : 'ok')}${tag('fastpanel')}</div>` : ''}
+        ${hors(s) ? '' : `<div class="row" ${G('minmax(0,1fr) auto auto')}><div class="nm"><b>Analyse antivirus</b><small>dernier rapport du panneau</small></div>${pill(s.analyse === 'jamais' ? 'jamais analysé' : s.analyse, s.analyse === 'jamais' ? 'w' : 'ok')}${tag('fastpanel')}</div>`}</div>
+      <h2 style="font-size:14px;margin:18px 0 8px">Les agents, sur ce site ${tag('noyau')}</h2><p class="silence" style="padding-top:0">Cassandra et Itare peuvent lire son état et le rattacher ; dépanner et transférer leur demandent un accord (palier « raconter »). Ils n’ont jamais plus de droits que le compte au nom duquel ils agissent. <button class="btn s" onclick="aller('reglages')">Régler</button></p>`;
+  },
+  liens(s){
+    const d = s.d, G2 = [['contacts', 'Contacts', [['Zoé Martin', 'hébergeur · technique'], ['Paul Renard', 'propriétaire']]], ['projets', 'Projets', [['Refonte 2027', 'par le champ « domaine » du projet']]], ['notes', 'Notes', [['Accès et particularités', 'note de nature « site »']]], ['ged', 'Documents', [['Contrat d’hébergement.pdf', 'document lié au domaine']]], ['taches', 'Tâches', [['Renouveler le nom de domaine', 'échéance le 12 mars']]]].slice(0, s.suivi ? (d.length % 2 ? 5 : 3) : 0);
+    const dep = hors(s) ? [['résolu par', 'la zone DNS du domaine', 'chez un autre hébergeur']] : [['hébergé par', 'la machine argos', 'santé 95 · disque 80 %'], ['certifié par', 'son certificat', s.ssl < 0 ? 'échu' : 'expire dans ' + s.ssl + ' j'], ['résolu par', 'la zone DNS exemple.test', '4 enregistrements'], ['hébergé par', 'le compte « ' + E(s.fp) + ' » du panneau', 'PHP ' + (s.php || '—')]];
+    return `<h2 style="font-size:14px;margin:0 0 8px">Il dépend de ${tag('Sensorium')}</h2><div class="rows">${dep.map(x => `<div class="row" ${G('auto minmax(0,1fr) auto')}>${pill(x[0], 'nu')}<div class="nm"><b>${x[1]}</b></div><span class="num" style="font-size:12.5px;color:var(--soft)">${x[2]}</span></div>`).join('')}</div>
+      <h2 style="font-size:14px;margin:16px 0 8px">S’il tombe</h2>${d === 'api.exemple.test' ? '<div class="encart w"><b>2 sites sont touchés</b> : boutique.exemple.test et atelier.exemple.test l’appellent.</div>' : '<p class="silence" style="padding-top:0">Rien d’autre ne dépend de ce site.</p>'}
+      <h2 style="font-size:14px;margin:18px 0 4px">Rattachements</h2><p class="silence" style="padding-top:0">Chaque lien vit dans le module qui le porte ; Sites les lit tous ici et n’en garde pas de copie.</p>
+      ${G2.map(g => `<h2 style="font-size:13px;margin:12px 0 6px;color:var(--soft)">${g[1]} ${tag(g[0])}</h2><div class="rows">${g[2].map(x => `<div class="row" ${G('minmax(0,1fr) auto')}><div class="nm"><b>${x[0]}</b><small>${x[1]}</small></div><button class="btn s" onclick="versModule('${g[1]}')">Ouvrir ↗</button></div>`).join('')}</div>`).join('') || '<p class="silence">Aucun rattachement encore.</p>'}
+      <h2 style="font-size:14px;margin:18px 0 8px">Rattacher <span class="neuf">nouveau</span></h2>
+      <div class="gest" style="margin-top:0"><select id="rt-k" aria-label="Type" onchange="chercherCible('${d}')"><option>projet</option><option>contact</option><option>note</option><option>document</option><option>machine</option></select><input type="search" id="rt-q" placeholder="chercher par nom…" aria-label="Chercher" oninput="chercherCible('${d}')" style="flex:1 1 160px"></div>
+      <div class="rows" id="rt-r" style="margin-top:8px"></div>
+      <div class="encart">Un vrai choix dans la liste, au lieu d’un type et d’une référence tapés à la main. <b>À débattre :</b> aujourd’hui sept modules tiennent chacun leur table de liens ; un module Liens commun les remplacerait.</div>`;
+  },
+  journal(s){
+    const li = INC.filter(i => i.d === s.d);
+    return `<h2 style="font-size:14px;margin:0 0 8px">Incidents de ce site</h2>${li.length ? `<div class="rows">${li.map(incidentLigne).join('')}</div>` : '<p class="silence" style="padding-top:0">Aucun incident.</p>'}
+      <h2 style="font-size:14px;margin:18px 0 8px">Gestes et veille</h2>${journalHtml(40, 'tout', s.d)}`;
+  },
+};
+
+// ═══════════════════════════ ce qui arrive un jour donné à un site (pour le calendrier) ═══════════════════════════
+function evenements(s, il){
+  if (il < 0 || il > 89) return [];
+  const e = [], st = s.dispo[89 - il];
+  INC.filter(i => i.d === s.d && i.il === il).forEach(i => e.push(['i', 'incident n° ' + i.id, i.id]));
+  if (st === 'd') e.push(['d', 'coupure longue']); if (st === 'w') e.push(['w', 'coupure courte']); if (st === 'm') e.push(['m', 'maintenance']);
+  if (st === 'n' && il < 90) e.push(['n', il >= s.suivi ? 'pas encore suivi' : 'pas de mesure']);
+  if (il === 0 && s.suivi > 0) e.push(['n', '6 min sans mesure : Sensorium relancé']);
+  if ((s.src0 || s.src) === 'panneau' && s.sauv != null && il >= s.sauv && st !== 'n') e.push(['s', 'sauvegarde 03:00']);
+  if (s.renouv === il) e.push(['c', 'certificat renouvelé']);
+  JOURNAL.filter(j => j.d === s.d && j.il === il && !/coupure|attente|relève|sauvegarde|certificat/.test(j.v)).forEach(j => e.push(['g', j.v + ' · ' + j.q]));
+  return e;
+}
+[[41, 0], [40, 2], [39, 7], [38, 18]].forEach(([id, il]) => { const i = INC.find(x => x.id === id); if (i) i.il = il; });
+
+// ═══════════════════════════ les actions ═══════════════════════════
+function relever(d){ const s = trouver(d); if (s.preuve === 'attente'){ toast('Prouve d’abord que le site est à toi.'); return; } if (s.up == null){ Object.assign(s, {up:true, code:200, ms:210, ssl:64, suivi:1, domaine:120, rep:rep(200), capture:'à l’instant'}); s.dispo[89] = 'ok'; toast(d + ' : première relève, 200 en 210 ms.'); } else toast(d + ' : ' + (s.code ?? 'sans réponse') + ' en ' + nb(s.ms) + ' ms.'); rendre(); }
+function prouver(d){ const s = trouver(d); s.preuve = 'ok'; rendre(); toast('Preuve trouvée dans le DNS : ' + d + ' est à toi.'); }
+function repondre(d, fait, annule){ delete trouver(d).demande; rendre(); toast(annule ? 'Demande annulée.' : fait ? 'Demande close : adossé. Le compte est prévenu.' : 'Demande refusée. Le compte lira la raison.'); }
+function chercherCible(d){ const k = $('rt-k').value, q = $('rt-q').value.trim().toLowerCase(), l = CIBLES[k].filter(x => x.toLowerCase().includes(q)); $('rt-r').innerHTML = l.length ? l.map(x => `<button class="row" ${G('auto minmax(0,1fr)')} onclick="toast('« ${x} » rattaché à ${d} : le lien est écrit dans le module ${k === 'document' ? 'ged' : k + 's'}. (maquette)')">${pill(k, 'nu')}<div class="nm"><b>${x}</b></div></button>`).join('') : '<p class="silence">Aucun ' + k + ' à ce nom.</p>'; }
+const heureFaux = () => '04:' + String(32 + (heureFaux.n = (heureFaux.n || 0) + 1)).padStart(2, '0');
+function incNoter(id, texte){ const i = INC.find(x => x.id === id); i.chrono.push([heureFaux(), texte]); rendre(); }
+function incDemander(id){ const i = INC.find(x => x.id === id); i.plan = {accord:false, fait:0}; i.chrono.push([heureFaux(), 'Plan demandé à Cassandra.']); rendre(); }
+function incAnnulerPlan(id){ const i = INC.find(x => x.id === id); i.plan = null; i.chrono.push([heureFaux(), 'Plan refusé : dépannage à la main.']); rendre(); }
+function incApprouver(id){
+  const i = INC.find(x => x.id === id), s = trouver(i.d); i.plan.accord = true; i.etat = 'depannage'; i.chrono.push([heureFaux(), 'Plan approuvé : Cassandra agit au nom de ' + MOI[ETAT.role] + '.']); rendre();
+  const pas = k => setTimeout(() => {
+    i.plan.fait = k;
+    if (k === 1) i.chrono.push([heureFaux(), 'Cassandra : service PHP du site relancé.']);
+    if (k === 2){ Object.assign(s, {up:true, code:200, ms:190}); s.dispo[89] = 'w'; i.chrono.push([heureFaux(), 'Deux mesures bonnes : le site répond (200 en 190 ms).']); }
+    if (k === 4){ i.note = 'Service PHP saturé : tous ses processus étaient occupés. Relancé par Cassandra ; à surveiller, augmenter le nombre de processus si cela revient.'; i.chrono.push([heureFaux(), 'Cassandra : compte rendu écrit, cause proposée. Il te reste à clore.']); toast('Le site répond de nouveau. Relis la cause et clos l’incident.'); }
+    if (ETAT.sec === 'incident' && ETAT.inc === id || k === 2) rendre();
+    if (k < 4) pas(k === 2 ? 4 : k + 1);
+  }, 900);
+  pas(1);
+}
+function incGeste(id, g){ const i = INC.find(x => x.id === id), s = trouver(i.d); i.etat = 'depannage'; i.chrono.push([heureFaux(), g + ' — par ' + MOI[ETAT.role].split('@')[0] + '.']);
+  if (g === 'Relancer PHP' || g === 'Restaurer la dernière copie'){ Object.assign(s, {up:true, code:200, ms:200}); s.dispo[89] = 'w'; i.chrono.push([heureFaux(), 'Le site répond de nouveau (200 en 200 ms).']); toast(g + ' : fait. Le site répond.'); }
+  else toast(g + ' : fait. ' + (s.up === false ? 'Toujours ' + s.code + '.' : 'Le site répond.'));
+  rendre(); }
+function incJournaux(id){ const i = INC.find(x => x.id === id); i.chrono.push([heureFaux(), 'Journaux du site consultés.']); rendre(); const z = $('inc-log'); if (z) z.innerHTML = `<div class="code" style="margin-top:8px">03:15:02 [error] connect() to unix:/run/php/site.sock failed (11: Resource temporarily unavailable)\n03:15:02 [error] upstream timed out while connecting to upstream\n03:15:04 WARNING: [pool site] server reached pm.max_children setting (12)</div>`; }
+function incClore(id){ const i = INC.find(x => x.id === id); i.note = ($('inc-note') || {}).value || i.note; Object.assign(i, {etat:'resolu', cause: i.note || 'cause non notée', fin:'aujourd’hui ' + heureFaux(), duree: i.depuis, par: i.plan && i.plan.accord ? 'Cassandra, approuvé par ' + MOI[ETAT.role].split('@')[0] : MOI[ETAT.role].split('@')[0]}); i.chrono.push([heureFaux(), 'Incident clos.']); toast('Incident clos. Il reste dans le calendrier du site.'); rendre(); }
+
+// ═══════════════════════════ déclarer un site : le refus dit avant l'envoi, puis la preuve ═══════════════════════════
+function formDeclarer(){ return `<div class="encart" id="decl"><label class="champ" style="margin:0"><b>Déclarer un site</b><input type="text" id="dn" placeholder="mon-site.exemple.test" oninput="jugerNom()" autocomplete="off"><small id="dj">Le nom nu ; « www. », le protocole et le chemin sont retirés.</small></label>
+  <p class="silence" style="padding:6px 0 0">Après la déclaration, il te sera demandé de prouver que le site est à toi (un enregistrement DNS ou un fichier). Un site du panneau ne se déclare pas : son propriétaire est déjà connu.</p>
+  <div class="gest"><button class="btn p" id="db" disabled onclick="declarer()">Déclarer</button><button class="btn" onclick="ETAT.declare=false;rendre()">Annuler</button></div></div>`; }
+const nomNet = v => v.trim().toLowerCase().replace(/^https?:\/\//, '').split(/[\/?#]/)[0].replace(/^.*@/, '').replace(/:\d+$/, '').replace(/\.$/, '').replace(/^www\./, '');
 function jugerNom(){
-  let d = $('dn').value.trim().toLowerCase().replace(/^https?:\/\//, '').split(/[\/?#]/)[0].replace(/^.*@/, '').replace(/:\d+$/, '').replace(/\.$/, '').replace(/^www\./, '');
-  const partages = ['github.io', 'gouv.fr', 'co.uk', 'wordpress.com', 'netlify.app'];
-  let m = '', ok = false;
+  const d = nomNet($('dn').value), partages = ['github.io', 'gouv.fr', 'co.uk', 'wordpress.com', 'netlify.app']; let m = '', ok = false;
   if (!d) m = 'Le nom nu ; « www. », le protocole et le chemin sont retirés.';
   else if (!/^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/.test(d)) m = '✕ nom de domaine invalide';
   else if (partages.includes(d)) m = '✕ ce nom est partagé par les sites de beaucoup de gens : déclare ton site, pas le nom qui les porte tous';
-  else if (SITES.some(s => s.d === d && s.src === 'panneau')) m = '✕ ce site est géré par le panneau : c’est à l’administrateur de te l’attribuer';
-  else if (SITES.some(s => s.d === d)) m = '✕ ce site appartient déjà à un compte';
-  else if (SITES.some(s => s.d.endsWith('.' + d))) m = '✕ des sites d’autres comptes dépendent de ce nom : c’est à l’administrateur de te l’attribuer';
+  else if (tous().some(s => s.d === d && !hors(s))) m = '✕ ce site est géré par le panneau : c’est à l’administrateur de te l’attribuer';
+  else if (tous().some(s => s.d === d && s.preuve === 'attente')) m = '✕ quelqu’un l’a déclaré mais ne l’a pas encore prouvé : tu pourras le réclamer en apportant la preuve';
+  else if (tous().some(s => s.d === d)) m = '✕ ce site appartient déjà à un compte, qui l’a prouvé';
+  else if (tous().some(s => s.d.endsWith('.' + d))) m = '✕ des sites d’autres comptes dépendent de ce nom : c’est à l’administrateur de te l’attribuer';
   else { m = '✓ ' + d + ' peut être déclaré'; ok = true; }
   $('dj').textContent = m; $('dj').style.color = ok ? 'var(--ok)' : (m[0] === '✕' ? 'var(--danger)' : ''); $('db').disabled = !ok;
 }
-const CIBLES = {projet: ['Refonte 2027', 'Boutique de Noël', 'Migration PHP 8.3'], contact: ['Zoé Martin', 'Paul Renard', 'Hébergeur Exemple SARL'], note: ['Accès et particularités', 'Compte rendu du 4 novembre'], document: ['Contrat d’hébergement.pdf', 'Charte graphique.pdf'], machine: ['argos', 'athena', 'orion']};
-function chercherCible(d){ const k = $('rt-k').value, q = $('rt-q').value.trim().toLowerCase(), z = $('rt-r'); const l = CIBLES[k].filter(x => x.toLowerCase().includes(q)); z.innerHTML = l.length ? l.map(x => `<button class="row" style="grid-template-columns:auto minmax(0,1fr)" onclick="toast('« ${x} » rattaché à ${d} : le lien est écrit dans le module ${k === 'document' ? 'ged' : k + 's'}. (maquette)')">${pill(k, 'nu')}<div class="nm"><b>${x}</b></div></button>`).join('') : '<p class="silence">Aucun ' + k + ' à ce nom.</p>'; }
-function versCertificats(d){ toast('Ouvre Sécurité › Certificats' + (d ? ' sur ' + d : '') + ' (maquette) : échéances, quota, renouvellement.'); }
-function repondre(d, fait, annule){ const s = SITES.find(x => x.d === d); delete s.demande; rendre(); toast(annule ? 'Demande annulée.' : fait ? 'Demande close : adossé. Le compte est prévenu.' : 'Demande refusée. Le compte lira la raison.'); }
-
-// ───────────────────────── la fiche d'un site ─────────────────────────
-function ouvrir(d, onglet){ ETAT.sel = d; if (onglet) ETAT.onglet = onglet; const s = SITES.find(x => x.d === d), e = etat(s), mien = s.compte === ETAT.moi && !ETAT.admin, hors = s.src !== 'panneau';
-  const acc = ACCORDS.find(a => a.d === d);
-  const O = [['etat', 'État'], ['historique', 'Historique'], ['gestes', 'Gestes']].concat(hors ? [['ailleurs', 'DNS et courrier']] : [['sauvegardes', 'Sauvegardes'], ['hebergement', 'Hébergement']]).concat([['dependances', 'Dépendances'], ['liens', 'Rattachements'], ['journal', 'Journal']]);
-  if (hors && (ETAT.onglet === 'sauvegardes' || ETAT.onglet === 'hebergement')) ETAT.onglet = 'etat';
-  if (!hors && ETAT.onglet === 'ailleurs') ETAT.onglet = 'etat';
-  const go = v => v >= 1024 ? (Math.round(v / 102.4) / 10).toLocaleString('fr-FR') + ' Go' : v + ' Mo';
-  const corps = {
-    etat: `${vignette(s, true)}<p class="silence" style="padding:0 0 10px;font-size:12.5px">${s.capture ? 'capture : ' + s.capture + ' · ' : ''}<a href="#" onclick="toast('Nouvelle capture demandée (maquette).');return false" style="color:var(--accent)">rafraîchir la capture</a> <span class="ac">à créer</span></p><dl class="paires"><dt>réponse</dt><dd>${s.code ?? 'sans réponse'} en ${s.ms.toLocaleString('fr-FR')} ms <small style="color:var(--muted)">sonde · il y a 2 min</small></dd>
-      <dt>disponibilité 30 j</dt><dd>${pct(s).toLocaleString('fr-FR')} % · ${s.pannes} coupure${s.pannes > 1 ? 's' : ''}${s.indispo ? ' · ' + s.indispo : ''}</dd>
-      <dt>certificat</dt><dd>${s.ssl < 0 ? 'échu depuis ' + -s.ssl + ' j' : 'expire dans ' + s.ssl + ' j'} <small style="color:var(--muted)">d’après Certificats</small> <button class="btn s" onclick="versCertificats('${d}')">Certificats ↗</button></dd>
-      <dt>hébergement</dt><dd>${hors ? 'hors panneau, déclaré à la main' : 'panneau · compte ' + E(s.fp) + (s.php ? ' · PHP ' + s.php : '')}</dd>
-      <dt>CMS</dt><dd>${E(s.cms || 'inconnu')}</dd>
-      <dt>disque</dt><dd>${s.disque ? go(s.disque) : '<small style="color:var(--muted)">hors panneau</small>'}</dd>
-      <dt>dernière analyse</dt><dd>${hors ? '<small style="color:var(--muted)">hors panneau</small>' : E(s.analyse === 'jamais' ? 'jamais analysé' : s.analyse)}</dd>
-      <dt>sauvegarde</dt><dd>${hors ? '<small style="color:var(--muted)">hors panneau</small>' : s.sauv == null ? 'aucune copie connue' : s.sauv === 0 ? 'aujourd’hui' : 'il y a ' + s.sauv + ' j'}</dd>
-      <dt>propriétaire</dt><dd>${ETAT.admin ? E(s.compte || 'aucun compte Cassandra') : 'toi'}</dd></dl>
-      ${s.douteux ? `<div class="encart w"><b>Une mesure ratée, pas encore une panne.</b> Si la prochaine échoue aussi, la panne sera dite et datée de 04:31.</div>` : ''}
-      ${ETAT.admin && s.compte ? `<div class="encart">Ce site appartient à ${E(s.compte)}. Tu vois son état, pas son contenu.</div>` : ''}`,
-    historique: `<p class="silence" style="padding-top:0">30 jours, un trait par jour</p>${bande(s)}<p class="silence">Temps de réponse, 24 h${s.ms >= REGL.lent ? ' — au-dessus du seuil « lent »' : ''}</p>${courbe(s, 70)}
-      <div class="gest"><button class="btn" onclick="aller('rapports')">Rapport du mois</button><button class="btn" onclick="toast('Ouvre les courbes de l’onglet Historique (maquette).')">Courbes détaillées</button></div>`,
-    gestes: `<div class="gest"><button class="btn p" onclick="toast('Sonde de ${d} : ${s.code ?? 'sans réponse'} en ${s.ms} ms.')">Sonder maintenant</button>${hors ? '' : `<button class="btn" onclick="versCertificats('${d}')">Certificat : renouveler, quota ↗</button><button class="btn" ${mien || acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Choix de la copie à restaurer (maquette).')">Restaurer une sauvegarde…</button>`}</div>
-      ${hors ? '<div class="encart">Hors panneau : la sonde, l’historique et les rattachements seulement.' + (mien && !s.demande ? ' <button class="btn s" onclick="SITES.find(x=>x.d===\'' + d + '\').demande={id:99,msg:\'À rapatrier.\',quand:\'à l’instant\'};rendre();ouvrir(\'' + d + '\');toast(\'Demande envoyée à l’administrateur.\')">Demander l’adossement</button>' : '') + '</div>' : ''}
-      ${acc ? `<div class="encart">Accord de restauration donné par ${E(acc.par)} jusqu’à ${E(acc.fin)}.</div>` : (!hors && mien ? `<div class="gest"><button class="btn" onclick="ACCORDS.push({d:'${d}',par:ETAT.moi,geste:'restaurer',fin:'demain 04:31'});rendre();ouvrir('${d}');toast('Accord donné pour 24 h.')">Autoriser l’administrateur à restaurer (24 h)</button></div>` : '')}
-      ${!hors ? `<div class="gest"><button class="btn" onclick="toast('Analyse antivirus lancée (maquette).')">${ETAT.admin ? 'Scanner' : 'Scanner mon site'}</button><button class="btn" onclick="toast('Lance le plan de sauvegarde du compte (maquette).')">Sauvegarder maintenant</button><button class="btn" onclick="toast('Les 200 dernières lignes du journal du site (maquette).')">Journaux</button><button class="btn d" onclick="toast('Confirmation demandée avant de redémarrer PHP. (maquette)')">Redémarrer PHP</button></div><p class="silence">Ces quatre gestes existent dans l’écran d’aujourd’hui mais ne marchent plus en V19 : ils attendent une commande racine du panneau. <span class="ac">à créer</span></p>` : ''}
-      <div class="gest">${FENETRES.some(f => f.d === d) ? `<button class="btn" onclick="FENETRES.splice(FENETRES.findIndex(x => x.d === '${d}'), 1);rendre();ouvrir('${d}');toast('Fenêtre annulée : les alertes reparlent.')">Fin de la maintenance</button>` : `<button class="btn" onclick="maintenance('${d}','2 h');ouvrir('${d}')">Mettre en maintenance (2 h)</button>`}<button class="btn" onclick="toast('Nouvelle capture demandée (maquette).')">Rafraîchir la capture</button><button class="btn" onclick="ETAT.onglet='historique';ouvrir('${d}')">Historique</button></div>
-      ${ETAT.admin ? `<div class="gest"><button class="btn" onclick="toast('Transférer : les liens, accords et demande de l’ancien compte ne suivent pas. (maquette)')">Transférer à un compte…</button>${hors ? `<button class="btn d" onclick="toast('Retirer de la liste (maquette).')">Retirer de la liste</button>` : ''}</div>` : (hors && mien ? `<div class="gest"><button class="btn d" onclick="toast('Retirer de ma liste (maquette).')">Retirer de ma liste</button></div>` : '')}`,
-    sauvegardes: `<p class="silence" style="padding-top:0">Une copie couvre tout le compte du panneau, pas ce seul site.</p>${s.sauv == null ? '<div class="encart w"><b>Aucune copie connue.</b> Aucun plan de sauvegarde ne couvre ce compte du panneau.</div>' : `<div class="rows">${[['aujourd’hui 03:00 → 03:12', 'complète', '2,1 Go · bases : boutique_prod'], ['hier 03:00 → 03:11', 'complète', '2,1 Go · bases : boutique_prod'], ['11-08 03:00 → 03:04', 'partielle', '640 Mo']].slice(s.sauv ? 1 : 0).map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(c[1], c[1] === 'complète' ? 'ok' : 'w')}<div class="nm"><b>${c[0]}</b><small>${c[2]}</small></div><button class="btn s d" ${mien || acc ? '' : 'disabled title="accord du propriétaire requis"'} onclick="toast('Confirmation : les fichiers et bases du compte seront remplacés. (maquette)')">Restaurer</button></div>`).join('')}</div>`}
-      ${acc ? `<div class="encart">Accord de restauration donné par ${E(acc.par)} jusqu’à ${E(acc.fin)}.</div>` : (mien ? `<div class="gest"><button class="btn" onclick="ACCORDS.push({d:'${d}',par:ETAT.moi,geste:'restaurer',fin:'demain 04:31'});rendre();ouvrir('${d}');toast('Accord donné pour 24 h.')">Autoriser l’administrateur à restaurer (24 h)</button></div>` : '<p class="silence">Restaurer demande l’accord du propriétaire.</p>')}
-      <div class="gest"><button class="btn" onclick="toast('Lance le plan de sauvegarde du compte (maquette).')">Sauvegarder maintenant</button><button class="btn" onclick="toast('Ouvre le module Sauvegardes (maquette).')">Sauvegardes ↗</button></div>`,
-    hebergement: `<div class="gest" style="margin-top:0">${['Fiche du domaine', 'Sauvegardes', 'Bases', 'Analyses'].map(x => `<button class="btn s" onclick="toast('Ouvre Hébergement › ${x} (maquette).')">${x} ↗</button>`).join('')}<button class="btn s" onclick="versCertificats('${d}')">Certificat ↗</button></div>
-      <h2 style="font-size:14px;margin:16px 0 8px">Bases</h2><div class="rows"><div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill('MariaDB', 'nu')}<div class="nm"><b>${E(d.split('.')[0])}_prod</b><small>utilisateur ${E(s.fp)}_app</small></div><span class="num">184 Mo</span></div></div>
-      <h2 style="font-size:14px;margin:16px 0 8px">DNS du domaine</h2><div class="rows">${[['A', '@', '203.0.113.24', '3600'], ['AAAA', '@', '2001:db8::24', '3600'], ['CNAME', 'www', E(d) + '.', '3600'], ['MX', '@', '10 mail.exemple.test.', '3600']].map(r => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(r[0], 'nu')}<div class="nm"><b>${r[1]}</b><small class="mono">${r[2]}</small></div><span class="num">${r[3]}</span></div>`).join('')}</div>
-      <h2 style="font-size:14px;margin:16px 0 8px">Courrier du domaine</h2><div class="rows">${[['contact', '412 Mo sur 2 Go'], ['facturation', '96 Mo sur 1 Go']].map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr)">${pill('actif', 'ok')}<div class="nm"><b>${c[0]}@${E(d)}</b><small>${c[1]}</small></div></div>`).join('')}</div>`,
-    ailleurs: `<p class="silence" style="padding-top:0">${(s.src0 || s.src) === 'panneau' ? 'Sans FastPanel, le DNS et le courrier du domaine se lisent de l’extérieur : voici ce que le monde en voit.' : 'Ce site n’est pas sur cette machine : voici ce que le monde en voit.'} <span class="ac">à créer</span></p>
-      <h2 style="font-size:14px;margin:6px 0 8px">Résolution publique</h2><div class="rows">${[['A', '@', '198.51.100.7', 'chez l’hébergeur'], ['CNAME', 'www', E(d) + '.', ''], ['MX', '@', '10 mx.hebergeur.exemple.', '']].map(r => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(r[0], 'nu')}<div class="nm"><b>${r[1]}</b><small class="mono">${r[2]}</small></div><span class="num" style="font-size:12.5px;color:var(--soft)">${r[3]}</span></div>`).join('')}</div>
-      <h2 style="font-size:14px;margin:16px 0 8px">Courrier du domaine</h2><div class="pills">${pill('SPF présent', 'ok')}${pill('DKIM présent', 'ok')}${pill('DMARC absent', 'w')}</div>
-      <h2 style="font-size:14px;margin:16px 0 8px">Nom de domaine</h2><p class="silence" style="padding-top:0">Expire dans 212 jours. <span class="de">dns</span></p>`,
-    liens: (() => {
-      const G = [['contacts', 'Contacts', [['Zoé Martin', 'hébergeur · technique'], ['Paul Renard', 'propriétaire']]], ['projets', 'Projets', [['Refonte 2027', 'par le champ « domaine » du projet']]], ['notes', 'Notes', [['Accès et particularités', 'note de nature « site »']]], ['ged', 'Documents', [['Contrat d’hébergement.pdf', 'document lié au domaine']]], ['taches', 'Tâches', [['Renouveler le nom de domaine', 'échéance le 12 mars']]], ['flotte', 'Machines', hors ? [] : [['argos', 'lien de genre « domaine »']]]].filter(g => g[2].length).slice(0, d.length % 2 ? 6 : 4);
-      return `<p class="silence" style="padding-top:0">Chaque lien vit dans le module qui le porte ; Sites les lit tous ici et n’en garde pas de copie.</p>
-        ${G.map(g => `<h2 style="font-size:14px;margin:14px 0 8px">${g[1]} <span class="de">${g[0]}</span></h2><div class="rows">${g[2].map(x => `<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>${x[0]}</b><small>${x[1]}</small></div><button class="btn s" onclick="toast('Ouvre « ${x[0]} » dans ${g[1]} (maquette).')">Ouvrir ↗</button></div>`).join('')}</div>`).join('')}
-        <h2 style="font-size:14px;margin:18px 0 8px">Rattacher <span class="neuf">nouveau</span></h2>
-        <div class="gest" style="margin-top:0"><select id="rt-k" aria-label="Type" onchange="chercherCible('${d}')"><option>projet</option><option>contact</option><option>note</option><option>document</option><option>machine</option></select><input type="search" id="rt-q" placeholder="chercher par nom…" aria-label="Chercher" oninput="chercherCible('${d}')" style="flex:1 1 160px"></div>
-        <div class="rows" id="rt-r" style="margin-top:8px"></div>
-        <div class="encart">Un vrai choix dans la liste, au lieu d’un type et d’une référence tapés à la main. <b>À débattre :</b> aujourd’hui sept modules tiennent chacun leur table de liens ; un module Liens commun les remplacerait.</div>`;
-    })(),
-    dependances: `<p class="silence" style="padding-top:0">Ce dont ce site dépend, et ce qui dépend de lui <span class="de">Sensorium</span></p>
-      <h2 style="font-size:14px;margin:6px 0 8px">Il dépend de</h2><div class="rows">${(hors ? [['résolu par', 'la zone DNS exemple.test', 'chez un autre hébergeur']] : [['hébergé par', 'la machine argos', 'santé 95 · disque 80 %'], ['certifié par', 'son certificat', s.ssl < 0 ? 'échu' : 'expire dans ' + s.ssl + ' j'], ['résolu par', 'la zone DNS exemple.test', '4 enregistrements'], ['hébergé par', 'le compte « ' + E(s.fp) + ' » du panneau', 'PHP ' + (s.php || '—')]]).map(x => `<div class="row" style="grid-template-columns:auto minmax(0,1fr) auto">${pill(x[0], 'nu')}<div class="nm"><b>${x[1]}</b></div><span class="num" style="font-size:12.5px;color:var(--soft)">${x[2]}</span></div>`).join('')}</div>
-      <h2 style="font-size:14px;margin:16px 0 8px">S’il tombe</h2>${d === 'api.exemple.test' ? `<div class="encart w"><b>2 sites sont touchés</b> : boutique.exemple.test et atelier.exemple.test l’appellent.</div>` : '<p class="silence">Rien d’autre ne dépend de ce site.</p>'}
-      <div class="gest"><button class="btn" onclick="toast('Déclarer une dépendance : dépend de, hébergé par, certifié par, résolu par (maquette).')">Déclarer une dépendance…</button></div>`,
-    journal: (() => { const l = JOURNAL.filter(j => j.d === d); return l.length ? `<div class="jl">${l.map(j => `<div><span class="t num">${E(j.t)}</span>${pill(j.v, j.c)}<span>${E(j.x)} · ${E(j.q)}</span></div>`).join('')}</div>` : '<p class="silence">Aucun geste encore sur ce site.</p>'; })(),
-  };
-  $('tiroir').innerHTML = `<div class="sh"><h1 style="font-size:20px"><code>${E(d)}</code></h1><span class="dr"><button class="btn" aria-pressed="${SUIVIS.has(d)}" title="Recevoir un avis à chaque changement d’état de ce site (Sensorium)" onclick="SUIVIS.has('${d}') ? SUIVIS.delete('${d}') : SUIVIS.add('${d}');ouvrir('${d}');toast(SUIVIS.has('${d}') ? 'Tu seras prévenu à chaque changement d’état.' : 'Tu ne suis plus ce site.')">${SUIVIS.has(d) ? '★ Suivi' : '☆ Suivre'}</button><button class="btn" onclick="fermer()">Fermer</button></span></div><div class="pills">${pill(e.t, e.c)}${FENETRES.some(f => f.d === d) ? pill('en maintenance', 'i') : ''}${pill(hors ? lieu(s) : 'panneau', 'nu')}${s.demande ? pill('adossement demandé', 'i') : ''}</div>
-    <div class="onglets" role="tablist">${O.map(o => `<button role="tab" aria-selected="${ETAT.onglet === o[0]}" onclick="ETAT.onglet='${o[0]}';ouvrir('${d}')">${o[1]}</button>`).join('')}</div><div role="tabpanel">${corps[ETAT.onglet]}</div>`;
-  $('tiroir').classList.add('on'); $('voile').classList.add('on');
+function declarer(){
+  const d = nomNet($('dn').value), compte = ETAT.role === 'compte' ? MOI.compte : MOI[ETAT.role];
+  SITES.push({d, compte, soc: SOC_DE[compte] || (ETAT.role === 'admin' ? SOC_ADMIN : ''), src:'declare', src0:'declare', up:null, code:null, ms:0, ssl:null, suivi:0, dispo:J(0), rep:[], objectif:REGL.objectif, preuve:'attente', jeton:'c41d8e07', gabarit:1, capture:''});
+  if (ETAT.role === 'compte') SITES[SITES.length - 1].compte = MOI.compte;
+  ETAT.declare = false; toast('Site déclaré. Il reste à prouver qu’il est à toi.'); aller('site', d, 'apercu');
 }
-function fermer(){ ETAT.sel = null; ETAT.onglet = 'etat'; $('tiroir').classList.remove('on'); $('voile').classList.remove('on'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape'){ if ($('zoom').classList.contains('on')) $('zoom').classList.remove('on'); else fermer(); } });
-rendre();
+
+// ═══════════════════════════ le compte qui n'est pas concerné ═══════════════════════════
+function pageSans(){
+  return `<p class="fil">Parc</p><div class="tete"><h1>Ce compte ne voit pas « Sites »</h1><span class="meta">compte ${E(MOI.sans)} · aucun site</span></div>
+    <section class="sec carte"><div class="verdict"><div class="vm" style="background:var(--line2)"></div><div><p class="vt">Regarde le menu de gauche : l’entrée « Sites » n’y est pas.</p><p class="vs">Un compte qui n’a aucun site n’est pas concerné : on ne lui montre pas un écran vide. <span class="neuf">nouveau</span></p></div></div>
+      <p class="silence">L’entrée apparaît d’elle-même dès que le compte est concerné :</p>
+      <div class="rows">
+        <div class="row" ${G('auto minmax(0,1fr)')}>${pill('1', 'nu')}<div class="nm"><b>un administrateur lui attribue un site</b></div></div>
+        <div class="row" ${G('auto minmax(0,1fr)')}>${pill('2', 'nu')}<div class="nm"><b>son compte du panneau a des sites</b><small>le lien se fait dans sa fiche de compte</small></div></div>
+        <div class="row" ${G('auto minmax(0,1fr)')}>${pill('3', 'nu')}<div class="nm"><b>il déclare un site et prouve qu’il est à lui</b><small>depuis « Mon compte › Mes sites », seul endroit où il peut commencer</small></div></div>
+        <div class="row" ${G('auto minmax(0,1fr)')}>${pill('4', 'nu')}<div class="nm"><b>il devient administrateur d’une société qui a des sites</b></div></div>
+      </div>
+      <div class="gest"><button class="btn p" onclick="toast('Ouvre Mon compte › Mes sites › Déclarer un site (maquette).')">Déclarer mon premier site</button><button class="btn" onclick="role('compte')">Voir l’écran d’un compte qui a des sites</button></div></section>`;
+}
+
+// ═══════════════════════════ le rendu ═══════════════════════════
+function rendre(focus){
+  $('page').innerHTML = ETAT.role === 'sans' ? pageSans() : (PAGES[ETAT.sec] || PAGES.vue)();
+  menu();
+  if (focus){ const q = $(focus); if (q){ q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) {} } }
+  if (ETAT.sec === 'site' && ETAT.onglet === 'liens' && $('rt-r')) chercherCible(ETAT.sel);
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('zoom').classList.remove('on'); });
+lire();
 </script>
 </body>
 </html>
