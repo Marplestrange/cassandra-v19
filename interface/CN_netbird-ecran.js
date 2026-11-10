@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b4799f
+// VERSION CN : 0.1.0  #9bf11e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b4799f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=9bf11e ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -114,6 +114,12 @@
         if (!S.occupe && !saisie) charger(true); else armer();
       }, vite ? 2500 : 20000);
     }
+    // « Es-tu sûr ? » : la fenêtre de Cassandra (une promesse), jamais confirm() natif, que le navigateur d’une application peut taire : le clic ne ferait alors plus rien.
+    const demander = (texte, oui) => {
+      const danger = /Retirer|Supprimer|Désinstaller|Oublier|Restaurer|SANS sauvegarde/.test(texte);
+      if (!(CASS.kit && CASS.kit.confirmer)) return Promise.resolve(window.confirm(texte));
+      return CASS.kit.confirmer("Confirmer", "<p>" + esc(texte).split(String.fromCharCode(10)).join("<br>") + "</p>", oui || "Oui, continuer", danger);
+    };
     const faire = async (f, ok) => {
       if (S.occupe) return; S.occupe = true; dessiner();
       try { await f(); if (ok) dire(ok); } catch (e) { dire(e.message || String(e), "err"); S.erreur = e.message || String(e); }
@@ -478,38 +484,38 @@
       if (a === "installer") {
         const tag = val("#nb-tag") || "latest", cle = val("#nb-i-cle");
         if (cle && !/^[A-Za-z0-9_-]{16,128}$/.test(cle)) { dire("Une clé d’installation du type XXXXXXXX-XXXX-…", "err"); return; }
-        if (!confirm("Installer le client NetBird dans un conteneur Docker (netbirdio/netbird:" + tag + ") ? L’image est téléchargée depuis Docker Hub.")) return;
+        if (!(await demander("Installer le client NetBird dans un conteneur Docker (netbirdio/netbird:" + tag + ") ? L’image est téléchargée depuis Docker Hub."))) return;
         const args = { tag: tag, nom: val("#nb-i-nom"), url: val("#nb-i-url") };
         return faire(() => (cle ? avecCle(cle, () => agir("netbird.installer_docker", Object.assign({ avec_cle: true }, args))) : agir("netbird.installer_docker", args)), "NetBird est installé dans Docker.");
       }
       if (a === "client-maj") {
-        if (!confirm("Mettre à jour le client NetBird ? " + (S.e && S.e.natif && S.e.conteneur === "absent" ? "Le paquet est mis à jour par apt ou dnf." : "L’image est téléchargée ; si elle a changé, le conteneur est recréé (identité gardée).") + " La machine est coupée quelques secondes. Le geste peut être défait depuis l’Historique.")) return;
+        if (!(await demander("Mettre à jour le client NetBird ? " + (S.e && S.e.natif && S.e.conteneur === "absent" ? "Le paquet est mis à jour par apt ou dnf." : "L’image est téléchargée ; si elle a changé, le conteneur est recréé (identité gardée).") + " La machine est coupée quelques secondes. Le geste peut être défait depuis l’Historique."))) return;
         return faire(async () => { const r = await agir("netbird.mettre_a_jour_client"); dire(r && r.maj_change ? "Client NetBird mis à jour" + (r.version_apres && r.version_avant !== r.version_apres ? " : " + r.version_avant + " → " + r.version_apres : "") + "." : "Le client NetBird est déjà à jour."); }, "");
       }
       if (a === "installer-natif") {
-        if (!confirm("Installer le client NetBird natif (paquet officiel) ? Le dépôt de NetBird est ajouté à la machine (apt ou dnf, clés vérifiées), puis le paquet est installé et son service démarré.")) return;
+        if (!(await demander("Installer le client NetBird natif (paquet officiel) ? Le dépôt de NetBird est ajouté à la machine (apt ou dnf, clés vérifiées), puis le paquet est installé et son service démarré."))) return;
         return faire(() => agir("netbird.installer_natif"), "Le client NetBird natif est installé : connecte-le depuis la Vue d’ensemble.");
       }
-      if (a === "natif-retirer") { if (!confirm("Désinstaller le client NetBird natif ? La machine quitte le réseau tant qu’elle n’est pas reconnectée.")) return; return faire(() => agir("netbird.retirer_natif"), "Client natif désinstallé."); }
+      if (a === "natif-retirer") { if (!(await demander("Désinstaller le client NetBird natif ? La machine quitte le réseau tant qu’elle n’est pas reconnectée."))) return; return faire(() => agir("netbird.retirer_natif"), "Client natif désinstallé."); }
       if (a === "srv-jq") {
-        if (!confirm("Installer jq sur cette machine ? C’est un petit paquet de la distribution (apt, dnf ou yum), installé par le courtier : le script officiel du serveur NetBird en a besoin.")) return;
+        if (!(await demander("Installer jq sur cette machine ? C’est un petit paquet de la distribution (apt, dnf ou yum), installé par le courtier : le script officiel du serveur NetBird en a besoin."))) return;
         return faire(() => agir("netbird.serveur_installer_jq"), "jq est installé : tu peux maintenant télécharger le script du serveur.");
       }
       if (a === "srv-sauv") return faire(async () => { const r = await agir("netbird.serveur_sauvegarder"); dire("Sauvegarde " + r.id + " faite."); }, "");
       if (a === "srv-resto") {
         const id = b.dataset.id;
-        if (!confirm("Restaurer la sauvegarde " + id + " ? Les données et la configuration actuelles du serveur sont remplacées (une sauvegarde de sécurité est faite avant). Le serveur est arrêté puis relancé.")) return;
+        if (!(await demander("Restaurer la sauvegarde " + id + " ? Les données et la configuration actuelles du serveur sont remplacées (une sauvegarde de sécurité est faite avant). Le serveur est arrêté puis relancé."))) return;
         return faire(() => agir("netbird.serveur_restaurer", { id: id }), "Sauvegarde restaurée.");
       }
       if (a === "pf-ouvrir") {
         const px = S.s && S.s.installe ? (S.s.meta || {}).proxy || "" : S.f.proxy, manque = ((S.pf && S.pf.publics) || []).filter((p) => !(S.pf.ouverts || []).includes(p));
-        if (!confirm("Ouvrir " + manque.join(", ") + " dans le pare-feu " + ((S.pf && S.pf.outil) || "") + " de cette machine ? Seuls ces ports sont ajoutés ; rien n’est retiré. Le geste peut être défait depuis l’Historique.")) return;
+        if (!(await demander("Ouvrir " + manque.join(", ") + " dans le pare-feu " + ((S.pf && S.pf.outil) || "") + " de cette machine ? Seuls ces ports sont ajoutés ; rien n’est retiré. Le geste peut être défait depuis l’Historique."))) return;
         return faire(() => agir("netbird.pare_feu_ouvrir", { proxy: px }), "Ports ouverts dans le pare-feu.");
       }
       if (a === "dns-creer") {
         const ip = val("#nb-d-ip"), dom = S.s && S.s.installe ? (S.s.meta || {}).domaine : S.f.domaine;
         if (!ip || !dom) { dire("Il faut un domaine et l’adresse de la machine.", "err"); return; }
-        if (!confirm("Créer dans la zone FASTPANEL l’enregistrement " + dom + " A " + ip + " ? Un nom qui a déjà un enregistrement n’est jamais remplacé. Le geste peut être défait.")) return;
+        if (!(await demander("Créer dans la zone FASTPANEL l’enregistrement " + dom + " A " + ip + " ? Un nom qui a déjà un enregistrement n’est jamais remplacé. Le geste peut être défait."))) return;
         S.ipSaisie = ip;
         return faire(() => agir("fastpanel.dns_enregistrer", { domaine: dom, adresse: ip }), "Enregistrement DNS créé : la propagation peut prendre quelques minutes.");
       }
@@ -523,7 +529,7 @@
         if (!jeton && !url) { dire("Rien à enregistrer", "err"); return; }
         return faire(async () => { if (jeton) await agir("reglages.regler_secret", { cle: "netbird.jeton_api", valeur: jeton }); if (url) await agir("reglages.regler", { cle: "netbird.url_api", valeur: url }); }, "Accès à l’API enregistré.");
       }
-      if (a === "jeton-oublier") { if (!confirm("Oublier le jeton d’accès ? Cassandra ne pourra plus administrer le réseau.")) return; return faire(() => agir("reglages.reinitialiser", { cle: "netbird.jeton_api" }), "Jeton oublié."); }
+      if (a === "jeton-oublier") { if (!(await demander("Oublier le jeton d’accès ? Cassandra ne pourra plus administrer le réseau."))) return; return faire(() => agir("reglages.reinitialiser", { cle: "netbird.jeton_api" }), "Jeton oublié."); }
       // ---- le serveur
       if (a === "srv-telecharger") {
         S.f = lireForm();
@@ -534,14 +540,14 @@
       if (a === "srv-installer") {
         S.f = lireForm();
         if (S.f.version !== S.dl.version) { dire("La version a changé : retélécharge le script.", "err"); S.dl = null; dessiner(); return; }
-        if (!confirm("Installer le serveur NetBird " + S.f.version + " pour " + S.f.domaine + " (proxy " + S.f.proxy + ") ?" + (S.f.hors ? "\nDomaine non administré par Cassandra : son DNS et son certificat sont à ta charge." : "") + "\nScript d’empreinte " + S.dl.sha256.slice(0, 16) + "…\nIl télécharge les images NetBird et, avec traefik, demande un certificat Let’s Encrypt.")) return;
+        if (!(await demander("Installer le serveur NetBird " + S.f.version + " pour " + S.f.domaine + " (proxy " + S.f.proxy + ") ?" + (S.f.hors ? "\nDomaine non administré par Cassandra : son DNS et son certificat sont à ta charge." : "") + "\nScript d’empreinte " + S.dl.sha256.slice(0, 16) + "…\nIl télécharge les images NetBird et, avec traefik, demande un certificat Let’s Encrypt."))) return;
         return faire(async () => { await agir("netbird.serveur_installer", { version: S.f.version, sha256: S.dl.sha256, domaine: S.f.domaine, email: S.f.email, proxy: S.f.proxy, hors_cassandra: S.f.hors }); S.dl = null; }, "Serveur NetBird installé.");
       }
-      if (a === "srv-redemarrer") { if (!confirm("Redémarrer le serveur NetBird ? Les machines se reconnectent seules.")) return; return faire(() => agir("netbird.serveur_redemarrer"), "Serveur redémarré."); }
+      if (a === "srv-redemarrer") { if (!(await demander("Redémarrer le serveur NetBird ? Les machines se reconnectent seules."))) return; return faire(() => agir("netbird.serveur_redemarrer"), "Serveur redémarré."); }
       if (a === "srv-maj") {
         const sauv = !!(racine.querySelector("#nb-s-sauv") || {}).checked;
         S.sBack = sauv;
-        if (!confirm("Mettre à jour le serveur NetBird" + (S.v && S.v.derniere ? " vers " + S.v.derniere : "") + (sauv ? " après une sauvegarde" : " SANS sauvegarde (la mise à jour ne pourra pas être défaite)") + " ? Les images sont téléchargées puis le serveur redémarre.")) return;
+        if (!(await demander("Mettre à jour le serveur NetBird" + (S.v && S.v.derniere ? " vers " + S.v.derniere : "") + (sauv ? " après une sauvegarde" : " SANS sauvegarde (la mise à jour ne pourra pas être défaite)") + " ? Les images sont téléchargées puis le serveur redémarre."))) return;
         return faire(async () => { const r = await agir("netbird.serveur_mettre_a_jour", { sauvegarde: sauv }); dire("Serveur mis à jour" + (r.version_avant !== r.version_apres ? " : " + r.version_avant + " → " + r.version_apres : "") + (r.sauvegarde ? " ; sauvegarde " + r.sauvegarde + " faite avant." : ".")); }, "");
       }
       if (a === "srv-journaux") return faire(async () => { S.txt = { titre: "Journaux du serveur (80 dernières lignes)", texte: (await agir("netbird.serveur_journaux")).journaux || "(vide)" }; }, "");
@@ -553,16 +559,16 @@
       if (a === "m-non") { S.edit = ""; dessiner(); return; }
       if (a === "m-ok") { const nom = val("#nb-m-nom"), id = b.dataset.id; return faire(async () => { await agir("netbird.machine_modifier", { id: id, nom: nom }); S.edit = ""; }, "Machine renommée."); }     // lu AVANT faire : faire redessine, et le champ reprendrait l’ancien nom
       if (a === "m-ssh") { const m = S.g.machines.find((x) => x.id === b.dataset.id); return faire(() => agir("netbird.machine_modifier", { id: b.dataset.id, ssh: !(m && m.ssh) }), "SSH modifié."); }
-      if (a === "m-suppr") { if (!confirm("Retirer cette machine du réseau NetBird ? Elle devra se reconnecter avec une clé.")) return; return faire(() => agir("netbird.machine_supprimer", { id: b.dataset.id }), "Machine retirée du réseau."); }
+      if (a === "m-suppr") { if (!(await demander("Retirer cette machine du réseau NetBird ? Elle devra se reconnecter avec une clé."))) return; return faire(() => agir("netbird.machine_supprimer", { id: b.dataset.id }), "Machine retirée du réseau."); }
       if (a === "cle-creer") {
         const nom = val("#nb-k-nom"), args = { nom: nom, type: val("#nb-k-type"), jours: parseInt(val("#nb-k-jours"), 10) || 30, groupes: cochees("nb-k-g") };
         if (!nom) { dire("Donne un nom à la clé", "err"); return; }
         return faire(async () => { const r = await agir("netbird.cle_creer", args); S.cle = { nom: r.nom, cle: r.cle_secrete }; }, "Clé créée : copie-la maintenant.");
       }
       if (a === "k-revoquer") { const k = S.g.cles.find((x) => x.id === b.dataset.id); return faire(() => agir("netbird.cle_revoquer", { id: b.dataset.id, revoquer: !(k && k.revoquee) }), "Clé modifiée."); }
-      if (a === "k-suppr") { if (!confirm("Supprimer cette clé d’installation ?")) return; return faire(() => agir("netbird.cle_supprimer", { id: b.dataset.id }), "Clé supprimée."); }
+      if (a === "k-suppr") { if (!(await demander("Supprimer cette clé d’installation ?"))) return; return faire(() => agir("netbird.cle_supprimer", { id: b.dataset.id }), "Clé supprimée."); }
       if (a === "g-creer") { const nom = val("#nb-g-nom"); if (!nom) { dire("Donne un nom au groupe", "err"); return; } return faire(() => agir("netbird.groupe_creer", { nom: nom }), "Groupe créé."); }
-      if (a === "g-suppr") { if (!confirm("Supprimer ce groupe ? NetBird refuse tant qu’une règle ou une clé l’utilise.")) return; return faire(() => agir("netbird.groupe_supprimer", { id: b.dataset.id }), "Groupe supprimé."); }
+      if (a === "g-suppr") { if (!(await demander("Supprimer ce groupe ? NetBird refuse tant qu’une règle ou une clé l’utilise."))) return; return faire(() => agir("netbird.groupe_supprimer", { id: b.dataset.id }), "Groupe supprimé."); }
       if (a === "p-creer") {
         const nom = val("#nb-p-nom"), src = cochees("nb-p-src"), dst = cochees("nb-p-dst");
         if (!nom || !src.length || !dst.length) { dire("Un nom, au moins un groupe source et un groupe destination", "err"); return; }
@@ -570,7 +576,7 @@
         return faire(() => agir("netbird.politique_creer", args), "Politique créée.");
       }
       if (a === "p-actif") { const p = S.g.politiques.find((x) => x.id === b.dataset.id); return faire(() => agir("netbird.politique_activer", { id: b.dataset.id, actif: !(p && p.actif) }), "Politique modifiée."); }
-      if (a === "p-suppr") { if (!confirm("Supprimer cette politique d’accès ? Les machines qu’elle reliait ne se joindront plus.")) return; return faire(() => agir("netbird.politique_supprimer", { id: b.dataset.id }), "Politique supprimée."); }
+      if (a === "p-suppr") { if (!(await demander("Supprimer cette politique d’accès ? Les machines qu’elle reliait ne se joindront plus."))) return; return faire(() => agir("netbird.politique_supprimer", { id: b.dataset.id }), "Politique supprimée."); }
       if (a === "retirer") { S.couper = true; dessiner(); return; }
       if (a === "retirer-oui") {
         const purger = !!(racine.querySelector("#nb-purge") || {}).checked;
