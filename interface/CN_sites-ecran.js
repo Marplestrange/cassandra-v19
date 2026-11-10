@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #bfb2b7
+// VERSION CN : 0.1.0  #32586b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages du module sites (vue d'ensemble, tous les sites, la page d'un site, alertes, disponibilité, demandes, journal) ; ses pages sont les sous-entrées de « Sites » dans le menu de gauche
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.sites) qui remplace l'onglet V18 « mysites » ; tout vient des capacités sites.* ; l'état vit hors de la scène, car le shell la redessine à chaque ouverture ; window.stVue reçoit la page demandée par le menu, window.stOpen ouvre un site depuis un autre écran
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=bfb2b7 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=32586b ▼▼▼
 // Sites : l'écran du module. Il remplace l'onglet V18 « mysites » ; ses pages sont les sous-menus de « Sites » dans le menu de gauche
 // (le rail interne de l'ancien écran a disparu). Lot 1 : ce que les capacités sites.* savaient déjà rendre. Lot 2 : les incidents (une panne est un objet
 // qu'on dépanne), le calendrier d'un site, les sociétés, la preuve de propriété, les objectifs et les réglages.
@@ -146,7 +146,7 @@
   }
   const initiales = (d) => String(d || "").split(".")[0].slice(0, 2).toUpperCase() || "?";
   const vg = (s, cl) => '<span class="vg' + (cl ? " " + cl : "") + (s.up === false ? " dg" : "") + '">' + (s.icone && /^data:image\//.test(s.icone) ? '<img src="' + esc(s.icone) + '" alt="">' : esc(initiales(s.domaine))) + "</span>";
-  const poids = (mo) => (mo == null ? "" : mo >= 1024 ? (Math.round(mo / 102.4) / 10).toLocaleString("fr-FR") + " Go" : nb(Math.round(mo)) + " Mo");
+  const poids = (mo) => (mo == null ? "" : mo < 1 ? "moins de 1 Mo" : mo >= 1024 ? (Math.round(mo / 102.4) / 10).toLocaleString("fr-FR") + " Go" : nb(Math.round(mo)) + " Mo");
   const teinte = (d) => { let h = 0; for (const c of String(d || "")) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
   const quiRegarde = () => (portee().super ? "superadministrateur" + (portee().multi ? " · " + (S.soc ? (S.soc === "-" ? "sites sans société" : socNom(S.soc)) : "toutes les sociétés") : "") : admin() ? "administrateur" + (portee().multi ? " de " + socNom(portee().societe) : "") : "compte " + moi());
   // La vignette d'un site. Il n'y a pas de capture d'écran (pas de navigateur sur la machine) : elle montre l'image de présentation que la page déclare, à défaut
@@ -178,7 +178,7 @@
   function sousTitre(s) {
     const comptes = (s.comptes || []).join(", ") || (s.source === "panneau" ? "panneau · " + (s.proprietaire_panneau || "?") : "sans compte");
     const qui = portee().super && portee().multi ? (s.societe ? socNom(s.societe) : "sans société") + " · " + comptes : admin() ? comptes : "";
-    return [qui, cmsTexte(s), s.php ? "PHP " + s.php : "", poids(s.disque_mo), s.source === "panneau" ? "" : "déclaré à la main"].filter(Boolean).join(" · ") || "panneau";
+    return [qui, cmsTexte(s), s.php ? "PHP " + s.php : "", s.disque_mo >= 1 ? poids(s.disque_mo) : "", s.source === "panneau" ? "" : "déclaré à la main"].filter(Boolean).join(" · ") || "panneau";
   }
   function ligne(s) {
     const t = tendance(s.domaine), d = esc(s.domaine), dispo = t ? t.disponibilite : s.dispo30 && s.dispo30.disponibilite;
