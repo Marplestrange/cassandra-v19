@@ -205,10 +205,12 @@
       if (e.etat !== "connecte") return '<div class="carte"><p>NetBird n’est pas connecté sur cette machine : connecte-la depuis la <b>Vue d’ensemble</b>.</p></div>';
       const pairs = e.pairs || [], q = String(S.q || "").trim().toLowerCase();
       const vus = pairs.filter((p) => (S.filtre === "tous" || (S.filtre === "en_ligne" ? p.en_ligne : !p.en_ligne)) && (!q || (p.nom + " " + p.ip + " " + (p.reseaux || []).join(" ")).toLowerCase().includes(q)));
-      let h = '<div class="carte"><div class="acts" style="justify-content:space-between"><h2 ' + H2 + '>Les machines du réseau <span class="note">(' + e.en_ligne + " en ligne sur " + pairs.length + ")</span></h2></div>";
+      let h = '<div class="carte"><div class="acts" style="justify-content:space-between"><h2 ' + H2 + '>Les machines du réseau <span class="note">(' + e.en_ligne + " autre(s) en ligne sur " + pairs.length + ")</span></h2></div>";
       if (pairs.length > 3) h += '<div class="acts"><input type="text" id="nb-q" placeholder="Chercher une machine, une adresse…" value="' + esc(S.q) + '" style="flex:1 1 220px"><select id="nb-f">' +
         [["tous", "Toutes"], ["en_ligne", "En ligne"], ["hors_ligne", "Hors ligne"]].map((o) => '<option value="' + o[0] + '"' + (S.filtre === o[0] ? " selected" : "") + ">" + o[1] + "</option>").join("") + "</select></div>";
-      h += vus.length ? '<div class="pairs">' + vus.map(ligneMachine).join("") + "</div>" : '<p class="note">' + (pairs.length ? "Aucune machine ne correspond." : "Aucune autre machine sur ce réseau pour l’instant.") + "</p>";
+      if (e.nom || e.ip) h += '<div class="pairs"><div class="pair" style="grid-template-columns:auto minmax(0,1fr) auto"><span class="pt on"></span><span class="nom">' + esc(e.nom || "cette machine") + ' <span class="pastille ok">cette machine</span></span><span class="mono ip note">' + esc(e.ip || "") + (e.ip ? copie(e.ip) : "") + "</span></div></div>" +
+        '<p class="note">Cette page montre cette machine puis les autres que le client voit. La liste complète du réseau, avec toutes les machines, est dans Administration.</p>';
+      h += vus.length ? '<div class="pairs">' + vus.map(ligneMachine).join("") + "</div>" : '<p class="note">' + (pairs.length ? "Aucune machine ne correspond." : "Aucune autre machine sur ce réseau pour l’instant : elles apparaîtront ici dès qu’elles rejoindront le réseau.") + "</p>";
       h += "</div>";
       if (e.reseaux && e.reseaux.length) h += '<div class="carte"><h2 ' + H2 + '>Réseaux joignables par cette machine</h2><p class="mono note">' + e.reseaux.map(esc).join(" · ") + "</p></div>";
       return h;
