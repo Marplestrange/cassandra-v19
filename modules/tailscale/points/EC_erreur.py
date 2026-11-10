@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.5.0)  #64785b
+# VERSION EC : EC0 (référence 0.5.1)  #64785b
 # HÔTE CN    : CN_module.py · erreur @1.0
 # RÔLE       : Une sortie du client, rendue lisible : sans la clé, avec la commande qui règle un refus d'accès.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.

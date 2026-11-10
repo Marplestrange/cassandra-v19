@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.5.0)  #48d415
+# VERSION EC : EC0 (référence 0.5.1)  #48d415
 # HÔTE CN    : CN_module.py · resume @1.0
 # RÔLE       : Le statut du client, aplati pour l'écran : état en clair, la machine, ses adresses, les autres machines du réseau.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.

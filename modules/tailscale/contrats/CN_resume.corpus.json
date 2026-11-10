@@ -669,6 +669,546 @@
      "ssh": false
     }
    }
+  },
+  {
+   "cas": "cas 22 : trois machines « localhost » : le nom DNS court les distingue",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Running",
+     "AuthURL": "",
+     "TailscaleIPs": [
+      "100.64.0.7",
+      "fd7a::7"
+     ],
+     "Health": [],
+     "Self": {
+      "HostName": "argos",
+      "DNSName": "argos.tail1.ts.net."
+     },
+     "Peer": {
+      "a": {
+       "TailscaleIPs": [
+        "100.64.0.10"
+       ],
+       "OS": "iOS",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "HostName": "localhost",
+       "DNSName": "localhost.tail1.ts.net."
+      },
+      "b": {
+       "TailscaleIPs": [
+        "100.64.0.11"
+       ],
+       "OS": "iOS",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "HostName": "localhost",
+       "DNSName": "localhost-1.tail1.ts.net."
+      },
+      "c": {
+       "TailscaleIPs": [
+        "100.64.0.12"
+       ],
+       "OS": "iOS",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "HostName": "localhost",
+       "DNSName": "localhost-2.tail1.ts.net."
+      }
+     },
+     "CurrentTailnet": {
+      "Name": "drisse@example.org",
+      "MagicDNSSuffix": "tail1.ts.net"
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "connecte",
+     "brut": "Running",
+     "lien": "",
+     "nom": "argos",
+     "dns": "argos.tail1.ts.net",
+     "ip4": "100.64.0.7",
+     "ip6": "fd7a::7",
+     "reseau": "drisse@example.org",
+     "suffixe": "tail1.ts.net",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [
+      {
+       "nom": "localhost",
+       "ip": "100.64.0.10",
+       "os": "iOS",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      },
+      {
+       "nom": "localhost-1",
+       "ip": "100.64.0.11",
+       "os": "iOS",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      },
+      {
+       "nom": "localhost-2",
+       "ip": "100.64.0.12",
+       "os": "iOS",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      }
+     ],
+     "en_ligne": 3,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 23 : « LocalHost » en majuscules",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Running",
+     "AuthURL": "",
+     "TailscaleIPs": [
+      "100.64.0.7",
+      "fd7a::7"
+     ],
+     "Health": [],
+     "Self": {
+      "HostName": "argos",
+      "DNSName": "argos.tail1.ts.net."
+     },
+     "Peer": {
+      "a": {
+       "TailscaleIPs": [
+        "100.64.0.13"
+       ],
+       "OS": "iOS",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "HostName": "LocalHost",
+       "DNSName": "localhost-3.tail1.ts.net."
+      }
+     },
+     "CurrentTailnet": {
+      "Name": "drisse@example.org",
+      "MagicDNSSuffix": "tail1.ts.net"
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "connecte",
+     "brut": "Running",
+     "lien": "",
+     "nom": "argos",
+     "dns": "argos.tail1.ts.net",
+     "ip4": "100.64.0.7",
+     "ip6": "fd7a::7",
+     "reseau": "drisse@example.org",
+     "suffixe": "tail1.ts.net",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [
+      {
+       "nom": "localhost-3",
+       "ip": "100.64.0.13",
+       "os": "iOS",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      }
+     ],
+     "en_ligne": 1,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 24 : nom d'hôte vide : le nom DNS court",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Running",
+     "AuthURL": "",
+     "TailscaleIPs": [
+      "100.64.0.7",
+      "fd7a::7"
+     ],
+     "Health": [],
+     "Self": {
+      "HostName": "argos",
+      "DNSName": "argos.tail1.ts.net."
+     },
+     "Peer": {
+      "a": {
+       "TailscaleIPs": [
+        "100.64.0.14"
+       ],
+       "OS": "iOS",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "HostName": "",
+       "DNSName": "telephone.tail1.ts.net."
+      }
+     },
+     "CurrentTailnet": {
+      "Name": "drisse@example.org",
+      "MagicDNSSuffix": "tail1.ts.net"
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "connecte",
+     "brut": "Running",
+     "lien": "",
+     "nom": "argos",
+     "dns": "argos.tail1.ts.net",
+     "ip4": "100.64.0.7",
+     "ip6": "fd7a::7",
+     "reseau": "drisse@example.org",
+     "suffixe": "tail1.ts.net",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [
+      {
+       "nom": "telephone",
+       "ip": "100.64.0.14",
+       "os": "iOS",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      }
+     ],
+     "en_ligne": 1,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 25 : nom d'hôte absent : le nom DNS court",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Running",
+     "AuthURL": "",
+     "TailscaleIPs": [
+      "100.64.0.7",
+      "fd7a::7"
+     ],
+     "Health": [],
+     "Self": {
+      "HostName": "argos",
+      "DNSName": "argos.tail1.ts.net."
+     },
+     "Peer": {
+      "a": {
+       "TailscaleIPs": [
+        "100.64.0.15"
+       ],
+       "OS": "iOS",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "DNSName": "tablette.tail1.ts.net."
+      }
+     },
+     "CurrentTailnet": {
+      "Name": "drisse@example.org",
+      "MagicDNSSuffix": "tail1.ts.net"
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "connecte",
+     "brut": "Running",
+     "lien": "",
+     "nom": "argos",
+     "dns": "argos.tail1.ts.net",
+     "ip4": "100.64.0.7",
+     "ip6": "fd7a::7",
+     "reseau": "drisse@example.org",
+     "suffixe": "tail1.ts.net",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [
+      {
+       "nom": "tablette",
+       "ip": "100.64.0.15",
+       "os": "iOS",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      }
+     ],
+     "en_ligne": 1,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 26 : localhost sans nom DNS : reste localhost",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Running",
+     "AuthURL": "",
+     "TailscaleIPs": [
+      "100.64.0.7",
+      "fd7a::7"
+     ],
+     "Health": [],
+     "Self": {
+      "HostName": "argos",
+      "DNSName": "argos.tail1.ts.net."
+     },
+     "Peer": {
+      "a": {
+       "TailscaleIPs": [
+        "100.64.0.16"
+       ],
+       "OS": "iOS",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "HostName": "localhost",
+       "DNSName": ""
+      }
+     },
+     "CurrentTailnet": {
+      "Name": "drisse@example.org",
+      "MagicDNSSuffix": "tail1.ts.net"
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "connecte",
+     "brut": "Running",
+     "lien": "",
+     "nom": "argos",
+     "dns": "argos.tail1.ts.net",
+     "ip4": "100.64.0.7",
+     "ip6": "fd7a::7",
+     "reseau": "drisse@example.org",
+     "suffixe": "tail1.ts.net",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [
+      {
+       "nom": "localhost",
+       "ip": "100.64.0.16",
+       "os": "iOS",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      }
+     ],
+     "en_ligne": 1,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 27 : localhost sans nom DNS du tout : reste localhost",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Running",
+     "AuthURL": "",
+     "TailscaleIPs": [
+      "100.64.0.7",
+      "fd7a::7"
+     ],
+     "Health": [],
+     "Self": {
+      "HostName": "argos",
+      "DNSName": "argos.tail1.ts.net."
+     },
+     "Peer": {
+      "a": {
+       "TailscaleIPs": [
+        "100.64.0.17"
+       ],
+       "OS": "iOS",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "HostName": "localhost"
+      }
+     },
+     "CurrentTailnet": {
+      "Name": "drisse@example.org",
+      "MagicDNSSuffix": "tail1.ts.net"
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "connecte",
+     "brut": "Running",
+     "lien": "",
+     "nom": "argos",
+     "dns": "argos.tail1.ts.net",
+     "ip4": "100.64.0.7",
+     "ip6": "fd7a::7",
+     "reseau": "drisse@example.org",
+     "suffixe": "tail1.ts.net",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [
+      {
+       "nom": "localhost",
+       "ip": "100.64.0.17",
+       "os": "iOS",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      }
+     ],
+     "en_ligne": 1,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 28 : ni nom d'hôte ni nom DNS : nom vide",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Running",
+     "AuthURL": "",
+     "TailscaleIPs": [
+      "100.64.0.7",
+      "fd7a::7"
+     ],
+     "Health": [],
+     "Self": {
+      "HostName": "argos",
+      "DNSName": "argos.tail1.ts.net."
+     },
+     "Peer": {
+      "a": {
+       "TailscaleIPs": [
+        "100.64.0.18"
+       ],
+       "OS": "iOS",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "HostName": "",
+       "DNSName": ""
+      }
+     },
+     "CurrentTailnet": {
+      "Name": "drisse@example.org",
+      "MagicDNSSuffix": "tail1.ts.net"
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "connecte",
+     "brut": "Running",
+     "lien": "",
+     "nom": "argos",
+     "dns": "argos.tail1.ts.net",
+     "ip4": "100.64.0.7",
+     "ip6": "fd7a::7",
+     "reseau": "drisse@example.org",
+     "suffixe": "tail1.ts.net",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [
+      {
+       "nom": "",
+       "ip": "100.64.0.18",
+       "os": "iOS",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      }
+     ],
+     "en_ligne": 1,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 29 : nom d'hôte ordinaire et nom DNS différent : le nom d'hôte gagne",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Running",
+     "AuthURL": "",
+     "TailscaleIPs": [
+      "100.64.0.7",
+      "fd7a::7"
+     ],
+     "Health": [],
+     "Self": {
+      "HostName": "argos",
+      "DNSName": "argos.tail1.ts.net."
+     },
+     "Peer": {
+      "a": {
+       "TailscaleIPs": [
+        "100.64.0.19"
+       ],
+       "OS": "linux",
+       "Online": true,
+       "LastSeen": "2026-11-09T10:00:00Z",
+       "HostName": "Athena",
+       "DNSName": "athena-bis.tail1.ts.net."
+      }
+     },
+     "CurrentTailnet": {
+      "Name": "drisse@example.org",
+      "MagicDNSSuffix": "tail1.ts.net"
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "connecte",
+     "brut": "Running",
+     "lien": "",
+     "nom": "argos",
+     "dns": "argos.tail1.ts.net",
+     "ip4": "100.64.0.7",
+     "ip6": "fd7a::7",
+     "reseau": "drisse@example.org",
+     "suffixe": "tail1.ts.net",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [
+      {
+       "nom": "Athena",
+       "ip": "100.64.0.19",
+       "os": "linux",
+       "en_ligne": true,
+       "vu": "2026-11-09 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      }
+     ],
+     "en_ligne": 1,
+     "ssh": false
+    }
+   }
   }
  ]
 }
