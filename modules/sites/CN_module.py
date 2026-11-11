@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.5.0  #cba0db
+# VERSION CN : 0.6.0  #e0f8c5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sites.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=cba0db ▼▼▼
+# ▼▼▼ BORNE CN version=0.6.0 empreinte=e0f8c5 ▼▼▼
 """Le module Sites.
 
 Ce qu'il tient de la V18 (sites, site_pass, site_fiche, site_history/availability, demandes, accords, liens) et les leçons qu'il garde :
@@ -1020,6 +1020,7 @@ def brancher(ctx):
         db.ecrire("DELETE FROM incident_faits WHERE incident IN (SELECT id FROM incidents WHERE etat='resolu' AND fin < ?)", (vieux,))
         db.ecrire("DELETE FROM incidents WHERE etat='resolu' AND fin < ?", (vieux,))
         db.ecrire("DELETE FROM preuves WHERE cree < ?", (maintenant - PREUVE_GARDE_J * 86400,))
+        db.ecrire("DELETE FROM alertes_acceptees WHERE jusqu_a < ?", (maintenant,))
 
     def objets_site(c, etat=None):
         return c.lister(portee=c.TOUT, type="site", etat=etat or "")
@@ -1191,18 +1192,18 @@ def brancher(ctx):
                             "geste": "depanner" if inc else None, "incident": inc["id"] if inc else None})
             sv, pf, nm = x.get("sauvegarde"), x.get("php_fin"), x.get("nom")
             if sv and sv["etat"] == "sans":
-                vig.append({"niveau": "regarder", "site": d, "titre": "%s : aucune sauvegarde connue" % d, "detail": "aucun plan du panneau ne couvre ce site", "geste": "hebergement"})
+                vig.append({"niveau": "regarder", "site": d, "titre": "%s : aucune sauvegarde connue" % d, "detail": "aucun plan du panneau ne couvre ce site", "geste": "hebergement", "cle": "sauvegarde:" + d})
             elif sv and sv["etat"] == "perimee":
-                vig.append({"niveau": "regarder", "site": d, "titre": "%s : sauvegarde trop ancienne" % d, "detail": "la dernière date du %s" % str(sv["derniere"] or "?")[:10], "geste": "hebergement"})
+                vig.append({"niveau": "regarder", "site": d, "titre": "%s : sauvegarde trop ancienne" % d, "detail": "la dernière date du %s" % str(sv["derniere"] or "?")[:10], "geste": "hebergement", "cle": "sauvegarde:" + d})
             if pf:
                 vig.append({"niveau": "regarder" if pf["etat"] == "depassee" else "info", "site": d,
                             "titre": "%s : PHP %s %s" % (d, pf["version"], "n'est plus maintenu" if pf["etat"] == "depassee" else "arrive en fin de support"),
-                            "detail": ("plus de correctifs de sécurité depuis le %s" if pf["etat"] == "depassee" else "fin des correctifs de sécurité le %s") % pf["fin"], "geste": "hebergement"})
+                            "detail": ("plus de correctifs de sécurité depuis le %s" if pf["etat"] == "depassee" else "fin des correctifs de sécurité le %s") % pf["fin"], "geste": "hebergement", "cle": "php:" + d})
             if nm and isinstance(nm.get("jours"), int) and nm["jours"] < NOM_COURT_J and nm["zone"] not in noms_dits:
                 noms_dits.add(nm["zone"])                                   # une alerte par nom, pas une par site qu'il porte
                 vig.append({"niveau": "panne" if nm["jours"] < 10 else "regarder", "site": d,
                             "titre": ("le nom %s est échu" % nm["zone"]) if nm["jours"] < 0 else "le nom %s expire dans %d jour(s)" % (nm["zone"], nm["jours"]),
-                            "detail": "s'il n'est pas renouvelé, le site et son courrier disparaissent", "geste": None})
+                            "detail": "s'il n'est pas renouvelé, le site et son courrier disparaissent", "geste": None, "cle": "nom:" + nm["zone"], "valeur": nm["jours"]})
             if r.super and r.multi and x.get("societe_source") != "attribuee":
                 vig.append({"niveau": "info", "site": d, "titre": "%s n'est attribué à aucune société" % d,
                             "detail": ("il suit celle de son compte (%s), mais le site lui-même n'est pas attribué" % ", ".join(x["comptes"] or [])) if x.get("societe")
@@ -1210,18 +1211,29 @@ def brancher(ctx):
             j = x["ssl_jours"]
             if isinstance(j, int):
                 if j < 0:
-                    vig.append({"niveau": "panne", "site": d, "titre": "certificat de %s : échu depuis %d jour(s)" % (d, -j), "detail": "les navigateurs refusent le site", "geste": None})
+                    vig.append({"niveau": "panne", "site": d, "titre": "certificat de %s : échu depuis %d jour(s)" % (d, -j), "detail": "les navigateurs refusent le site", "geste": "certificats", "cle": "certificat:" + d, "valeur": j})
                 elif j < 7:
-                    vig.append({"niveau": "panne", "site": d, "titre": "certificat de %s : %d jour(s)" % (d, j), "detail": "renouvellement urgent", "geste": None})
+                    vig.append({"niveau": "panne", "site": d, "titre": "certificat de %s : %d jour(s)" % (d, j), "detail": "renouvellement urgent", "geste": "certificats", "cle": "certificat:" + d, "valeur": j})
                 elif j < court:
-                    vig.append({"niveau": "regarder", "site": d, "titre": "certificat de %s : %d jours" % (d, j), "detail": "à renouveler avant l'échéance", "geste": None})
+                    vig.append({"niveau": "regarder", "site": d, "titre": "certificat de %s : %d jours" % (d, j), "detail": "à renouveler avant l'échéance", "geste": "certificats", "cle": "certificat:" + d, "valeur": j})
             if x["source"] != "panneau" and not x["demande"]:
                 # L'administrateur n'attribue que ce qui n'est à personne ; un compte ne demande l'adossement que de ce qui est à lui.
                 geste = ("attribuer" if not x["comptes"] else None) if tout else "demander"
                 vig.append({"niveau": "info", "site": d, "titre": "%s : hors panneau" % d, "detail": "suivi à la main : sonde, historique et journal seulement", "geste": geste})
         ordre = {"panne": 0, "regarder": 1, "info": 2}
         vig.sort(key=lambda v: (ordre.get(v["niveau"], 9), v["site"]))
-        return vig
+        # « Je sais, c'est normal » : une alerte acceptée sort de la liste jusqu'à son échéance — sauf si son chiffre a empiré depuis (un certificat accepté à
+        # douze jours revient à onze). Elle reste lisible à part, pour qu'on puisse la reprendre.
+        maintenant = time.time()
+        acc = {a["cle"]: a for a in db.lire("SELECT cle, jusqu_a, valeur, par, ts FROM alertes_acceptees WHERE jusqu_a > ?", (maintenant,))}
+        gardees, tues = [], []
+        for v in vig:
+            a = acc.get(v.get("cle") or "")
+            if a and not (isinstance(v.get("valeur"), (int, float)) and a["valeur"] is not None and v["valeur"] < a["valeur"]):
+                tues.append(dict(v, acceptee={"jusqu_a": a["jusqu_a"], "par": a["par"]}))
+            else:
+                gardees.append(v)
+        return gardees, tues
 
     def _vue(r):
         compte, tout, carte = r.compte, r.tout, r.carte
@@ -1265,7 +1277,8 @@ def brancher(ctx):
                            "dispo30": dispo.get(d), "comptes": e["comptes"] if tout else None, "demande": parsite.get(d)})
         lignes.sort(key=lambda x: x["domaine"])
         noms = noms_societes() if r.multi else {}
-        return {"sites": lignes, "vigilances": vigilances(lignes, r, demandes),
+        vig, tues = vigilances(lignes, r, demandes)
+        return {"sites": lignes, "vigilances": vig, "acceptees": tues,
                 "portee": {"admin": tout, "compte": compte, "sites": len(lignes), "panneau": sum(1 for x in lignes if x["source"] == "panneau"),
                            "declares": sum(1 for x in lignes if x["source"] != "panneau"), "panneau_lu": r.panneau_lu,
                            "super": bool(r.super and tout), "multi": r.multi, "societe": r.soc,
@@ -1910,7 +1923,7 @@ def brancher(ctx):
                     mesures=[dict(m, up=bool(m["up"])) for m in db.lire("SELECT ts, code, ms, up, erreur FROM mesures WHERE domaine=? ORDER BY id DESC LIMIT 8", (d,))],
                     tombes_aussi=tombes[:20],                              # d'autres sites en panne au même moment : une cause commune, probablement
                     faits=db.lire("SELECT id, ts, acteur, genre, texte FROM incident_faits WHERE incident=? ORDER BY ts, id", (i["id"],)),
-                    liens=_liens(d),
+                    liens=_liens(d), contacts=rattaches(d)["contacts"],          # qui prévenir : les contacts que le module Contacts a rattachés à ce site
                     gestes={"prendre": ouvert and i["pris_par"] != c.compte, "noter": True, "connu": ouvert, "relever": ouvert,
                             "clore": i["etat"] == "retabli", "cause": i["etat"] == "resolu"})
 
@@ -2163,6 +2176,55 @@ def brancher(ctx):
         attente = db.lire("SELECT COUNT(*) n FROM preuves WHERE compte=? AND cree >= ?", (c.compte or "", time.time() - PREUVE_GARDE_J * 86400))[0]["n"]
         return {"concerne": bool(r.tout or n or attente), "sites": n, "a_prouver": attente, "admin": r.tout}
 
+    def alerte_accepter(c, cle="", jours=7):
+        """« Je sais, c'est normal » : une alerte que Sites signale (certificat court, nom qui expire, sauvegarde, PHP) se tait `jours` jours.
+        Elle revient d'elle-même à l'échéance, ou avant si son chiffre empire."""
+        r = Regard(c.compte)
+        cle = str(cle or "").strip()
+        vue_ = _vue(r)
+        v = next((x for x in vue_["vigilances"] + vue_["acceptees"] if x.get("cle") == cle), None)
+        if not cle or v is None:
+            raise ValueError("cette alerte n'existe pas, ou plus, dans ta portée")
+        if v["niveau"] == "info":
+            raise ValueError("une information ne s'accepte pas : elle ne demande rien")
+        j = nombre(jours, 7, 1, 90, "jours")
+        avant = db.lire("SELECT cle, domaine, titre, jusqu_a, valeur, par, ts FROM alertes_acceptees WHERE cle=?", (cle,))
+        jusqu = time.time() + j * 86400
+        db.ecrire("INSERT OR REPLACE INTO alertes_acceptees(cle, domaine, titre, jusqu_a, valeur, par, ts) VALUES (?,?,?,?,?,?,?)",
+                  (cle, v["site"], v["titre"][:200], jusqu, v.get("valeur") if isinstance(v.get("valeur"), (int, float)) else None, c.compte or "", time.time()))
+        noter(c.compte, "alerte_acceptee", v["site"], ("%s — %d j" % (v["titre"], j))[:300])
+        return {"cle": cle, "domaine": v["site"], "jusqu_a": jusqu, "avant": dict(avant[0]) if avant else None}
+
+    def prouver_acceptee(c, res):
+        r = db.lire("SELECT jusqu_a FROM alertes_acceptees WHERE cle=?", (res["cle"],))
+        return bool(r) and r[0]["jusqu_a"] == res["jusqu_a"]
+
+    def remettre_acceptation(a):
+        db.ecrire("INSERT OR REPLACE INTO alertes_acceptees(cle, domaine, titre, jusqu_a, valeur, par, ts) VALUES (?,?,?,?,?,?,?)",
+                  (a["cle"], a["domaine"], a["titre"], a["jusqu_a"], a["valeur"], a["par"], a["ts"]))
+
+    def defaire_acceptee(c, res):
+        if res.get("avant"):
+            remettre_acceptation(res["avant"])
+        else:
+            db.ecrire("DELETE FROM alertes_acceptees WHERE cle=?", (res["cle"],))
+
+    def alerte_reprendre(c, cle=""):
+        """Ne plus accepter une alerte : elle redevient une alerte."""
+        cle = str(cle or "").strip()
+        a = db.lire("SELECT cle, domaine, titre, jusqu_a, valeur, par, ts FROM alertes_acceptees WHERE cle=?", (cle,))
+        if not a or not Regard(c.compte).dans(a[0]["domaine"]):
+            raise ValueError("cette alerte n'est pas acceptée")
+        db.ecrire("DELETE FROM alertes_acceptees WHERE cle=?", (cle,))
+        noter(c.compte, "alerte_reprise", a[0]["domaine"], a[0]["titre"])
+        return {"cle": cle, "domaine": a[0]["domaine"], "avant": dict(a[0])}
+
+    def prouver_reprise(c, res):
+        return not db.lire("SELECT 1 FROM alertes_acceptees WHERE cle=?", (res["cle"],))
+
+    def defaire_reprise(c, res):
+        remettre_acceptation(res["avant"])
+
     def voisins(c):
         """Relit tout de suite, auprès du Sensorium, les fenêtres de maintenance et les alertes acceptées — pour un compte qui a le droit de les lire ; sinon rien ne change.
         L'écran l'appelle après avoir posé ou annulé une fenêtre, pour que le site se taise sans attendre le tour de la sonde."""
@@ -2192,6 +2254,8 @@ def brancher(ctx):
     c.implementer("relever", relever, prouver_releve, defaire_releve, simuler=lambda x, domaine="", **_: "mesurerait %s tout de suite" % domaine)
     c.implementer("objectif", objectif, prouver_objectif, defaire_objectif, simuler=lambda x, domaine="", pct=None, **_: "poserait l'objectif de %s à %s" % (domaine, ("%s %%" % pct) if pct not in (None, "") else "celui du réglage"))
     c.implementer("attribuer_societe", attribuer_societe, prouver_societe, defaire_societe, simuler=lambda x, domaine="", societe="", **_: "attribuerait %s à la société %s" % (domaine, societe or "de son compte"))
+    c.implementer("alerte_accepter", alerte_accepter, prouver_acceptee, defaire_acceptee, simuler=lambda x, cle="", jours=7, **_: "accepterait l'alerte « %s » pour %s jours" % (cle, jours))
+    c.implementer("alerte_reprendre", alerte_reprendre, prouver_reprise, defaire_reprise, simuler=lambda x, cle="", **_: "cesserait d'accepter l'alerte « %s »" % cle)
     c.implementer("incident_prendre", incident_prendre, prouver_pris, defaire_pris, simuler=lambda x, id="", **_: "prendrait en charge l'incident %s" % id)
     c.implementer("incident_noter", incident_noter, prouver_fait, defaire_fait, simuler=lambda x, id="", **_: "ajouterait une note à l'incident %s" % id)
     c.implementer("incident_connu", incident_connu, prouver_connu, defaire_connu, simuler=lambda x, id="", heures=24, **_: "ferait taire %s h l'alerte de l'incident %s" % (heures, id))

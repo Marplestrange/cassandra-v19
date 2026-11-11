@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #22a946
+# VERSION CN : 0.1.0  #5c7818
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=22a946 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5c7818 ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -1147,6 +1147,32 @@ class Voisinage(Monde):
         self.sonde()
         self.assertEqual(len(self.detecter("panne")), 1)
         self.assertIsNone(self.ex("incident", id=1)["resultat"]["vu_de_la_machine"])
+
+    def test_une_alerte_acceptee_se_tait_et_revient_si_son_chiffre_empire(self):
+        self.certs["bea.exemple.fr"] = 12
+        self.sonde()
+        cle = "certificat:bea.exemple.fr"
+        self.assertIn(cle, [x.get("cle") for x in self.ex("vue")["resultat"]["vigilances"]])
+        self.assertEqual(self.ex("alerte_accepter", compte=LEO, cle=cle)["statut"], "echec")          # l'alerte du site d'un autre n'existe pas pour lui
+        r = self.ex("alerte_accepter", cle=cle, jours=7)
+        self.assertEqual(r["statut"], "faite", r)
+        v = self.ex("vue")["resultat"]
+        self.assertNotIn(cle, [x.get("cle") for x in v["vigilances"]])
+        self.assertEqual([(x["cle"], x["acceptee"]["par"]) for x in v["acceptees"]], [(cle, BEA)])
+        self.certs["bea.exemple.fr"] = 10                                                             # son chiffre empire : elle revient sans attendre l'échéance
+        self.ctx.stockage.ecrire("UPDATE mesures SET ts = ts - 4000")
+        self.sonde()
+        v = self.ex("vue")["resultat"]
+        self.assertIn(cle, [x.get("cle") for x in v["vigilances"]])
+        self.assertEqual(v["acceptees"], [])
+        self.assertEqual(self.ex("alerte_accepter", cle=cle, jours=30)["statut"], "faite")           # acceptée de nouveau, à dix jours cette fois
+        rep = self.ex("alerte_reprendre", cle=cle)
+        self.assertEqual(rep["statut"], "faite", rep)
+        self.assertIn(cle, [x.get("cle") for x in self.ex("vue")["resultat"]["vigilances"]])
+        self.n.catalogue.get("sites.alerte_reprendre").defaire(self.ctx, rep["resultat"])
+        self.assertEqual(len(self.ex("vue")["resultat"]["acceptees"]), 1)
+        self.assertEqual(self.ex("alerte_accepter", cle="certificat:inconnu.exemple.fr")["statut"], "echec")
+        self.assertEqual(self.ex("alerte_reprendre", cle="certificat:fiche.exemple.fr")["statut"], "echec")
 
     def test_les_rattachements_se_lisent_chez_ceux_qui_les_portent(self):
         self.voisins["contacts.pour_cible"] = lambda a: {"contacts": [{"id": 3, "display_name": "Zoé Martin", "company": "Hébergeur", "role": "technique"}]} if a == {"kind": "domain", "ref": "bea.exemple.fr"} else {"contacts": []}

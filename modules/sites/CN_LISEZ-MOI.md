@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : sites -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.5.0  #000000 -->
+<!-- VERSION CN : 0.6.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : sites — les sites web suivis par Cassandra -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.5.0 empreinte=8e2abd ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.6.0 empreinte=0ec343 ▼▼▼ -->
 # sites — les sites web suivis par Cassandra
 
 Porté de la V18 (`sites_vue`, `site_fiche`, `site_pass`, `site_history`, `site_availability`, demandes/accords, liens, journal), lu en entier.
@@ -57,6 +57,9 @@ Une fois par jour et par site qui répond (quatre au plus par tour de sonde), Si
 
 ## Ce que l'écran dessine
 L'écran suit la maquette (`docs/CN_maquette-sites.html`). `tendances(jours)` lui donne, pour chaque site de la portée, de quoi dessiner sa ligne en une lecture : la bande (un état par jour — sans coupure, coupure courte, coupure longue, maintenance, pas de mesure), la durée de réponse de chaque jour (la courbe) et la disponibilité de la période d'avant (l'écart). La ligne d'un site porte en plus son poids sur le disque et l'état de son analyse antivirus, d'où les chiffres « Sauvegardes », « Analyses » et « Disque » de la vue d'ensemble et les filtres « sans sauvegarde » et « jamais analysés ». L'écran dit au menu de gauche la page montrée et les compteurs de ses sous-menus (`window.d19Suivre`).
+
+## Accepter une alerte
+« Je sais, c'est normal » : une alerte que Sites signale lui-même (certificat court, nom qui expire, sauvegarde, PHP abandonné) s'accepte pour quelques jours (`alerte_accepter`, table `alertes_acceptees`). Elle sort de la liste jusqu'à son échéance, et revient d'elle-même si son chiffre empire — un certificat accepté à douze jours revient à onze. `alerte_reprendre` la rend tout de suite. Une panne ne s'accepte pas ici (elle a son incident, et « panne connue ») ; une alerte du Sensorium s'accepte chez lui, et Sites la lit.
 
 ## Qui est concerné
 `concerne()` dit si un compte a quelque chose à voir ici (un site, une déclaration à prouver, ou il administre). Le module Affichage s'en sert : le menu ne montre « Sites » qu'à ceux-là.
