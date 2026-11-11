@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #564339
+# VERSION CN : 0.1.0  #446abd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : test_securite_machine.py
 # MÉTHODE    : charge la commande root « machine » comme un module et remplace son lanceur par une fausse machine tenue en mémoire (aucune commande réelle) ; puis éprouve les capacités du module sur un faux courtier
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=564339 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=446abd ▼▼▼
 import importlib.machinery
 import importlib.util
 import io
@@ -178,6 +178,8 @@ class Commande(unittest.TestCase):
         """exim4 (SysV) : systemctl imprime deux lignes de renvoi avant « enabled ». Lu d'un bloc, il passait pour « pas lancé au démarrage » (11-2026)."""
         renvoi = "exim4.service is not a native service, redirecting to systemd-sysv-install.\nExecuting: /lib/systemd/systemd-sysv-install is-enabled exim4\n"
         with mock.patch.object(self.m, "run", lambda args, timeout=30: (True, renvoi + "enabled")):
+            self.assertTrue(self.m.au_demarrage("exim4.service"))
+        with mock.patch.object(self.m, "run", lambda args, timeout=30: (True, "enabled\n" + renvoi)):      # ce que le programme lit vraiment : la réponse d'abord, les renvois ensuite
             self.assertTrue(self.m.au_demarrage("exim4.service"))
         with mock.patch.object(self.m, "run", lambda args, timeout=30: (False, renvoi + "disabled")):
             self.assertFalse(self.m.au_demarrage("exim4.service"))

@@ -95,9 +95,10 @@ def actif(unite):
 
 
 def au_demarrage(unite):
-    """Le service se lance-t-il avec la machine ? Pour un service à l'ancienne (SysV : exim4…), systemctl imprime d'abord des lignes de renvoi : sa réponse est la dernière ligne."""
-    lignes = run(["systemctl", "is-enabled", unite], 8)[1].strip().splitlines()
-    return bool(lignes) and lignes[-1].strip() in ("enabled", "enabled-runtime")
+    """Le service se lance-t-il avec la machine ? Pour un service à l'ancienne (SysV : exim4…), systemctl imprime aussi deux lignes de renvoi, avant ou après sa réponse
+    selon que l'on lit sa sortie d'erreurs en premier ou non : la réponse est la ligne qui ne dit QUE l'état."""
+    lignes = {l.strip() for l in run(["systemctl", "is-enabled", unite], 8)[1].splitlines()}
+    return bool(lignes & {"enabled", "enabled-runtime"})
 
 
 def dernieres_lignes(unite, n=5):

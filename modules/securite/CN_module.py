@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.5.2  #95c227
+# VERSION CN : 0.5.3  #95c227
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes, le journal, les audits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.2 empreinte=95c227 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.3 empreinte=95c227 ▼▼▼
 """La sécurité : les gestes, le journal, les audits.
 
 Porté de la V18 (`securite_*`, `_sec_gestes`), avec ses leçons :
