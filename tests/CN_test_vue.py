@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #66d013
+# VERSION CN : 0.1.0  #02ef12
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=66d013 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=02ef12 ▼▼▼
 """Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille »."""
 import sys
 import unittest
@@ -337,6 +337,17 @@ class EcranMachine(unittest.TestCase):
         css = json.loads(re.search(r'const CSS = ("(?:[^"\\]|\\.)*");', ecran).group(1))
         hors = [s for s in re.findall(r"(?:^|\})([^{}@]+)\{", css) if not all(x.strip().startswith((".mc", ':root[data-theme="dark"] .mc', "#tab-overview")) for x in s.split(","))]
         self.assertEqual(hors, [])
+
+    def test_la_page_defile_dans_son_propre_cadre(self):
+        """Le cadre de la vue coupe ce qui dépasse (overflow:hidden) : sans défilement à elle, la page ne se parcourt pas (11-2026)."""
+        import json
+        import re
+        ecran = self.lire("interface", "CN_machine-ecran.js")
+        css = json.loads(re.search(r'const CSS = ("(?:[^"\\]|\\.)*");', ecran).group(1))
+        regle = re.search(r'#tab-overview\[data-vue="machine"\]>#mc19\{([^}]*)\}', css)
+        self.assertIsNotNone(regle)
+        for morceau in ("overflow-y:auto", "min-height:0", "flex:1 1 auto"):
+            self.assertIn(morceau, regle.group(1))
 
 
 class PointDEvolution(unittest.TestCase):
