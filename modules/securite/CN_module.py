@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.4.0  #27237a
+# VERSION CN : 0.5.0  #95c227
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes, le journal, les audits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=27237a ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=95c227 ▼▼▼
 """La sécurité : les gestes, le journal, les audits.
 
 Porté de la V18 (`securite_*`, `_sec_gestes`), avec ses leçons :
@@ -280,6 +280,112 @@ def brancher(ctx):
         r = agir("faire", "journal", {"service": str(service)}, delai=60)
         return {"service": r.get("service"), "texte": r.get("texte") or ""}
 
+    # ── les gestes de la page « La machine » : la commande « machine » du courtier, table fermée, chaque geste vérifié avant de répondre ──
+    def machine(verbe, geste, args=None, delai=180):
+        r = ctx.racine("machine", [verbe, geste, json.dumps(args or {}, ensure_ascii=False)], delai=delai)
+        try:
+            sortie = json.loads((r.get("sortie") or "").strip().splitlines()[-1])
+        except Exception:
+            sortie = {}
+        if not r.get("ok") or not sortie.get("ok"):
+            raise ValueError(sortie.get("erreur") or r.get("erreur") or "le geste a échoué")
+        if verbe != "lire":
+            cache["m"] = None                                           # l'état de la machine a changé : la prochaine lecture est fraîche
+        return sortie
+
+    def geste_machine(geste, *cles):
+        """Un geste de la table : `faire` passe les arguments nommés au courtier et garde ce qu'il rend (dont « avant ») ; `defaire` le lui rend tel quel."""
+        def faire(c, **a):
+            envoi = {k: a.get(k) for k in cles if a.get(k) is not None}
+            res = {k: v for k, v in envoi.items() if not (geste == "redemarrer" and k == "nom")}     # ce qui a été demandé, pour pouvoir le défaire
+            res.update(machine("faire", geste, envoi))                                                # ce que le courtier a vérifié l'emporte
+            res["geste"] = geste
+            res["journal"] = inscrire(geste, res)
+            return res
+
+        def defaire(c, res):
+            machine("defaire", geste, pour_defaire(res))
+            marquer_defait((res or {}).get("journal"))
+        return faire, defaire
+
+    ACTIONS_DITES = {"demarrer": "démarrer", "arreter": "arrêter", "redemarrer": "redémarrer", "recharger": "recharger", "activer": "lancer au démarrage", "desactiver": "ne plus lancer au démarrage",
+                     "pause": "mettre en pause", "reprendre": "reprendre", "terminer": "terminer", "forcer": "forcer l'arrêt", "calmer": "baisser la priorité"}
+    SANS_RETOUR = {("service", "redemarrer"), ("service", "recharger"), ("conteneur", "redemarrer"), ("processus", "terminer"), ("processus", "forcer"), ("sessions_fermer", "")}
+
+    def pour_defaire(res):
+        return {k: v for k, v in (res or {}).items() if k not in ("ok", "geste", "detail", "journal")}
+
+    def inscrire(geste, res):
+        """Une ligne au journal de sécurité : qui, quoi, sur quoi, et de quoi défaire (rien, quand le geste n'a pas de retour)."""
+        action = str(res.get("action") or "")
+        cible = str(res.get("service") or res.get("nom") or res.get("ip") or res.get("pid") or res.get("prevu") or "")
+        detail = {"service": ACTIONS_DITES.get(action, action), "conteneur": ACTIONS_DITES.get(action, action), "processus": "%s · %s" % (ACTIONS_DITES.get(action, action), str(res.get("commande") or "")[:80]),
+                  "memoire": "limiter la mémoire à %s Mo" % res.get("mo"), "bannir": "bannir (prison %s)" % (res.get("jail") or "sshd"),
+                  "sessions_fermer": "tout le monde dehors : %d session(s) fermée(s)" % len(res.get("fermees") or []), "redemarrer": "redémarrage prévu"}.get(geste, geste)
+        retour = "" if (geste, action if geste != "sessions_fermer" else "") in SANS_RETOUR else json.dumps(dict(pour_defaire(res), geste=geste), ensure_ascii=False)
+        return db.ecrire("INSERT INTO securite_journal (qui, geste, cible, detail, ok, resultat, defaire) VALUES (?,?,?,?,?,?,?)",
+                         ((ctx.compte or "").strip()[:80], "machine." + geste, cible[:120], detail[:400], 1, "fait, vérifié par le courtier", retour[:2000]))
+
+    def marquer_defait(ligne):
+        if ligne:
+            db.ecrire("UPDATE securite_journal SET defaire='', resultat=substr(resultat || ' · défait par ' || ?, 1, 400) WHERE id=?", ((ctx.compte or "Cassandra")[:80], int(ligne)))
+
+    def machine_gestes(c, limite=20):
+        """Les derniers gestes de la page « La machine », le plus récent d'abord : qui, quoi, sur quoi, et s'il se défait encore."""
+        lignes = db.lire("SELECT id, ts, qui, geste, cible, detail, ok, resultat, defaire FROM securite_journal WHERE geste LIKE 'machine.%' ORDER BY id DESC LIMIT ?", (max(1, min(int(limite or 20), 100)),))
+        return {"gestes": [dict({k: l[k] for k in ("id", "ts", "qui", "cible", "detail", "resultat")}, geste=l["geste"][8:], ok=bool(l["ok"]), defaisable=bool(l["defaire"])) for l in lignes]}
+
+    def machine_geste_defaire(c, id=0):
+        l = db.lire("SELECT * FROM securite_journal WHERE id=? AND geste LIKE 'machine.%'", (int(id or 0),))
+        if not l:
+            raise ValueError("geste introuvable")
+        if not l[0]["defaire"]:
+            raise ValueError("ce geste n'a pas de retour, ou il est déjà défait")
+        avec = json.loads(l[0]["defaire"])
+        geste = str(avec.pop("geste", ""))
+        machine("defaire", geste, avec)
+        marquer_defait(l[0]["id"])
+        return {"id": l[0]["id"], "geste": geste, "cible": l[0]["cible"]}
+
+    def prouver_defait(c, res):
+        l = db.lire("SELECT defaire FROM securite_journal WHERE id=?", (res["id"],))
+        return bool(l) and not l[0]["defaire"]
+
+    service_faire, service_defaire = geste_machine("service", "service", "action")
+    memoire_faire, memoire_defaire = geste_machine("memoire", "service", "mo")
+    conteneur_faire, conteneur_defaire = geste_machine("conteneur", "nom", "action")
+    processus_faire, processus_defaire = geste_machine("processus", "pid", "action", "commande")
+    bannir_faire, bannir_defaire = geste_machine("bannir", "ip", "jail")
+    redemarrer_faire, redemarrer_defaire = geste_machine("redemarrer", "quand", "nom")
+
+    def fait(cle):
+        """Le courtier a relu la machine avant de répondre ok : la preuve est qu'il rend ce qu'il a vérifié."""
+        return lambda c, res: bool((res or {}).get(cle))
+
+    def sessions_toutes(c):
+        res = dict(machine("faire", "sessions_fermer"), geste="sessions_fermer")
+        res["journal"] = inscrire("sessions_fermer", res)
+        return res
+
+    def sans_retour_machine(raison):
+        def f(c, res):
+            raise ValueError(raison)
+        return f
+
+    def service_journal(c, service=""):
+        r = machine("lire", "service_journal", {"service": str(service)}, delai=60)
+        return {"service": r.get("service"), "texte": r.get("texte") or ""}
+
+    def conteneur_journal(c, nom=""):
+        r = machine("lire", "conteneur_journal", {"nom": str(nom)}, delai=60)
+        return {"nom": r.get("nom"), "texte": r.get("texte") or ""}
+
+    def redemarrage_etat(c):
+        return machine("lire", "redemarrage", delai=90)
+
+    def redemarrage_lu(c):
+        return dict(machine("faire", "retour_lu"), geste="retour_lu")
+
     def gestes(c):
         return {"gestes": GESTES}
 
@@ -336,6 +442,27 @@ def brancher(ctx):
     ctx.implementer("systeme_geste", systeme_geste, prouver_systeme, defaire_systeme,
                     simuler=lambda x, service="", action="", **_: "ferait « %s » sur le service %s" % (action, service))
     ctx.implementer("journal_service", journal_service)
+    ctx.implementer("service_geste", service_faire, fait("unite"), service_defaire,
+                    simuler=lambda x, service="", action="", **_: "ferait « %s » sur le service %s" % (action, service))
+    ctx.implementer("service_memoire", memoire_faire, fait("unite"), memoire_defaire,
+                    simuler=lambda x, service="", mo=0, **_: "limiterait la mémoire du service %s à %s Mo" % (service, mo))
+    ctx.implementer("service_journal", service_journal)
+    ctx.implementer("conteneur_geste", conteneur_faire, fait("apres"), conteneur_defaire,
+                    simuler=lambda x, nom="", action="", **_: "ferait « %s » sur le conteneur %s" % (action, nom))
+    ctx.implementer("conteneur_journal", conteneur_journal)
+    ctx.implementer("processus_geste", processus_faire, fait("pid"), processus_defaire,
+                    simuler=lambda x, pid=0, action="", **_: "ferait « %s » sur le processus n° %s" % (action, pid))
+    ctx.implementer("adresse_bannir", bannir_faire, fait("ip"), bannir_defaire,
+                    simuler=lambda x, ip="", **_: "bannirait l'adresse %s" % ip)
+    ctx.implementer("sessions_fermer_toutes", sessions_toutes, lambda c, res: "fermees" in (res or {}), sans_retour_machine("aucun retour : une session fermée se rouvre en se reconnectant"),
+                    simuler=lambda x, **_: "fermerait toutes les sessions ouvertes")
+    ctx.implementer("redemarrage_etat", redemarrage_etat)
+    ctx.implementer("machine_redemarrer", redemarrer_faire, fait("prevu"), redemarrer_defaire,
+                    simuler=lambda x, quand="", **_: "prévoirait le redémarrage de la machine (%s)" % quand)
+    ctx.implementer("redemarrage_lu", redemarrage_lu, lambda c, res: True, sans_retour_machine("aucun retour : le compte rendu effacé ne revient pas"))
+    ctx.implementer("machine_gestes", machine_gestes)
+    ctx.implementer("machine_geste_defaire", machine_geste_defaire, prouver_defait, sans_retour_machine("un retour arrière ne se rejoue pas : refais le geste lui-même"),
+                    simuler=lambda x, id=0, **_: "déferait le geste n° %s du journal" % id)
     ctx.implementer("oom_acquitter", oom_acquitter, prouver_oom, defaire_oom,
                     simuler=lambda x, signatures=None, **_: "acquitterait %d événement(s) de mémoire saturée" % len(signatures or []))
     ctx.implementer("unites_reinitialiser", unites_reinitialiser, prouver_unites, unites_sans_retour)

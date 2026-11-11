@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.4.0  #45e696
+# VERSION CN : 0.5.0  #446acf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=45e696 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=446acf ▼▼▼
 [module]
 id = "securite"
 nom = "Sécurité"
-version = "0.4.0"
+version = "0.5.0"
 noyau_min = "0.1.0"
 description = "La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel)."
 confiance = "interne"
@@ -54,6 +54,10 @@ lecture = true
 [[racine]]
 id = "agir"
 libelle = "Exécuter UN geste de sécurité de la table fermée (couper les mots de passe SSH, arrêter un service, garder MySQL sur la machine, lancer les mises à jour, débannir), le vérifier, et dire de quoi le défaire"
+
+[[racine]]
+id = "machine"
+libelle = "Exécuter UN geste de la page « La machine » en table fermée (service, mémoire d'un service, conteneur, processus, bannir, sessions, redémarrage prévu), le vérifier, et dire de quoi le défaire ; lire un journal ou l'état d'un redémarrage"
 
 [[racine]]
 id = "outils"
@@ -275,6 +279,131 @@ libelle = "Lire les 200 dernières lignes du journal du noyau, du Sensorium, d'O
 risque = "lecture"
 droit = "agir"
 masque = ["texte"]
+
+[[capacites]]
+id = "service_geste"
+libelle = "Démarrer, arrêter, redémarrer, recharger un service suivi par la page « La machine », ou le lancer (ou non) au démarrage : une table fermée de services et de six actions"
+risque = "moyen"
+droit = "agir"
+perimetre = ["les services suivis par la page (web, courrier, données, réseau, sécurité, système) — jamais le noyau, le courtier ni le collecteur, qui ont leurs gestes", "ssh et nginx ne s'arrêtent pas d'ici : ils se redémarrent et se rechargent, configuration testée d'abord"]
+preuve = "le courtier relit l'état de l'unité (active ou non, lancée au démarrage ou non) avant de répondre"
+retour = "le geste inverse (arrêter après démarrer, activer après désactiver) ; rien à défaire après un redémarrage ou un rechargement"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "service_memoire"
+libelle = "Limiter la mémoire d'un service suivi (MemoryMax de systemd), entre 128 Mo et la mémoire de la machine"
+risque = "moyen"
+droit = "agir"
+perimetre = ["la limite de mémoire de l'unité du service (un réglage systemd persistant) — jamais le noyau, le courtier ni le collecteur"]
+preuve = "le courtier relit la limite posée ; si elle n'a pas pris, celle d'avant est remise"
+retour = "remettre la limite d'avant (ou aucune)"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "service_journal"
+libelle = "Lire les 200 dernières lignes du journal d'un service suivi par la page « La machine » (lecture seule, table fermée)"
+risque = "lecture"
+droit = "agir"
+masque = ["texte"]
+
+[[capacites]]
+id = "conteneur_geste"
+libelle = "Démarrer, arrêter, redémarrer, mettre en pause ou reprendre UN conteneur que Docker (ou Podman) liste"
+risque = "moyen"
+droit = "agir"
+perimetre = ["l'état de marche du conteneur désigné — ni son image, ni ses volumes, ni ses réglages"]
+preuve = "le courtier relit l'état du conteneur (tourne, arrêté, en pause) avant de répondre"
+retour = "le geste inverse (arrêter après démarrer, reprendre après pause) ; rien à défaire après un redémarrage"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "conteneur_journal"
+libelle = "Lire les 200 dernières lignes du journal d'un conteneur (lecture seule)"
+risque = "lecture"
+droit = "agir"
+masque = ["texte"]
+
+[[capacites]]
+id = "processus_geste"
+libelle = "Terminer un processus, forcer son arrêt ou baisser sa priorité : le processus est relu par le courtier et doit être celui que la page montrait"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le processus désigné (numéro ET commande) — jamais le n° 1, un processus du noyau Linux, ni ceux de ssh, du noyau de Cassandra, du courtier ou du collecteur"]
+preuve = "le courtier relit /proc : le processus a disparu, ou sa priorité a changé"
+retour = "AUCUN retour pour un arrêt (un processus arrêté ne se relance pas d'ici) ; la priorité d'avant pour « baisser sa priorité »"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "adresse_bannir"
+libelle = "Bannir une adresse dans une prison fail2ban (sshd par défaut)"
+risque = "moyen"
+droit = "agir"
+perimetre = ["la liste des adresses bannies de la prison — jamais une adresse privée, du réseau privé, de la machine, ni une adresse entrée avec succès depuis trente jours"]
+preuve = "le courtier relit la liste de la prison : l'adresse y figure"
+retour = "débannir l'adresse"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "sessions_fermer_toutes"
+libelle = "Tout le monde dehors : fermer toutes les sessions de connexion qui tiennent un terminal"
+risque = "moyen"
+droit = "agir"
+perimetre = ["les terminaux des sessions ouvertes — ni les comptes, ni leurs fichiers, ni leurs clés"]
+preuve = "le courtier relit la liste des sessions : il n'en reste aucune"
+retour = "AUCUN retour : une session fermée se rouvre en se reconnectant"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "redemarrage_etat"
+libelle = "Avant de redémarrer la machine : ce qui empêche de partir, ce qui ne reviendra pas seul, qui est connecté, ce qui est déjà prévu, et le compte rendu du dernier retour (lecture seule)"
+risque = "lecture"
+droit = "agir"
+
+[[capacites]]
+id = "machine_redemarrer"
+libelle = "Redémarrer la machine, dans une minute ou à une heure choisie : refusé pendant un déploiement ou une installation de paquets, et sans le nom de la machine"
+risque = "eleve"
+droit = "agir"
+perimetre = ["la machine entière : tout s'arrête une à deux minutes, Cassandra comprise", "le redémarrage est PRÉVU (shutdown), pas immédiat : il s'annule jusqu'au départ"]
+preuve = "le courtier relit ce que systemd a prévu : un redémarrage, à l'heure dite"
+retour = "annuler le redémarrage prévu, tant que la machine n'est pas partie"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "redemarrage_lu"
+libelle = "Le compte rendu du retour de la machine a été lu : il ne s'affiche plus"
+risque = "faible"
+droit = "agir"
+perimetre = ["la marque que le dernier redémarrage a laissée"]
+preuve = "la lecture d'après ne rend plus de compte rendu"
+retour = "AUCUN retour : le compte rendu effacé ne revient pas (le journal systemd garde la trace du redémarrage)"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "machine_gestes"
+libelle = "Les derniers gestes de la page « La machine » : qui, quoi, sur quoi, et s'il se défait encore (lecture seule)"
+risque = "lecture"
+droit = "agir"
+
+[[capacites]]
+id = "machine_geste_defaire"
+libelle = "Défaire UN geste de la page « La machine » inscrit au journal : le retour que le geste avait rendu est rejoué par le courtier, une seule fois"
+risque = "moyen"
+droit = "agir"
+perimetre = ["un geste du journal de la page « La machine » qui a un retour et n'a pas encore été défait"]
+preuve = "la ligne du journal ne porte plus de retour : il a été joué"
+retour = "AUCUN retour : un retour arrière ne se rejoue pas, on refait le geste lui-même"
+paliers = ["raconter"]
+qui = ["humain"]
 
 [[capacites]]
 id = "images"

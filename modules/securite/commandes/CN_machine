@@ -1,0 +1,499 @@
+#!/usr/bin/env python3
+"""Les gestes de la page « La machine », exécutés À ROOT, par le courtier, un par un, en TABLE FERMÉE.
+Usage : machine <faire|defaire|lire> <geste> [<json des arguments>]   ->  une ligne de JSON : {"ok": true|false, ...}
+
+Ce programme ne fait confiance à rien de ce qu'on lui passe : le geste est dans la table, le service est un de ceux que la page suit, le conteneur est un de
+ceux que Docker liste, le processus est relu dans /proc et doit être celui que la page montrait, l'adresse est une adresse. Rien ne passe par un shell.
+Chaque geste dit ce qu'il y avait AVANT (de quoi défaire) et se VÉRIFIE avant de répondre ok.
+
+Ce qui ne se fait pas d'ici, et pourquoi :
+  - le noyau, le courtier et le collecteur ont leurs propres gestes (relance différée, redémarrage après la passe) : ce programme n'y touche pas ;
+  - ssh et nginx ne s'arrêtent pas : l'un est la porte de la machine, l'autre celle de cette interface. Ils se redémarrent et se rechargent, configuration testée d'abord ;
+  - un processus du noyau Linux, le n° 1, et ceux de ssh, du noyau de Cassandra, du courtier et du collecteur ne se tuent pas ;
+  - une adresse privée, du réseau privé (Tailscale, NetBird), de la machine elle-même, ou qui s'est connectée avec succès depuis trente jours ne se bannit pas ;
+  - la machine ne redémarre pas pendant un déploiement ou une installation de paquets, ni sans son nom.
+"""
+import ipaddress
+import json
+import os
+import re
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+SUIVIS = ("ollama", "nginx", "apache2", "mysql", "mariadb", "postgresql", "redis-server", "dovecot", "exim4", "postfix", "proftpd", "fastpanel2", "docker", "containerd",
+          "cron", "fail2ban", "ssh", "certbot", "crowdsec", "tailscaled", "netbird", "unattended-upgrades")
+RE_PHP_FPM = re.compile(r"^php\d+(\.\d+)?-fpm$")
+A_PART = {"cassandra-noyau": "le noyau de Cassandra se relance par son propre geste (relance différée)", "cassandra-courtier": "le courtier exécute ces gestes : il ne se touche pas lui-même",
+          "sensorium": "le collecteur se redémarre par son propre geste (après sa passe)"}
+SANS_ARRET = {"ssh": "l’arrêter fermerait la porte de la machine : d’ici, il se redémarre et se recharge",
+              "nginx": "l’arrêter couperait cette interface : d’ici, il se redémarre et se recharge"}
+ESSAI_CONFIG = {"nginx": ["nginx", "-t"], "apache2": ["apache2ctl", "configtest"], "ssh": ["sshd", "-t"]}
+RECHARGEABLES = ("nginx", "apache2", "ssh", "dovecot", "exim4", "postfix", "fail2ban")
+ACTIONS_SERVICE = {"demarrer": "start", "arreter": "stop", "redemarrer": "restart", "recharger": "reload", "activer": "enable", "desactiver": "disable"}
+ACTIONS_CONTENEUR = {"demarrer": "start", "arreter": "stop", "redemarrer": "restart", "pause": "pause", "reprendre": "unpause"}
+INVERSE = {"demarrer": "arreter", "arreter": "demarrer", "activer": "desactiver", "desactiver": "activer", "pause": "reprendre", "reprendre": "pause"}
+RE_CONTENEUR = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
+RE_JAIL = re.compile(r"^[A-Za-z0-9_.-]{1,40}$")
+RE_TTY = re.compile(r"^pts/\d{1,4}$")
+RE_HEURE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+PROCESSUS_PROTEGES = ("ssh", "sshd", "cassandra-noyau", "cassandra-courtier", "sensorium")
+OBSTACLES = (("un déploiement de Cassandra est en cours", ["pgrep", "-f", "CN_deploy.sh"]), ("une installation de paquets est en cours", ["pgrep", "-x", "apt-get|apt|dpkg|unattended-upgr"]),
+             ("une sauvegarde est en cours", ["pgrep", "-x", "rclone|restic|borg|mysqldump|pg_dump"]))
+MARQUE = "/var/lib/cassandra-securite/redemarrage.json"
+PREVU = "/run/systemd/shutdown/scheduled"
+RESEAUX_PRIVES = [ipaddress.ip_network(r) for r in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "fc00::/7", "fe80::/10", "::1/128")]
+
+
+def run(args, timeout=30):
+    try:
+        r = subprocess.run(args, capture_output=True, text=True, timeout=timeout, errors="replace")
+        return r.returncode == 0, ((r.stdout or "") + (r.stderr or "")).strip()
+    except Exception as e:
+        return False, "%s : %s" % (type(e).__name__, e)
+
+
+def echo(d):
+    print(json.dumps(d, ensure_ascii=False))
+    sys.exit(0 if d.get("ok") else 1)
+
+
+def refus(raison):
+    echo({"ok": False, "erreur": raison})
+
+
+def lire(chemin):
+    try:
+        with open(chemin, encoding="utf-8", errors="replace") as f:
+            return f.read()
+    except OSError:
+        return ""
+
+
+# ── services ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+def unite_de(service):
+    """L'unité systemd d'un service SUIVI par la page, ou un refus : jamais un nom d'unité libre."""
+    s = str(service or "")
+    if s in A_PART:
+        refus("%s : %s" % (s, A_PART[s]))
+    if s not in SUIVIS and not RE_PHP_FPM.match(s):
+        refus("service hors de la table des services suivis")
+    unite = s + ".service"
+    if not run(["systemctl", "cat", unite], 10)[0]:
+        refus("le service %s n’existe pas sur cette machine" % s)
+    return s, unite
+
+
+def actif(unite):
+    return run(["systemctl", "is-active", unite], 8)[1].strip() == "active"
+
+
+def au_demarrage(unite):
+    return run(["systemctl", "is-enabled", unite], 8)[1].strip() in ("enabled", "enabled-runtime")
+
+
+def dernieres_lignes(unite, n=5):
+    return run(["journalctl", "-u", unite, "-n", str(n), "--no-pager", "-o", "cat"], 10)[1][-600:]
+
+
+def service_faire(args, retour=False):
+    s, unite = unite_de(args.get("service"))
+    action = str(args.get("action") or "")
+    if action not in ACTIONS_SERVICE:
+        refus("action hors de la table (démarrer, arrêter, redémarrer, recharger, activer, désactiver)")
+    if action in ("arreter", "desactiver") and s in SANS_ARRET:
+        refus("%s : %s" % (s, SANS_ARRET[s]))
+    if action == "recharger" and s not in RECHARGEABLES and not RE_PHP_FPM.match(s):
+        refus("%s ne se recharge pas : il se redémarre" % s)
+    avant = {"actif": actif(unite), "au_demarrage": au_demarrage(unite)}
+    if action in ("redemarrer", "recharger", "demarrer") and s in ESSAI_CONFIG:
+        ok, t = run(ESSAI_CONFIG[s], 20)
+        if not ok:
+            echo({"ok": False, "erreur": "la configuration de %s est refusée, rien n’est touché : %s" % (s, t[-300:])})
+    ok, t = run(["systemctl", ACTIONS_SERVICE[action], unite], 120)
+    time.sleep(1)
+    attendu = {"demarrer": actif(unite), "redemarrer": actif(unite), "recharger": actif(unite), "arreter": not actif(unite),
+               "activer": au_demarrage(unite), "desactiver": not au_demarrage(unite)}[action]
+    if not attendu:
+        echo({"ok": False, "erreur": "%s : le geste n’a pas pris (%s)" % (unite, t[-200:] or "état inchangé"), "journal": dernieres_lignes(unite), "avant": avant})
+    echo({"ok": True, "service": s, "unite": unite, "action": action, "avant": avant, "detail": "%s %s" % (ACTIONS_SERVICE[action], unite)})
+
+
+def service_defaire(args):
+    action, avant = str(args.get("action") or ""), args.get("avant") if isinstance(args.get("avant"), dict) else {}
+    if action not in INVERSE or action in ("pause", "reprendre"):
+        refus("rien à défaire : le service tourne comme avant")
+    if (action == "demarrer" and avant.get("actif")) or (action == "arreter" and not avant.get("actif")) or \
+            (action == "activer" and avant.get("au_demarrage")) or (action == "desactiver" and not avant.get("au_demarrage")):
+        echo({"ok": True, "detail": "il était déjà dans cet état avant le geste : rien à remettre"})
+    service_faire({"service": args.get("service"), "action": INVERSE[action]})
+
+
+def service_journal(args):
+    s = str(args.get("service") or "")
+    if s not in SUIVIS and s not in A_PART and not RE_PHP_FPM.match(s):
+        refus("service hors de la table des services suivis")
+    ok, t = run(["journalctl", "-u", s + ".service", "-n", "200", "--no-pager", "-o", "short-iso"], 25)
+    echo({"ok": ok, "service": s, "texte": t[-60000:], "erreur": "" if ok else t[-200:]})
+
+
+def memoire_max(unite):
+    v = run(["systemctl", "show", unite, "-p", "MemoryMax", "--value"], 8)[1].strip()
+    return v if v == "infinity" or v.isdigit() else "infinity"
+
+
+def memoire_poser(unite, valeur):
+    ok, t = run(["systemctl", "set-property", unite, "MemoryMax=%s" % valeur], 30)
+    return ok and memoire_max(unite) == (valeur if valeur == "infinity" else str(int(valeur))), t
+
+
+def memoire_faire(args):
+    s, unite = unite_de(args.get("service"))
+    try:
+        mo = int(args.get("mo"))
+    except (TypeError, ValueError):
+        refus("limite illisible")
+    m = re.search(r"^MemTotal:\s+(\d+)", lire("/proc/meminfo"), re.M)
+    total = int(m.group(1)) // 1024 if m else 0
+    if mo < 128 or (total and mo > total):
+        refus("la limite se pose entre 128 Mo et la mémoire de la machine (%d Mo)" % total)
+    avant = memoire_max(unite)
+    ok, t = memoire_poser(unite, str(mo * 1048576))
+    if not ok:
+        memoire_poser(unite, avant)
+        echo({"ok": False, "erreur": "la limite n’a pas pris, remise comme avant : %s" % t[-200:]})
+    echo({"ok": True, "service": s, "unite": unite, "mo": mo, "avant": avant})
+
+
+def memoire_defaire(args):
+    s, unite = unite_de(args.get("service"))
+    avant = str(args.get("avant") or "infinity")
+    if avant != "infinity" and not avant.isdigit():
+        refus("valeur d’avant illisible")
+    ok, t = memoire_poser(unite, avant)
+    echo({"ok": ok, "erreur": "" if ok else t[-200:]})
+
+
+# ── conteneurs ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+def moteur():
+    for m in ("docker", "podman"):
+        if run([m, "--version"], 8)[0]:
+            return m
+    refus("ni Docker ni Podman sur cette machine")
+
+
+def conteneur_de(m, nom):
+    """Le nom d'un conteneur que le moteur LISTE, ou un refus : jamais un nom libre."""
+    nom = str(nom or "")
+    ok, t = run([m, "ps", "-a", "--format", "{{.Names}}"], 15)
+    if not RE_CONTENEUR.match(nom) or not ok or nom not in t.split():
+        refus("conteneur inconnu de %s" % m)
+    return nom
+
+
+def etat_conteneur(m, nom):
+    return run([m, "inspect", "-f", "{{.State.Status}}", nom], 10)[1].strip()
+
+
+def conteneur_faire(args):
+    m = moteur()
+    nom, action = conteneur_de(m, args.get("nom")), str(args.get("action") or "")
+    if action not in ACTIONS_CONTENEUR:
+        refus("action hors de la table (démarrer, arrêter, redémarrer, pause, reprendre)")
+    avant = etat_conteneur(m, nom)
+    ok, t = run([m, ACTIONS_CONTENEUR[action], nom], 120)
+    time.sleep(1)
+    apres = etat_conteneur(m, nom)
+    attendu = {"demarrer": apres == "running", "redemarrer": apres == "running", "reprendre": apres == "running", "arreter": apres in ("exited", "created", "dead"), "pause": apres == "paused"}[action]
+    if not attendu:
+        echo({"ok": False, "erreur": "%s : le geste n’a pas pris (état « %s ») %s" % (nom, apres, t[-200:]), "avant": avant})
+    echo({"ok": True, "nom": nom, "action": action, "avant": avant, "apres": apres})
+
+
+def conteneur_defaire(args):
+    action, avant = str(args.get("action") or ""), str(args.get("avant") or "")
+    if action not in INVERSE or action in ("activer", "desactiver"):
+        refus("rien à défaire : le conteneur tourne comme avant")
+    if (action == "demarrer" and avant == "running") or (action == "arreter" and avant != "running") or (action == "pause" and avant == "paused") or (action == "reprendre" and avant != "paused"):
+        echo({"ok": True, "detail": "il était déjà dans cet état avant le geste : rien à remettre"})
+    conteneur_faire({"nom": args.get("nom"), "action": INVERSE[action]})
+
+
+def conteneur_journal(args):
+    m = moteur()
+    nom = conteneur_de(m, args.get("nom"))
+    ok, t = run([m, "logs", "--tail", "200", "--timestamps", nom], 25)
+    echo({"ok": ok, "nom": nom, "texte": t[-60000:], "erreur": "" if ok else t[-200:]})
+
+
+# ── processus ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+def commande_de(pid):
+    return lire("/proc/%d/cmdline" % pid).replace("\x00", " ").strip()
+
+
+def naissance(pid):
+    """L'instant de naissance d'un processus (22e champ de /proc/<pid>/stat) : il distingue un numéro réemployé."""
+    t = lire("/proc/%d/stat" % pid)
+    try:
+        return t.rsplit(")", 1)[1].split()[19]
+    except IndexError:
+        return ""
+
+
+def processus_de(args):
+    """(pid, commande) d'un processus que la page montrait ET qui est toujours celui-là, ou un refus."""
+    try:
+        pid = int(args.get("pid"))
+    except (TypeError, ValueError):
+        refus("numéro de processus illisible")
+    if pid <= 1:
+        refus("le processus n° 1 lance et surveille tous les autres : il ne se touche pas")
+    if pid in (os.getpid(), os.getppid()):
+        refus("ce processus est celui qui exécute le geste")
+    commande = commande_de(pid)
+    if not commande:
+        refus("processus introuvable, ou processus du noyau Linux : il ne se touche pas")
+    if commande[:120] != str(args.get("commande") or "")[:120]:
+        refus("le processus n° %d n’est plus celui que la page montrait : relève la page" % pid)
+    m = re.search(r"/([^/]+)\.service(?:/|$)", lire("/proc/%d/cgroup" % pid))
+    if m and m.group(1) in PROCESSUS_PROTEGES:
+        refus("ce processus appartient au service %s : il se redémarre depuis Services" % m.group(1))
+    return pid, commande
+
+
+def disparu(pid, ne, secondes):
+    fin = time.monotonic() + secondes
+    while time.monotonic() < fin:
+        if naissance(pid) != ne:
+            return True
+        time.sleep(0.2)
+    return naissance(pid) != ne
+
+
+def processus_faire(args):
+    pid, commande = processus_de(args)
+    action = str(args.get("action") or "")
+    ne = naissance(pid)
+    if action in ("terminer", "forcer"):
+        try:
+            os.kill(pid, signal.SIGTERM if action == "terminer" else signal.SIGKILL)
+        except OSError as e:
+            refus("signal refusé : %s" % e)
+        if not disparu(pid, ne, 6 if action == "terminer" else 3):
+            echo({"ok": False, "erreur": "le processus n° %d est toujours là%s" % (pid, " : il ignore la demande, il reste « Forcer l’arrêt »" if action == "terminer" else "")})
+        echo({"ok": True, "pid": pid, "action": action, "commande": commande[:120]})
+    if action == "calmer":
+        try:
+            avant = os.getpriority(os.PRIO_PROCESS, pid)
+            os.setpriority(os.PRIO_PROCESS, pid, max(avant, 10))
+            apres = os.getpriority(os.PRIO_PROCESS, pid)
+        except OSError as e:
+            refus("priorité refusée : %s" % e)
+        echo({"ok": apres >= 10, "pid": pid, "action": action, "commande": commande[:120], "naissance": ne, "avant": {"nice": avant}, "apres": {"nice": apres}})
+    refus("action hors de la table (terminer, forcer, calmer)")
+
+
+def processus_defaire(args):
+    if str(args.get("action") or "") != "calmer":
+        refus("aucun retour : un processus arrêté ne se relance pas d’ici")
+    pid, _commande = processus_de(args)
+    if str(args.get("naissance") or "") != naissance(pid):
+        refus("le processus n° %d n’est plus le même" % pid)
+    try:
+        nice = int((args.get("avant") or {}).get("nice"))
+        os.setpriority(os.PRIO_PROCESS, pid, max(-20, min(19, nice)))
+    except (TypeError, ValueError, OSError) as e:
+        refus("priorité d’avant illisible ou refusée : %s" % e)
+    echo({"ok": True, "pid": pid})
+
+
+# ── adresses et sessions ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+def jails():
+    ok, t = run(["fail2ban-client", "status"], 10)
+    m = re.search(r"Jail list:\s*(.*)", t if ok else "")
+    return [j.strip() for j in (m.group(1) if m else "").split(",") if j.strip()]
+
+
+def bannies(jail):
+    ok, t = run(["fail2ban-client", "status", jail], 10)
+    m = re.search(r"Banned IP list:\s*(.*)", t if ok else "")
+    return (m.group(1) if m else "").split()
+
+
+def adresses_de_la_machine():
+    try:
+        return {a["local"] for i in json.loads(run(["ip", "-j", "addr"], 8)[1] or "[]") for a in i.get("addr_info") or [] if a.get("local")}
+    except Exception:
+        return set()
+
+
+def entree_reussie(ip):
+    """Cette adresse s'est-elle connectée en SSH avec succès depuis trente jours ? (le journal de sshd fait foi)"""
+    ok, t = run(["journalctl", "-u", "ssh", "-u", "sshd", "--since", "-30d", "-g", "^Accepted .* from %s port " % re.escape(ip), "-n", "1", "--no-pager", "-q", "-o", "cat"], 40)
+    return ok and "Accepted" in t
+
+
+def bannir(verbe, args):
+    jail, texte = str(args.get("jail") or "sshd"), str(args.get("ip") or "").strip()
+    try:
+        ip = ipaddress.ip_address(texte)
+    except ValueError:
+        refus("adresse illisible")
+    if not RE_JAIL.match(jail) or jail not in jails():
+        refus("prison fail2ban inconnue")
+    if verbe == "faire":
+        if any(ip.version == r.version and ip in r for r in RESEAUX_PRIVES):
+            refus("adresse privée ou d’un réseau privé (Tailscale, NetBird) : elle ne se bannit pas")
+        if str(ip) in adresses_de_la_machine():
+            refus("c’est une adresse de cette machine")
+        if entree_reussie(str(ip)):
+            refus("cette adresse s’est connectée avec succès depuis trente jours : la bannir pourrait t’enfermer dehors")
+    ok, t = run(["fail2ban-client", "set", jail, "banip" if verbe == "faire" else "unbanip", str(ip)], 15)
+    la = str(ip) in bannies(jail)
+    if not ok or la != (verbe == "faire"):
+        echo({"ok": False, "erreur": "fail2ban n’a pas pris le geste : %s" % t[-200:]})
+    echo({"ok": True, "jail": jail, "ip": str(ip)})
+
+
+def sessions_ouvertes():
+    out = []
+    for ligne in run(["who", "--ips"], 8)[1].splitlines():
+        p = ligne.split()
+        if len(p) >= 2 and RE_TTY.match(p[1]):
+            out.append([p[0], p[1], p[-1] if len(p) >= 5 else ""])
+    return out
+
+
+def sessions_fermer(args):
+    """Tout le monde dehors : chaque session qui tient un terminal est fermée. Aucun retour : une session se rouvre en se reconnectant."""
+    avant = sessions_ouvertes()
+    for _user, tty, _ip in avant:
+        run(["pkill", "-9", "-t", tty], 8)
+    time.sleep(0.5)
+    reste = sessions_ouvertes()
+    echo({"ok": not reste, "fermees": avant[:50], "erreur": "" if not reste else "%d session(s) toujours ouverte(s)" % len(reste)})
+
+
+# ── redémarrer la machine ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+def redemarrage_prevu():
+    """« HH:MM » du redémarrage que systemd a prévu, ou ''."""
+    t = lire(PREVU)
+    m = re.search(r"^USEC=(\d+)", t, re.M)
+    if not m or "MODE=reboot" not in t:
+        return ""
+    return time.strftime("%Y-%m-%d %H:%M", time.localtime(int(m.group(1)) / 1e6))
+
+
+def ce_qui_tourne():
+    services = [s for s in SUIVIS + tuple(A_PART) if actif(s + ".service")]
+    for l in run(["systemctl", "list-units", "--type=service", "--state=active", "--no-legend", "--plain", "php*-fpm.service"], 10)[1].splitlines():
+        if l.split() and RE_PHP_FPM.match(l.split()[0].replace(".service", "")):
+            services.append(l.split()[0].replace(".service", ""))
+    conteneurs = []
+    for m in ("docker", "podman"):
+        ok, t = run([m, "ps", "--format", "{{.Names}}|{{.ID}}"], 15)
+        if ok:
+            for l in t.splitlines():
+                nom, _, ident = l.partition("|")
+                politique = run([m, "inspect", "-f", "{{.HostConfig.RestartPolicy.Name}}", ident], 10)[1].strip()
+                conteneurs.append([nom, politique or "no"])
+            break
+    return sorted(set(services)), conteneurs
+
+
+def redemarrage_verifier():
+    """Lecture seule : ce qui empêche de partir, ce qui ne reviendra pas seul, qui est connecté, et ce qui est déjà prévu."""
+    obstacles = [texte for texte, cmd in OBSTACLES if run(cmd, 8)[0]]
+    services, conteneurs = ce_qui_tourne()
+    marque = {}
+    try:
+        marque = json.loads(lire(MARQUE) or "{}")
+    except ValueError:
+        pass
+    demarre = time.time() - float((lire("/proc/uptime").split() or ["0"])[0])
+    retour = None
+    if marque.get("prevu_ts") and demarre > float(marque.get("demande_ts") or 0):               # la machine a redémarré depuis la demande
+        retour = {"revenue": time.strftime("%Y-%m-%d %H:%M", time.localtime(demarre)), "coupure_s": max(0, int(demarre - float(marque["prevu_ts"]))),
+                  "pas_revenus": {"services": sorted(set(marque.get("services") or []) - set(services)),
+                                  "conteneurs": sorted({c[0] for c in marque.get("conteneurs") or []} - {c[0] for c in conteneurs})}}
+    return {"ok": True, "machine": socket.gethostname(), "heure": time.strftime("%H:%M"), "obstacles": obstacles, "sessions": sessions_ouvertes(),
+            "ne_reviendront_pas": {"services": [s for s in services if not au_demarrage(s + ".service") and s not in ("certbot",)],
+                                   "conteneurs": [c[0] for c in conteneurs if c[1] in ("no", "")]},
+            "prevu": redemarrage_prevu(), "retour": retour}
+
+
+def redemarrer_faire(args):
+    if str(args.get("nom") or "") != socket.gethostname():
+        refus("le nom tapé n’est pas celui de cette machine")
+    quand = str(args.get("quand") or "")
+    if quand != "maintenant" and not RE_HEURE.match(quand):
+        refus("quand : « maintenant » ou une heure « HH:MM »")
+    v = redemarrage_verifier()
+    if v["obstacles"]:
+        refus("la machine ne part pas maintenant : " + " ; ".join(v["obstacles"]))
+    if v["prevu"]:
+        refus("un redémarrage est déjà prévu le %s : annule-le d’abord" % v["prevu"])
+    services, conteneurs = ce_qui_tourne()
+    ok, t = run(["shutdown", "-r", "+1" if quand == "maintenant" else quand, "Redémarrage demandé depuis Cassandra"], 20)
+    prevu = redemarrage_prevu()
+    if not ok or not prevu:
+        echo({"ok": False, "erreur": "le redémarrage n’a pas été prévu : %s" % t[-200:]})
+    try:
+        os.makedirs(os.path.dirname(MARQUE), exist_ok=True)
+        with open(MARQUE, "w", encoding="utf-8") as f:
+            json.dump({"demande_ts": time.time(), "prevu": prevu, "prevu_ts": time.mktime(time.strptime(prevu, "%Y-%m-%d %H:%M")), "services": services, "conteneurs": conteneurs}, f)
+    except OSError:
+        pass                                                                                    # sans marque, la machine part quand même : seul le compte rendu du retour manquera
+    echo({"ok": True, "prevu": prevu, "quand": quand})
+
+
+def redemarrer_defaire(args):
+    ok, t = run(["shutdown", "-c"], 20)
+    if redemarrage_prevu():
+        echo({"ok": False, "erreur": "le redémarrage est toujours prévu : %s" % t[-200:]})
+    try:
+        os.unlink(MARQUE)
+    except OSError:
+        pass
+    echo({"ok": True, "detail": "redémarrage annulé"})
+
+
+def retour_lu(args):
+    """Le compte rendu du retour a été montré : la marque s'efface."""
+    try:
+        os.unlink(MARQUE)
+    except OSError:
+        pass
+    echo({"ok": True})
+
+
+FAIRE = {"service": service_faire, "memoire": memoire_faire, "conteneur": conteneur_faire, "processus": processus_faire, "sessions_fermer": sessions_fermer,
+         "redemarrer": redemarrer_faire, "retour_lu": retour_lu}
+DEFAIRE = {"service": service_defaire, "memoire": memoire_defaire, "conteneur": conteneur_defaire, "processus": processus_defaire, "redemarrer": redemarrer_defaire}
+LIRE = {"service_journal": service_journal, "conteneur_journal": conteneur_journal, "redemarrage": lambda args: echo(redemarrage_verifier())}
+
+
+def main(argv):
+    if len(argv) < 3 or argv[1] not in ("faire", "defaire", "lire"):
+        refus("usage : machine <faire|defaire|lire> <geste> [<json>]")
+    verbe, geste = argv[1], argv[2]
+    try:
+        args = json.loads(argv[3]) if len(argv) > 3 and argv[3] else {}
+        if not isinstance(args, dict):
+            raise ValueError
+    except ValueError:
+        refus("arguments illisibles")
+    if os.geteuid() != 0:
+        refus("ce programme s'exécute en root")
+    if geste == "bannir" and verbe in ("faire", "defaire"):
+        return bannir(verbe, args)
+    table = {"faire": FAIRE, "defaire": DEFAIRE, "lire": LIRE}[verbe]
+    if geste not in table:
+        refus("geste inconnu (ou sans retour)")
+    return table[geste](args)
+
+
+if __name__ == "__main__":
+    main(sys.argv)

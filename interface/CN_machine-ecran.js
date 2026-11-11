@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #51b8de
+// VERSION CN : 0.1.0  #d092f9
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=51b8de ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d092f9 ▼▼▼
 // La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // Une seule page où tout se voit d'un coup d'œil, une tuile par sujet ; le détail d'un sujet s'ouvre au clic, « ‹ La machine » y ramène.
 // Tout vient d'UNE lecture, vue.machine, qui compose ce que les modules relèvent déjà ; les ressources et les processus se relisent seuls
@@ -23,7 +23,7 @@
   const CASS = window.CASS, K = CASS.kit, esc = K.esc, agir = K.agir, dire = K.dire;
   const CSS = "#tab-overview[data-vue=\"machine\"]>:not(#mc19){display:none!important}#tab-overview[data-vue=\"machine\"]>#mc19{flex:1 1 auto;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;padding:2px 8px 28px 2px}#tab-overview:not([data-vue=\"machine\"])>#mc19{display:none}.mc{color:var(--txt);font:15px/1.5 Inter,system-ui,-apple-system,\"Segoe UI\",sans-serif;padding:6px 4px 48px;max-width:1140px;margin:0 auto}.mc *{box-sizing:border-box}.mc a{cursor:pointer;color:var(--accent)}.mc h2,.mc h3{margin:0}.mc .tu:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.mc .mono,.mc code,.mc .num{font-family:\"JetBrains Mono\",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}.mc code{font-size:.92em;color:var(--txt-strong,var(--txt))}.mc button{font:inherit;color:inherit;cursor:pointer}.mc :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}.mc svg.i{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.mc .carte{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-glass);backdrop-filter:blur(18px)}.mc .fil{font-size:13px;color:var(--txt-faint);margin:2px 0 6px}.mc h1{font-size:26px;margin:0 0 4px;color:var(--txt-strong,var(--txt));letter-spacing:-.2px}.mc .tete{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}.mc .tete .meta{font-size:13px;color:var(--txt-faint);margin-right:auto;flex:1 1 320px}.mc .btn{background:var(--surface-solid,var(--surface));border:1px solid var(--line-strong,var(--line));border-radius:11px;padding:7px 13px;font-size:14px;color:var(--txt-strong,var(--txt));display:inline-flex;align-items:center;gap:7px}.mc .btn:hover{border-color:var(--accent)}.mc .btn.p{background:var(--accent);border-color:var(--accent);color:#fff}:root[data-theme=\"dark\"] .mc .btn.p{color:#06231f}.mc .btn.d{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 12%,transparent)}.mc .btn:disabled{opacity:.5;cursor:not-allowed}.mc .btn.s{padding:4px 10px;font-size:13px}.mc .sec{padding:16px 18px;margin-bottom:16px}.mc .sec h2{font-size:16px;margin:0;color:var(--txt-strong,var(--txt))}.mc .sh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}.mc .sh .meta{font-size:12.5px;color:var(--txt-faint)}.mc .sh .dr{margin-left:auto;display:flex;gap:6px;align-items:center}.mc .cmd{background:transparent;border:0;color:var(--txt-faint);border-radius:8px;padding:2px 7px;font-size:14px}.mc .cmd:hover{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--txt-strong,var(--txt))}.mc .sec.plie>:not(.sh){display:none}.mc .sec.plie .sh{margin-bottom:0}.mc .sec.plein{position:fixed;inset:14px;z-index:9000;overflow:auto;margin:0;background:var(--surface-solid,var(--surface))}.mc .age{font-size:12px;color:var(--txt-faint);display:inline-flex;align-items:center;gap:6px}.mc .age::before{content:\"\";width:7px;height:7px;border-radius:50%;background:var(--ok)}.mc .age.mu::before{background:var(--danger)}.mc .age.mu{color:var(--danger)}.mc .verdict{display:flex;gap:14px;align-items:stretch}.mc .vm{width:5px;border-radius:4px;background:var(--ok);flex:none}.mc .vm.w{background:var(--warn)}.mc .vm.d{background:var(--danger)}.mc .vm.n{background:var(--line-strong,var(--line))}.mc .verdict p{margin:0}.mc .vt{font-size:19px;font-weight:700;color:var(--txt-strong,var(--txt))}.mc .vs{color:var(--txt-soft);font-size:14px;margin-top:2px!important}.mc .gestes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.mc .jauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.mc .jg{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 13px}.mc .jg span{display:block;font-size:12.5px;color:var(--txt-faint)}.mc .jg b{display:block;font:650 24px/1.2 \"JetBrains Mono\",ui-monospace,monospace;color:var(--txt-strong,var(--txt))}.mc .jg b.w{color:var(--warn)}.mc .jg b.d{color:var(--danger)}.mc .jg b.mu{color:var(--txt-faint)}.mc .jg em{display:block;font-style:normal;font-size:12.5px;color:var(--txt-soft)}.mc .barre{height:5px;border-radius:3px;background:var(--line);margin:7px 0 4px;overflow:hidden}.mc .barre i{display:block;height:100%;border-radius:3px;background:var(--accent);transition:width .6s}.mc .barre i.w{background:var(--warn)}.mc .barre i.d{background:var(--danger)}.mc .courbe{width:100%;height:150px;display:block}.mc .leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--txt-faint);margin-top:8px}.mc .leg i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}.mc .pl{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:999px;padding:2px 9px;background:var(--line);color:var(--txt-soft);white-space:nowrap}.mc .pl::before{content:\"\";width:6px;height:6px;border-radius:50%;background:currentColor}.mc .pl.ok{background:color-mix(in srgb,var(--ok) 12%,transparent);color:var(--ok)}.mc .pl.w{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}.mc .pl.d{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}.mc .pl.i{background:color-mix(in srgb,var(--info,var(--accent)) 12%,transparent);color:var(--info,var(--accent))}.mc .rows{display:grid;gap:6px}.mc .row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.2fr) auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:9px 13px}.mc .row .nm{min-width:0}.mc .row .nm b{display:block;color:var(--txt-strong,var(--txt));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}.mc .row .nm small{color:var(--txt-faint);font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mc .row .mil{font-size:13px;color:var(--txt-soft);min-width:0;display:flex;align-items:center;gap:8px}.mc .row .cote{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}@media (max-width:760px){.mc .row{grid-template-columns:1fr}.mc .row .cote{justify-content:flex-start}}.mc .paires{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2px 26px;margin:0}.mc .paires div{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px;align-items:baseline}.mc .paires dt{color:var(--txt-faint);flex:0 0 118px;font-size:13px}.mc .paires dd{margin:0;color:var(--txt-strong,var(--txt));min-width:0}.mc .paires dd small{display:block;color:var(--txt-soft);font-size:12.5px}.mc .vide{color:var(--txt-faint);font-size:14px;padding:6px 0}.mc .muet{background:color-mix(in srgb,var(--danger) 12%,transparent);border:1px solid var(--line);border-radius:13px;padding:11px 14px;font-size:14px;color:var(--txt-strong,var(--txt))}.mc .note{font-size:12.5px;color:var(--txt-faint);margin-top:10px}.mc input[type=search]{font:inherit;color:var(--txt-strong,var(--txt));background:var(--surface-solid,var(--surface));border:1px solid var(--line-strong,var(--line));border-radius:11px;padding:6px 11px;min-width:0;width:220px}.mc .pbar{flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden;min-width:60px}.mc .pbar i{display:block;height:100%;background:var(--accent)}.mc .pbar i.w{background:var(--warn)}.mc .pbar i.d{background:var(--danger)}.mc .puces{display:flex;gap:6px;flex-wrap:wrap}.mc .puce{background:var(--surface-solid,var(--surface));border:1px solid var(--line-strong,var(--line));border-radius:10px;padding:3px 9px;font-size:12.5px;color:var(--txt-strong,var(--txt))}.mc .puce:hover{border-color:var(--accent)}.mc .bandeau-v{padding:14px 18px;margin-bottom:6px}.mc .bandeau-v .vt{font-size:18px}.mc .note-sante{text-align:right;min-width:150px;cursor:help}.mc .note-sante span,.mc .note-sante em{display:block;font-size:12.5px;color:var(--txt-faint);font-style:normal}.mc .note-sante b{display:block;font-size:28px;line-height:1.1}.mc .note-sante b small{font-size:13px;color:var(--txt-faint)}.mc .gt{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--txt-faint);margin:14px 4px 8px;font-weight:650;display:flex;align-items:center;gap:8px;min-height:26px}.mc .gt .btn{margin-left:auto;text-transform:none;letter-spacing:0}.mc .gt span{text-transform:none;letter-spacing:0;font-weight:500}.mc .grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:10px}.mc .tu{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 13px 10px;display:flex;flex-direction:column;gap:5px;cursor:pointer;box-shadow:var(--shadow-glass);min-height:158px;min-width:0}.mc .tu:hover{border-color:var(--accent);background:var(--surface-solid,var(--surface))}.mc .tu.ext{background:var(--surface);box-shadow:none}.mc .tu.mu>:not(.tt):not(.tp){opacity:.42;filter:grayscale(1)}.mc .tu .tt{display:flex;align-items:center;gap:8px;color:var(--txt-strong,var(--txt));font-size:14px;margin-bottom:2px}.mc .tu .tt b{font-weight:650}.mc .tu .tt .pl{margin-left:auto}.mc .tu .gr{font:650 25px/1.1 \"JetBrains Mono\",ui-monospace,monospace;color:var(--txt-strong,var(--txt))}.mc .tu .gr.w{color:var(--warn)}.mc .tu .gr.d{color:var(--danger)}.mc .tu .gr.mu{color:var(--txt-faint)}.mc .tu .cc{display:flex;flex-direction:column;gap:5px}.mc .tu .li{font-size:12.5px;color:var(--txt-soft);display:flex;gap:8px;align-items:center;min-width:0}.mc .tu .li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mc .tu .li small{color:var(--txt-faint)}.mc .tu .li b{color:var(--txt-strong,var(--txt));font-weight:600;font-size:12px;white-space:nowrap}.mc .tu .mb{display:grid;grid-template-columns:74px 1fr 42px;gap:8px;align-items:center;font-size:12.5px;color:var(--txt-soft)}.mc .tu .mb b{text-align:right;font-size:12px}.mc .tu .tp{margin-top:auto;padding-top:5px;font-size:12px;font-weight:600;color:var(--accent)}.mc .tu.ext .tp{color:var(--txt-faint)}.mc .tu .puces{margin-top:2px}.mc .tu .puce{padding:2px 7px;font-size:12px}.mc .tu .btn.s{padding:2px 8px;font-size:12px}.mc .grille.v{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}.mc .grille.v .tu{min-height:124px;padding:10px 10px 8px}.mc .grille.v .tu .gr{font-size:21px}.mc .grille.v .tu .tt{font-size:13px;flex-wrap:wrap;gap:6px}.mc .grille.v .tu .tt svg.i{width:15px;height:15px}.mc .grille.v .tu .tt .pl{font-size:11px;padding:1px 7px}.mc .grille.v .tu .li{flex-wrap:wrap}.mc .grille.v .tu .li .n{white-space:normal}.mc .duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:16px;margin-bottom:16px;align-items:start}@media (max-width:560px){.mc .duo{grid-template-columns:1fr}}.mc .duo .paires.un dt{flex-basis:118px}.mc .cass{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:12px;padding:4px 8px 4px 10px;font-size:13px;color:var(--accent)}.mc .cass b{font-weight:650;margin-right:2px}.mc .cass .puce{font-size:12.5px;padding:3px 9px}.mc .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.mc .chip{background:transparent;border:1px solid var(--line-strong,var(--line));border-radius:999px;padding:3px 11px;font-size:13px;color:var(--txt-soft)}.mc .chip[aria-pressed=\"true\"]{background:var(--accent);border-color:var(--accent);color:#fff}:root[data-theme=\"dark\"] .mc .chip[aria-pressed=\"true\"]{color:#06231f}.mc .plan{margin:0 0 12px;padding-left:22px;font-size:14px;color:var(--txt-strong,var(--txt));display:grid;gap:6px}.mc .pile{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--line);gap:2px}.mc .pile i{display:block;height:100%}.mc .dit{margin:0 0 4px;font-size:14px;color:var(--txt)}.mc pre.jl{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:11.5px/1.5 \"JetBrains Mono\",ui-monospace,monospace;color:var(--txt);white-space:pre-wrap;word-break:break-word}.mc .cts{display:grid;gap:6px}.mc .ct{background:var(--surface);border:1px solid var(--line);border-radius:13px;overflow:hidden}.mc .ct.ouvert{border-color:color-mix(in srgb,var(--accent) 22%,transparent);background:var(--surface-solid,var(--surface))}.mc .ctl{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.25fr) minmax(0,1.15fr) 200px 14px;gap:14px;align-items:center;width:100%;text-align:left;background:transparent;border:0;padding:10px 13px}.mc .ctl:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}.mc .ctl>span{min-width:0;display:flex;flex-direction:column;gap:2px}.mc .ctl b,.mc .ctl .mono{color:var(--txt-strong,var(--txt));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}.mc .ctl b{font-weight:650;font-size:14.5px}.mc .ctl small{color:var(--txt-faint);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mc .ctl .c3{flex-direction:row;flex-wrap:wrap;gap:4px 6px;align-items:center}.mc .ctl .c3 small{flex:1 1 100%}.mc .ctl .c4{align-items:flex-end}.mc .ctl .chev{color:var(--txt-faint);transition:transform .2s}.mc .ct.ouvert .ctl .chev{transform:rotate(90deg)}.mc .pc{font:600 12px \"JetBrains Mono\",ui-monospace,monospace;border:1px solid var(--line-strong,var(--line));border-radius:7px;padding:1px 6px;color:var(--txt-strong,var(--txt));background:var(--surface-solid,var(--surface))}.mc .pc.w{border-color:var(--warn);color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}.mc .ctf{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:4px 26px;padding:6px 16px 14px;border-top:1px solid var(--line)}.mc .ctf .bloc{min-width:0;padding-top:8px}.mc .ctf h3{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--txt-faint);margin:0 0 4px;font-weight:650}.mc .ctf h3 .ac{text-transform:uppercase}.mc .ctf table.ptab{font-size:13px}.mc .ctf table.ptab th{font-size:11px;padding:4px 6px}.mc .ctf table.ptab td{padding:5px 6px;font-weight:500;color:var(--txt);white-space:nowrap}.mc .ctf table.ptab td:first-child{font-weight:500}.mc .paires.un{grid-template-columns:1fr}.mc .paires.un div{padding:5px 0;font-size:13.5px}.mc .paires.un dt{flex-basis:104px}.mc .paires.un dd small{display:inline;margin-left:4px}.mc .ctf a,.mc .note a{color:var(--accent);cursor:pointer}@media (max-width:860px){.mc .ctl{grid-template-columns:1fr}.mc .ctl .c4{align-items:flex-start}.mc .ctl .chev{display:none}}.mc .lk{cursor:pointer;background:none;border:0;padding:0;color:var(--txt-soft);font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px}.mc .lk:hover{color:var(--accent)}.mc .pt{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:4px}.mc .pt.d{background:var(--danger)}.mc .pied{font-size:13px;color:var(--txt-faint);margin:14px 4px 0}.mc .pied a,.mc .fil a{color:var(--accent);cursor:pointer}.mc .grille.v{grid-template-columns:repeat(auto-fit,minmax(128px,1fr))}.mc .grille.v .tu .tt{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 6px}.mc .chemin{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 10px}.mc .chemin .fl{color:var(--txt-faint);font-size:12px}.mc .ctf .bloc{min-width:0}.mc .chemin{min-width:0}.mc .chemin .mono{min-width:0;overflow-wrap:anywhere;white-space:normal}.mc .ctl.large .nm{grid-column:1/4}.mc .ctl.large .c2,.mc .ctl.large .c3{display:none}.mc .grille.v .tu{container-type:inline-size}@container (max-width:117px){.mc .grille.v .tu .tt{display:block}.mc .grille.v .tu .tt svg.i{display:none}.mc .grille.v .tu .tt .pl{display:inline-flex;margin-top:4px}}.mc .grille.v .tu .tt .pl{grid-column:1/-1;justify-self:start;margin-left:0}.mc .sec>.paires.un dt{flex-basis:160px}";
   // l'état vit hors de la page : elle se redessine à chaque relève
-  const S = { page: "vue", d: null, erreur: "", charge: false, q: "", groupe: false, sv: "", svF: "tous", svQ: "", ct: "", pr: "", se: "", tri: "cpu", hist: { cpu: [], ram: [] }, minuteurs: [], lu: 0 };
+  const S = { page: "vue", d: null, erreur: "", charge: false, q: "", groupe: false, sv: "", svF: "tous", svQ: "", ct: "", pr: "", se: "", tri: "cpu", gestes: null, gestesLus: false, rd: null, hist: { cpu: [], ram: [] }, minuteurs: [], lu: 0 };
   let R = null;
   const IC = {
     machine: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>', direct: '<path d="M3 12h4l2-6 4 12 2-6h6"/>',
@@ -174,7 +174,7 @@
             "</dd></div><div><dt>Appartient à</dt><dd>" + appartient + lien + '</dd></div></dl></div><div class="bloc"><h3>Ce qu’il consomme</h3><dl class="paires un"><div><dt>Processeur</dt><dd><span class="pbar" style="display:inline-block;width:120px;vertical-align:2px;margin-right:8px"><i class="' +
             (p.cpu > 50 ? "d" : p.cpu > 20 ? "w" : "") + '" style="width:' + Math.min(p.cpu, 100) + '%"></i></span>' + fr(p.cpu) + " % <small>en moyenne depuis son lancement</small></dd></div><div><dt>Mémoire</dt><dd>" + mo(p.mem_mo) + (part(p) ? " · " + part(p) : "") + "</dd></div></dl></div>" : "") +
           '<div class="gestes" style="grid-column:1/-1;align-items:center">' + (p.protege ? '<span class="pl w" style="white-space:normal;border-radius:10px;padding:4px 10px">Pas d’arrêt d’ici : ' + esc(p.protege) + "</span>" : "") +
-          (g && g.nom && g.genre === "service" ? '<button class="btn s" data-a="aller" data-k="sv" data-n="' + esc(g.nom) + '" data-p="services">Ouvrir son service</button>' : "") + '<span style="flex:1"></span>' +
+          (g && g.nom && g.genre === "service" ? '<button class="btn s" data-a="aller" data-k="sv" data-n="' + esc(g.nom) + '" data-p="services">Ouvrir son service</button>' : "") + gestesProcessus(p) + '<span style="flex:1"></span>' +
           cass([["Que fait-il ?", "Que fait le processus « " + nom + " »" + (p.pid != null ? " (n° " + p.pid + ")" : "") + " sur la machine ?"],
             ["Est-ce normal ?", "Est-ce normal que « " + nom + " » prenne " + fr(p.cpu) + " % du processeur" + (p.mem_mo != null ? " et " + mo(p.mem_mo) + " de mémoire" : "") + " sur la machine ?"],
             ["Que faire ?", "Le processus « " + nom + " » pèse sur la machine : que me conseilles-tu, sans rien casser ?"]]) + "</div></div></div>";
@@ -207,7 +207,7 @@
         '</small></div><div class="mil">occupait <b class="num" style="color:var(--danger)">' + fr(o.mo / 1024) + ' Go</b></div><div class="cote">' + pill("tué par le noyau", "d") + demande("Pourquoi ?", "Pourquoi " + o.processus + " a-t-il été tué faute de mémoire sur la machine, et comment éviter que cela recommence ?") +
         '<button class="btn s" data-a="acquitter" data-i="' + i + '">Acquitter</button></div></div>').join("") + "</div>" : '<p class="vide">Aucun processus tué faute de mémoire.</p>',
         (oom && oom.length ? '<button class="btn s" data-a="acquitter" data-i="tous">Tout acquitter</button>' : "") + demande("Demander", "Y a-t-il eu des processus tués faute de mémoire récemment sur la machine, et pourquoi ?"));
-      return h;
+      return h + blocGestes();
     },
     services() {
       const d = D(), sv = d.services;
@@ -223,13 +223,13 @@
           (s.ports.length ? s.ports.map((p) => '<span class="pc">' + esc(p) + "</span>").join("") : "<small>aucun port</small>") + '</span><span class="c4">' + pill(mot[0], mot[1]) + '<small class="num">' + (s.etat === "actif" && s.memoire_mo != null ? (s.cpu != null ? fr(s.cpu) + " % · " : "") + mo(s.memoire_mo) : esc(s.sous_etat)) + '</small></span><span class="chev">›</span></button>' +
           (ouvert ? '<div class="ctf"><div class="bloc" style="grid-column:1/-1"><h3>Ce que c’est</h3><p class="dit">' + esc(s.description || s.systemd || "—") + "</p>" + (s.systemd && s.description ? '<p class="dit" style="color:var(--txt-faint);font-size:12.5px">systemd : ' + esc(s.systemd) + "</p>" : "") + "</div>" +
             '<div class="bloc"><h3>État</h3><dl class="paires un"><div><dt>État</dt><dd>' + pill(mot[0], mot[1]) + " " + esc(s.sous_etat) + (s.depuis && s.etat === "actif" ? " <small>depuis le " + jour(s.depuis) + "</small>" : "") + "</dd></div><div><dt>Au démarrage</dt><dd>" +
-            (s.au_demarrage ? "se lance avec la machine" : "ne se lance pas avec la machine") + "</dd></div><div><dt>Processus</dt><dd>" + (s.etat === "actif" && (s.pid || s.memoire_mo != null) ? [s.pid ? 'n° <span class="mono">' + s.pid + "</span>" : "", s.cpu != null ? "processeur " + fr(s.cpu) + " %" : "", s.memoire_mo != null ? "mémoire " + mo(s.memoire_mo) : ""].filter(Boolean).join(" · ") +
+            (s.au_demarrage ? "se lance avec la machine" : "ne se lance pas avec la machine") + boutonDemarrage(s) + "</dd></div><div><dt>Processus</dt><dd>" + (s.etat === "actif" && (s.pid || s.memoire_mo != null) ? [s.pid ? 'n° <span class="mono">' + s.pid + "</span>" : "", s.cpu != null ? "processeur " + fr(s.cpu) + " %" : "", s.memoire_mo != null ? "mémoire " + mo(s.memoire_mo) : ""].filter(Boolean).join(" · ") +
               (s.redemarrages ? " <small>" + s.redemarrages + " relance" + (s.redemarrages > 1 ? "s" : "") + " par systemd</small>" : "") : "—") + "</dd></div><div><dt>Écoute sur</dt><dd>" +
             (s.ports.length ? s.ports.map((p) => '<span class="pc">' + esc(p) + "</span>").join(" ") + ' <small><a data-a="module" data-e="securite" data-v="exposition" data-ou="Sécurité › Exposition">qui peut les joindre →</a></small>' : "aucun port") + "</dd></div>" +
             ((s.noms || []).length ? "<div><dt>Noms publics</dt><dd>" + s.noms.map((n) => '<span class="mono">' + esc(n) + "</span>").join(", ") + "</dd></div>" : "") + "</dl></div>" +
             '<div class="bloc"><h3>Si on l’arrête</h3><p class="dit">' + esc(s.si_arret || "Ce que ce service porte n’est pas décrit ici : demande-le à Cassandra avant d’y toucher.") + "</p>" + (s.protege ? '<p class="dit" style="color:var(--warn)">' + esc(s.protege) + "</p>" : "") +
             ((s.journal || []).length ? '<h3 style="margin-top:10px">Dernières lignes du journal</h3><pre class="jl">' + s.journal.map(esc).join("\n") + "</pre>" : "") + "</div>" +
-            '<div class="gestes" style="grid-column:1/-1;align-items:center">' + (s.geste ? '<button class="btn s ' + (s.geste === "noyau" ? "d" : "") + '" data-a="svc" data-g="' + s.geste + '">' + GESTE[s.geste] + '</button><button class="btn s" data-a="journal" data-g="' + s.geste + '" data-n="' + esc(s.unite) + '">Journal</button>' : "") +
+            '<div class="gestes" style="grid-column:1/-1;align-items:center">' + gestesService(s) +
             (s.etat === "echec" ? demande("Demander à Cassandra de le réparer", "Le service " + s.unite + " est en échec sur la machine : lis son journal, dis-moi pourquoi, et propose-moi un plan pour le réparer.", "p") : "") + '<span style="flex:1"></span>' +
             cass([["À quoi sert-il ?", "À quoi sert le service " + s.unite + " sur la machine, et que se passe-t-il si je l’arrête ?"], ["Va-t-il bien ?", "Le service " + s.unite + " va-t-il bien sur la machine ? Dis-moi ce qui cloche."], ["Le régler", "Comment le service " + s.unite + " est-il réglé sur la machine, et que me conseilles-tu d’ajuster ?"]]) + "</div></div>" : "") + "</div>";
       };
@@ -242,7 +242,7 @@
       h += sec("Les services", l.length + " sur " + sv.suivis.length + " suivis de près · un clic ouvre la fiche", '<div class="chips">' + FAM.map((f) => '<button class="chip" aria-pressed="' + (S.svF === f) + '" data-a="svF" data-f="' + f + '">' + f + (f === "en échec" && ko.length ? " · " + ko.length : "") + "</button>").join("") + '</div><div class="cts">' +
         (l.map(ligne).join("") || '<p class="vide">Aucun service ne correspond.</p>') + '</div><p class="note">Les ' + Math.max(0, sv.total - sv.suivis.length) + " autres unités de la machine restent dans le Sensorium, famille « Services ». Les tâches planifiées ont leur écran, Automatismes.</p>",
         '<input type="search" placeholder="Filtrer…" aria-label="Filtrer les services" value="' + esc(S.svQ) + '" data-s="svQ" id="mc-q"><button class="btn s" data-a="module" data-e="sensorium" data-v="carte" data-ou="Sensorium">Sensorium</button>');
-      return h;
+      return h + blocGestes();
     },
     conteneurs() {
       const d = D(), ct = d.conteneurs;
@@ -275,12 +275,12 @@
         return '<div class="ct ' + (ouvert ? "ouvert" : "") + '"><button class="ctl" aria-expanded="' + ouvert + '" data-a="ouvrir" data-k="ct" data-n="' + esc(c.nom) + '"><span class="nm"><b class="mono">' + esc(c.nom) + "</b><small>" + esc(c.role || "conteneur Docker") + '</small></span><span class="c2"><span class="mono">' + esc(c.image) +
           "</span><small>" + esc(c.distribution || (c.image_age_j != null ? "image construite il y a " + c.image_age_j + " j" : "")) + '</small></span><span class="c3">' + (ports.length ? ports.map(port).join("") : c.releve ? "<small>aucun port publié</small>" : "") +
           (px.length ? "<small>↳ " + esc(px.map((x) => x.nom).filter((n, i, t) => t.indexOf(n) === i).join(", ")) + "</small>" : "") + '</span><span class="c4">' + pill(c.etat, coul) + '<small class="num">' + esc(charge) + '</small></span><span class="chev">›</span></button>' +
-          (ouvert ? fiche(c) + '<div class="gestes" style="grid-column:1/-1;align-items:center"><span style="flex:1"></span>' +
+          (ouvert ? fiche(c) + '<div class="gestes" style="grid-column:1/-1;align-items:center">' + gestesConteneur(c) + '<span style="flex:1"></span>' +
             cass([["Que fait-il ?", "Que fait le conteneur " + c.nom + " sur la machine ?"], ["Faire le point", "Fais-moi le point sur le conteneur " + c.nom + " de la machine : ce qu’il fait, ses ports, son image, ce qui cloche."]]) + "</div></div>" : "") + "</div>";
       };
       return tete("Conteneurs", (ct.length - ko) + " sur " + ct.length + " tournent" + (releve ? " · " + pub + " avec un port ouvert au-delà de la machine · " + noms + " derrière un nom public" : ""), age()) +
         sec("Les conteneurs", "Docker · un clic ouvre la fiche", ct.length ? '<div class="cts">' + ct.map(ligne).join("") + "</div>" + (releve ? '<p class="note">Sur chaque ligne : le nom et son rôle, l’image et sa distribution, les ports publiés (en orange : ouverts au-delà de la machine) et le nom public qui y mène, l’état et la charge.</p>' : "") :
-          '<p class="vide">Aucun conteneur sur cette machine.</p>', '<button class="btn s" data-a="module" data-e="securite" data-v="outils" data-ou="Sécurité › Outils (Trivy)" title="Les failles connues dans les images">Failles des images</button>');
+          '<p class="vide">Aucun conteneur sur cette machine.</p>', '<button class="btn s" data-a="module" data-e="securite" data-v="outils" data-ou="Sécurité › Outils (Trivy)" title="Les failles connues dans les images">Failles des images</button>') + blocGestes();
     },
     sessions() {
       const d = D(), se = d.sessions, rf = d.refus, cx = d.connexions;
@@ -299,12 +299,12 @@
             (s.machine ? p2("Machine", esc(s.machine)) : "") + (s.connu ? p2("Déjà vue", esc(s.connu)) : "") + '</dl></div><div class="bloc"><h3>Comment elle est entrée, ce qu’elle fait</h3><dl class="paires un">' +
             p2("Identification", esc(s.methode ? s.methode + (s.cle ? " · " + s.cle : "") : s.anonyme ? "aucune pour l’instant" : "—")) + p2("Ouverte", esc(s.depuis) + " <small>heure du serveur</small>") + p2("Terminal", '<span class="mono">' + esc(s.terminal || "—") + "</span>") +
             p2("Inactive depuis", esc(s.inactivite || "—")) + p2("En cours", '<span class="mono">' + esc(s.commande || (s.anonyme ? "en attente d’identification" : "—")) + "</span>") +
-            '</dl></div><div class="gestes" style="grid-column:1/-1;align-items:center"><button class="btn s d" data-a="deconnecter" data-i="' + i + '">Déconnecter</button><span style="flex:1"></span>' +
+            '</dl></div><div class="gestes" style="grid-column:1/-1;align-items:center"><button class="btn s d" data-a="deconnecter" data-i="' + i + '">Déconnecter</button>' + (s.reseau === "Internet" ? '<button class="btn s d" data-a="bannir" data-i="' + i + '">Bannir l’adresse</button>' : "") + '<span style="flex:1"></span>' +
             cass([["Qui est-ce ?", "Qui se cache derrière la session " + s.utilisateur + " depuis " + s.adresse + " sur la machine ?"], ["Est-ce normal ?", "La session " + s.utilisateur + " depuis " + s.adresse + " sur la machine est-elle normale ? Que me conseilles-tu ?"],
               ["Qu’a-t-elle fait ?", "Qu’a fait la session " + s.utilisateur + " depuis " + s.adresse + " sur la machine depuis son ouverture ?"]]) + "</div></div>" : "") + "</div>";
       };
       let h = tete("Sessions", "qui est connecté à la machine · " + se.length + " ouverte" + (se.length > 1 ? "s" : "") + (rf && rf.total != null ? " · " + rf.total + " tentatives refusées dans l’heure" : ""), age());
-      h += sec("Sessions ouvertes", "un clic ouvre la fiche", se.length ? '<div class="cts">' + se.map(ligne).join("") + "</div>" : '<p class="vide">Aucune session ouverte.</p>', '<button class="btn s" data-a="module" data-e="securite" data-v="acces" data-ou="Sécurité › Accès">Sécurité › Accès</button>');
+      h += sec("Sessions ouvertes", "un clic ouvre la fiche", se.length ? '<div class="cts">' + se.map(ligne).join("") + "</div>" : '<p class="vide">Aucune session ouverte.</p>', (se.some((s) => !s.anonyme) ? '<button class="btn s d" data-a="dehors">Tout le monde dehors</button>' : "") + '<button class="btn s" data-a="module" data-e="securite" data-v="acces" data-ou="Sécurité › Accès">Sécurité › Accès</button>');
       if (rf) {
         const max = Math.max.apply(null, rf.adresses.map((a) => a[1]).concat([1]));
         h += sec("Tentatives refusées", esc(rf.texte.split(" · ")[0]), rf.adresses.length ? '<div class="rows">' + rf.adresses.map((a) => '<div class="row"><div class="nm"><b class="mono">' + esc(a[0]) + "</b><small>" + a[1] + ' tentatives en une heure</small></div><div class="mil"><span class="pbar"><i class="w" style="width:' +
@@ -317,7 +317,7 @@
           x.nombre + " fois</span></div></div>").join("") + '</div><p class="note">Lu dans le journal de sshd : qui est entré, d’où et avec quelle clé. D’une clé, la page ne montre que le commentaire.' + ((d.voisins || []).some((v) => v.cle === "tailscale") ? " Les connexions ouvertes par Tailscale SSH n’y figurent pas : elles ne passent pas par sshd." : "") + "</p>" : '<p class="vide">Aucune connexion réussie relevée sur trente jours.</p>',
           cass([["Rien d’anormal ?", "Regarde les connexions SSH réussies des trente derniers jours sur la machine : y en a-t-il une qui ne me ressemble pas ?"]]));
       }
-      return h;
+      return h + blocGestes();
     },
     fiche() {
       const d = D(), m = d.machine || {}, r = d.ressources || {}, lg = d.logiciels || { installes: [], absents: [] }, mt = m.materiel || null, vs = lg.versions || {}, cpu = (mt && mt.cpu) || {};
@@ -329,15 +329,24 @@
       const bloc = (t, meta, corps, droite) => sec(t, meta, corps, droite).replace('class="carte sec"', 'class="carte sec" style="margin:0"');
       const texte = ["Machine : " + m.nom, "Système : " + [m.os, m.archi, m.nature].filter(Boolean).join(" · "), "Noyau : " + m.noyau, cpu.modele ? "Processeur : " + cpu.modele + (cpu.coeurs ? " · " + cpu.coeurs + " cœurs" : "") : "", r.ram_go ? "Mémoire : " + fr(r.ram_go[1]) + " Go" : "", "Adresses : " + (m.interfaces || []).map((i) => (i.v4[0] || i.v6[0] || "?") + " (" + i.nom + ")").join(", "), "Allumée depuis : " + m.allumee].filter(Boolean).join("\n");
       let h = tete("La fiche de la machine", "ce qu’elle est, ce qu’elle porte", age());
+      const rd = S.rd || {}, rt = rd.retour, pasRevenus = rt ? (rt.pas_revenus.services || []).map((x) => "service " + x).concat((rt.pas_revenus.conteneurs || []).map((x) => "conteneur " + x)) : [];
+      if (rt) h += '<section class="carte sec bandeau-v"><div class="verdict"><div class="vm ' + (pasRevenus.length ? "w" : "") + '"></div><div style="flex:1;min-width:0"><p class="vt">La machine est revenue le ' + jour(rt.revenue) + '</p><p class="vs">Coupure d’environ ' +
+        duree(rt.coupure_s) + ". " + (pasRevenus.length ? "Ne sont pas revenus : " + esc(pasRevenus.join(", ")) + "." : "Tout ce qui tournait avant est revenu.") + '</p><div class="gestes"><button class="btn s" data-a="retourLu">Vu</button>' +
+        (pasRevenus.length ? '<button class="btn s p" data-a="page" data-p="services">Voir les services</button>' : "") + "</div></div></div></section>";
       h += '<section class="carte sec bandeau-v"><div class="verdict"><div class="vm ' + (m.redemarrage ? "d" : "") + '"></div><div style="flex:1;min-width:0"><p class="vt mono" style="font-size:22px">' + esc(m.nom) + '</p><div class="puces" style="margin-top:8px">' +
         [m.os, m.nature && "nature : " + m.nature, cpu.coeurs && cpu.coeurs + " cœurs", r.ram_go && r.ram_go[1] && fr(r.ram_go[1]) + " Go de mémoire", r.disque_go && r.disque_go[1] && fr(r.disque_go[1], 0) + " Go de disque", m.allumee && "allumée depuis " + m.allumee].filter(Boolean).map((x) => '<span class="puce">' + esc(x) + "</span>").join("") +
-        (m.redemarrage ? '<span class="puce" style="border-color:var(--danger);color:var(--danger)">redémarrage requis</span>' : "") + '</div></div><div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><button class="btn s" data-a="copier" data-t="' + esc(texte) + '">Copier la fiche</button>' +
+        (m.redemarrage ? '<span class="puce" style="border-color:var(--danger);color:var(--danger)">redémarrage requis</span>' : "") +
+        (rd.prevu ? '<span class="puce" style="border-color:var(--info,var(--accent));color:var(--info,var(--accent))">redémarrage prévu le ' + jour(rd.prevu) + ' <button class="lk" style="margin-left:6px" data-a="annulerRedemarrage">annuler</button></span>' : "") +
+        '</div></div><div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn s" data-a="copier" data-t="' + esc(texte) + '">Copier la fiche</button>' +
+        '<button class="btn s ' + (m.redemarrage ? "d" : "") + '" data-a="redemarrer">Redémarrer la machine</button></span>' +
         cass([["Présente-la-moi", "Présente-moi la machine " + m.nom + " : ce qu’elle est, ce qu’elle porte, ce qui mérite mon attention."], ["Est-elle assez grande ?", "La machine " + m.nom + " est-elle bien dimensionnée pour ce qu’elle porte (processeur, mémoire, disque) ?"]]) + "</div></div></section>";
       h += '<div class="duo">';
       h += bloc("Identité", "qui elle est", '<dl class="paires un">' + p("Nom", '<span class="mono">' + esc(m.nom) + "</span>") + p("Système", esc(m.os) + (m.archi ? " <small>" + esc(m.archi) + "</small>" : "")) + (m.nature ? p("Nature", esc(m.nature === "none" ? "machine physique" : "machine virtuelle (" + m.nature + ")")) : "") +
         (mt && mt.constructeur ? p(virtuelle ? "Hébergeur" : "Constructeur", esc(mt.constructeur) + (virtuelle ? " <small>d’après le matériel que la machine virtuelle déclare</small>" : "")) : "") +
         (mt && mt.installee ? p("Installée", "le " + leJour(mt.installee) + (depuisLe(mt.installee) ? " <small>" + depuisLe(mt.installee) + "</small>" : "")) : "") +
-        p("Noyau", '<span class="mono">' + esc(m.noyau || "—") + "</span>") + p("Allumée depuis", esc(m.allumee || "—") + (mt && mt.demarree ? " <small>dernier démarrage le " + jour(mt.demarree) + "</small>" : "")) + p("Redémarrage", m.redemarrage ? '<span style="color:var(--danger)">requis</span> <small>' + esc(m.redemarrage_texte) + "</small>" : "pas de redémarrage requis") + "</dl>");
+        p("Noyau", '<span class="mono">' + esc(m.noyau || "—") + "</span>") + p("Allumée depuis", esc(m.allumee || "—") + (mt && mt.demarree ? " <small>dernier démarrage le " + jour(mt.demarree) + "</small>" : "")) + p("Redémarrage", (rd.prevu ? '<span style="color:var(--info,var(--accent))">prévu le ' + jour(rd.prevu) + '</span> <button class="lk" data-a="annulerRedemarrage">annuler</button>' :
+          m.redemarrage ? '<span style="color:var(--danger)">requis</span> <small>' + esc(m.redemarrage_texte) + "</small>" : "pas de redémarrage requis") +
+          (rd.prevu ? "" : ' <button class="btn s ' + (m.redemarrage ? "d" : "") + '" style="margin-left:6px" data-a="redemarrer">Redémarrer…</button>')) + "</dl>");
       h += bloc("Matériel", "ce qu’elle a", '<dl class="paires un">' + (cpu.modele || cpu.fils ? p("Processeur", esc(cpu.modele || "modèle non déclaré") + " <small>" + [cpu.coeurs && cpu.coeurs + " cœur" + (cpu.coeurs > 1 ? "s" : ""), cpu.fils && cpu.fils + " fil" + (cpu.fils > 1 ? "s" : ""), cpu.mhz && fr(cpu.mhz / 1000, 1) + " GHz"].filter(Boolean).join(" · ") + "</small>") : "") + p("Mémoire", r.ram_go && r.ram_go[1] ? fr(r.ram_go[1]) + " Go <small>" + fr(r.ram_go[0]) + " Go utilisés</small>" : "—") + p("Échange", r.swap_go && r.swap_go[1] ? fr(r.swap_go[1]) + " Go <small>" + fr(r.swap_go[0]) + " Go utilisés</small>" : "aucun") +
         p("Disque", r.disque_go && r.disque_go[1] ? fr(r.disque_go[1], 0) + " Go <small>" + fr(r.disque_go[0], 0) + " Go utilisés</small>" : "—") +
         (mt ? p("Température", mt.temperature ? fr(mt.temperature, 0) + " °C au plus chaud" : virtuelle ? "non relevée : une machine virtuelle n’a pas de sonde" : "non relevée") +
@@ -361,7 +370,7 @@
         (lg.absents.length ? '<p class="note" style="margin-top:10px">Cherchés et absents : ' + lg.absents.map((x) => '<span class="mono">' + esc(x) + "</span>").join(", ") + ".</p>" : ""), cass([["Que mettre à jour ?", "Quels logiciels de la machine " + m.nom + " sont en retard d’une version importante ou en fin de vie, et par quoi commencer ?"]]));
       if ((d.cassandra || []).length) h += sec("Cassandra sur cette machine", "ce qu’elle y a posé", '<dl class="paires un">' + d.cassandra.map((x) => { const t = x.titre.replace(/^[^—]+— /, ""); return p(esc(t.charAt(0).toUpperCase() + t.slice(1)), esc(x.texte)); }).join("") + "</dl>",
         '<button class="btn s" data-a="page" data-p="services">Ses services</button>');
-      return h;
+      return h + blocGestes();
     },
   };
   function jauge(nom, valeur, pct, sous) { return '<div class="jg"><span>' + nom + '</span><b class="' + niv(pct) + '">' + valeur + '</b><div class="barre"><i class="' + niv(pct) + '" style="width:' + Math.min(pct || 0, 100) + '%"></i></div><em>' + sous + "</em></div>"; }
@@ -384,6 +393,7 @@
     try { const d = await agir("vue.machine"); if (d && d.ok === false) { S.d = null; S.erreur = d.raison || "lecture refusée"; } else { S.d = d; S.erreur = ""; S.lu = Date.now(); noterMesure(); } }
     catch (e) { S.erreur = (e && e.message) || "la lecture a échoué"; if (!S.d) S.d = null; }
     S.charge = false; rendre();
+    if (!S.gestesLus) { S.gestesLus = true; chargerGestes().then(rendre); }
   }
   // Toutes les cinq secondes : les mesures seules (une lecture légère), posées dans les tuiles sans redessiner la page.
   async function battre() {
@@ -411,7 +421,7 @@
     courbe();
     if (q) { const i = R.querySelector("#mc-q"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }
   }
-  function page(p) { S.page = PAGES[p] ? p : "vue"; rendre(); const t = document.getElementById("tab-overview"); if (t) t.scrollTop = 0; if (R) R.scrollTop = 0; }
+  function page(p) { S.page = PAGES[p] ? p : "vue"; rendre(); if (S.page === "fiche") chargerRd(); const t = document.getElementById("tab-overview"); if (t) t.scrollTop = 0; if (R) R.scrollTop = 0; }
 
   // ───────────────────────── les gestes (ceux qui existent déjà)
   function feuille(titre, html) {
@@ -422,6 +432,125 @@
     v.addEventListener("click", clore); m.addEventListener("click", (e) => { if (e.target.closest("[data-c]")) clore(); }); m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(); });
     document.body.appendChild(v); document.body.appendChild(m); m.querySelector("[data-c]").focus();
   }
+  // ───────────────────────── les gestes du lot 3 : services, conteneurs, processus, adresses, redémarrage — chacun confirmé, exécuté par le courtier, inscrit au journal
+  const DIT = { demarrer: "Démarrer", arreter: "Arrêter", redemarrer: "Redémarrer", recharger: "Recharger", activer: "Lancer au démarrage", desactiver: "Ne plus lancer au démarrage", pause: "Mettre en pause", reprendre: "Reprendre",
+    terminer: "Terminer", forcer: "Forcer l’arrêt", calmer: "Baisser sa priorité" };
+  const POURQUOI = {
+    service: { demarrer: "Le service démarre.", arreter: "Ce qu’il rend s’arrête. Il ne repartira pas tout seul avant le prochain démarrage de la machine.", redemarrer: "Coupure de quelques secondes, puis il repart.",
+      recharger: "Il relit sa configuration, sans coupure.", activer: "Il se lancera à chaque démarrage de la machine.", desactiver: "Il continue de tourner maintenant, mais ne repartira pas au prochain démarrage." },
+    conteneur: { demarrer: "Le conteneur repart avec les mêmes réglages.", arreter: "Le service qu’il rend s’arrête. Il ne repartira pas tout seul, même au démarrage de la machine, tant qu’on ne le relance pas.",
+      redemarrer: "Coupure de quelques secondes. Les réglages et les volumes sont gardés.", pause: "Ses processus sont gelés : il garde sa mémoire mais ne répond plus.", reprendre: "Ses processus repartent là où ils s’étaient arrêtés." },
+    processus: { terminer: "On lui demande de s’arrêter proprement. Il n’y a pas de retour : un processus arrêté ne se relance pas d’ici.", forcer: "Arrêt immédiat, sans lui laisser le temps d’enregistrer. Il n’y a pas de retour.",
+      calmer: "Il passe après les autres quand le processeur manque. Le geste se défait." },
+  };
+  const SANS_RETOUR = { "service.redemarrer": 1, "service.recharger": 1, "conteneur.redemarrer": 1, "processus.terminer": 1, "processus.forcer": 1 };
+  const RECHARGEABLES = ["nginx", "apache2", "ssh", "dovecot", "exim4", "postfix", "fail2ban"];
+  const bg = (genre, action, cible, libelle, cls) => '<button class="btn s ' + (cls || "") + '" data-a="geste" data-c="' + genre + '" data-x="' + action + '" data-n="' + esc(cible) + '">' + esc(libelle || DIT[action]) + "</button>";
+  const jl = (genre, cible) => '<button class="btn s" data-a="journalDe" data-c="' + genre + '" data-n="' + esc(cible) + '">Journal</button>';
+  function gestesService(s) {
+    if (s.geste === "noyau" || s.geste === "collecteur") return '<button class="btn s ' + (s.geste === "noyau" ? "d" : "") + '" data-a="svc" data-g="' + s.geste + '">' + (s.geste === "noyau" ? "Relancer" : "Redémarrer") + "</button>" + jl("service", s.unite);
+    if (s.unite === "cassandra-courtier") return jl("service", s.unite);
+    const arret = s.protege ? '<button class="btn s" disabled title="' + esc(s.protege) + '">Arrêter</button>' : bg("service", "arreter", s.unite, "", "d");
+    const recharge = RECHARGEABLES.indexOf(s.unite) >= 0 || /^php[\d.]*-fpm$/.test(s.unite) ? bg("service", "recharger", s.unite) : "";
+    return (s.etat === "echec" ? bg("service", "redemarrer", s.unite) + arret : s.etat === "actif" ? bg("service", "redemarrer", s.unite) + recharge + arret + '<button class="btn s" data-a="limiter" data-n="' + esc(s.unite) + '">Limiter sa mémoire…</button>' :
+      s.etat === "repos" ? bg("service", "demarrer", s.unite, "Lancer maintenant") : bg("service", "demarrer", s.unite, "", "p")) + jl("service", s.unite);
+  }
+  const boutonDemarrage = (s) => (s.geste === "noyau" || s.geste === "collecteur" || s.unite === "cassandra-courtier" || (s.protege && s.au_demarrage) ? "" :
+    ' <button class="btn s" style="margin-left:6px" data-a="geste" data-c="service" data-x="' + (s.au_demarrage ? "desactiver" : "activer") + '" data-n="' + esc(s.unite) + '">' + (s.au_demarrage ? "Ne plus le lancer" : "Le lancer") + "</button>");
+  const gestesConteneur = (c) => (c.pause ? bg("conteneur", "reprendre", c.nom, "", "p") + bg("conteneur", "arreter", c.nom, "", "d") : c.tourne ? bg("conteneur", "redemarrer", c.nom) + bg("conteneur", "pause", c.nom) + bg("conteneur", "arreter", c.nom, "", "d") :
+    bg("conteneur", "demarrer", c.nom, "", "p")) + jl("conteneur", c.nom);
+  const gestesProcessus = (p) => (p.pid == null || p.protege ? "" : bg("processus", "terminer", p.pid) + bg("processus", "forcer", p.pid, "", "d") + bg("processus", "calmer", p.pid));
+  function blocGestes() {
+    const g = S.gestes; if (!g) return "";
+    return sec("Derniers gestes", "faits depuis cette page · le plus récent d’abord · heure du serveur", g.length ? '<div class="rows">' + g.slice(0, 8).map((x) => '<div class="row"><div class="nm"><b style="white-space:normal">' + esc(x.detail.charAt(0).toUpperCase() + x.detail.slice(1)) +
+      (x.cible ? ' <span class="mono">' + esc(x.cible) + "</span>" : "") + "</b><small>" + jour(x.ts) + " · " + esc(x.qui || "?") + '</small></div><div class="mil" style="white-space:normal">' + esc(x.resultat) + '</div><div class="cote">' +
+      (x.defaisable ? '<button class="btn s" data-a="annuler" data-i="' + x.id + '">Annuler</button>' : "<small>sans retour</small>") + "</div></div>").join("") + "</div>" : '<p class="vide">Aucun geste fait depuis cette page.</p>');
+  }
+  async function chargerGestes() { try { const r = await agir("securite.machine_gestes", { limite: 12 }); S.gestes = (r && r.gestes) || []; } catch (e) { S.gestes = null; } }
+  async function chargerRd() { try { S.rd = await agir("securite.redemarrage_etat"); } catch (e) { S.rd = null; } if (S.page === "fiche") rendre(); return S.rd; }
+  const apresGeste = async (texte) => { dire(texte, "ok"); await chargerGestes(); rendre(); setTimeout(charger, 2500); };
+  // Une feuille qui demande une valeur : `lire(m)` rend la valeur, ou rien pour garder la feuille ouverte (la saisie n'est pas bonne).
+  function saisie(titre, html, oui, danger, lire) {
+    return new Promise((fin) => {
+      const v = document.createElement("div"); v.className = "kit-v"; v.style.zIndex = 9999;
+      const m = document.createElement("div"); m.className = "kit-m mc"; m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true"); m.setAttribute("aria-label", titre); m.style.width = "min(640px,calc(100% - 32px))";
+      m.innerHTML = "<h2>" + esc(titre) + "</h2>" + html + '<p class="note" data-r style="color:var(--danger);min-height:1.2em;margin:6px 0 0"></p><div class="acts"><button class="btn" data-c="non">Annuler</button><button class="btn ' + (danger ? "dng" : "pri") + '" data-c="oui">' + esc(oui) + "</button></div>";
+      const clore = (r) => { v.remove(); m.remove(); fin(r); };
+      v.addEventListener("click", () => clore(null));
+      m.addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (!b || b.disabled) return; if (b.dataset.c !== "oui") return clore(null); const r = lire(m); if (r && r.erreur) { m.querySelector("[data-r]").textContent = r.erreur; return; } if (r) clore(r); });
+      m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(null); });
+      document.body.appendChild(v); document.body.appendChild(m); const f = m.querySelector("input,[data-c=non]"); if (f) f.focus();
+    });
+  }
+  const utc = (t) => new Date(t).toISOString().slice(0, 19).replace("T", " ");
+  const G = {
+    geste: async (b) => {
+      const genre = b.dataset.c, action = b.dataset.x, cible = b.dataset.n, d = D();
+      let args, plus = "", nom = cible;
+      if (genre === "service") { const s = ((d.services || {}).suivis || []).find((x) => x.unite === cible) || {}; args = { service: cible, action: action }; if (action === "arreter" && s.si_arret) plus = "<p><b>" + esc(s.si_arret) + "</b></p>"; if (action !== "arreter" && /^(nginx|apache2|ssh)$/.test(cible) && /redemarrer|recharger/.test(action)) plus = "<p>Sa configuration est testée d’abord : si elle est fausse, rien n’est touché.</p>"; }
+      else if (genre === "conteneur") { const c = (d.conteneurs || []).find((x) => x.nom === cible) || {}; args = { nom: cible, action: action }; if (action === "arreter" && (c.proxys || []).length) plus = "<p><b>" + esc(c.proxys[0].nom) + " ne répondra plus.</b></p>"; }
+      else { const p = (d.processus || []).find((x) => String(x.pid) === String(cible)); if (!p) return dire("Ce processus n’est plus dans la liste : relève la page.", "err"); args = { pid: p.pid, action: action, commande: p.commande }; nom = court(p.commande) + " (n° " + p.pid + ")"; }
+      const retour = SANS_RETOUR[genre + "." + action] ? "" : "<p>Le geste s’inscrit au journal et peut s’annuler depuis « Derniers gestes ».</p>";
+      const titre = { activer: "Lancer " + nom + " au démarrage ?", desactiver: "Ne plus lancer " + nom + " au démarrage ?", forcer: "Forcer l’arrêt de " + nom + " ?", calmer: "Baisser la priorité de " + nom + " ?", pause: "Mettre " + nom + " en pause ?" }[action] || DIT[action] + " " + nom + " ?";
+      if (!await K.confirmer(titre, plus + "<p>" + POURQUOI[genre][action] + "</p>" + retour, DIT[action], action === "arreter" || action === "forcer" || action === "terminer")) return;
+      dire(DIT[action] + " " + nom + "…");
+      await agir("securite." + genre + "_geste", args);
+      if (genre === "processus" && action !== "calmer") S.pr = "";
+      return apresGeste(nom + " : fait, vérifié par le courtier.");
+    },
+    journalDe: async (b) => { const service = b.dataset.c === "service", r = await agir(service ? "securite.service_journal" : "securite.conteneur_journal", service ? { service: b.dataset.n } : { nom: b.dataset.n });
+      feuille("Journal de " + b.dataset.n, '<p class="note">Les 200 dernières lignes, en lecture seule.</p><pre style="margin:0;max-height:52vh;overflow:auto;font:11.5px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word">' + esc((r && r.texte) || "Le journal est vide.") + "</pre>"); },
+    limiter: async (b) => {
+      const s = ((D().services || {}).suivis || []).find((x) => x.unite === b.dataset.n) || {}, total = (D().memoire || {}).total_mo;
+      const r = await saisie("Limiter la mémoire de " + b.dataset.n, "<p>Au-delà de cette limite, le noyau Linux tue le service plutôt que de laisser la machine manquer de mémoire ; systemd le relance s’il est réglé pour.</p>" +
+        (s.memoire_mo != null ? "<p>Il occupe " + mo(s.memoire_mo) + " en ce moment" + (total ? ", sur " + mo(total) + " dans la machine" : "") + ".</p>" : "") +
+        '<label style="display:flex;align-items:center;gap:8px">Limite <input type="number" min="128" step="64" value="' + Math.max(256, Math.ceil((s.memoire_mo || 256) * 2 / 64) * 64) + '" data-v style="width:120px"> Mo</label>', "Poser la limite", false,
+        (m) => { const v = parseInt(m.querySelector("[data-v]").value, 10); return v >= 128 && (!total || v <= total) ? { mo: v } : { erreur: "Entre 128 Mo et la mémoire de la machine." }; });
+      if (!r) return;
+      await agir("securite.service_memoire", { service: b.dataset.n, mo: r.mo });
+      return apresGeste("La mémoire de " + b.dataset.n + " est limitée à " + mo(r.mo) + ".");
+    },
+    bannir: async (b) => { const s = (D().sessions || [])[+b.dataset.i]; if (!s) return;
+      if (!await K.confirmer("Bannir l’adresse " + s.adresse + " ?", "<p>fail2ban refuse toute nouvelle connexion SSH depuis cette adresse. Le geste s’annule depuis « Derniers gestes » ; la liste des bannies est dans Sécurité › Défenses.</p>" +
+        "<p>Le courtier refuse une adresse privée, de ton réseau privé, ou qui s’est connectée avec succès depuis trente jours.</p>", "Bannir", true)) return;
+      await agir("securite.adresse_bannir", { ip: s.adresse }); return apresGeste("L’adresse " + s.adresse + " est bannie."); },
+    dehors: async () => { if (!await K.confirmer("Tout le monde dehors ?", "<p>Toutes les sessions qui tiennent un terminal sur la machine sont fermées, la tienne comprise si tu y es connecté. Il n’y a pas de retour : une session fermée se rouvre en se reconnectant.</p>", "Fermer toutes les sessions", true)) return;
+      const r = await agir("securite.sessions_fermer_toutes", {}); return apresGeste(((r && r.fermees) || []).length + " session(s) fermée(s)."); },
+    annuler: async (b) => { const g = (S.gestes || []).find((x) => String(x.id) === b.dataset.i); if (!g) return;
+      if (!await K.confirmer("Annuler ce geste ?", "<p>" + esc(g.detail) + (g.cible ? " · " + esc(g.cible) : "") + "</p><p>Le courtier rejoue le retour que le geste avait rendu, une seule fois.</p>", "Annuler le geste")) return;
+      await agir("securite.machine_geste_defaire", { id: g.id }); if (g.geste === "redemarrer") await chargerRd(); return apresGeste("Le geste est annulé."); },
+    retourLu: async () => { await agir("securite.redemarrage_lu", {}); if (S.rd) S.rd.retour = null; rendre(); },
+    annulerRedemarrage: async () => { await chargerGestes(); const g = (S.gestes || []).find((x) => x.geste === "redemarrer" && x.defaisable); if (!g) return dire("Ce redémarrage n’a pas été prévu depuis cette page : il s’annule sur la machine (shutdown -c).", "err");
+      if (!await K.confirmer("Annuler le redémarrage prévu ?", "<p>La machine ne redémarrera pas.</p>", "Annuler le redémarrage")) return;
+      await agir("securite.machine_geste_defaire", { id: g.id }); await chargerRd(); return apresGeste("Le redémarrage est annulé."); },
+    redemarrer: async () => {
+      dire("Vérifications avant de redémarrer…");
+      const e = await chargerRd(), nom = (D().machine || {}).nom || (e && e.machine) || "";
+      if (!e) return dire("Les vérifications n’ont pas répondu : la machine ne se redémarre pas sans elles.", "err");
+      if (e.prevu) return dire("Un redémarrage est déjà prévu le " + e.prevu + " : annule-le d’abord.", "err");
+      const liste = (t, l, c) => (l.length ? '<p style="margin:6px 0 2px' + (c ? ";color:var(--" + c + ")" : "") + '"><b>' + t + "</b></p><ul style=\"margin:0 0 6px 18px\">" + l.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "");
+      const nr = e.ne_reviendront_pas || {}, bloque = (e.obstacles || []).length > 0;
+      const r = await saisie("Redémarrer la machine " + nom, "<p>Tout s’arrête une à deux minutes : les sites, les conteneurs, le réseau privé, et Cassandra elle-même. Tu seras déconnecté de cette page.</p>" +
+        liste("La machine ne part pas maintenant :", e.obstacles || [], "danger") + liste("Sessions ouvertes, qui seront coupées :", (e.sessions || []).map((s) => s[0] + " · " + s[1] + (s[2] ? " · " + s[2] : ""))) +
+        liste("Ne reviendront pas seuls :", (nr.services || []).map((s) => "service " + s + " (pas lancé au démarrage)").concat((nr.conteneurs || []).map((c) => "conteneur " + c + " (sans politique de redémarrage)")), "warn") +
+        ((nr.services || []).length + (nr.conteneurs || []).length ? "" : "<p>Tout ce qui tourne est réglé pour revenir seul.</p>") +
+        '<p style="margin:10px 0 4px"><b>Quand</b> <small>il est ' + esc(e.heure || "?") + ' sur le serveur</small></p><label style="display:block"><input type="radio" name="mc-q" value="maintenant" checked> dans une minute</label>' +
+        '<label style="display:block"><input type="radio" name="mc-q" value="heure"> à <input type="time" data-h value="03:00" style="width:110px"> <small>heure du serveur</small></label>' +
+        '<label style="display:block;margin-top:8px"><input type="checkbox" data-f checked> poser une fenêtre de maintenance de 20 minutes dans le Sensorium, pour que les alertes se taisent</label>' +
+        '<p style="margin:10px 0 4px"><b>Pour confirmer, tape le nom de la machine</b></p><input type="text" data-n autocomplete="off" placeholder="' + esc(nom) + '" style="width:220px"' + (bloque ? " disabled" : "") + ">", "Redémarrer la machine", true,
+        (m) => { if (bloque) return { erreur: "La machine ne part pas tant que ce qui est en cours n’est pas fini." }; const q = m.querySelector('input[name="mc-q"]:checked').value, h = m.querySelector("[data-h]").value;
+          if (m.querySelector("[data-n]").value.trim() !== nom) return { erreur: "Ce n’est pas le nom de la machine." }; if (q === "heure" && !/^\d\d:\d\d$/.test(h)) return { erreur: "Heure illisible." };
+          return { quand: q === "heure" ? h : "maintenant", fenetre: m.querySelector("[data-f]").checked }; });
+      if (!r) return;
+      const res = await agir("securite.machine_redemarrer", { quand: r.quand, nom: nom });
+      if (r.fenetre) {
+        let dans = 60000;
+        if (r.quand !== "maintenant" && /^\d\d:\d\d$/.test(e.heure || "")) { const mn = (t) => +t.slice(0, 2) * 60 + +t.slice(3, 5); dans = ((mn(r.quand) - mn(e.heure) + 1440) % 1440) * 60000; }
+        try { await agir("sensorium.fenetre_poser", { portee: "*", debut: utc(Date.now() + dans - 60000), fin: utc(Date.now() + dans + 1200000), motif: "redémarrage de la machine " + nom }); } catch (x) { dire("Le redémarrage est prévu, mais la fenêtre de maintenance n’a pas pu être posée : " + msg(x), "err"); }
+      }
+      await chargerRd(); return apresGeste("Le redémarrage est prévu le " + ((res && res.prevu) || "?") + " (heure du serveur). Il s’annule jusqu’au départ.");
+    },
+  };
   const SVC = {
     noyau: ["Relancer le noyau de Cassandra ?", "<p>Tu seras déconnecté quelques secondes. Le geste part dans trois secondes.</p>", "Relancer", true, () => agir("securite.systeme_geste", { service: "noyau", action: "restart" }), "Le noyau se relance."],
     ollama: ["Relancer Ollama ?", "<p>Les modèles locaux sont déchargés puis rechargés à la demande.</p>", "Relancer", false, () => agir("securite.systeme_geste", { service: "ollama", action: "restart" }), "Ollama est relancé."],
@@ -451,6 +580,7 @@
     journal: async (b) => { const nom = { noyau: "noyau", collecteur: "sensorium", ollama: "ollama", nginx: "nginx" }[b.dataset.g]; const r = await agir("securite.journal_service", { service: nom });
       feuille("Journal de " + (b.dataset.n || nom), '<p class="note">Les 200 dernières lignes, en lecture seule.</p><pre style="margin:0;max-height:52vh;overflow:auto;font:11.5px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word">' + esc((r && r.texte) || "Le journal est vide.") + "</pre>"); },
   };
+  Object.assign(A, G);
   const msg = (x) => (x && x.message) || String(x || "le geste a échoué");
 
   // ───────────────────────── le branchement : la page vit dans l'onglet de la vue d'ensemble, sous sa rubrique « machine »
@@ -470,7 +600,7 @@
   function ouvrir(p) {
     if (!monter()) return;
     S.page = PAGES[p] ? p : "vue";
-    rendre(); charger();
+    rendre(); charger(); if (S.page === "fiche") chargerRd(); if (R) R.scrollTop = 0;
     if (!S.minuteurs.length) { S.minuteurs.push(setInterval(battre, 5000)); S.minuteurs.push(setInterval(() => { if (visible()) charger(); }, 60000)); }
   }
   // La vue d'ensemble pose la rubrique (data-vue) ; quand c'est « machine », la page prend la place.

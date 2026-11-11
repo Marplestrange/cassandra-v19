@@ -7,16 +7,16 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.4.0  #b7417f
+# VERSION CN : 0.5.0  #e97c3d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Sécurité vérifie, À ROOT : les deux commandes sont posées, à root, exécutables.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=b7417f ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=e97c3d ▼▼▼
 # Sécurité vérifie, À ROOT : les deux commandes sont posées, à root, exécutables.
 set -eu
-for c in mesurer agir outils; do
+for c in mesurer agir outils machine; do
   p="/usr/libexec/cassandra/securite/$c"
   [ -x "$p" ] && [ "$(stat -c %U "$p")" = "root" ] || { echo "securite : $p absent ou pas à root" >&2; exit 1; }
 done

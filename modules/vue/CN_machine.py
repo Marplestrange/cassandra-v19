@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.4.0  #618533
+# VERSION CN : 0.4.1  #0069a2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=618533 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=0069a2 ▼▼▼
 """La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 
 Une fonction PURE (`composer`) : en entrée, la réponse de chaque source (ou son silence) ; en sortie, des données prêtes à dessiner. Rien n'est
@@ -34,7 +34,7 @@ SERVICES = [
     ("sensorium", "Le collecteur du Sensorium : il relève la machine, toutes les 30 secondes à 60 minutes selon le capteur.", "maison", "collecteur", ""),
     ("cassandra-courtier", "Le courtier racine : il exécute les commandes nommées que Cassandra demande, une à la fois, puis se rendort.", "maison", "", ""),
     ("ollama", "Les modèles de langage locaux, pour les agents qui ne passent pas par un fournisseur en ligne.", "maison", "ollama", ""),
-    ("nginx", "Le serveur web de façade : il reçoit toutes les visites et les passe aux sites et aux conteneurs.", "web", "nginx", ""),
+    ("nginx", "Le serveur web de façade : il reçoit toutes les visites et les passe aux sites et aux conteneurs.", "web", "nginx", "L’arrêter couperait cette interface : d’ici, il se redémarre et se recharge, il ne s’arrête pas."),
     ("apache2", "Le serveur web derrière nginx, pour les sites PHP du panneau.", "web", "", ""),
     ("mysql", "La base de données MySQL des sites.", "données", "", ""),
     ("mariadb", "La base de données MariaDB des sites.", "données", "", ""),
@@ -96,6 +96,10 @@ ROLES_IMAGE = (
     ("open-webui", "une interface pour modèles de langage"), ("n8n", "des automatisations"), ("minio", "un stockage d’objets"), ("adguard", "un filtre DNS"),
     ("pihole", "un filtre DNS"), ("jellyfin", "une médiathèque"), ("homeassistant", "la domotique"),
 )
+# Les processus que le courtier refuse d'arrêter (la même table que sa commande « machine ») : la page le dit avant, au lieu d'un bouton qui échoue.
+PROCESSUS_PROTEGES = {"ssh": "C’est ta porte d’entrée sur la machine : il se redémarre depuis Services.", "sshd": "C’est ta porte d’entrée sur la machine : il se redémarre depuis Services.",
+                      "cassandra-noyau": "C’est Cassandra elle-même : elle se relance depuis Services.", "cassandra-courtier": "C’est le courtier, qui exécute les gestes : il ne se touche pas.",
+                      "sensorium": "C’est le collecteur : il se redémarre depuis Services."}
 PORTEES = {"machine": ("la machine seule", "ok"), "prive": ("le réseau privé", ""), "public": ("Internet", "w")}
 SANTES = {"healthy": "sain", "unhealthy": "en mauvaise santé", "starting": "contrôle de santé en cours", "": "sans contrôle de santé"}
 # php<version>-fpm : la version change d'une machine à l'autre
@@ -378,7 +382,8 @@ def composer(s: dict, maintenant: str = "") -> dict:
         genre, a_qui = str(p.get("genre") or ""), str(p.get("a_qui") or "")
         pid = p.get("pid") if isinstance(p.get("pid"), int) else None
         description = _description_service(a_qui) if genre == "service" else (roles.get(a_qui, "")[:1].upper() + roles.get(a_qui, "")[1:] if genre == "conteneur" else "")
-        protege = ("L’arrêter arrêterait la machine." if pid == 1 else next((pr for u, _d, _f, _g, pr in SERVICES if genre == "service" and u == a_qui and pr), ""))
+        protege = ("L’arrêter arrêterait la machine." if pid == 1 else "Un processus du noyau Linux ne se touche pas." if genre == "noyau" else
+                   PROCESSUS_PROTEGES.get(a_qui, "") if genre == "service" else "")
         processus.append({"utilisateur": str(p.get("user") or ""), "cpu": p.get("cpu") if isinstance(p.get("cpu"), (int, float)) else 0, "commande": str(p.get("command") or p.get("name") or "?"),
                           "pid": pid, "mem_mo": p.get("mem_mb") if isinstance(p.get("mem_mb"), (int, float)) else None, "age_s": p.get("age_s") if isinstance(p.get("age_s"), int) else None,
                           "a_qui": {"genre": genre, "nom": a_qui} if genre else None, "description": description, "protege": protege})

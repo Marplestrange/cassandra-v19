@@ -7,16 +7,16 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.4.0  #008332
+# VERSION CN : 0.5.0  #dddc84
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Sécurité retire, À ROOT : les commandes posées par l'installation (les réglages déjà appliqués à la machine restent : ils tournent sans Cassandra).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=008332 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=dddc84 ▼▼▼
 # Sécurité retire, À ROOT : les commandes posées par l'installation (les réglages déjà appliqués à la machine restent : ils tournent sans Cassandra).
 set -eu
-rm -f "/usr/libexec/cassandra/securite/mesurer" "/usr/libexec/cassandra/securite/agir" "/usr/libexec/cassandra/securite/outils"
+rm -f "/usr/libexec/cassandra/securite/mesurer" "/usr/libexec/cassandra/securite/agir" "/usr/libexec/cassandra/securite/outils" "/usr/libexec/cassandra/securite/machine"
 rmdir /usr/libexec/cassandra/securite 2>/dev/null || true
 echo "securite : commandes retirées"
 # ▲▲▲ FIN BORNE CN ▲▲▲
