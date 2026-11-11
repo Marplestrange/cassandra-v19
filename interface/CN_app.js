@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f8313b
+// VERSION CN : 0.1.0  #f86025
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f8313b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f86025 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -7167,7 +7167,7 @@ function vuGeste(g){
 }
 // Une page par rubrique : la vue d'ensemble ne se parcourt plus, chaque entrée du menu en montre UNE page. Le jeu de données reste unique
 // (un seul appel /api/vue) ; ce qui change, c'est la page affichée (attribut data-vue, que le CSS lit) et son titre.
-const VU_PAGES={ verdict:'Vue d’ensemble', gestes:'Ce qui demande un geste', cass:'Cassandra, maintenant', sites:'Les sites', flotte:'La flotte', fil:'Ce qui a changé', machine:'La machine' };
+const VU_PAGES={ verdict:'Vue d’ensemble', gestes:'Ce qui demande un geste', cass:'Cassandra, maintenant', flotte:'La flotte', fil:'Ce qui a changé', machine:'La machine' };
 function vuAller(sec){
     if(sec==='systeme'){ if(typeof ouvrirSysteme==='function') ouvrirSysteme(); return; }
     if(!VU_PAGES[sec]) sec='verdict';
@@ -7196,14 +7196,13 @@ function vuRendre(d){
     set('verdict', d.niveau==='stable'?vuHeure(d.releve):d.niveau, vuNiv(d.niveau));
     const nc=(d.cloche||{}).total||0; set('gestes', nc?String(nc):'0', nc?((d.cloche.lignes||[]).some(x=>x.niveau==='critique')?'panne':'regarder'):'ok');
     if(d.admin){ const c=d.cassandra||{}; set('cass', c.palier!==undefined&&c.palier!==null?('palier '+c.palier):'—', c.collecteur?'ok':'panne');
-      set('sites', String(d.n_sites||0), (d.sites||[]).some(x=>x.up===false)?'panne':'ok');
       const f=d.flotte||{}; set('flotte', (f.machines||[]).length+' att.', (f.hors_ligne||[]).length?'panne':'ok');
       set('fil', String((d.fil||[]).length), '');
       set('machine', d.machine&&d.machine.vivant?'1 s':'muette', d.machine&&d.machine.vivant?'ok':'panne'); }
 }
-// Les listes longues (sites, flotte, fil) se filtrent : un champ, et « problèmes seulement » ; les lignes en défaut passent devant.
-// La barre est refaite à chaque relevé, le filtre choisi est gardé (VU.f).
-const VU_LISTES=[['vu-sites','.mx-rows .mx-row','sites'],['vu-flotte','.mx-rows .mx-row','machines'],['vu-fil','.vu-jl .e','événements']];
+// Les listes longues (flotte, fil) se filtrent : un champ, et « problèmes seulement » ; les lignes en défaut passent devant.
+// La barre est refaite à chaque relevé, le filtre choisi est gardé (VU.f). Les sites n'ont plus de liste ici : ils ont leur écran (Sites).
+const VU_LISTES=[['vu-flotte','.mx-rows .mx-row','machines'],['vu-fil','.vu-jl .e','événements']];
 function vuProbleme(r){ return !!r.querySelector('.mx-dot.panne,.mx-dot.regarder,.mx-pill.panne,.mx-pill.regarder'); }
 function vuFiltres(){
     VU.f=VU.f||{};
@@ -7269,12 +7268,6 @@ function vuCass(d){
 }
 function vuParc(d){
     const g=document.getElementById('vu-parc'); if(!g) return; g.hidden=false;
-    const sites=d.sites||[], zs=document.getElementById('vu-sites');
-    zs.innerHTML=`<div class="mx-chart-h"><h2>Les sites</h2><span class="mx-meta">${d.n_sites||0} · sonde ${(d.ages||{}).sonde?vuHeure(d.ages.sonde):'jamais'} · un clic ouvre la fiche</span></div>`
-      + (sites.length ? `<div class="mx-rows">${sites.map(x=>{ const tls=(typeof x.ssl_days==='number')?vuPuce('SSL '+x.ssl_days+' j', x.ssl_days<7?'panne':(x.ssl_days<21?'regarder':'ok')):''; const up=x.up===false?vuPuce(x.http_code?('code '+x.http_code):'ne répond pas','panne'):(x.up===true?vuPuce('en ligne','ok'):vuPuce('pas sondé','pas_encore'));
-          return `<div class="mx-row mx-cliq" onclick="switchTab('mysites');setTimeout(()=>stOpen('${vuA(x.domain)}'),150)"><span class="mx-dot ${x.up===false?'panne':(typeof x.ssl_days==='number'&&x.ssl_days<21?'regarder':'ok')}"></span><div class="mx-rt"><b><code>${vuE(x.domain)}</code></b><span>${x.http_code?x.http_code+(x.response_ms?' · '+x.response_ms+' ms':''):'—'}${x.source==='declare'?' · déclaré':''}</span></div><div class="mx-pills">${up}${tls}</div></div>`; }).join('')}</div>`
-        : `<div class="mx-silence">Aucun site connu.</div>`)
-      + `<div class="mx-foot"><a onclick="switchTab('mysites')">Tout voir dans Sites →</a></div>`;
     const f=d.flotte||{}, zf=document.getElementById('vu-flotte'), M=f.machines||[];
     zf.innerHTML=`<div class="mx-chart-h"><h2>La flotte</h2><span class="mx-meta">${M.length} attendue${M.length>1?'s':''} · présence ${(d.ages||{}).flotte?vuHeure(d.ages.flotte):'jamais'} · la flotte fait foi</span></div>`
       + (M.length ? `<div class="mx-rows">${M.map(z=>{ const hl=z.etat==='erreur'||z.en_ligne===false; return `<div class="mx-row mx-cliq" onclick="if(typeof flOpen==='function'){switchTab('fleet');setTimeout(()=>flOpen('${vuA(z.nom)}'),150);}else switchTab('fleet')"><span class="mx-dot ${hl?'panne':'ok'}"></span><div class="mx-rt"><b>${vuE(z.nom)}</b><span>attendue${z.os?' · '+vuE(z.os):''}${hl&&z.dernier_contact?' · dernière présence '+vuE(vuHeure(z.dernier_contact)):''}</span></div>${vuPuce(hl?'hors ligne':'en ligne', hl?'panne':'ok')}</div>`; }).join('')}</div>`

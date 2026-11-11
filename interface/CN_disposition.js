@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b3c4c8
+// VERSION CN : 0.1.0  #38ee36
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b3c4c8 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=38ee36 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -89,7 +89,6 @@
     pv_verdict: '<path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
     pv_gestes: '<path d="M7 3v13l3.5-3 2.5 6 2.3-1-2.5-5.8H17z"/>',
     pv_cass: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
-    pv_sites: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/>',
     pv_flotte: '<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/>',
     pv_fil: '<path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/>',
     pv_machine: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
@@ -245,7 +244,7 @@
     return h;
   }
   // l'état de chaque section de la Vue d'ensemble (« panne », « 7 att. »…) : l'ancienne interface l'écrit dans ses éléments d'origine, on le recopie dans le menu
-  const SECTIONS_ETAT = ["verdict", "gestes", "cass", "sites", "flotte", "fil", "machine"];
+  const SECTIONS_ETAT = ["verdict", "gestes", "cass", "flotte", "fil", "machine"];
   // une icône en trait par vue du Panorama (à la place du point) ; l'état, lui, s'écrit en mots dans une pastille de couleur
   // Les pictogrammes d'Agents IA et de son groupe : copiés de la maquette (docs/maquettes/CN_maquette-agents.html), jamais devinés. « • » reste pour ce que la maquette n'illustre pas.
   const GL_ENT = { "agents-ia": "▣", evolution: "⚘", proactivite: "ϟ", memoire: "◐" };
@@ -254,14 +253,13 @@
   const glEnt = (eid) => (GL_ENT[eid] ? '<i class="d19-gl" aria-hidden="true">' + GL_ENT[eid] + "</i>" : "");
   const GL_EVO = { aujourdhui: "☼", amelio: "↗", "amelio.toutes": "≡", "amelio.essai": "◔", "amelio.service": "●", "amelio.retiree": "⊘", reglages: "◈", consignes: "✎", capot: "⚙", "capot.chercheurs": "☉", "capot.points": "ƒ", "capot.comparer": "⇄", "capot.install": "⤓", "capot.securite": "⛨", "capot.carnet": "▤", "capot.ecartees": "⊘", "capot.vision": "✦", "capot.vocab": "Aa" };
   const glVue = (eid, vid) => (eid === "evolution" ? (GL_EVO[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_EVO[vid] + "</i>" : "") : eid !== "agents-ia" ? "" : GL_VUE[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_VUE[vid] + "</i>" : GL_AGENT[vid] ? '<i class="d19-gl" aria-hidden="true" style="color:' + GL_AGENT[vid] + '">●</i>' : "");
-  const EMO_PANORAMA = { verdict: "pv_verdict", gestes: "pv_gestes", cass: "pv_cass", sites: "pv_sites", flotte: "pv_flotte", fil: "pv_fil", machine: "pv_machine", systeme: "pv_systeme" };
-  const INFO_PANORAMA = { verdict: "Le verdict global de l'instance", gestes: "Les gestes que Cassandra attend de vous", cass: "L'état de Cassandra et son palier d'autonomie", sites: "Les sites hébergés : combien, et s'ils répondent",
+  const EMO_PANORAMA = { verdict: "pv_verdict", gestes: "pv_gestes", cass: "pv_cass", flotte: "pv_flotte", fil: "pv_fil", machine: "pv_machine", systeme: "pv_systeme" };
+  const INFO_PANORAMA = { verdict: "Le verdict global de l'instance", gestes: "Les gestes que Cassandra attend de vous", cass: "L'état de Cassandra et son palier d'autonomie",
     flotte: "Les machines du parc et leur connexion", fil: "Ce qui a changé récemment", machine: "La machine qui héberge Cassandra", systeme: "Les détails techniques du système" };
   function motsEtat(id, brut) {
     const t = String(brut || "").trim(), n = parseInt(t, 10);
     if (!t || t === "—") return "";
     if (id === "gestes") return n === 0 ? "rien" : n + " à faire";
-    if (id === "sites") return n === 0 ? "aucun site" : n + (n > 1 ? " sites" : " site");
     if (id === "flotte") return /att\./.test(t) ? n + (n > 1 ? " machines" : " machine") : t;
     if (id === "fil") return n === 0 ? "rien de neuf" : n + (n > 1 ? " nouveautés" : " nouveauté");
     if (id === "verdict") return t === "panne" ? "en panne" : t === "danger" ? "en danger" : t === "regarder" ? "à surveiller" : t;
