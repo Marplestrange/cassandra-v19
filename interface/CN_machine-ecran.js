@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #d092f9
+// VERSION CN : 0.1.0  #28925b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=d092f9 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=28925b ▼▼▼
 // La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // Une seule page où tout se voit d'un coup d'œil, une tuile par sujet ; le détail d'un sujet s'ouvre au clic, « ‹ La machine » y ramène.
 // Tout vient d'UNE lecture, vue.machine, qui compose ce que les modules relèvent déjà ; les ressources et les processus se relisent seuls
@@ -390,7 +390,7 @@
   function noterMesure() { const r = D().ressources; if (!r || r.cpu == null) return; S.hist.cpu.push(r.cpu); S.hist.ram.push(r.ram || 0); if (S.hist.cpu.length > 60) { S.hist.cpu.shift(); S.hist.ram.shift(); } }
   async function charger() {
     if (S.charge) return; S.charge = true;
-    try { const d = await agir("vue.machine"); if (d && d.ok === false) { S.d = null; S.erreur = d.raison || "lecture refusée"; } else { S.d = d; S.erreur = ""; S.lu = Date.now(); noterMesure(); } }
+    try { const d = await agir("vue.machine"); if (d && d.ok === false) { S.d = null; S.erreur = d.raison || "lecture refusée"; } else { S.d = d; S.erreur = ""; S.lu = Date.now(); noterMesure(); appliquerFrais(); } }
     catch (e) { S.erreur = (e && e.message) || "la lecture a échoué"; if (!S.d) S.d = null; }
     S.charge = false; rendre();
     if (!S.gestesLus) { S.gestesLus = true; chargerGestes().then(rendre); }
@@ -466,6 +466,20 @@
       (x.cible ? ' <span class="mono">' + esc(x.cible) + "</span>" : "") + "</b><small>" + jour(x.ts) + " · " + esc(x.qui || "?") + '</small></div><div class="mil" style="white-space:normal">' + esc(x.resultat) + '</div><div class="cote">' +
       (x.defaisable ? '<button class="btn s" data-a="annuler" data-i="' + x.id + '">Annuler</button>' : "<small>sans retour</small>") + "</div></div>").join("") + "</div>" : '<p class="vide">Aucun geste fait depuis cette page.</p>');
   }
+  // Ce qu'un geste vient de changer, tenu jusqu'au relevé suivant du collecteur (il ne relit les conteneurs que toutes les cinq minutes, les services toutes les trente
+  // secondes) : sans cela la page montrerait l'état d'avant, et un conteneur en pause n'offrirait pas « Reprendre ».
+  const FRAIS = { conteneur: {}, service: {} };
+  const INVERSE_DIT = { "mettre en pause": "reprendre", reprendre: "pause", "arrêter": "demarrer", "démarrer": "arreter", "lancer au démarrage": "desactiver", "ne plus lancer au démarrage": "activer" };
+  function noterFrais(genre, cible, action, res) { if (!FRAIS[genre]) return; FRAIS[genre][cible] = { action: action, apres: res && res.apres, fin: Date.now() + (genre === "conteneur" ? 330000 : 45000) }; appliquerFrais(); }
+  function appliquerFrais() {
+    const d = S.d, maintenant = Date.now(); if (!d) return;
+    (d.conteneurs || []).forEach((c) => { const f = FRAIS.conteneur[c.nom]; if (!f) return; if (f.fin < maintenant) { delete FRAIS.conteneur[c.nom]; return; }
+      const e = f.apres || { arreter: "exited", pause: "paused" }[f.action] || "running";
+      c.pause = e === "paused"; c.tourne = e === "running" || e === "paused"; c.etat = e === "paused" ? "en pause" : e === "running" ? (f.action === "reprendre" ? "reparti à l’instant" : "relancé à l’instant") : "arrêté à l’instant"; });
+    ((d.services || {}).suivis || []).forEach((s) => { const f = FRAIS.service[s.unite]; if (!f) return; if (f.fin < maintenant) { delete FRAIS.service[s.unite]; return; }
+      if (f.action === "arreter") { s.etat = "arret"; s.sous_etat = "arrêté à l’instant"; s.pid = null; s.memoire_mo = null; } else if (f.action === "demarrer" || f.action === "redemarrer") { s.etat = "actif"; s.sous_etat = "relancé à l’instant"; }
+      else if (f.action === "activer") s.au_demarrage = true; else if (f.action === "desactiver") s.au_demarrage = false; });
+  }
   async function chargerGestes() { try { const r = await agir("securite.machine_gestes", { limite: 12 }); S.gestes = (r && r.gestes) || []; } catch (e) { S.gestes = null; } }
   async function chargerRd() { try { S.rd = await agir("securite.redemarrage_etat"); } catch (e) { S.rd = null; } if (S.page === "fiche") rendre(); return S.rd; }
   const apresGeste = async (texte) => { dire(texte, "ok"); await chargerGestes(); rendre(); setTimeout(charger, 2500); };
@@ -494,8 +508,8 @@
       const titre = { activer: "Lancer " + nom + " au démarrage ?", desactiver: "Ne plus lancer " + nom + " au démarrage ?", forcer: "Forcer l’arrêt de " + nom + " ?", calmer: "Baisser la priorité de " + nom + " ?", pause: "Mettre " + nom + " en pause ?" }[action] || DIT[action] + " " + nom + " ?";
       if (!await K.confirmer(titre, plus + "<p>" + POURQUOI[genre][action] + "</p>" + retour, DIT[action], action === "arreter" || action === "forcer" || action === "terminer")) return;
       dire(DIT[action] + " " + nom + "…");
-      await agir("securite." + genre + "_geste", args);
-      if (genre === "processus" && action !== "calmer") S.pr = "";
+      const res = await agir("securite." + genre + "_geste", args);
+      if (genre === "processus" && action !== "calmer") S.pr = ""; else noterFrais(genre, cible, action, res);
       return apresGeste(nom + " : fait, vérifié par le courtier.");
     },
     journalDe: async (b) => { const service = b.dataset.c === "service", r = await agir(service ? "securite.service_journal" : "securite.conteneur_journal", service ? { service: b.dataset.n } : { nom: b.dataset.n });
@@ -518,7 +532,9 @@
       const r = await agir("securite.sessions_fermer_toutes", {}); return apresGeste(((r && r.fermees) || []).length + " session(s) fermée(s)."); },
     annuler: async (b) => { const g = (S.gestes || []).find((x) => String(x.id) === b.dataset.i); if (!g) return;
       if (!await K.confirmer("Annuler ce geste ?", "<p>" + esc(g.detail) + (g.cible ? " · " + esc(g.cible) : "") + "</p><p>Le courtier rejoue le retour que le geste avait rendu, une seule fois.</p>", "Annuler le geste")) return;
-      await agir("securite.machine_geste_defaire", { id: g.id }); if (g.geste === "redemarrer") await chargerRd(); return apresGeste("Le geste est annulé."); },
+      await agir("securite.machine_geste_defaire", { id: g.id }); if (g.geste === "redemarrer") await chargerRd();
+      if (INVERSE_DIT[g.detail]) noterFrais(g.geste, g.cible, INVERSE_DIT[g.detail], null);
+      return apresGeste("Le geste est annulé."); },
     retourLu: async () => { await agir("securite.redemarrage_lu", {}); if (S.rd) S.rd.retour = null; rendre(); },
     annulerRedemarrage: async () => { await chargerGestes(); const g = (S.gestes || []).find((x) => x.geste === "redemarrer" && x.defaisable); if (!g) return dire("Ce redémarrage n’a pas été prévu depuis cette page : il s’annule sur la machine (shutdown -c).", "err");
       if (!await K.confirmer("Annuler le redémarrage prévu ?", "<p>La machine ne redémarrera pas.</p>", "Annuler le redémarrage")) return;

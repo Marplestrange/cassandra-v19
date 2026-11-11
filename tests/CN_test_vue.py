@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #02ef12
+# VERSION CN : 0.1.0  #b46b9d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=02ef12 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b46b9d ▼▼▼
 """Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille »."""
 import sys
 import unittest
@@ -337,6 +337,13 @@ class EcranMachine(unittest.TestCase):
         css = json.loads(re.search(r'const CSS = ("(?:[^"\\]|\\.)*");', ecran).group(1))
         hors = [s for s in re.findall(r"(?:^|\})([^{}@]+)\{", css) if not all(x.strip().startswith((".mc", ':root[data-theme="dark"] .mc', "#tab-overview")) for x in s.split(","))]
         self.assertEqual(hors, [])
+
+    def test_apres_un_geste_la_page_montre_l_etat_que_le_courtier_a_verifie(self):
+        """Le collecteur ne relit les conteneurs que toutes les cinq minutes : sans cela, un conteneur mis en pause restait « tourne » et n'offrait pas « Reprendre » (11-2026)."""
+        ecran = self.lire("interface", "CN_machine-ecran.js")
+        self.assertIn("noterFrais(genre, cible, action, res)", ecran)                             # le geste note ce qu'il a changé
+        self.assertIn("noterMesure(); appliquerFrais(); }", ecran)                               # et chaque relecture de la page le garde, le temps du relevé suivant
+        self.assertIn("fin: Date.now() + (genre === \"conteneur\" ? 330000 : 45000)", ecran)
 
     def test_la_page_defile_dans_son_propre_cadre(self):
         """Le cadre de la vue coupe ce qui dépasse (overflow:hidden) : sans défilement à elle, la page ne se parcourt pas (11-2026)."""
