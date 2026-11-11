@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #79e42f
+# VERSION CN : 0.1.0  #e067f7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve les garanties du démon du Sensorium que l'audit de novembre 2026 a corrigées : un échec de commande n'est pas « rien à signaler », un socket muet est lâché ou fait arrêter le collecteur, un jeton FastPanel expiré est renouvelé, un certificat expiré se compte, un journal d'accès se lit par blocs, une redirection rouverte alerte.
 # MÉTHODE    : charge CN_sensorium.py comme module sur une base et un socket temporaires, simule les commandes et l'API HTTP (aucun réseau, aucune commande système), puis appelle les fonctions du démon.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=79e42f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e067f7 ▼▼▼
 import gzip
 import importlib.util
 import json
@@ -599,6 +599,16 @@ class RelevesDeLaMachine(Base):
         self.assertEqual((un["name"], un["pid"], un["memoire_mo"], un["cpu_pct"], un["depuis"]), ("web", 1629, 50.0, None, "2026-11-03T18:32:06"))
         self.assertEqual(deux["cpu_pct"], 10.0)                                                      # 3 s de processeur en 30 s
         self.assertNotIn("cpu_ns", deux)
+
+    def test_un_service_a_l_ancienne_lance_au_demarrage_est_dit_tel(self):
+        """Une unité « generated » (script SysV enveloppé par systemd, comme exim4) n'est jamais « enabled » : c'est son lien de démarrage qui dit si elle se lance (11-2026)."""
+        sortie = "Id=exim4.service\nLoadState=loaded\nActiveState=active\nSubState=running\nUnitFileState=generated\nType=forking\nDescription=Courrier\nMainPID=0\n\n"
+        self.m._SERVICES_CPU.clear()
+        for lien, attendu in ((True, 1), (False, 0)):
+            with mock.patch.object(self.m, "_qui", return_value="/bin/systemctl"), mock.patch.object(self.m, "run_cmd", return_value=sortie), \
+                    mock.patch.object(self.m, "_sysv_au_demarrage", return_value=lien):
+                self.assertEqual(self.m.collect_system_services()[0]["enabled"], attendu)
+        self.assertFalse(self.m._sysv_au_demarrage("../../etc/passwd"))
 
     def test_les_metriques_donnent_le_detail_des_processus_et_de_la_memoire(self):
         ps = "www-data  52110  3.5 1884160  21600 php-fpm: pool boutique.exemple.test\nroot  60211 55.0 3000 0 ps -eo user:32,pid,pcpu,rss,etimes,args --no-headers\n"

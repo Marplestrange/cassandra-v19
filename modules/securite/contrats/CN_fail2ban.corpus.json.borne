@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.5.1  #77632a
+# VERSION CN : 0.5.2  #77632a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : fail2ban.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

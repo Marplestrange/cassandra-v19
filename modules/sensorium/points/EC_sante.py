@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.1)  #115217
+# VERSION EC : EC0 (référence 0.3.2)  #115217
 # HÔTE CN    : CN_module.py · sante @1.0
 # RÔLE       : résume la santé d'une machine en un score, en retirant des points par ressource saturée, certificat expirant, mémoire tuée par le noyau, service en échec ou disque malade.
 # MÉTHODE    : fonction pure : un barème par ressource (au-delà de 75, 85 et 95 %), un plafond par famille de problème ; un score borné de 0 à 100 et classé par paliers. Le barème est la politique du dépôt.

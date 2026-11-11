@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.3.1  #391594
+# VERSION CN : 0.3.2  #db458a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=391594 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=db458a ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -2832,6 +2832,12 @@ def collect_firewall_rules():
 # souvenirs sont nés parce qu'aucun capteur ne relevait ces états, et ils sont restés faux des jours
 # après la réparation. Un état se MESURE : services, config de Cassandra, logiciels, mises à jour.
 
+def _sysv_au_demarrage(nom: str) -> bool:
+    """Un service à l'ancienne (script /etc/init.d, que systemd enveloppe dans une unité « generated ») se lance avec la machine quand un lien de démarrage existe pour lui."""
+    import glob as _glob
+    return bool(re.fullmatch(r"[A-Za-z0-9_.+-]{1,64}", nom or "")) and bool(_glob.glob("/etc/rc[2345].d/S[0-9][0-9]" + nom))
+
+
 _SERVICES_CPU = {}               # unité → (nanosecondes de processeur, instant) de la passe d'avant : le processeur se lit entre deux passes
 
 
@@ -2853,7 +2859,7 @@ def collect_system_services() -> list:
         services.append(dict({"name": nom[:-8], "status": u.get("ActiveState") or "?",
                               "sub_state": u.get("SubState") or "", "unit_file_state": u.get("UnitFileState") or "",
                               "unit_type": u.get("Type") or "", "description": (u.get("Description") or "")[:120],
-                              "enabled": 1 if u.get("UnitFileState") == "enabled" else 0,
+                              "enabled": 1 if u.get("UnitFileState") in ("enabled", "enabled-runtime") or (u.get("UnitFileState") == "generated" and _sysv_au_demarrage(nom[:-8])) else 0,
                               "active": 1 if u.get("ActiveState") == "active" else 0, "last_check": now}, **m))
 
     for ligne in (out or "").splitlines():

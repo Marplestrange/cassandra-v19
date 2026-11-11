@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #28925b
+// VERSION CN : 0.1.0  #f66958
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=28925b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f66958 ▼▼▼
 // La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // Une seule page où tout se voit d'un coup d'œil, une tuile par sujet ; le détail d'un sujet s'ouvre au clic, « ‹ La machine » y ramène.
 // Tout vient d'UNE lecture, vue.machine, qui compose ce que les modules relèvent déjà ; les ressources et les processus se relisent seuls
@@ -308,7 +308,7 @@
       if (rf) {
         const max = Math.max.apply(null, rf.adresses.map((a) => a[1]).concat([1]));
         h += sec("Tentatives refusées", esc(rf.texte.split(" · ")[0]), rf.adresses.length ? '<div class="rows">' + rf.adresses.map((a) => '<div class="row"><div class="nm"><b class="mono">' + esc(a[0]) + "</b><small>" + a[1] + ' tentatives en une heure</small></div><div class="mil"><span class="pbar"><i class="w" style="width:' +
-          Math.round(a[1] / max * 100) + '%"></i></span></div><div class="cote"></div></div>').join("") + "</div>" : '<p class="vide">' + esc(rf.texte) + "</p>",
+          Math.round(a[1] / max * 100) + '%"></i></span></div><div class="cote"><button class="btn s d" data-a="bannir" data-ip="' + esc(a[0]) + '">Bannir</button></div></div>').join("") + "</div>" : '<p class="vide">' + esc(rf.texte) + "</p>",
           '<button class="btn s" data-a="module" data-e="securite" data-v="defenses" data-ou="Sécurité › Défenses">Sécurité › Défenses</button>' + cass([["Est-on attaqué ?", "Y a-t-il une attaque en cours sur le SSH de la machine ? Que me conseilles-tu ?"]]));
       }
       if (cx != null) {
@@ -393,7 +393,7 @@
     try { const d = await agir("vue.machine"); if (d && d.ok === false) { S.d = null; S.erreur = d.raison || "lecture refusée"; } else { S.d = d; S.erreur = ""; S.lu = Date.now(); noterMesure(); appliquerFrais(); } }
     catch (e) { S.erreur = (e && e.message) || "la lecture a échoué"; if (!S.d) S.d = null; }
     S.charge = false; rendre();
-    if (!S.gestesLus) { S.gestesLus = true; chargerGestes().then(rendre); }
+    const avant = JSON.stringify(S.gestes); chargerGestes().then(() => { if (JSON.stringify(S.gestes) !== avant && S.page !== "vue" && !document.querySelector(".kit-m")) rendre(); });
   }
   // Toutes les cinq secondes : les mesures seules (une lecture légère), posées dans les tuiles sans redessiner la page.
   async function battre() {
@@ -507,7 +507,7 @@
       const retour = SANS_RETOUR[genre + "." + action] ? "" : "<p>Le geste s’inscrit au journal et peut s’annuler depuis « Derniers gestes ».</p>";
       const titre = { activer: "Lancer " + nom + " au démarrage ?", desactiver: "Ne plus lancer " + nom + " au démarrage ?", forcer: "Forcer l’arrêt de " + nom + " ?", calmer: "Baisser la priorité de " + nom + " ?", pause: "Mettre " + nom + " en pause ?" }[action] || DIT[action] + " " + nom + " ?";
       if (!await K.confirmer(titre, plus + "<p>" + POURQUOI[genre][action] + "</p>" + retour, DIT[action], action === "arreter" || action === "forcer" || action === "terminer")) return;
-      dire(DIT[action] + " " + nom + "…");
+      dire(titre.replace(/ \?$/, "") + "…");
       const res = await agir("securite." + genre + "_geste", args);
       if (genre === "processus" && action !== "calmer") S.pr = ""; else noterFrais(genre, cible, action, res);
       return apresGeste(nom + " : fait, vérifié par le courtier.");
@@ -524,7 +524,7 @@
       await agir("securite.service_memoire", { service: b.dataset.n, mo: r.mo });
       return apresGeste("La mémoire de " + b.dataset.n + " est limitée à " + mo(r.mo) + ".");
     },
-    bannir: async (b) => { const s = (D().sessions || [])[+b.dataset.i]; if (!s) return;
+    bannir: async (b) => { const s = b.dataset.ip ? { adresse: b.dataset.ip } : (D().sessions || [])[+b.dataset.i]; if (!s) return;
       if (!await K.confirmer("Bannir l’adresse " + s.adresse + " ?", "<p>fail2ban refuse toute nouvelle connexion SSH depuis cette adresse. Le geste s’annule depuis « Derniers gestes » ; la liste des bannies est dans Sécurité › Défenses.</p>" +
         "<p>Le courtier refuse une adresse privée, de ton réseau privé, ou qui s’est connectée avec succès depuis trente jours.</p>", "Bannir", true)) return;
       await agir("securite.adresse_bannir", { ip: s.adresse }); return apresGeste("L’adresse " + s.adresse + " est bannie."); },

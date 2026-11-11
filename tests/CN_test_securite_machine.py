@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d25788
+# VERSION CN : 0.1.0  #564339
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : test_securite_machine.py
 # MÉTHODE    : charge la commande root « machine » comme un module et remplace son lanceur par une fausse machine tenue en mémoire (aucune commande réelle) ; puis éprouve les capacités du module sur un faux courtier
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d25788 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=564339 ▼▼▼
 import importlib.machinery
 import importlib.util
 import io
@@ -173,6 +173,16 @@ class Commande(unittest.TestCase):
         r = self.lancer("faire", "service", service="mysql", action="arreter")
         self.assertFalse(r["ok"])
         self.assertIn("n’a pas pris", r["erreur"])
+
+    def test_un_service_a_l_ancienne_est_bien_dit_lance_au_demarrage(self):
+        """exim4 (SysV) : systemctl imprime deux lignes de renvoi avant « enabled ». Lu d'un bloc, il passait pour « pas lancé au démarrage » (11-2026)."""
+        renvoi = "exim4.service is not a native service, redirecting to systemd-sysv-install.\nExecuting: /lib/systemd/systemd-sysv-install is-enabled exim4\n"
+        with mock.patch.object(self.m, "run", lambda args, timeout=30: (True, renvoi + "enabled")):
+            self.assertTrue(self.m.au_demarrage("exim4.service"))
+        with mock.patch.object(self.m, "run", lambda args, timeout=30: (False, renvoi + "disabled")):
+            self.assertFalse(self.m.au_demarrage("exim4.service"))
+        with mock.patch.object(self.m, "run", lambda args, timeout=30: (False, "")):
+            self.assertFalse(self.m.au_demarrage("absent.service"))
 
     def test_defaire_ne_touche_pas_a_ce_qui_etait_deja_ainsi(self):
         r = self.lancer("defaire", "service", service="cron", action="demarrer", avant={"actif": True, "au_demarrage": False})
