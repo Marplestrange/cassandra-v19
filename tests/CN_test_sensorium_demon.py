@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #227b7b
+# VERSION CN : 0.1.0  #1ddfbb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve les garanties du démon du Sensorium que l'audit de novembre 2026 a corrigées : un échec de commande n'est pas « rien à signaler », un socket muet est lâché ou fait arrêter le collecteur, un jeton FastPanel expiré est renouvelé, un certificat expiré se compte, un journal d'accès se lit par blocs, une redirection rouverte alerte.
 # MÉTHODE    : charge CN_sensorium.py comme module sur une base et un socket temporaires, simule les commandes et l'API HTTP (aucun réseau, aucune commande système), puis appelle les fonctions du démon.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=227b7b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1ddfbb ▼▼▼
 import gzip
 import importlib.util
 import json
@@ -605,6 +605,22 @@ class RelevesDeLaMachine(Base):
         with mock.patch.object(self.m, "run_cmd", return_value=ps), mock.patch.object(self.m, "_cgroup_de", return_value="0::/system.slice/php8.3-fpm.service\n"):
             self.assertEqual(self.m.get_processes_detail(), [{"user": "www-data", "pid": 52110, "cpu": 3.5, "mem_mb": 1840.0, "age_s": 21600,
                                                                "command": "php-fpm: pool boutique.exemple.test", "genre": "service", "a_qui": "php8.3-fpm"}])
+
+    def test_le_detail_s_ajoute_sans_changer_la_forme_d_origine(self):
+        base = [{"user": "lea", "ip": "100.64.0.11", "login_time": "2026-11-10 22:41", "last_check": "x"}]
+        journal = "2026-11-10T22:41:03+0000 machine sshd[70577]: Accepted publickey for lea from 100.64.0.11 port 54356 ssh2: ED25519 SHA256:AAAAconnue\n"
+        self.m._SSH_CONNU["t"] = 0.0
+        with mock.patch.object(self.m, "collect_active_sessions", return_value=[dict(x) for x in base]), mock.patch.object(self.m, "_qui", return_value="/usr/bin/x"), \
+                mock.patch.object(self.m, "_fichiers_cles", return_value=["/root/.ssh/authorized_keys"]), mock.patch.object(self.m, "_ssh_echecs_1h", return_value=[]), \
+                mock.patch.object(self.m, "run_cmd", side_effect=lambda cmd, timeout=10: journal if cmd[0] == "journalctl" else "256 SHA256:AAAAconnue lea@portable (ED25519)" if cmd[0] == "ssh-keygen"
+                                  else "lea pts/0 100.64.0.11 22:41 3:00 0.10s 0.02s htop" if cmd[0] == "w" else ""):
+            s = self.m.collect_sessions_detaillees()[0]
+        self.assertEqual({k: s[k] for k in base[0]}, base[0])
+        self.assertEqual((s["tty"], s["commande"], s["methode"], s["cle"], s["connexions_30j"]), ("pts/0", "htop", "clé", "ED25519 « lea@portable »", 1))
+        with mock.patch.object(self.m, "collect_hardware_state", return_value=[{"os": "Debian", "last_check": "x"}]), mock.patch.object(self.m, "_fiche_materiel", side_effect=OSError("illisible")):
+            m = self.m.collect_hardware_complet()[0]
+        self.assertEqual((m["os"], m["cpu_modele"], m["disques"]), ("Debian", "", ""))                 # la fiche illisible : les colonnes restent, vides
+        self.m._SSH_CONNU["t"] = 0.0
 
     def test_les_nouvelles_tables_se_lisent_par_le_socket(self):
         for table in ("reverse_proxies", "ssh_logins", "hardware_state", "logiciels"):

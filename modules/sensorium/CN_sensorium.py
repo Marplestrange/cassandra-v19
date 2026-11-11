@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.3.0  #af9afc
+# VERSION CN : 0.3.0  #1bee30
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=af9afc ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=1bee30 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1367,6 +1367,13 @@ def collect_active_sessions():
                            ss=run_cmd("ss -tnp state established 'sport = :22'"), now=now)
     if not sessions:
         sessions = _sys_formes("sessions_last", last=run_cmd("last -n 20 -F 2>/dev/null | grep -v reboot | grep still"), now=now)
+    return sessions
+
+
+def collect_sessions_detaillees():
+    """Les sessions ouvertes (collect_active_sessions, dont la forme ne change pas), avec pour chacune son terminal, son inactivité, ce qu'elle fait,
+    comment elle s'est identifiée et ce que l'on sait de son adresse. Si le détail ne se lit pas, les sessions restent, sans lui."""
+    sessions = collect_active_sessions()
     try:
         acceptes, cles, refus = _ssh_connu()
         sessions = _releves.enrichir_sessions(sessions, _releves.sessions_w(run_cmd(["w", "-h", "-i"], timeout=5) or "") if _qui("w") else [], acceptes, cles, refus)
@@ -3103,12 +3110,20 @@ def collect_hardware_state() -> list:
     if _qui("getenforce"):
         mac.append("SELinux " + (run_cmd(["getenforce"], timeout=5) or "?").strip().lower())
     e["securite_noyau"] = ", ".join(mac)
-    try:
-        e.update(_fiche_materiel())
-    except Exception as ex:
-        e.update(dict.fromkeys(_FICHE_CLES, ""))
-        print("[FICHE] matériel indisponible : %s" % ex, file=sys.stderr)
     return [e]
+
+
+def collect_hardware_complet() -> list:
+    """L'état matériel (collect_hardware_state, dont la forme ne change pas) et ce qui ne change guère : processeur, constructeur, installation,
+    passerelle, nom inverse, politique d'entrée du pare-feu, mises à jour automatiques, disques."""
+    lignes = collect_hardware_state()
+    for e in lignes:
+        try:
+            e.update(_fiche_materiel())
+        except Exception as ex:
+            e.update(dict.fromkeys(_FICHE_CLES, ""))
+            print("[FICHE] matériel indisponible : %s" % ex, file=sys.stderr)
+    return lignes
 
 
 _FICHE_CLES = ("cpu_modele", "cpu_coeurs", "cpu_fils", "cpu_mhz", "constructeur", "carte", "bios", "installee", "demarree", "passerelle", "inverse",
@@ -6813,7 +6828,7 @@ class KnowledgeCollector:
 
         # PERF[O6]: Toutes les collectes indépendantes lancées en parallèle
         init_tasks = [
-            ("active_sessions",        collect_active_sessions),
+            ("active_sessions",        collect_sessions_detaillees),
             ("open_ports",             collect_open_ports),
             ("web_sites",              collect_web_sites),
             ("ssl_certificates",       collect_ssl_certificates),
@@ -6848,7 +6863,7 @@ class KnowledgeCollector:
             ("system_mounts",          collect_mounts),
             ("storage_health",         collect_storage_health),
             ("interfaces",             collect_interfaces),
-            ("hardware_state",         collect_hardware_state),
+            ("hardware_state",         collect_hardware_complet),
             ("backups_state",          collect_backups),
             ("reverse_proxies",        collect_reverse_proxies),
             ("ssh_logins",             collect_ssh_logins),
@@ -6963,7 +6978,7 @@ class KnowledgeCollector:
                         quick_tasks = [
                             ("system_services", collect_system_services),
                             ("interfaces",      collect_interfaces),
-                            ("active_sessions", collect_active_sessions),
+                            ("active_sessions", collect_sessions_detaillees),
                             ("open_ports",      collect_open_ports),
                             ("network_hosts",   collect_network_hosts),
                             ("fail2ban_banned_ips", collect_fail2ban_banned),
@@ -6998,7 +7013,7 @@ class KnowledgeCollector:
                             ("system_state",           collect_system_state),
                             ("system_mounts",          collect_mounts),
                             ("storage_health",         collect_storage_health),
-                            ("hardware_state",         collect_hardware_state),
+                            ("hardware_state",         collect_hardware_complet),
                             ("backups_state",          collect_backups),
                             ("controles",              collect_controles),
                             ("mesures_diverses",       collect_mesures_diverses),
