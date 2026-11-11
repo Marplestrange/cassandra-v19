@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4223ec
+# VERSION CN : 0.1.0  #66d013
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4223ec ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=66d013 ▼▼▼
 """Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille »."""
 import sys
 import unittest
@@ -213,6 +213,87 @@ class Machine(unittest.TestCase):
     def test_des_releves_figes_sont_dits(self):
         r = _machine(etat={"rows": [_l("system.hostname", "atlas")], "muet": False, "age_s": 50000, "fige": True})
         self.assertEqual((r["source"]["fige"], r["source"]["age_s"], r["source"]["muet"]), (True, 50000, False))
+
+
+class MachineLot2(unittest.TestCase):
+    """Ce que le collecteur relève depuis le lot 2 : la fiche d'un conteneur, d'un processus, d'un service, d'une session, et le matériel."""
+    def setUp(self):
+        self.r = _machine(
+            conteneurs=[{"name": "coffre", "image": "exemple/vaultwarden:latest", "status": "Up 36 hours (healthy)", "ident": "ab0fe4181ce9", "state": "running", "sante": "healthy",
+                         "redemarrages": 1, "politique": "unless-stopped", "reseau": "bridge", "ip": "172.17.0.2", "ports": '[["127.0.0.1", 8087, 80, "tcp", "machine"], ["0.0.0.0", 3478, 3478, "udp", "public"]]',
+                         "volumes": '[["bind", "/opt/coffre/data", "/data"]]', "compose": "", "taille_mo": 297, "distribution": "Debian GNU/Linux 13 (trixie)"},
+                        {"name": "ancien", "image": "exemple/inconnu", "status": "Exited (1) 2 hours ago"}],
+            proxys=[{"nom": "coffre.exemple.test", "chemin": "/", "vers": "127.0.0.1:8087", "port": 8087, "genre": "http", "tls": 1},
+                    {"nom": "chat.exemple.test", "chemin": "/", "vers": "127.0.0.1:443", "port": 443, "genre": "https", "tls": 1}],
+            certificats={"certificats": [{"jours": 61, "hote": "coffre.exemple.test"}, {"jours": 82, "hote": "chat.exemple.test"}]},
+            metriques={"cpu": 12.5, "ram": 36.5, "disk": 81.0, "swap": 5.6, "memory": {"total_mo": 7812, "applis_mo": 3905, "cache_mo": 2930, "libre_mo": 977, "disponible_mo": 4395},
+                       "top_processes": [{"user": "www-data", "cpu": 61.5, "command": "php-fpm"}],
+                       "processes": [{"user": "root", "pid": 1, "cpu": 1.0, "mem_mb": 10.2, "age_s": 995850, "command": "/sbin/init", "genre": "système", "a_qui": ""},
+                                     {"user": "www-data", "pid": 1630, "cpu": 0.4, "mem_mb": 24.0, "age_s": 3600, "command": "nginx: worker process", "genre": "service", "a_qui": "nginx"},
+                                     {"user": "root", "pid": 8841, "cpu": 0.2, "mem_mb": 182.0, "age_s": 82800, "command": "coffre", "genre": "conteneur", "a_qui": "coffre"}]},
+            services=[{"name": "nginx", "status": "active", "enabled": 1, "active": 1, "description": "nginx", "sub_state": "running", "unit_file_state": "enabled",
+                       "pid": 1629, "memoire_mo": 25.8, "cpu_pct": 0.1, "depuis": "2026-11-03T18:32:06", "redemarrages": 0},
+                      {"name": "php8.3-fpm", "status": "failed", "enabled": 1, "active": 0, "description": "PHP", "sub_state": "failed", "unit_file_state": "enabled", "pid": 0, "memoire_mo": None, "cpu_pct": None}],
+            echecs=[{"unit": "php8.3-fpm.service", "active_state": "failed", "journal": "ERROR: unable to bind listening socket\nFPM initialization failed"}],
+            sessions=[{"user": "sshd", "ip": "203.0.113.24", "login_time": "2026-11-11T00:06:10", "tty": "", "inactivite": "", "commande": "", "methode": "", "cle": "", "connexions_30j": 0, "refus_1h": 14},
+                      {"user": "lea", "ip": "100.64.0.11", "login_time": "2026-11-10T22:41:03", "tty": "pts/0", "inactivite": "3:00", "commande": "htop", "methode": "clé",
+                       "cle": "ED25519 « lea@portable »", "connexions_30j": 31, "refus_1h": 0}],
+            connexions=[{"user": "lea", "ip": "100.64.0.11", "methode": "clé", "cle": "ED25519 « lea@portable »", "nombre": 31, "premiere": "2026-10-14T08:00:00", "derniere": "2026-11-10T22:41:03"}],
+            materiel=[{"os": "Debian", "temp_max": 0, "cpu_modele": "Processeur Exemple 7", "cpu_coeurs": 4, "cpu_fils": 4, "cpu_mhz": 2445, "constructeur": "Exemple Cloud vServer", "carte": "KVM Standard PC",
+                       "bios": "Exemple 20171111 (11/11/2017)", "installee": "2026-03-14", "demarree": "2026-10-31T03:12:00", "passerelle": "203.0.113.1", "inverse": "machine.exemple.test",
+                       "ip_publique": "203.0.113.52", "pare_feu_entree": "refuser", "maj_auto": "automatiques, chaque jour", "disques": '[["sda", "DISQUE VIRTUEL", "80G", "sans plateaux"]]'}],
+            logiciels=[{"nom": "nginx", "installe": 1, "version": "1.22.1"}, {"nom": "git", "installe": 1, "version": "2.39.5"}, {"nom": "caddy", "installe": 0, "version": ""}])
+
+    def test_la_fiche_d_un_conteneur(self):
+        c = {x["nom"]: x for x in self.r["conteneurs"]}
+        k = c["coffre"]
+        self.assertEqual(k["ports"], [{"hote": "127.0.0.1", "port": 8087, "interne": 80, "proto": "tcp", "portee": "la machine seule", "niveau": "ok"},
+                                      {"hote": "0.0.0.0", "port": 3478, "interne": 3478, "proto": "udp", "portee": "Internet", "niveau": "w"}])
+        self.assertEqual(k["proxys"], [{"nom": "coffre.exemple.test", "chemin": "/", "vers": "127.0.0.1:8087", "genre": "http", "tls": True, "cert_j": 61}])   # le renvoi vers 443 n'est pas le sien
+        self.assertEqual((k["role"], k["distribution"], k["taille_mo"], k["reseau"], k["ip"], k["politique"], k["sante"], k["redemarrages"], k["releve"]),
+                         ("le gestionnaire de mots de passe", "Debian GNU/Linux 13 (trixie)", 297, "bridge", "172.17.0.2", "unless-stopped", "sain", 1, True))
+        self.assertEqual(k["volumes"], [{"genre": "bind", "source": "/opt/coffre/data", "cible": "/data"}])
+        a = c["ancien"]                                                                              # une ligne d'avant le lot 2 : rien d'inventé
+        self.assertEqual((a["releve"], a["ports"], a["proxys"], a["role"], a["distribution"], a["taille_mo"]), (False, [], [], "", "", None))
+
+    def test_un_processus_dit_son_numero_sa_memoire_et_son_porteur(self):
+        p = {x["pid"]: x for x in self.r["processus"]}
+        self.assertEqual(len(p), 3)                                                                  # la lecture détaillée remplace la courte
+        self.assertEqual((p[1630]["mem_mo"], p[1630]["age_s"], p[1630]["a_qui"], p[1630]["description"]),
+                         (24.0, 3600, {"genre": "service", "nom": "nginx"}, "Le serveur web de façade : il reçoit toutes les visites et les passe aux sites et aux conteneurs."))
+        self.assertEqual((p[8841]["a_qui"], p[8841]["description"]), ({"genre": "conteneur", "nom": "coffre"}, "Le gestionnaire de mots de passe"))
+        self.assertEqual(machine.role_image("exemple/searxng:latest"), "le moteur de recherche que Cassandra interroge")
+        self.assertEqual(p[1]["protege"], "L’arrêter arrêterait la machine.")
+        self.assertEqual(self.r["memoire"]["cache_mo"], 2930)
+        ancien = _machine()                                                                          # un collecteur d'avant le lot 2 : la liste courte, sans numéro
+        self.assertEqual((ancien["processus"][0]["pid"], ancien["processus"][0]["mem_mo"], ancien["memoire"]), (None, None, None))
+
+    def test_un_service_dit_sa_charge_ce_qui_tombe_et_ses_noms_publics(self):
+        s = {x["unite"]: x for x in self.r["services"]["suivis"]}
+        n = s["nginx"]
+        self.assertEqual((n["pid"], n["memoire_mo"], n["cpu"], n["depuis"], n["redemarrages"]), (1629, 25.8, 0.1, "2026-11-03 18:32", 0))
+        self.assertEqual(n["noms"], ["chat.exemple.test", "coffre.exemple.test"])                    # nginx sert tous les noms publics de la machine
+        self.assertIn("ne répondent plus", n["si_arret"])
+        f = s["php8.3-fpm"]
+        self.assertEqual((f["pid"], f["memoire_mo"], f["journal"], f["si_arret"]), (None, None, ["ERROR: unable to bind listening socket", "FPM initialization failed"], "Les sites PHP affichent une erreur 502."))
+
+    def test_une_session_dit_son_terminal_et_ce_que_l_on_sait_de_son_adresse(self):
+        a, b = self.r["sessions"]
+        self.assertEqual((a["connu"], a["refus_1h"], a["methode"]), ("jamais vue avant · 14 tentatives refusées depuis cette adresse en une heure", 14, ""))
+        self.assertEqual((b["terminal"], b["inactivite"], b["commande"], b["methode"], b["cle"], b["connu"]), ("pts/0", "3:00", "htop", "clé", "ED25519 « lea@portable »", "31 connexions réussies en 30 jours"))
+        self.assertEqual(self.r["connexions"], [{"utilisateur": "lea", "adresse": "100.64.0.11", "methode": "clé", "cle": "ED25519 « lea@portable »", "nombre": 31,
+                                                 "premiere": "2026-10-14 08:00", "derniere": "2026-11-10 22:41", "reseau": "Tailscale", "machine": "tel-lea"}])
+        self.assertEqual(_machine()["sessions"][0]["connu"], "")                                     # avant le lot 2 : on ne sait pas, on ne dit pas « jamais vue »
+        self.assertIsNone(_machine()["connexions"])
+
+    def test_le_materiel_et_les_versions(self):
+        m = self.r["machine"]["materiel"]
+        self.assertEqual(m["cpu"], {"modele": "Processeur Exemple 7", "coeurs": 4, "fils": 4, "mhz": 2445})
+        self.assertEqual((m["constructeur"], m["installee"], m["demarree"], m["passerelle"], m["inverse"], m["ip_publique"], m["pare_feu_entree"], m["maj_auto"], m["temperature"]),
+                         ("Exemple Cloud vServer", "2026-03-14", "2026-10-31 03:12", "203.0.113.1", "machine.exemple.test", "203.0.113.52", "refuser", "automatiques, chaque jour", None))
+        self.assertEqual(m["disques"], [["sda", "DISQUE VIRTUEL", "80G", "sans plateaux"]])
+        self.assertEqual(self.r["logiciels"]["versions"], {"nginx": "1.22.1", "git": "2.39.5"})
+        self.assertIsNone(_machine()["machine"]["materiel"])
 
 
 class EcranMachine(unittest.TestCase):

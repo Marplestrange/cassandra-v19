@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.10  #b0a568
+# VERSION CN : 0.3.0  #b0a568
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 004_mesures.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

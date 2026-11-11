@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.3.2  #d0b080
+# VERSION CN : 0.4.0  #618533
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=d0b080 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=618533 ▼▼▼
 """La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 
 Une fonction PURE (`composer`) : en entrée, la réponse de chaque source (ou son silence) ; en sortie, des données prêtes à dessiner. Rien n'est
@@ -56,6 +56,48 @@ SERVICES = [
     ("netbird", "Le réseau privé NetBird.", "réseau", "", ""),
     ("unattended-upgrades", "Les mises à jour de sécurité automatiques, chaque nuit.", "système", "", ""),
 ]
+# Ce qui tombe si l'on arrête le service : écrit une fois par service connu, pour que la fiche le dise avant tout geste.
+SI_ARRET = {
+    "cassandra-noyau": "Cassandra entière s’arrête : interface, agents, alertes.",
+    "sensorium": "Plus aucun relevé : toutes les pages disent « inconnu », les alertes se taisent.",
+    "cassandra-courtier": "Plus aucun geste root ne passe : relances, bannissements, mises à jour.",
+    "ollama": "Les agents réglés sur un modèle local ne répondent plus.",
+    "nginx": "Tous les sites et les noms publics des conteneurs ne répondent plus.",
+    "apache2": "Les sites PHP du panneau ne répondent plus.",
+    "mysql": "Les sites qui ont une base de données tombent en erreur.",
+    "mariadb": "Les sites qui ont une base de données tombent en erreur.",
+    "postgresql": "Les applications qui ont une base PostgreSQL tombent en erreur.",
+    "redis-server": "Les applications qui s’appuient sur le cache ralentissent ou tombent en erreur.",
+    "dovecot": "Plus personne ne peut relever son courrier.",
+    "exim4": "Le courrier n’entre plus et ne sort plus ; il attend chez les expéditeurs.",
+    "postfix": "Le courrier n’entre plus et ne sort plus ; il attend chez les expéditeurs.",
+    "proftpd": "Les dépôts de fichiers par FTP échouent.",
+    "fastpanel2": "Le panneau ne répond plus ; les sites, eux, continuent.",
+    "docker": "Tous les conteneurs s’arrêtent.",
+    "containerd": "Tous les conteneurs s’arrêtent.",
+    "cron": "Sauvegardes, renouvellements et balayages ne se lancent plus.",
+    "fail2ban": "Plus aucun bannissement : les tentatives ne sont plus freinées.",
+    "ssh": "Plus personne n’entre sur la machine à distance, toi compris.",
+    "certbot": "Les certificats ne se renouvellent plus.",
+    "crowdsec": "Les attaquants connus ne sont plus bloqués.",
+    "tailscaled": "La machine quitte le réseau Tailscale : elle n’est plus joignable par ses adresses privées.",
+    "netbird": "La machine quitte le réseau NetBird.",
+    "unattended-upgrades": "Les correctifs de sécurité ne s’installent plus seuls.",
+}
+# Le rôle d'un conteneur, reconnu au nom de son image (le premier motif trouvé gagne : du plus précis au plus large).
+ROLES_IMAGE = (
+    ("netbird-server", "le serveur de gestion, de signal et de relais de NetBird"), ("netbirdio/dashboard", "le tableau de bord de NetBird"),
+    ("netbirdio/netbird", "le client NetBird de la machine"), ("searxng", "le moteur de recherche que Cassandra interroge"),
+    ("vaultwarden", "le gestionnaire de mots de passe"), ("postgres", "une base de données PostgreSQL"), ("mariadb", "une base de données MariaDB"),
+    ("mysql", "une base de données MySQL"), ("redis", "un cache en mémoire Redis"), ("traefik", "un serveur de façade (reverse proxy)"),
+    ("caddy", "un serveur web de façade"), ("nginx", "un serveur web"), ("portainer", "une console de gestion des conteneurs"),
+    ("nextcloud", "un nuage de fichiers"), ("gitea", "une forge Git"), ("grafana", "des tableaux de bord de mesures"), ("prometheus", "un collecteur de mesures"),
+    ("uptime-kuma", "une surveillance de disponibilité"), ("watchtower", "la mise à jour automatique des conteneurs"), ("ollama", "des modèles de langage locaux"),
+    ("open-webui", "une interface pour modèles de langage"), ("n8n", "des automatisations"), ("minio", "un stockage d’objets"), ("adguard", "un filtre DNS"),
+    ("pihole", "un filtre DNS"), ("jellyfin", "une médiathèque"), ("homeassistant", "la domotique"),
+)
+PORTEES = {"machine": ("la machine seule", "ok"), "prive": ("le réseau privé", ""), "public": ("Internet", "w")}
+SANTES = {"healthy": "sain", "unhealthy": "en mauvaise santé", "starting": "contrôle de santé en cours", "": "sans contrôle de santé"}
 # php<version>-fpm : la version change d'une machine à l'autre
 _PHP_FPM = re.compile(r"^php\d+(\.\d+)?-fpm$")
 # Le programme qui écoute sur un port -> le service auquel il appartient
@@ -96,6 +138,26 @@ def _liste(v, cle=None) -> list:
     if cle and isinstance(v, dict):
         v = v.get(cle)
     return [x for x in v if isinstance(x, dict)] if isinstance(v, list) else []
+
+
+def _json(v, defaut):
+    """Une colonne que le collecteur écrit en JSON (les ports, les volumes, les disques)."""
+    if isinstance(v, (list, dict)):
+        return v
+    try:
+        x = json.loads(v) if v else defaut
+    except (TypeError, ValueError):
+        return defaut
+    return x if isinstance(x, type(defaut)) else defaut
+
+
+def role_image(image: str) -> str:
+    i = str(image or "").lower()
+    return next((role for motif, role in ROLES_IMAGE if motif in i), "")
+
+
+def _description_service(unite: str) -> str:
+    return next((d for u, d, _f, _g, _p in SERVICES if u == unite), "L’interpréteur PHP des sites." if _PHP_FPM.match(unite or "") else "")
 
 
 def _duree_docker(texte: str) -> str:
@@ -179,6 +241,15 @@ def composer(s: dict, maintenant: str = "") -> dict:
                "maj": {"texte": maj, "total": nombres[0] if nombres else None, "secu": nombres[1] if len(nombres) > 1 else None},
                "interfaces": interfaces, "pare_feu": [v(k) for k in ("pare_feu.ipv4", "pare_feu.ipv6") if v(k)], "taches": v("cron.root")}
 
+    mat = (_liste(_ok(s, "materiel")) or [None])[0]
+    machine["materiel"] = None if mat is None else {
+        "cpu": {"modele": str(mat.get("cpu_modele") or ""), "coeurs": _entier(mat.get("cpu_coeurs")), "fils": _entier(mat.get("cpu_fils")), "mhz": _entier(mat.get("cpu_mhz"))},
+        "constructeur": str(mat.get("constructeur") or ""), "carte": str(mat.get("carte") or ""), "bios": str(mat.get("bios") or ""), "installee": str(mat.get("installee") or ""),
+        "demarree": str(mat.get("demarree") or "").replace("T", " ")[:16], "passerelle": str(mat.get("passerelle") or ""), "inverse": str(mat.get("inverse") or ""),
+        "ip_publique": str(mat.get("ip_publique") or ""), "pare_feu_entree": str(mat.get("pare_feu_entree") or ""), "maj_auto": str(mat.get("maj_auto") or ""),
+        "disques": [d for d in _json(mat.get("disques"), []) if isinstance(d, list) and len(d) >= 4],
+        "temperature": mat.get("temp_max") if isinstance(mat.get("temp_max"), (int, float)) and mat.get("temp_max") else None}
+
     # ── la santé : la note d'ensemble du Sensorium et sa décomposition (la page d'avant montrait la note des ressources seules)
     hs, d = v("health.score"), _detail(L.get("health.score"))
     m = re.match(r"\s*(\d+)\s*/\s*100\s*(?:\(([^)]*)\))?", hs)
@@ -213,8 +284,7 @@ def composer(s: dict, maintenant: str = "") -> dict:
                     key=lambda x: (rang.get(x["gravite"], 3), poids.get(x["famille"], 3), x["cle"]))
 
     # ── processus, mémoire saturée
-    processus = [{"utilisateur": str(p.get("user") or ""), "cpu": p.get("cpu") if isinstance(p.get("cpu"), (int, float)) else 0, "commande": str(p.get("command") or p.get("name") or "?")}
-                 for p in _liste(me, "top_processes")] if isinstance(me, dict) else []
+    memoire = me.get("memory") if isinstance(me, dict) and isinstance(me.get("memory"), dict) and me["memory"].get("total_mo") else None
     acquittes = set((_ok(s, "acquits") or {}).get("signatures") or [])
     oom = None
     if _etat(s, "oom") == "ok":
@@ -225,6 +295,15 @@ def composer(s: dict, maintenant: str = "") -> dict:
             if (nom.lower() in ("", "?", "unknown") and not e.get("memory_used_mb")) or sig in acquittes:
                 continue
             oom.append({"processus": nom or "?", "mo": e.get("memory_used_mb") or 0, "quand": str(e.get("ts") or ""), "signature": sig})
+
+    # ── les renvois de nginx (par quel nom public un service ou un conteneur se joint) et les jours restants des certificats, par nom
+    proxys = _liste(_ok(s, "proxys"))
+    jours_cert = {}
+    for c in _liste(_ok(s, "certificats"), "certificats"):
+        if isinstance(c.get("jours"), (int, float)):
+            for nom in [c.get("hote")] + list(c.get("noms") or []):
+                if nom:
+                    jours_cert[str(nom)] = int(c["jours"])
 
     # ── services
     services = None
@@ -237,6 +316,15 @@ def composer(s: dict, maintenant: str = "") -> dict:
             if sv:
                 ports_de.setdefault(sv, []).append("%s/%s" % (p.get("port"), p.get("protocol") or "?"))
         echecs = {str(u.get("unit") or "").replace(".service", "") for u in _liste(_ok(s, "echecs")) if u.get("active_state") == "failed" and u.get("unit") not in PUCES}
+        journaux = {str(u.get("unit") or "").replace(".service", ""): [l for l in str(u.get("journal") or "").splitlines() if l.strip()] for u in _liste(_ok(s, "echecs"))}
+
+        def mesures(x, unite, ports_):
+            nombre = lambda cle: x.get(cle) if isinstance(x.get(cle), (int, float)) else None    # noqa: E731
+            numeros = {_entier(p) for p in ports_}
+            return {"pid": nombre("pid") or None, "memoire_mo": nombre("memoire_mo"), "cpu": nombre("cpu_pct"), "depuis": str(x.get("depuis") or "").replace("T", " ")[:16],
+                    "redemarrages": nombre("redemarrages") or 0, "si_arret": SI_ARRET.get(unite, "Les sites PHP affichent une erreur 502." if _PHP_FPM.match(unite) else ""),
+                    "noms": sorted({str(p.get("nom")) for p in proxys if p.get("nom") and (unite == "nginx" or p.get("port") in numeros)}),      # nginx sert tous les noms ; un autre service, ceux qui mènent à ses ports
+                    "journal": journaux.get(unite, [])}
         connus = list(SERVICES) + [(n, "L’interpréteur PHP des sites.", "web", "", "") for n in sorted(par_nom) if _PHP_FPM.match(n)]
         suivis = []
         for unite, description, famille, geste, protege in connus:
@@ -246,12 +334,13 @@ def composer(s: dict, maintenant: str = "") -> dict:
             x = x or {}
             en_echec = unite in echecs or x.get("status") == "failed"
             actif = bool(x.get("active")) and not en_echec
-            suivis.append({"unite": unite, "description": description, "systemd": str(x.get("description") or ""), "famille": famille, "geste": geste, "protege": protege,
-                           "etat": "echec" if en_echec else "actif" if actif else "repos" if x.get("unit_file_state") in ("static", "enabled") and unite in ("certbot", "cassandra-courtier") else "arret",
-                           "sous_etat": str(x.get("sub_state") or ""), "au_demarrage": bool(x.get("enabled")), "ports": sorted(set(ports_de.get(unite, [])), key=lambda t: (_entier(t, 0), t))})
+            ports_ = sorted(set(ports_de.get(unite, [])), key=lambda t: (_entier(t, 0), t))
+            suivis.append(dict({"unite": unite, "description": description, "systemd": str(x.get("description") or ""), "famille": famille, "geste": geste, "protege": protege,
+                                "etat": "echec" if en_echec else "actif" if actif else "repos" if x.get("unit_file_state") in ("static", "enabled") and unite in ("certbot", "cassandra-courtier") else "arret",
+                                "sous_etat": str(x.get("sub_state") or ""), "au_demarrage": bool(x.get("enabled")), "ports": ports_}, **mesures(x, unite, ports_)))
         for unite in sorted(echecs - {x["unite"] for x in suivis}):
-            suivis.append({"unite": unite, "description": str((par_nom.get(unite) or {}).get("description") or ""), "systemd": "", "famille": "système", "geste": "", "protege": "",
-                           "etat": "echec", "sous_etat": "failed", "au_demarrage": bool((par_nom.get(unite) or {}).get("enabled")), "ports": []})
+            suivis.append(dict({"unite": unite, "description": str((par_nom.get(unite) or {}).get("description") or ""), "systemd": "", "famille": "système", "geste": "", "protege": "",
+                                "etat": "echec", "sous_etat": "failed", "au_demarrage": bool((par_nom.get(unite) or {}).get("enabled")), "ports": []}, **mesures(par_nom.get(unite) or {}, unite, [])))
         services = {"total": len(tous), "actifs": sum(1 for x in tous if x.get("active")), "inactifs": sum(1 for x in tous if not x.get("active")),
                     "echecs": sorted(echecs), "suivis": suivis}
 
@@ -264,11 +353,35 @@ def composer(s: dict, maintenant: str = "") -> dict:
             texte, tourne, pause = etat_conteneur(c.get("status"))
             charge = re.match(r"CPU\s*([\d.,]+)%\s*·\s*mémoire\s*([\d.,]+\s*\w+)", v("conteneur_ressources." + nom))
             age = re.search(r"il y a (\d+) j", v("image." + nom))
+            ports_c = [{"hote": str(p[0]), "port": p[1], "interne": p[2], "proto": str(p[3]), "portee": PORTEES.get(p[4], PORTEES["public"])[0], "niveau": PORTEES.get(p[4], PORTEES["public"])[1]}
+                       for p in _json(c.get("ports"), []) if isinstance(p, list) and len(p) >= 5]
+            publies = {p["port"] for p in ports_c}
+            reseau_c = str(c.get("reseau") or "")
             conteneurs.append({"nom": nom, "image": str(c.get("image") or ""), "etat": texte, "tourne": tourne, "pause": pause,
                                "image_age_j": int(age.group(1)) if age else None, "cpu": float(charge.group(1).replace(",", ".")) if charge else None,
-                               "memoire": charge.group(2).replace("MiB", " Mo").replace("GiB", " Go").replace("  ", " ").replace(".", ",") if charge else ""})
+                               "memoire": charge.group(2).replace("MiB", " Mo").replace("GiB", " Go").replace("  ", " ").replace(".", ",") if charge else "",
+                               "releve": bool(c.get("ident")), "role": role_image(c.get("image")), "distribution": str(c.get("distribution") or ""),
+                               "taille_mo": c.get("taille_mo") if isinstance(c.get("taille_mo"), (int, float)) and c.get("taille_mo") else None,
+                               "reseau": "host (celui de la machine)" if reseau_c == "host" else reseau_c, "ip": str(c.get("ip") or ""), "politique": str(c.get("politique") or ""),
+                               "sante": SANTES.get(str(c.get("sante") or ""), str(c.get("sante") or "")), "redemarrages": _entier(c.get("redemarrages"), 0),
+                               "compose": str(c.get("compose") or ""), "ports": ports_c,
+                               "volumes": [{"genre": str(x[0]), "source": str(x[1]), "cible": str(x[2])} for x in _json(c.get("volumes"), []) if isinstance(x, list) and len(x) >= 3],
+                               "proxys": [{"nom": str(p.get("nom") or ""), "chemin": str(p.get("chemin") or "/"), "vers": str(p.get("vers") or ""), "genre": str(p.get("genre") or ""),
+                                           "tls": bool(p.get("tls")), "cert_j": jours_cert.get(str(p.get("nom") or ""))} for p in proxys if p.get("port") in publies]})
     logiciel = {k[9:]: v(k).startswith("install") for k in L if k.startswith("logiciel.")}
     docker_la = bool(conteneurs) or bool(logiciel.get("docker"))
+    versions = {str(x.get("nom")): str(x.get("version")) for x in _liste(_ok(s, "logiciels")) if x.get("installe") and x.get("version")}
+
+    roles = {c["nom"]: c["role"] for c in conteneurs or [] if c.get("role")}
+    processus = []
+    for p in (_liste(me, "processes") or _liste(me, "top_processes")) if isinstance(me, dict) else []:
+        genre, a_qui = str(p.get("genre") or ""), str(p.get("a_qui") or "")
+        pid = p.get("pid") if isinstance(p.get("pid"), int) else None
+        description = _description_service(a_qui) if genre == "service" else (roles.get(a_qui, "")[:1].upper() + roles.get(a_qui, "")[1:] if genre == "conteneur" else "")
+        protege = ("L’arrêter arrêterait la machine." if pid == 1 else next((pr for u, _d, _f, _g, pr in SERVICES if genre == "service" and u == a_qui and pr), ""))
+        processus.append({"utilisateur": str(p.get("user") or ""), "cpu": p.get("cpu") if isinstance(p.get("cpu"), (int, float)) else 0, "commande": str(p.get("command") or p.get("name") or "?"),
+                          "pid": pid, "mem_mo": p.get("mem_mb") if isinstance(p.get("mem_mb"), (int, float)) else None, "age_s": p.get("age_s") if isinstance(p.get("age_s"), int) else None,
+                          "a_qui": {"genre": genre, "nom": a_qui} if genre else None, "description": description, "protege": protege})
 
     # ── sessions : qui est connecté, et d'où
     ts = _ok(s, "tailscale") or {}
@@ -278,9 +391,23 @@ def composer(s: dict, maintenant: str = "") -> dict:
         sessions = []
         for x in _liste(_ok(s, "sessions")):
             reseau, de = _reseau_de(x.get("ip"), pairs)
+            n30, refus_1h = (x.get("connexions_30j") if isinstance(x.get("connexions_30j"), int) else None), _entier(x.get("refus_1h"), 0)
+            connu = "" if n30 is None else ("jamais vue avant" if not n30 else "%d connexion%s réussie%s en 30 jours" % (n30, "s" if n30 > 1 else "", "s" if n30 > 1 else ""))
+            if refus_1h:
+                connu += (" · " if connu else "") + "%d tentative%s refusée%s depuis cette adresse en une heure" % (refus_1h, "s" if refus_1h > 1 else "", "s" if refus_1h > 1 else "")
             sessions.append({"utilisateur": str(x.get("user") or "?"), "adresse": str(x.get("ip") or ""), "depuis": str(x.get("login_time") or "")[:16].replace("T", " "),
                              "type": "ftp" if x.get("type") == "ftp" else "ssh", "reseau": reseau, "machine": de,
-                             "anonyme": str(x.get("user") or "") == "sshd"})        # « sshd » : personne n'est encore entré, on frappe à la porte
+                             "anonyme": str(x.get("user") or "") == "sshd",         # « sshd » : personne n'est encore entré, on frappe à la porte
+                             "terminal": str(x.get("tty") or ""), "inactivite": str(x.get("inactivite") or ""), "commande": str(x.get("commande") or ""),
+                             "methode": str(x.get("methode") or ""), "cle": str(x.get("cle") or ""), "connu": connu, "refus_1h": refus_1h})
+    connexions = None
+    if _etat(s, "connexions") == "ok":
+        connexions = []
+        for x in _liste(_ok(s, "connexions")):
+            reseau, de = _reseau_de(x.get("ip"), pairs)
+            connexions.append({"utilisateur": str(x.get("user") or "?"), "adresse": str(x.get("ip") or ""), "methode": str(x.get("methode") or ""), "cle": str(x.get("cle") or ""),
+                               "nombre": _entier(x.get("nombre"), 0), "premiere": str(x.get("premiere") or "").replace("T", " ")[:16], "derniere": str(x.get("derniere") or "").replace("T", " ")[:16],
+                               "reseau": reseau, "machine": de})
     ref = v("ssh.echecs")
     refus = {"texte": ref, "total": _entier(ref), "adresses": [[a, int(n)] for a, n in re.findall(r"([0-9a-fA-F:.]{3,45}) \((\d+)\)", ref)]} if ref else None
 
@@ -349,8 +476,8 @@ def composer(s: dict, maintenant: str = "") -> dict:
     # ── les logiciels, Cassandra sur la machine
     cassandra = [{"cle": k, "titre": str(L[k].get("libelle") or k), "texte": v(k)} for k in ("noyau.version", "noyau.service", "code.scelle", "store.total", "courtier.commandes", "courtier.etat", "noyau.sauvegarde") if k in L]
     return {"ok": True, "source": source, "machine": machine, "sante": sante, "ressources": ressources, "disques": disques, "cloche": cloche, "processus": processus, "oom": oom,
-            "services": services, "conteneurs": conteneurs, "docker": docker_la, "sessions": sessions, "refus": refus, "voisins": voisins,
-            "logiciels": {"installes": sorted(k for k, i in logiciel.items() if i), "absents": sorted(k for k, i in logiciel.items() if not i)}, "cassandra": cassandra}
+            "services": services, "conteneurs": conteneurs, "docker": docker_la, "sessions": sessions, "connexions": connexions, "refus": refus, "voisins": voisins, "memoire": memoire,
+            "logiciels": {"installes": sorted(k for k, i in logiciel.items() if i), "absents": sorted(k for k, i in logiciel.items() if not i), "versions": versions}, "cassandra": cassandra}
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

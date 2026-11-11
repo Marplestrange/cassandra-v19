@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.3.2  #7084b6
+# VERSION CN : 0.4.0  #83320c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La vue d'ensemble : lit les modules de supervision (chacun pour LE compte qui regarde) et compose le verdict (composer.py).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=7084b6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=83320c ▼▼▼
 """La vue d'ensemble : lit les modules de supervision (chacun pour LE compte qui regarde) et compose le verdict (composer.py)."""
 import time
 
@@ -30,7 +30,9 @@ MACHINE = (("etat", "sensorium.etat", {}), ("metriques", "sensorium.metriques", 
            ("oom", "sensorium.entite", {"nom": "oom_events"}), ("acquits", "securite.oom_acquits", {}), ("certs_disque", "sensorium.entite", {"nom": "ssl_certificates"}),
            ("certificats", "certificats.etat", {}), ("tailscale", "tailscale.etat", {}), ("netbird", "netbird.etat", {}), ("depots", "sauvegardes.destinations", {}),
            ("panneau_sites", "fastpanel.sites", {}), ("panneau_services", "fastpanel.services", {}), ("panneau_bases", "fastpanel.bases", {}), ("panneau_mail", "fastpanel.mail", {}),
-           ("panneau_copies", "fastpanel.sauvegardes", {}), ("panneau_comptes", "fastpanel.utilisateurs", {}))
+           ("panneau_copies", "fastpanel.sauvegardes", {}), ("panneau_comptes", "fastpanel.utilisateurs", {}),
+           ("proxys", "sensorium.entite", {"nom": "reverse_proxies"}), ("materiel", "sensorium.entite", {"nom": "hardware_state"}),
+           ("logiciels", "sensorium.entite", {"nom": "logiciels"}), ("connexions", "sensorium.entite", {"nom": "ssh_logins"}))
 
 
 def brancher(ctx):

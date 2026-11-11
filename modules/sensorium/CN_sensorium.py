@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.10  #0295b5
+# VERSION CN : 0.3.0  #af9afc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.10 empreinte=0295b5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=af9afc ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -62,6 +62,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from http.server import HTTPServer, BaseHTTPRequestHandler
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))          # le chargeur des points est un voisin du démon
 import CN_points_sensorium as _points_sensorium
+import CN_releves_machine as _releves
 
 # ============================================================
 # CONFIGURATION
@@ -105,7 +106,8 @@ SOCKET_ALLOWED_ENTITIES = {
     "fastpanel_databases", "fastpanel_mail_accounts", "fastpanel_ftp_accounts",
     "fastpanel_backups", "fastpanel_dns_records", "fastpanel_crons",
     "fastpanel_services", "fastpanel_stats",
-    "fp_server_stat", "fp_process_stat", "fp_disk_stat", "fp_net_stat"
+    "fp_server_stat", "fp_process_stat", "fp_disk_stat", "fp_net_stat",
+    "reverse_proxies", "ssh_logins", "hardware_state", "logiciels"
 }
 
 SECURITY_SYSCTL = {
@@ -266,6 +268,8 @@ def init_all_tables():
         CREATE TABLE IF NOT EXISTS controles (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT UNIQUE, ok INTEGER, valeur TEXT, last_check TEXT);
         CREATE TABLE IF NOT EXISTS mesures_diverses (id INTEGER PRIMARY KEY AUTOINCREMENT, cle TEXT UNIQUE, categorie TEXT, valeur TEXT, severite TEXT, last_check TEXT);
         CREATE TABLE IF NOT EXISTS exposition (id INTEGER PRIMARY KEY AUTOINCREMENT, port INTEGER UNIQUE, processus TEXT, portee TEXT, public INTEGER, valeur TEXT, sensible INTEGER, ip_publique TEXT, last_check TEXT);
+        CREATE TABLE IF NOT EXISTS reverse_proxies (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT, chemin TEXT, vers TEXT, port INTEGER, genre TEXT, tls INTEGER, last_check TEXT);
+        CREATE TABLE IF NOT EXISTS ssh_logins (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, ip TEXT, methode TEXT, cle TEXT, nombre INTEGER, premiere TEXT, derniere TEXT, last_check TEXT);
         CREATE TABLE IF NOT EXISTS logiciels (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT UNIQUE, installe INTEGER, chemin TEXT, last_check TEXT);
         CREATE TABLE IF NOT EXISTS apt_updates (id INTEGER PRIMARY KEY AUTOINCREMENT, total INTEGER, securite INTEGER, paquets TEXT, last_check TEXT);
         CREATE TABLE IF NOT EXISTS system_state (id INTEGER PRIMARY KEY AUTOINCREMENT, uptime_s INTEGER, reboot_required INTEGER, reboot_pkgs TEXT, tailscale TEXT, tailscale_ip TEXT, last_check TEXT);
@@ -517,6 +521,21 @@ def get_top_processes():
             except Exception:
                 pass
     return procs[:10]
+
+_CONTENEURS_PAR_ID = {}          # identifiant de conteneur → nom, tenu par collect_docker_containers : il dit à quel conteneur appartient un processus
+
+
+def _cgroup_de(pid) -> str:
+    try:
+        return Path("/proc/%d/cgroup" % pid).read_text()
+    except Exception:
+        return ""
+
+
+def get_processes_detail():
+    """Les plus gourmands en processeur et en mémoire, avec leur numéro, leur mémoire, leur âge et ce qui les porte (service, conteneur, session)."""
+    return _releves.processus(run_cmd(_releves.SONDE_PS, timeout=5) or "", _cgroup_de, dict(_CONTENEURS_PAR_ID))
+
 
 # PERF[O2]: collect_metrics() lit /proc/meminfo une seule fois pour RAM + SWAP.
 def collect_metrics():
@@ -1348,7 +1367,53 @@ def collect_active_sessions():
                            ss=run_cmd("ss -tnp state established 'sport = :22'"), now=now)
     if not sessions:
         sessions = _sys_formes("sessions_last", last=run_cmd("last -n 20 -F 2>/dev/null | grep -v reboot | grep still"), now=now)
+    try:
+        acceptes, cles, refus = _ssh_connu()
+        sessions = _releves.enrichir_sessions(sessions, _releves.sessions_w(run_cmd(["w", "-h", "-i"], timeout=5) or "") if _qui("w") else [], acceptes, cles, refus)
+    except Exception as e:
+        print("[SESSIONS] détail indisponible : %s" % e, file=sys.stderr)
     return sessions
+
+
+_SSH_CONNU = {"t": 0.0, "v": ([], {}, {})}
+
+
+def _fichiers_cles() -> list:
+    """Les fichiers authorized_keys des comptes de la machine (trente au plus)."""
+    out = []
+    try:
+        for ligne in Path("/etc/passwd").read_text().splitlines():
+            p = ligne.split(":")
+            if len(p) >= 6 and p[5]:
+                f = Path(p[5]) / ".ssh" / "authorized_keys"
+                if f.is_file() and str(f) not in out:
+                    out.append(str(f))
+    except Exception:
+        pass
+    return out[:30]
+
+
+def _ssh_connu() -> tuple:
+    """(connexions SSH réussies sur 30 jours, commentaire des clés autorisées par empreinte, tentatives refusées dans l'heure par adresse).
+    Relu toutes les dix minutes au plus : la passe rapide des sessions n'interroge pas le journal à chaque fois."""
+    if _SSH_CONNU["t"] and time.monotonic() - _SSH_CONNU["t"] < 600:
+        return _SSH_CONNU["v"]
+    journal = ""
+    if _qui("journalctl"):
+        journal = run_cmd(["journalctl", "-u", "ssh", "-u", "sshd", "--since", "-30d", "-g", "^Accepted ", "-o", "short-iso", "--no-pager", "-q"], timeout=40) or ""
+    cles = _releves.cles_connues([run_cmd(["ssh-keygen", "-lf", f], timeout=5) or "" for f in _fichiers_cles()]) if _qui("ssh-keygen") else {}
+    refus = {}
+    for ip in _ssh_echecs_1h():
+        refus[ip] = refus.get(ip, 0) + 1
+    _SSH_CONNU["v"], _SSH_CONNU["t"] = (_releves.acceptes(journal), cles, refus), time.monotonic()
+    return _SSH_CONNU["v"]
+
+
+def collect_ssh_logins() -> list:
+    """Les connexions SSH réussies des trente derniers jours, regroupées par compte, adresse et clé."""
+    now = datetime.now().isoformat()
+    acceptes, cles, _refus = _ssh_connu()
+    return [dict(g, last_check=now) for g in _releves.connexions(acceptes, cles)]
 
 
 def collect_open_ports():
@@ -1571,9 +1636,17 @@ def collect_failed_units():
             "unit": unit,
             "active_state": "failed",
             "description": desc,
+            "journal": _journal_court(unit),
             "last_check": now
         })
     return units
+
+
+def _journal_court(unite: str, lignes: int = 3) -> str:
+    """Les dernières lignes du journal d'une unité : ce qu'elle a dit en tombant."""
+    if not _qui("journalctl"):
+        return ""
+    return "\n".join(l[:240] for l in (run_cmd_ex(["journalctl", "-u", unite, "-n", str(lignes), "-o", "cat", "--no-pager", "-q"], timeout=8)[1] or "").splitlines()[-lignes:])
 
 
 def collect_fail2ban_banned():
@@ -1672,7 +1745,56 @@ def collect_docker_containers():
         if len(parts) >= 3:
             containers.append({"name": parts[0], "status": parts[1], "image": parts[2],
                                "last_check": datetime.now().isoformat()})
+    try:
+        fiches = _fiches_conteneurs(moteur) if containers else {}
+    except Exception as e:
+        fiches = {}
+        print("[DOCKER] fiches indisponibles : %s" % e, file=sys.stderr)
+    for c in containers:                                   # toutes les lignes portent les mêmes colonnes, fiche lue ou non
+        f = fiches.get(c["name"]) or {}
+        for cle, vide in _CONTENEUR_VIDE.items():
+            v = f.get(cle, vide)
+            c[cle] = json.dumps(v, ensure_ascii=False) if isinstance(v, list) else v
     return containers
+
+
+_CONTENEUR_VIDE = {"ident": "", "state": "", "sante": "", "demarre": "", "redemarrages": 0, "politique": "", "reseau": "", "ip": "", "ports": "[]", "volumes": "[]",
+                   "compose": "", "taille_mo": 0, "created": "", "distribution": ""}
+_DISTRIBUTIONS = {}              # par identifiant d'image : une image ne change pas de système, on ne le lui redemande pas
+
+
+def _fiches_conteneurs(moteur: str) -> dict:
+    """{nom: fiche} de tous les conteneurs, en deux appels (conteneurs, images). Les variables d'environnement d'un conteneur passent en mémoire
+    et ne sont jamais gardées : la forme (CN_releves_machine.conteneurs) ne les lit pas."""
+    ids = (run_cmd_strict([moteur, "ps", "-aq", "--no-trunc"], timeout=10) or "").split()
+    if not ids:
+        return {}
+    inspects = run_json([moteur, "inspect"] + ids, [], timeout=30)
+    if not isinstance(inspects, list):
+        return {}
+    ids_images = sorted({str(c.get("Image") or "") for c in inspects if isinstance(c, dict) and c.get("Image")})
+    images = _releves.images(run_json([moteur, "image", "inspect"] + ids_images, [], timeout=30)) if ids_images else {}
+    par_id = {}
+    for c in inspects:
+        if not isinstance(c, dict):
+            continue
+        nom, image = str(c.get("Name") or "").lstrip("/"), str(c.get("Image") or "")
+        if nom and c.get("Id"):
+            par_id[str(c["Id"])] = nom
+        if nom and image and image not in _DISTRIBUTIONS and (c.get("State") or {}).get("Running"):
+            _DISTRIBUTIONS[image] = _releves.distribution(run_cmd_ex([moteur, "exec", nom, "cat", "/etc/os-release"], timeout=8)[1])
+    _CONTENEURS_PAR_ID.clear()
+    _CONTENEURS_PAR_ID.update(par_id)
+    return _releves.conteneurs(inspects, images, _DISTRIBUTIONS)
+
+
+def collect_reverse_proxies() -> list:
+    """Chaque renvoi de nginx vers un service local (nom public, chemin, port visé) : c'est lui qui dit par quel nom un conteneur ou un service
+    se joint de l'extérieur. Strict : une lecture qui échoue garde la table en l'état, une configuration sans renvoi la vide."""
+    if not _qui("nginx"):
+        return []
+    now = datetime.now().isoformat()
+    return [dict(l, last_check=now) for l in _releves.proxys_nginx(run_cmd_strict(["nginx", "-T"], timeout=20))]
 
 
 def collect_rclone_remotes():
@@ -2671,25 +2793,29 @@ def collect_firewall_rules():
 # souvenirs sont nés parce qu'aucun capteur ne relevait ces états, et ils sont restés faux des jours
 # après la réparation. Un état se MESURE : services, config de Cassandra, logiciels, mises à jour.
 
+_SERVICES_CPU = {}               # unité → (nanosecondes de processeur, instant) de la passe d'avant : le processeur se lit entre deux passes
+
+
 def collect_system_services() -> list:
     """Tous les services systemd chargés, en UN appel : état, sous-état, activation au démarrage, type.
     La table system_services existait sans écrivain : le modèle du monde ne connaissait aucun service."""
     now = datetime.now().isoformat()
     if not _qui("systemctl"):
         return collect_services_sans_systemd()
-    out = run_cmd(["systemctl", "show", "*.service", "--no-pager",
-                   "-p", "Id,LoadState,ActiveState,SubState,UnitFileState,Type,Description"], timeout=20)
-    services, cur = [], {}
+    out = run_cmd(["systemctl", "show", "*.service", "--no-pager", "-p", _releves.PROPRIETES_SERVICE], timeout=20)
+    services, cur, instant = [], {}, time.monotonic()
 
     def _pousser(u):
         nom = (u.get("Id") or "").strip()
         if not nom.endswith(".service") or u.get("LoadState") != "loaded":
             return
-        services.append({"name": nom[:-8], "status": u.get("ActiveState") or "?",
-                         "sub_state": u.get("SubState") or "", "unit_file_state": u.get("UnitFileState") or "",
-                         "unit_type": u.get("Type") or "", "description": (u.get("Description") or "")[:120],
-                         "enabled": 1 if u.get("UnitFileState") == "enabled" else 0,
-                         "active": 1 if u.get("ActiveState") == "active" else 0, "last_check": now})
+        m = _releves.mesures_service(u, _SERVICES_CPU.get(nom), instant)
+        _SERVICES_CPU[nom] = (m.pop("cpu_ns"), instant)
+        services.append(dict({"name": nom[:-8], "status": u.get("ActiveState") or "?",
+                              "sub_state": u.get("SubState") or "", "unit_file_state": u.get("UnitFileState") or "",
+                              "unit_type": u.get("Type") or "", "description": (u.get("Description") or "")[:120],
+                              "enabled": 1 if u.get("UnitFileState") == "enabled" else 0,
+                              "active": 1 if u.get("ActiveState") == "active" else 0, "last_check": now}, **m))
 
     for ligne in (out or "").splitlines():
         if not ligne.strip():
@@ -2757,7 +2883,7 @@ def collect_cassandra_config() -> list:
 LOGICIELS_SUIVIS = ("nginx", "apache2", "docker", "tailscale", "ollama", "omniroute", "fail2ban-client", "mysql",
                     "mariadb", "psql", "redis-server", "php", "certbot", "rclone", "node", "npm", "python3", "git",
                     "ufw", "nft", "iptables", "smartctl", "postfix", "dovecot", "proftpd", "mogwai", "caddy",
-                    "claude", "sqlite3", "curl", "wg")
+                    "claude", "sqlite3", "curl", "wg", "exim4")
 
 
 def collect_installed_software() -> list:
@@ -2767,8 +2893,18 @@ def collect_installed_software() -> list:
     out = []
     for nom in LOGICIELS_SUIVIS:
         p = _sh.which(nom, path=chemin)
-        out.append({"nom": nom, "installe": 1 if p else 0, "chemin": p or "", "last_check": now})
+        version = ""
+        if p and nom not in _SANS_VERSION:
+            _rc, sortie, erreurs = run_cmd_ex([p] + _ARG_VERSION.get(nom, ["--version"]), timeout=6)
+            version = _releves.version(sortie or erreurs)
+        out.append({"nom": nom, "installe": 1 if p else 0, "chemin": p or "", "version": version, "last_check": now})
     return out
+
+
+# Comment chaque logiciel dit sa version (« --version » par défaut) ; ceux que l'on n'interroge pas : leurs propres programmes de la maison, ou sans réponse simple.
+_ARG_VERSION = {"nginx": ["-v"], "apache2": ["-v"], "php": ["-v"], "tailscale": ["version"], "rclone": ["version"], "caddy": ["version"], "ufw": ["version"],
+                "proftpd": ["-v"], "wg": ["--version"], "exim4": ["--version"]}
+_SANS_VERSION = {"claude", "mogwai", "omniroute", "postfix"}
 
 
 def _qui(nom: str) -> str:
@@ -2967,7 +3103,59 @@ def collect_hardware_state() -> list:
     if _qui("getenforce"):
         mac.append("SELinux " + (run_cmd(["getenforce"], timeout=5) or "?").strip().lower())
     e["securite_noyau"] = ", ".join(mac)
+    try:
+        e.update(_fiche_materiel())
+    except Exception as ex:
+        e.update(dict.fromkeys(_FICHE_CLES, ""))
+        print("[FICHE] matériel indisponible : %s" % ex, file=sys.stderr)
     return [e]
+
+
+_FICHE_CLES = ("cpu_modele", "cpu_coeurs", "cpu_fils", "cpu_mhz", "constructeur", "carte", "bios", "installee", "demarree", "passerelle", "inverse",
+               "ip_publique", "pare_feu_entree", "maj_auto", "disques")
+
+
+def _lire(chemin: str) -> str:
+    try:
+        return Path(chemin).read_text(errors="replace").strip()
+    except Exception:
+        return ""
+
+
+def _fiche_materiel() -> dict:
+    """Ce qui ne change guère : le processeur, le constructeur (DMI), la date d'installation (les clés d'hôte SSH naissent au premier démarrage),
+    le dernier démarrage, la passerelle, le nom inverse de l'adresse publique, la politique d'entrée du pare-feu, les mises à jour automatiques, les disques."""
+    cpu = _releves.processeur(_lire("/proc/cpuinfo"))
+    dmi = {k: _lire("/sys/class/dmi/id/" + k) for k in ("sys_vendor", "product_name", "board_vendor", "board_name", "bios_vendor", "bios_version", "bios_date")}
+    naissances = []
+    for f in list(Path("/etc/ssh").glob("ssh_host_*_key.pub")) + [Path("/etc/machine-id")]:
+        try:
+            naissances.append(f.stat().st_mtime)
+        except Exception:
+            pass
+    demarree = ""
+    try:
+        demarree = (datetime.now() - timedelta(seconds=float(_lire("/proc/uptime").split()[0]))).isoformat()[:19]
+    except Exception:
+        pass
+    routes = run_json(["ip", "-j", "route", "show", "default"], [], timeout=5) if _qui("ip") else []
+    ip_pub, inverse = _ip_publique(), ""
+    if ip_pub:
+        if _qui("dig"):
+            inverse = (run_cmd_ex(["dig", "+short", "+time=3", "+tries=1", "-x", ip_pub], timeout=6)[1] or "").strip().splitlines()[:1]
+            inverse = inverse[0].rstrip(".") if inverse else ""
+        elif _qui("getent"):
+            p = (run_cmd_ex(["getent", "hosts", ip_pub], timeout=6)[1] or "").split()
+            inverse = p[1] if len(p) > 1 else ""
+    return {"cpu_modele": cpu["modele"], "cpu_coeurs": cpu["coeurs"], "cpu_fils": cpu["fils"], "cpu_mhz": cpu["mhz"],
+            "constructeur": " ".join(x for x in (dmi["sys_vendor"], dmi["product_name"]) if x)[:80],
+            "carte": " ".join(x for x in (dmi["board_vendor"], dmi["board_name"]) if x)[:80],
+            "bios": (" ".join(x for x in (dmi["bios_vendor"], dmi["bios_version"]) if x) + (" (%s)" % dmi["bios_date"] if dmi["bios_date"] else ""))[:80],
+            "installee": datetime.fromtimestamp(min(naissances)).strftime("%Y-%m-%d") if naissances else "", "demarree": demarree,
+            "passerelle": str((routes[0].get("gateway") if routes and isinstance(routes[0], dict) else "") or ""), "inverse": inverse[:120], "ip_publique": ip_pub,
+            "pare_feu_entree": _releves.politique_entree(run_cmd_ex(["iptables", "-S", "INPUT"], timeout=8)[1]) if _qui("iptables") else "",
+            "maj_auto": _releves.maj_auto(_lire("/etc/apt/apt.conf.d/20auto-upgrades")),
+            "disques": json.dumps(_releves.disques(run_json(["lsblk", "-dJ", "-o", "NAME,MODEL,SIZE,ROTA,TYPE"], {}, timeout=8)) if _qui("lsblk") else [], ensure_ascii=False)}
 
 
 def collect_services_sans_systemd() -> list:
@@ -3583,8 +3771,8 @@ def collect_file_courriel() -> list:
     return []
 
 
-def collect_ssh_echecs() -> list:
-    """Connexions SSH ratées sur l'heure écoulée, et les adresses qui insistent le plus."""
+def _ssh_echecs_1h() -> list:
+    """L'adresse de chaque connexion SSH ratée de l'heure écoulée (une entrée par tentative)."""
     texte = ""
     if _qui("journalctl"):
         for unite in ("ssh", "sshd"):
@@ -3595,7 +3783,12 @@ def collect_ssh_echecs() -> list:
                 texte += "\n".join(Path(f).read_text(errors="replace").splitlines()[-5000:])
             except Exception:
                 pass
-    echecs = re.findall(r"(?:Failed password|Invalid user|authentication failure|Connection closed by authenticating user)[^\n]*?from (\d{1,3}(?:\.\d{1,3}){3}|[0-9a-f:]{6,})", texte)
+    return re.findall(r"(?:Failed password|Invalid user|authentication failure|Connection closed by authenticating user)[^\n]*?from (\d{1,3}(?:\.\d{1,3}){3}|[0-9a-f:]{6,})", texte)
+
+
+def collect_ssh_echecs() -> list:
+    """Connexions SSH ratées sur l'heure écoulée, et les adresses qui insistent le plus."""
+    echecs = _ssh_echecs_1h()
     par_ip = {}
     for ip in echecs:
         par_ip[ip] = par_ip.get(ip, 0) + 1
@@ -5236,7 +5429,7 @@ def collect_mesures_diverses() -> list:
 # LES RELEVÉS D'ÉTAT INSTANTANÉ, où « vide » est une vraie réponse (24-09) : sans cette liste, un relevé vide ne
 # touchait pas la table, et le dernier service en échec (ou la dernière adresse bannie) y restait pour toujours —
 # openipmi, désactivé à 05:00, rouvrait « Service en échec » toute la journée sur Orion.
-_TABLES_INSTANTANE = {"failed_units", "fail2ban_banned_ips", "cassandra_config"}      # cassandra_config : sur une machine V19, « rien » est la réponse, et l'ancienne ligne « fichier absent » doit partir
+_TABLES_INSTANTANE = {"failed_units", "fail2ban_banned_ips", "cassandra_config", "reverse_proxies"}      # cassandra_config : sur une machine V19, « rien » est la réponse, et l'ancienne ligne « fichier absent » doit partir
 
 
 def save_many(table: str, rows: list):
@@ -6212,6 +6405,7 @@ class SharedMemorySocket:
                     "disk_free_gb":  _disk["total_gb"] - _disk["used_gb"],
                     "swap_total_gb": _swap["total_gb"], "swap_used_gb": _swap["used_gb"],
                     "top_processes": get_top_processes(),
+                    "processes": get_processes_detail(), "memory": _releves.memoire(mi),
                     "timestamp": time.time(),
                 }).encode())
             elif data == "GET_DASHBOARD":
@@ -6656,6 +6850,8 @@ class KnowledgeCollector:
             ("interfaces",             collect_interfaces),
             ("hardware_state",         collect_hardware_state),
             ("backups_state",          collect_backups),
+            ("reverse_proxies",        collect_reverse_proxies),
+            ("ssh_logins",             collect_ssh_logins),
         ]
 
         # Métriques en parallèle aussi (le sleep(0.3) de get_cpu sera chevauchant)
@@ -6809,6 +7005,8 @@ class KnowledgeCollector:
                             ("exposition",             collect_exposition),
                             ("firewall_rules",         collect_firewall_rules),
                             ("ssh_authorized_keys",    collect_ssh_authorized_keys),
+                            ("reverse_proxies",        collect_reverse_proxies),
+                            ("ssh_logins",             collect_ssh_logins),
                         ]
                         full_results = self._run_parallel(full_tasks, max_workers=8, periode_s=300)
                         for table, data in full_results.items():

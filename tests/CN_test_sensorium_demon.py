@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #97fbdf
+# VERSION CN : 0.1.0  #227b7b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve les garanties du démon du Sensorium que l'audit de novembre 2026 a corrigées : un échec de commande n'est pas « rien à signaler », un socket muet est lâché ou fait arrêter le collecteur, un jeton FastPanel expiré est renouvelé, un certificat expiré se compte, un journal d'accès se lit par blocs, une redirection rouverte alerte.
 # MÉTHODE    : charge CN_sensorium.py comme module sur une base et un socket temporaires, simule les commandes et l'API HTTP (aucun réseau, aucune commande système), puis appelle les fonctions du démon.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=97fbdf ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=227b7b ▼▼▼
 import gzip
 import importlib.util
 import json
@@ -553,6 +553,69 @@ class Processus(Base):
         self.assertEqual(len(procs), 10)
         self.assertFalse([p for p in procs if "ps aux" in p["command"]])
         self.assertEqual(procs[0], {"user": "www-data", "cpu": 1.5, "command": "php-fpm: pool site0.exemple.test"})
+
+
+class RelevesDeLaMachine(Base):
+    """Le branchement des relevés de « La machine » : les formes sont éprouvées dans CN_test_sensorium_releves, ici ce que le démon en fait."""
+    def test_les_conteneurs_portent_leur_fiche_et_les_memes_colonnes(self):
+        ident = "8d8b6094815a" + "0" * 52
+        inspect = [{"Id": ident, "Name": "/recherche", "Image": "sha256:aaa", "RestartCount": 0, "State": {"Status": "running", "Running": True},
+                    "HostConfig": {"NetworkMode": "default", "RestartPolicy": {"Name": "always"}}, "Config": {"Env": ["JETON=secret-a-ne-pas-garder"]},
+                    "NetworkSettings": {"Ports": {"8080/tcp": [{"HostIp": "127.0.0.1", "HostPort": "8890"}]}, "Networks": {"bridge": {"IPAddress": "172.17.0.3"}}}, "Mounts": []}]
+
+        def json_de(cmd, defaut, timeout=10):
+            return [{"Id": "sha256:aaa", "Size": 104857600, "Created": "2026-11-01T22:57:37Z"}] if cmd[1] == "image" else inspect
+
+        self.m._DISTRIBUTIONS.clear()
+        with mock.patch.object(self.m, "_qui", side_effect=lambda n: "/usr/bin/docker" if n == "docker" else ""), \
+                mock.patch.object(self.m, "run_cmd", return_value="recherche|Up 2 hours|exemple/recherche:latest\narrete|Exited (1) 3 days ago|exemple/vieux:1"), \
+                mock.patch.object(self.m, "run_cmd_strict", return_value=ident), mock.patch.object(self.m, "run_json", side_effect=json_de), \
+                mock.patch.object(self.m, "run_cmd_ex", return_value=(0, 'PRETTY_NAME="Alpine Linux v3.24"\n', "")):
+            lignes = self.m.collect_docker_containers()
+        r, a = lignes
+        self.assertEqual((r["ports"], r["politique"], r["reseau"], r["ip"], r["taille_mo"], r["distribution"]),
+                         ('[["127.0.0.1", 8890, 8080, "tcp", "machine"]]', "always", "bridge", "172.17.0.3", 100, "Alpine Linux v3.24"))
+        self.assertEqual((a["ports"], a["politique"], a["distribution"]), ("[]", "", ""))            # un conteneur sans fiche lue : les mêmes colonnes, vides
+        self.assertEqual(list(r), list(a))
+        self.assertNotIn("secret-a-ne-pas-garder", repr(lignes))
+        self.assertEqual(self.m._CONTENEURS_PAR_ID, {ident: "recherche"})
+        self.m.save_many("docker_containers", lignes)                                                # les colonnes nouvelles s'ajoutent seules à la table
+        conn = self.m.get_conn()
+        try:
+            self.assertEqual(conn.execute("SELECT distribution, politique FROM docker_containers WHERE name='recherche'").fetchone()[:2], ("Alpine Linux v3.24", "always"))
+        finally:
+            conn.close()
+
+    def test_un_service_dit_sa_memoire_et_son_processeur_entre_deux_passes(self):
+        def sortie(ns):
+            return ("Id=web.service\nLoadState=loaded\nActiveState=active\nSubState=running\nUnitFileState=enabled\nType=notify\nDescription=Serveur web\n"
+                    "MainPID=1629\nMemoryCurrent=52428800\nCPUUsageNSec=%d\nActiveEnterTimestamp=Tue 2026-11-03 18:32:06 UTC\nNRestarts=0\n" % ns)
+        self.m._SERVICES_CPU.clear()
+        with mock.patch.object(self.m, "_qui", return_value="/bin/systemctl"), mock.patch.object(self.m.time, "monotonic", side_effect=[100.0, 130.0]):
+            with mock.patch.object(self.m, "run_cmd", return_value=sortie(1_000_000_000)):
+                un = self.m.collect_system_services()[0]
+            with mock.patch.object(self.m, "run_cmd", return_value=sortie(4_000_000_000)):
+                deux = self.m.collect_system_services()[0]
+        self.assertEqual((un["name"], un["pid"], un["memoire_mo"], un["cpu_pct"], un["depuis"]), ("web", 1629, 50.0, None, "2026-11-03T18:32:06"))
+        self.assertEqual(deux["cpu_pct"], 10.0)                                                      # 3 s de processeur en 30 s
+        self.assertNotIn("cpu_ns", deux)
+
+    def test_les_metriques_donnent_le_detail_des_processus_et_de_la_memoire(self):
+        ps = "www-data  52110  3.5 1884160  21600 php-fpm: pool boutique.exemple.test\nroot  60211 55.0 3000 0 ps -eo user:32,pid,pcpu,rss,etimes,args --no-headers\n"
+        with mock.patch.object(self.m, "run_cmd", return_value=ps), mock.patch.object(self.m, "_cgroup_de", return_value="0::/system.slice/php8.3-fpm.service\n"):
+            self.assertEqual(self.m.get_processes_detail(), [{"user": "www-data", "pid": 52110, "cpu": 3.5, "mem_mb": 1840.0, "age_s": 21600,
+                                                               "command": "php-fpm: pool boutique.exemple.test", "genre": "service", "a_qui": "php8.3-fpm"}])
+
+    def test_les_nouvelles_tables_se_lisent_par_le_socket(self):
+        for table in ("reverse_proxies", "ssh_logins", "hardware_state", "logiciels"):
+            self.assertIn(table, self.m.SOCKET_ALLOWED_ENTITIES)
+        self.m.save_many("reverse_proxies", [{"nom": "coffre.exemple.test", "chemin": "/", "vers": "127.0.0.1:8087", "port": 8087, "genre": "http", "tls": 1, "last_check": "x"}])
+        self.m.save_many("reverse_proxies", [])                                                      # plus aucun renvoi : la table se vide, elle ne garde pas l'ancien
+        conn = self.m.get_conn()
+        try:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM reverse_proxies").fetchone()[0], 0)
+        finally:
+            conn.close()
 
 
 class RelanceAutomatique(Base):

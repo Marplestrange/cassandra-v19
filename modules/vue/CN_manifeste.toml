@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.3.2  #337f17
+# VERSION CN : 0.4.0  #a094c5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La vue d'ensemble : un verdict (rien ne demande un geste / à regarder / en panne), des compteurs, et ce qui demande un geste — composés à partir des modules de supervision (sites, flotte, sensorium, proactivité, notifications). Une source muette est DITE muette, jamais comptée comme « tout va bien ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=337f17 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=a094c5 ▼▼▼
 [module]
 id = "vue"
 nom = "Vue d'ensemble"
-version = "0.3.2"
+version = "0.4.0"
 noyau_min = "0.1.0"
 description = "La vue d'ensemble : un verdict (rien ne demande un geste / à regarder / en panne), des compteurs, et ce qui demande un geste — composés à partir des modules de supervision (sites, flotte, sensorium, proactivité, notifications). Une source muette est DITE muette, jamais comptée comme « tout va bien »."
 confiance = "interne"
