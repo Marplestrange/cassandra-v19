@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.5.3  #d54562
+# VERSION CN : 0.5.4  #d54562
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Sécurité pose, À ROOT : les deux commandes que le courtier peut lancer (relever les mesures ; exécuter UN geste de la table fermée), et rien d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.3 empreinte=d54562 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.4 empreinte=d54562 ▼▼▼
 # Sécurité pose, À ROOT : les deux commandes que le courtier peut lancer (relever les mesures ; exécuter UN geste de la table fermée), et rien d'autre.
 set -eu
 D="${CASSANDRA_MODULE_DIR:?le dossier du module}"

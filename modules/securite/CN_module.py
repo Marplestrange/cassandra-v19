@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.5.3  #95c227
+# VERSION CN : 0.5.4  #53433e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes, le journal, les audits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.3 empreinte=95c227 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.4 empreinte=53433e ▼▼▼
 """La sécurité : les gestes, le journal, les audits.
 
 Porté de la V18 (`securite_*`, `_sec_gestes`), avec ses leçons :
@@ -333,7 +333,11 @@ def brancher(ctx):
     def machine_gestes(c, limite=20):
         """Les derniers gestes de la page « La machine », le plus récent d'abord : qui, quoi, sur quoi, et s'il se défait encore."""
         lignes = db.lire("SELECT id, ts, qui, geste, cible, detail, ok, resultat, defaire FROM securite_journal WHERE geste LIKE 'machine.%' ORDER BY id DESC LIMIT ?", (max(1, min(int(limite or 20), 100)),))
-        return {"gestes": [dict({k: l[k] for k in ("id", "ts", "qui", "cible", "detail", "resultat")}, geste=l["geste"][8:], ok=bool(l["ok"]), defaisable=bool(l["defaire"])) for l in lignes]}
+        maintenant = time.strftime("%Y-%m-%d %H:%M")
+
+        def defaisable(l):                                                 # un redémarrage dont l'heure est passée a eu lieu : il n'y a plus rien à annuler
+            return bool(l["defaire"]) and not (l["geste"] == "machine.redemarrer" and l["cible"] and l["cible"] <= maintenant)
+        return {"gestes": [dict({k: l[k] for k in ("id", "ts", "qui", "cible", "detail", "resultat")}, geste=l["geste"][8:], ok=bool(l["ok"]), defaisable=defaisable(l)) for l in lignes]}
 
     def machine_geste_defaire(c, id=0):
         l = db.lire("SELECT * FROM securite_journal WHERE id=? AND geste LIKE 'machine.%'", (int(id or 0),))

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #446abd
+# VERSION CN : 0.1.0  #dbc535
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : test_securite_machine.py
 # MÉTHODE    : charge la commande root « machine » comme un module et remplace son lanceur par une fausse machine tenue en mémoire (aucune commande réelle) ; puis éprouve les capacités du module sur un faux courtier
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=446abd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dbc535 ▼▼▼
 import importlib.machinery
 import importlib.util
 import io
@@ -305,6 +305,20 @@ class Commande(unittest.TestCase):
         self.assertTrue(self.lancer("defaire", "redemarrer")["ok"])
         self.assertFalse(self.f.prevu)
         self.assertFalse((self.tmp / "marque.json").exists())
+        r = self.lancer("defaire", "redemarrer")                                                           # plus rien de prévu : le dire, pas « annulé »
+        self.assertFalse(r["ok"])
+        self.assertIn("aucun redémarrage", r["erreur"])
+
+    def test_la_coupure_se_mesure_depuis_l_instant_exact_du_depart(self):
+        """Argos, 11-2026 : partie à 20:44:43, revenue à 20:45:04. Mesurée depuis la minute affichée (20:44:00), la coupure était dite de 58 s."""
+        prevu = self.tmp / "scheduled"
+        prevu.write_text("USEC=1794429883800916\nWARN_WALL=1\nMODE=reboot\n", encoding="utf-8")
+        with mock.patch.object(self.m, "PREVU", str(prevu)):
+            self.assertAlmostEqual(self.m.instant_prevu(), 1794429883.8, places=1)
+            self.lancer("faire", "redemarrer", quand="maintenant", nom="atlas")
+        self.assertAlmostEqual(json.loads((self.tmp / "marque.json").read_text(encoding="utf-8"))["prevu_ts"], 1794429883.8, places=1)
+        with mock.patch.object(self.m, "PREVU", str(self.tmp / "absent")):
+            self.assertEqual(self.m.instant_prevu(), 0.0)
 
     def test_l_assistant_d_arret_des_mises_a_jour_n_est_pas_une_installation_en_cours(self):
         """Sur Debian, `unattended-upgrade-shutdown --wait-for-signal` tourne en permanence : le prendre pour une installation refuserait tout redémarrage (11-2026)."""
@@ -413,6 +427,14 @@ class Capacites(unittest.TestCase):
         self.ex("service_geste", service="nginx", action="redemarrer")
         self.assertFalse(self.ex("machine_gestes")["resultat"]["gestes"][0]["defaisable"])                 # un redémarrage n'a rien à défaire : pas de bouton
         self.assertEqual(len(self.c.appels), n + 1)
+
+    def test_un_redemarrage_qui_a_eu_lieu_ne_s_annule_plus(self):
+        self.c.reponse = {"ok": True, "prevu": "2026-01-01 03:00", "quand": "03:00"}                       # une heure passée : la machine est partie depuis
+        self.assertEqual(self.ex("machine_redemarrer", quand="03:00", nom="atlas")["statut"], "faite")
+        self.c.reponse = {"ok": True, "prevu": "2999-01-01 03:00", "quand": "03:00"}                       # une heure à venir : il s'annule encore
+        self.assertEqual(self.ex("machine_redemarrer", quand="03:00", nom="atlas")["statut"], "faite")
+        g = self.ex("machine_gestes")["resultat"]["gestes"]
+        self.assertEqual([(x["cible"], x["defaisable"]) for x in g], [("2999-01-01 03:00", True), ("2026-01-01 03:00", False)])
 
     def test_les_lectures_passent_par_le_verbe_lire(self):
         self.c.reponse = {"ok": True, "service": "nginx", "texte": "prêt"}
