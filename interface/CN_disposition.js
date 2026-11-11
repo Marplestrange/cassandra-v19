@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a3e269
+// VERSION CN : 0.1.0  #b3c4c8
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a3e269 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=b3c4c8 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -131,7 +131,20 @@
     moteurs: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>'
   };
   Object.keys(MEM_IC).forEach((k) => { IC["mv_" + k] = MEM_IC[k]; });
-  const icoSub = (e, f) => { const vid = f.vue || f.id; const k = e.id === "panorama" && EMO_PANORAMA[vid] ? EMO_PANORAMA[vid] : (e.id === "securite" && SECU_IC[vid] ? "sc_" + vid : e.id === "memoire" ? (MEM_IC[vid] ? "mv_" + vid : "") : VUE_IC[vid] || (f.icone && IC[f.icone] ? f.icone : "")); return k; };
+  // Sites : une icône au trait par page du sous-menu (clé « st_<vue> »), dans le même dessin que les autres — jamais une émoticône en couleur
+  const SITES_IC = {
+    vue: '<rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/>',
+    sites: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+    incidents: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
+    alertes: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 8H4c0-1 2-2 2-8M10 20a2 2 0 0 0 4 0"/>',
+    dispo: '<path d="M3 12h4l2-6 4 12 2-6h6"/>',
+    calendrier: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    demandes: '<path d="M4 13l3-8h10l3 8v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13h5a3 3 0 0 0 6 0h5"/>',
+    journal: '<path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    reglages: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'
+  };
+  Object.keys(SITES_IC).forEach((k) => { IC["st_" + k] = SITES_IC[k]; });
+  const icoSub = (e, f) => { const vid = f.vue || f.id; const k = e.id === "panorama" && EMO_PANORAMA[vid] ? EMO_PANORAMA[vid] : (e.id === "sites" && SITES_IC[vid] ? "st_" + vid : e.id === "securite" && SECU_IC[vid] ? "sc_" + vid : e.id === "memoire" ? (MEM_IC[vid] ? "mv_" + vid : "") : VUE_IC[vid] || (f.icone && IC[f.icone] ? f.icone : "")); return k; };
   // le logo de Cassandra : le toit (celui de l'ancienne interface) ; il tient lieu de logo tant que l'organisation n'a pas le sien
   const INST_E_PLIABLES = ["coffre:mon_coffre", "societes:societe", "comptes:utilisateurs", "comptes:groupes"];     // entrées de Paramètres qu'un clic replie ou déplie
   const TOIT ='<svg class="d-i toit" viewBox="0 0 24 24"><path d="M4 11.5l8-7 8 7"/><path d="M6.5 20h11"/><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"/></svg>';
@@ -240,9 +253,7 @@
   const GL_AGENT = { cassandra: "#0b7c74", itare: "#6d3fd1", amizo: "#1d6fb8", relecteur: "#b45309", vision: "#be123c", auditeur: "#5b6b8c" };     // la puce « ● » prend la couleur de l'agent
   const glEnt = (eid) => (GL_ENT[eid] ? '<i class="d19-gl" aria-hidden="true">' + GL_ENT[eid] + "</i>" : "");
   const GL_EVO = { aujourdhui: "☼", amelio: "↗", "amelio.toutes": "≡", "amelio.essai": "◔", "amelio.service": "●", "amelio.retiree": "⊘", reglages: "◈", consignes: "✎", capot: "⚙", "capot.chercheurs": "☉", "capot.points": "ƒ", "capot.comparer": "⇄", "capot.install": "⤓", "capot.securite": "⛨", "capot.carnet": "▤", "capot.ecartees": "⊘", "capot.vision": "✦", "capot.vocab": "Aa" };
-  // Une émoticône par sous-entrée, pour les entrées qui en veulent : { entrée: { vue: émoticône } }. Elle passe devant l'icône au trait de la vue.
-  const EMO_VUE = { sites: { vue: "📊", sites: "🌐", incidents: "🚨", alertes: "🔔", dispo: "📈", calendrier: "📅", demandes: "📨", journal: "📜", reglages: "⚙️" } };
-  const glVue = (eid, vid) => (EMO_VUE[eid] && EMO_VUE[eid][vid] ? '<i class="d19-gl d19-emo" aria-hidden="true">' + EMO_VUE[eid][vid] + "</i>" : eid === "evolution" ? (GL_EVO[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_EVO[vid] + "</i>" : "") : eid !== "agents-ia" ? "" : GL_VUE[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_VUE[vid] + "</i>" : GL_AGENT[vid] ? '<i class="d19-gl" aria-hidden="true" style="color:' + GL_AGENT[vid] + '">●</i>' : "");
+  const glVue = (eid, vid) => (eid === "evolution" ? (GL_EVO[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_EVO[vid] + "</i>" : "") : eid !== "agents-ia" ? "" : GL_VUE[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_VUE[vid] + "</i>" : GL_AGENT[vid] ? '<i class="d19-gl" aria-hidden="true" style="color:' + GL_AGENT[vid] + '">●</i>' : "");
   const EMO_PANORAMA = { verdict: "pv_verdict", gestes: "pv_gestes", cass: "pv_cass", sites: "pv_sites", flotte: "pv_flotte", fil: "pv_fil", machine: "pv_machine", systeme: "pv_systeme" };
   const INFO_PANORAMA = { verdict: "Le verdict global de l'instance", gestes: "Les gestes que Cassandra attend de vous", cass: "L'état de Cassandra et son palier d'autonomie", sites: "Les sites hébergés : combien, et s'ils répondent",
     flotte: "Les machines du parc et leur connexion", fil: "Ce qui a changé récemment", machine: "La machine qui héberge Cassandra", systeme: "Les détails techniques du système" };
