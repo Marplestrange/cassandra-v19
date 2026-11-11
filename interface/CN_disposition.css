@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=4c1325 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=356be6 ▼▼▼ */
 /* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
    Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
 body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
@@ -435,6 +435,8 @@ body.d19 #d19-side.ferme ~ #d19-cap{display:none!important}
 .d19-si.sub.ic.on>svg.d-i{color:var(--accent)}
 .d19-gl{flex:none;width:18px;text-align:center;font:600 15px/1 'Inter',system-ui,'Segoe UI Symbol',sans-serif;font-style:normal;color:var(--txt-faint)}
 .d19-si.sub .d19-gl{font-size:14px;width:16px}
+/* une émoticône de sous-entrée : la police des émoticônes en couleur, pas celle des symboles au trait */
+.d19-gl.d19-emo{font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;font-weight:400;font-size:14px;line-height:1}
 .d19-si.on>.d19-gl,.d19-si:hover>.d19-gl,#d19-top .tit .d19-gl,.pl.on .d19-gl{color:var(--accent)}
 .pl .d19-gl{width:auto;margin-right:5px;font-size:13px}
 #d19-side.rail .d19-si .d19-gl{display:inline-block}
