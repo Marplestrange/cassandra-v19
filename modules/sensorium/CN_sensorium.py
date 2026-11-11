@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.9  #95368e
+# VERSION CN : 0.2.10  #0295b5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.9 empreinte=95368e ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.10 empreinte=0295b5 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -508,15 +508,15 @@ def get_load():
 
 def get_top_processes():
     procs = []
-    out = run_cmd("ps aux --sort=-%cpu --no-headers | head -10")
+    out = run_cmd("ps aux --sort=-%cpu --no-headers | head -14")
     for line in out.splitlines():
         parts = line.split(None, 10)
-        if len(parts) >= 11:
+        if len(parts) >= 11 and "ps aux --sort=-%cpu" not in parts[10]:          # la sonde ne se compte pas elle-même (ni le shell qui la porte)
             try:
                 procs.append({"user": parts[0], "cpu": float(parts[2]), "command": parts[10][:50]})
             except Exception:
                 pass
-    return procs
+    return procs[:10]
 
 # PERF[O2]: collect_metrics() lit /proc/meminfo une seule fois pour RAM + SWAP.
 def collect_metrics():

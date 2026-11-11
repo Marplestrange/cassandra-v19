@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.3.1  #e5a84e
+# VERSION CN : 0.3.2  #d0b080
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=e5a84e ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=d0b080 ▼▼▼
 """La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 
 Une fonction PURE (`composer`) : en entrée, la réponse de chaque source (ou son silence) ; en sortie, des données prêtes à dessiner. Rien n'est
@@ -266,7 +266,7 @@ def composer(s: dict, maintenant: str = "") -> dict:
             age = re.search(r"il y a (\d+) j", v("image." + nom))
             conteneurs.append({"nom": nom, "image": str(c.get("image") or ""), "etat": texte, "tourne": tourne, "pause": pause,
                                "image_age_j": int(age.group(1)) if age else None, "cpu": float(charge.group(1).replace(",", ".")) if charge else None,
-                               "memoire": charge.group(2).replace("MiB", " Mo").replace("GiB", " Go").replace("  ", " ") if charge else ""})
+                               "memoire": charge.group(2).replace("MiB", " Mo").replace("GiB", " Go").replace("  ", " ").replace(".", ",") if charge else ""})
     logiciel = {k[9:]: v(k).startswith("install") for k in L if k.startswith("logiciel.")}
     docker_la = bool(conteneurs) or bool(logiciel.get("docker"))
 

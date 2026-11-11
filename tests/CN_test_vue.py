@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #42156b
+# VERSION CN : 0.1.0  #4223ec
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=42156b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4223ec ▼▼▼
 """Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille »."""
 import sys
 import unittest
@@ -169,7 +169,7 @@ class Machine(unittest.TestCase):
         """La page d'avant cherchait « run » dans « Up 36 hours » : tous les conteneurs étaient rouges."""
         c = {x["nom"]: x for x in _machine()["conteneurs"]}
         self.assertEqual((c["coffre"]["tourne"], c["coffre"]["etat"]), (True, "tourne depuis 36 h · sain"))
-        self.assertEqual((c["coffre"]["image_age_j"], c["coffre"]["cpu"], c["coffre"]["memoire"]), (12, 0.04, "44.84 Mo"))
+        self.assertEqual((c["coffre"]["image_age_j"], c["coffre"]["cpu"], c["coffre"]["memoire"]), (12, 0.04, "44,84 Mo"))
         self.assertEqual((c["recherche"]["tourne"], c["recherche"]["etat"]), (False, "arrêté depuis 2 h (code 1)"))
         self.assertEqual(machine.etat_conteneur("Up 3 minutes (Paused)"), ("en pause", True, True))
 

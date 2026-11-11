@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a5ce4c
+# VERSION CN : 0.1.0  #97fbdf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve les garanties du démon du Sensorium que l'audit de novembre 2026 a corrigées : un échec de commande n'est pas « rien à signaler », un socket muet est lâché ou fait arrêter le collecteur, un jeton FastPanel expiré est renouvelé, un certificat expiré se compte, un journal d'accès se lit par blocs, une redirection rouverte alerte.
 # MÉTHODE    : charge CN_sensorium.py comme module sur une base et un socket temporaires, simule les commandes et l'API HTTP (aucun réseau, aucune commande système), puis appelle les fonctions du démon.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a5ce4c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=97fbdf ▼▼▼
 import gzip
 import importlib.util
 import json
@@ -541,6 +541,18 @@ class CapacitesDuModule(Base):
         mod, impl, ctx = self._brancher()
         with mock.patch.object(mod, "json_de", return_value={"cpu": 12.3, "top_processes": []}):
             self.assertEqual(impl["metriques"](ctx), {"cpu": 12.3, "top_processes": []})
+
+
+class Processus(Base):
+    def test_la_sonde_ne_se_compte_pas_elle_meme(self):
+        lignes = ["root 1 0.0 0.1 1 1 ? Ss 10:00 0:01 sh -c ps aux --sort=-%cpu --no-headers | head -14",
+                  "root 2 99.0 0.1 1 1 ? R 10:00 0:00 ps aux --sort=-%cpu --no-headers"]
+        lignes += ["www-data %d 1.5 0.1 1 1 ? S 10:00 0:01 php-fpm: pool site%d.exemple.test" % (10 + i, i) for i in range(12)]
+        with mock.patch.object(self.m, "run_cmd", return_value="\n".join(lignes)):
+            procs = self.m.get_top_processes()
+        self.assertEqual(len(procs), 10)
+        self.assertFalse([p for p in procs if "ps aux" in p["command"]])
+        self.assertEqual(procs[0], {"user": "www-data", "cpu": 1.5, "command": "php-fpm: pool site0.exemple.test"})
 
 
 class RelanceAutomatique(Base):
