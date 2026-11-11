@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #76c585
+# VERSION CN : 0.1.0  #d25788
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : test_securite_machine.py
 # MÉTHODE    : charge la commande root « machine » comme un module et remplace son lanceur par une fausse machine tenue en mémoire (aucune commande réelle) ; puis éprouve les capacités du module sur un faux courtier
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=76c585 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d25788 ▼▼▼
 import importlib.machinery
 import importlib.util
 import io
@@ -279,7 +279,7 @@ class Commande(unittest.TestCase):
     def test_la_machine_ne_part_pas_sans_son_nom_ni_pendant_un_deploiement(self):
         self.assertIn("nom", self.lancer("faire", "redemarrer", quand="maintenant", nom="autre")["erreur"])
         self.assertFalse(self.lancer("faire", "redemarrer", quand="demain", nom="atlas")["ok"])
-        with mock.patch.object(self.m, "OBSTACLES", (("un déploiement de Cassandra est en cours", ["docker", "--version"]),)):      # une commande qui réussit : l'obstacle est là
+        with mock.patch.object(self.m, "OBSTACLES", (("un déploiement de Cassandra est en cours", (["pgrep", "-x", "rien"], ["docker", "--version"])),)):      # une recherche qui trouve : l'obstacle est là
             self.assertIn("déploiement", self.lancer("faire", "redemarrer", quand="maintenant", nom="atlas")["erreur"])
         self.assertFalse(self.f.prevu)
 
@@ -293,6 +293,17 @@ class Commande(unittest.TestCase):
         self.assertTrue(self.lancer("defaire", "redemarrer")["ok"])
         self.assertFalse(self.f.prevu)
         self.assertFalse((self.tmp / "marque.json").exists())
+
+    def test_l_assistant_d_arret_des_mises_a_jour_n_est_pas_une_installation_en_cours(self):
+        """Sur Debian, `unattended-upgrade-shutdown --wait-for-signal` tourne en permanence : le prendre pour une installation refuserait tout redémarrage (11-2026)."""
+        recherches = dict(self.m.OBSTACLES)["une installation de paquets est en cours"]
+        motifs = [c[-1] for c in recherches]
+        self.assertNotIn("unattended-upgr", motifs)
+        import re
+        motif = next(m for m in motifs if "unattended" in m)
+        self.assertIsNone(re.search(motif, "/usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal"))
+        self.assertIsNotNone(re.search(motif, "/usr/bin/python3 /usr/bin/unattended-upgrade"))
+        self.assertTrue(all(len(c[-1]) <= 15 for c in recherches if c[1] == "-x"))                       # pgrep -x ne compare que quinze signes
 
     def test_l_etat_dit_ce_qui_ne_reviendra_pas_seul(self):
         r = self.lancer("lire", "redemarrage")

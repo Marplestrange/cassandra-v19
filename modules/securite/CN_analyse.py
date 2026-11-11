@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.5.0  #737894
+# VERSION CN : 0.5.1  #737894
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'analyse de sécurité : des relevés BRUTS de la machine (commandes/CN_mesurer) -> exposition, pare-feu, accès, défenses, mises à jour, verdict. Fonctions pures, testées sans machine.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=737894 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=737894 ▼▼▼
 """L'analyse de sécurité : des relevés BRUTS de la machine (commandes/CN_mesurer) -> exposition, pare-feu, accès, défenses, mises à jour, verdict. Fonctions pures, testées sans machine.
 
 Porté de la V18 (`_sec_*`, `_pf_*`), avec les leçons payées en service :

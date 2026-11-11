@@ -40,8 +40,12 @@ RE_JAIL = re.compile(r"^[A-Za-z0-9_.-]{1,40}$")
 RE_TTY = re.compile(r"^pts/\d{1,4}$")
 RE_HEURE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 PROCESSUS_PROTEGES = ("ssh", "sshd", "cassandra-noyau", "cassandra-courtier", "sensorium")
-OBSTACLES = (("un déploiement de Cassandra est en cours", ["pgrep", "-f", "CN_deploy.sh"]), ("une installation de paquets est en cours", ["pgrep", "-x", "apt-get|apt|dpkg|unattended-upgr"]),
-             ("une sauvegarde est en cours", ["pgrep", "-x", "rclone|restic|borg|mysqldump|pg_dump"]))
+# Ce qui empêche la machine de partir : (ce qu'on dit, les recherches de processus — une seule qui trouve suffit). Un nom par recherche : `pgrep -x` ne compare que les
+# quinze premiers signes d'un nom. `unattended-upgrade-shutdown`, qui attend en permanence l'arrêt de la machine, n'est PAS une installation en cours : seul le programme
+# `unattended-upgrade` lui-même en est une.
+OBSTACLES = (("un déploiement de Cassandra est en cours", (["pgrep", "-f", "CN_deploy.sh"],)),
+             ("une installation de paquets est en cours", (["pgrep", "-x", "apt-get"], ["pgrep", "-x", "apt"], ["pgrep", "-x", "dpkg"], ["pgrep", "-f", "/usr/bin/unattended-upgrade( |$)"])),
+             ("une sauvegarde est en cours", (["pgrep", "-x", "rclone"], ["pgrep", "-x", "restic"], ["pgrep", "-x", "borg"], ["pgrep", "-x", "mysqldump"], ["pgrep", "-x", "pg_dump"])))
 MARQUE = "/var/lib/cassandra-securite/redemarrage.json"
 PREVU = "/run/systemd/shutdown/scheduled"
 RESEAUX_PRIVES = [ipaddress.ip_network(r) for r in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "fc00::/7", "fe80::/10", "::1/128")]
@@ -405,7 +409,7 @@ def ce_qui_tourne():
 
 def redemarrage_verifier():
     """Lecture seule : ce qui empêche de partir, ce qui ne reviendra pas seul, qui est connecté, et ce qui est déjà prévu."""
-    obstacles = [texte for texte, cmd in OBSTACLES if run(cmd, 8)[0]]
+    obstacles = [texte for texte, recherches in OBSTACLES if any(run(cmd, 8)[0] for cmd in recherches)]
     services, conteneurs = ce_qui_tourne()
     marque = {}
     try:
