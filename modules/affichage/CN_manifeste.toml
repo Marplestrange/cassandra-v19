@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.7.3  #025362
+# VERSION CN : 0.7.4  #a23df2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.7.3 empreinte=025362 ▼▼▼
+# ▼▼▼ BORNE CN version=0.7.4 empreinte=a23df2 ▼▼▼
 [module]
 id = "affichage"
 nom = "Affichage"
-version = "0.7.3"
+version = "0.7.4"
 noyau_min = "0.1.0"
 description = "Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte."
 confiance = "interne"
