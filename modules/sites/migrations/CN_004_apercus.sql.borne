@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.6.0  #2730da
+# VERSION CN : 0.6.1  #2730da
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 004_apercus.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

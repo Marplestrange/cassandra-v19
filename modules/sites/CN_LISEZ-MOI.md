@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : sites -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.6.0  #000000 -->
+<!-- VERSION CN : 0.6.1  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : sites — les sites web suivis par Cassandra -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.6.0 empreinte=0ec343 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.6.1 empreinte=d79b20 ▼▼▼ -->
 # sites — les sites web suivis par Cassandra
 
 Porté de la V18 (`sites_vue`, `site_fiche`, `site_pass`, `site_history`, `site_availability`, demandes/accords, liens, journal), lu en entier.
@@ -68,7 +68,7 @@ L'écran suit la maquette (`docs/CN_maquette-sites.html`). `tendances(jours)` lu
 La veille des échéances, l'alerte, le seuil et le quota d'émission sont l'affaire du module Certificats (Sécurité). Quand il est là, Sites ne lit plus les certificats lui-même : sa sonde recopie les jours restants (`certificats.etat`) pour sa vue et sa courbe, son détecteur `certificat_court` se tait (c'est `certificats.expiration_proche` qui alerte), et le seuil affiché est celui de Certificats (`certificats.seuil`). En retour, la sonde de Certificats suit aussi les sites déclarés ici. Sans le module Certificats, Sites garde sa propre lecture, son détecteur et son réglage `ssl_court_j`.
 
 ## Dépendances (facultatives, en lecture)
-`comptes.lister` (sites et compte du panneau de chaque compte), `comptes.moi` (la fiche du compte qui regarde), `fastpanel.sites` (les sites du panneau), `certificats.etat` et `certificats.seuil` (les certificats). Absents, le module fonctionne avec ses propres sites ; un panneau muet est dit (`panneau_lu: false`), il ne passe pas pour un parc vide.
+`comptes.lister` (sites et compte du panneau de chaque compte), `comptes.moi` (la fiche du compte qui regarde), `fastpanel.sites` (les sites du panneau), `certificats.etat` et `certificats.seuil` (les certificats). Absents, le module fonctionne avec ses propres sites ; un panneau muet est dit (`panneau_lu: false`), il ne passe pas pour un parc vide. La vue dit aussi l'âge de ce qu'elle montre, à l'heure de la machine : `portee.sonde` (la dernière mesure parmi les sites montrés) et `portee.panneau_releve` (la dernière lecture réussie du panneau), `null` quand il n'y en a pas — c'est ce que le verdict de la vue d'ensemble affiche.
 
 **Le miroir.** `comptes.lister` demande le droit `comptes.gerer` et `fastpanel.sites` le droit `fastpanel.voir` : un compte ordinaire n'a ni l'un ni l'autre. La sonde, qui tourne sans compte, lit donc les deux à chaque tour et en garde un miroir réduit (table `miroir` : compte, sites, compte du panneau ; domaine, propriétaire, certificat, PHP). Un compte ordinaire lit ce miroir (frais d'une heure au plus), et sa propre fiche en direct. Tant que les comptes n'ont jamais été lus, rien ne se déclare : on ne peut pas vérifier que le site n'est à personne.
 

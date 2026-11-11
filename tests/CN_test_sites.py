@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5c7818
+# VERSION CN : 0.1.0  #bfcc0e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5c7818 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bfcc0e ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -136,6 +136,16 @@ class Portee(Monde):
         v = self.ex("vue", compte=CHEF)["resultat"]
         self.assertFalse(v["portee"]["panneau_lu"])
         self.assertNotIn("pan.exemple.fr", {s["domaine"] for s in v["sites"]})
+        self.assertIsNone(v["portee"]["panneau_releve"])                       # un panneau qui ne répond pas n'a pas d'heure de lecture
+
+    def test_la_vue_dit_l_heure_de_la_derniere_mesure_et_de_la_lecture_du_panneau(self):
+        """Ce que la vue d'ensemble affiche dans son verdict (« sonde · 00:41 », « panneau relevé 00:41 ») : sans ces deux heures, elle écrivait « jamais »."""
+        p = self.ex("vue", compte=CHEF)["resultat"]["portee"]
+        self.assertIsNone(p["sonde"])                                          # rien n'a encore été mesuré : pas d'heure inventée
+        self.assertRegex(p["panneau_releve"], r"^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$")
+        self.sonde()
+        p = self.ex("vue", compte=CHEF)["resultat"]["portee"]
+        self.assertRegex(p["sonde"], r"^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$")
 
     def test_sans_module_de_comptes_le_reste_fonctionne(self):
         def absent(cap, **a):                                                  # ce que fait le noyau quand le module n'est pas là

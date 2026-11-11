@@ -10743,6 +10743,220 @@
     "sous_titre": "Une source ne répond pas : le verdict ne dit pas « stable » tant qu'elle se tait. Les autres relevés restent lisibles plus bas.",
     "titre": "Inconnu : sites se tait"
    }
+  },
+  {
+   "cas": "âges de la sonde et du panneau donnés par Sites",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-11-11 00:42:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 40,
+      "load_1m": 0.4,
+      "ram": 30
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "portee": {
+       "panneau_releve": "2026-11-11 00:41:30",
+       "sonde": "2026-11-11 00:41:28"
+      },
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-11-11 00:42:00",
+     "mesures": null,
+     "sites": "2026-11-11 00:41:30",
+     "sonde": "2026-11-11 00:41:28"
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "ok",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "40 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 40,
+     "load_1m": 0.4,
+     "ram": 30,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "stable",
+    "ok": true,
+    "pannes": [],
+    "regarder": [],
+    "releve": "2026-11-11 00:42:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site répondent, certificats à jour.",
+    "titre": "Rien ne demande un geste"
+   }
   }
  ],
  "contrat": "1.0",

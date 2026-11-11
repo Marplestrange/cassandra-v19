@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #511f88
+# VERSION CN : 0.1.0  #2334c6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=511f88 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2334c6 ▼▼▼
 """Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille »."""
 import sys
 import unittest
@@ -86,6 +86,15 @@ class Vue(unittest.TestCase):
     def test_un_disque_presque_plein_se_dit(self):
         self.assertEqual(composer(True, "r", sources(metriques={"disk": 90}), "t")["niveau"], "regarder")
         self.assertEqual(composer(True, "r", sources(metriques={"disk": 97}), "t")["niveau"], "panne")
+
+    def test_le_verdict_reprend_l_age_de_la_sonde_et_du_panneau_que_sites_donne(self):
+        avec = {"sites": [site("a.fr")], "portee": {"sonde": "2026-11-11 00:41:28", "panneau_releve": "2026-11-11 00:41:30"}}
+        a = composer(True, "r", sources(sites=avec), "t")["ages"]
+        self.assertEqual((a["sonde"], a["sites"]), ("2026-11-11 00:41:28", "2026-11-11 00:41:30"))
+        a = composer(True, "r", sources(), "t")["ages"]                        # Sites ne dit rien (aucune mesure, panneau muet) : rien, jamais une heure inventée
+        self.assertEqual((a["sonde"], a["sites"]), (None, None))
+        a = composer(True, "r", sources(sites={"sites": [], "portee": {"sonde": 1794357688.2, "panneau_releve": ""}}), "t")["ages"]
+        self.assertEqual((a["sonde"], a["sites"]), (None, None))               # autre chose qu'une heure écrite : ignoré
 
     def test_un_compte_ne_voit_ni_la_machine_ni_la_flotte(self):
         r = composer(False, "bea", {"sites": {"sites": [site("a.fr")]}, "notifs": {"notifications": [{"niveau": "critique", "titre": "x", "id": 1}]}}, "t")

@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.2.0)  #a9d7c7
+# VERSION EC : EC0 (référence 0.2.1)  #070722
 # HÔTE CN    : CN_composer.py · verdict.composer @1.0
 # RÔLE       : transforme les relevés de toutes les sources en un verdict, des compteurs et les gestes à faire.
 # MÉTHODE    : fonction pure ; une source muette n'est jamais « stable » ; la première panne est citée ; une machine attendue hors ligne est une panne.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=verdict.composer contrat=@1.0 version=EC0 empreinte=a9d7c7 ▼▼▼
+# ▼▼▼ BORNE EC point=verdict.composer contrat=@1.0 version=EC0 empreinte=070722 ▼▼▼
 """La composition de la vue d'ensemble : une fonction PURE, des relevés (ou rien, quand une source se tait) -> le verdict et les compteurs.
 
 Règles gardées de la V18 :
@@ -144,7 +144,9 @@ def _composer(admin, compte, s, maintenant=""):
                             "compte": {}, "hors_ligne": [z.get("nom") for z in machines_hl]}
         sortie["fil"] = ((s.get("fil") or {}).get("fil") or [])[:8]
         sortie["machine"] = {"cpu": m.get("cpu"), "ram": m.get("ram"), "disk": m.get("disk"), "load_1m": m.get("load_1m"), "vivant": vivant, "source": "collecteur"}
-        sortie["ages"] = {"sonde": None, "sites": None, "flotte": (s.get("flotte") or {}).get("releve"), "mesures": None, "machine": maintenant if vivant else None}
+        po = (s.get("sites") or {}).get("portee") or {}                       # Sites dit lui-même l'heure de sa dernière mesure et de sa dernière lecture du panneau
+        sonde, panneau = (v if isinstance(v, str) and v else None for v in (po.get("sonde"), po.get("panneau_releve")))
+        sortie["ages"] = {"sonde": sonde, "sites": panneau, "flotte": (s.get("flotte") or {}).get("releve"), "mesures": None, "machine": maintenant if vivant else None}
     return sortie
 
 

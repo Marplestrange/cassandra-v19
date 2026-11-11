@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.6.0  #e0f8c5
+# VERSION CN : 0.6.1  #011628
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sites.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.6.0 empreinte=e0f8c5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.6.1 empreinte=011628 ▼▼▼
 """Le module Sites.
 
 Ce qu'il tient de la V18 (sites, site_pass, site_fiche, site_history/availability, demandes, accords, liens) et les leçons qu'il garde :
@@ -477,6 +477,15 @@ def brancher(ctx):
             return json.loads(r[0]["contenu"])
         except ValueError:
             return None
+
+    def quand_miroir(cle):
+        """L'instant où ce miroir a été posé (secondes depuis 1970), ou None s'il n'existe pas ou s'il est périmé."""
+        r = db.lire("SELECT ts FROM miroir WHERE cle=?", (cle,))
+        return r[0]["ts"] if r and time.time() - r[0]["ts"] <= MIROIR_S else None
+
+    def heure_locale(ts):
+        """« AAAA-MM-JJ HH:MM:SS » à l'heure de la machine : le format et l'heure que la vue d'ensemble écrit déjà pour son propre relevé."""
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
 
     def poser_miroir(cle, valeur):
         db.ecrire("INSERT OR REPLACE INTO miroir(cle, ts, contenu) VALUES (?,?,?)", (cle, time.time(), json.dumps(valeur, ensure_ascii=False)))
@@ -1278,9 +1287,14 @@ def brancher(ctx):
         lignes.sort(key=lambda x: x["domaine"])
         noms = noms_societes() if r.multi else {}
         vig, tues = vigilances(lignes, r, demandes)
+        # L'âge de ce qu'on montre, pour qui compose une vue d'ensemble : la dernière mesure parmi ces sites, et la dernière lecture réussie du panneau
+        # (l'administrateur vient de le lire ; les autres lisent le miroir du dernier tour). Rien, plutôt qu'une heure inventée.
+        mesurees = [x["mesure"] for x in lignes if x["mesure"]]
+        lu_a = (maintenant if tout else quand_miroir("panneau")) if r.panneau_lu else None
         return {"sites": lignes, "vigilances": vig, "acceptees": tues,
                 "portee": {"admin": tout, "compte": compte, "sites": len(lignes), "panneau": sum(1 for x in lignes if x["source"] == "panneau"),
                            "declares": sum(1 for x in lignes if x["source"] != "panneau"), "panneau_lu": r.panneau_lu,
+                           "sonde": heure_locale(max(mesurees)) if mesurees else None, "panneau_releve": heure_locale(lu_a) if lu_a else None,
                            "super": bool(r.super and tout), "multi": r.multi, "societe": r.soc,
                            "societes": [{"id": s, "nom": noms.get(s, s)} for s in (societes_connues() if r.large else [r.soc])] if r.multi else [],
                            "preuve_exigee": preuve_exigee(), "objectif": defaut,
