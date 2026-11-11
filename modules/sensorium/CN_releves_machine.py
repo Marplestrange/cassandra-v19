@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.3.0  #8ac3b7
+# VERSION CN : 0.3.1  #8ac3b7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les formes des relevés de « La machine » : ce que le collecteur lit (docker inspect, nginx -T, ps, /proc, systemctl, w, le journal de sshd, /proc/cpuinfo, lsblk) devient ici des lignes prêtes à écrire. Aucune commande, aucun fichier : du te
 # MÉTHODE    : fonctions pures, du texte des commandes aux lignes prêtes à écrire ; aucune commande ni fichier, les lectures restent dans CN_sensorium.py
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=8ac3b7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=8ac3b7 ▼▼▼
 """Les formes des relevés de « La machine » : ce que le collecteur lit (docker inspect, nginx -T, ps, /proc, systemctl, w, le journal de sshd,
 /proc/cpuinfo, lsblk) devient ici des lignes prêtes à écrire. Aucune commande, aucun fichier : du texte en entrée, des dictionnaires en sortie,
 pour que chaque forme se vérifie sans machine. Les lectures, elles, restent dans CN_sensorium.py.

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #16881f
+// VERSION CN : 0.1.0  #d87906
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=16881f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d87906 ▼▼▼
 // La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // Une seule page où tout se voit d'un coup d'œil, une tuile par sujet ; le détail d'un sujet s'ouvre au clic, « ‹ La machine » y ramène.
 // Tout vient d'UNE lecture, vue.machine, qui compose ce que les modules relèvent déjà ; les ressources et les processus se relisent seuls
@@ -342,7 +342,7 @@
         p("Disque", r.disque_go && r.disque_go[1] ? fr(r.disque_go[1], 0) + " Go <small>" + fr(r.disque_go[0], 0) + " Go utilisés</small>" : "—") +
         (mt ? p("Température", mt.temperature ? fr(mt.temperature, 0) + " °C au plus chaud" : virtuelle ? "non relevée : une machine virtuelle n’a pas de sonde" : "non relevée") +
           (mt.carte ? p("Carte mère", esc(mt.carte) + (mt.bios ? " <small>BIOS " + esc(mt.bios) + "</small>" : "") + (virtuelle ? " <small>celle que l’hébergeur simule</small>" : "")) : "") +
-          (mt.disques || []).map((x) => p("Disque " + esc(x[0]), esc(x[1] || "modèle non déclaré") + " · " + esc(x[2]) + " <small>" + esc(x[3]) + "</small>")).join("") : "") + "</dl>", '<button class="btn s" data-a="page" data-p="ressources">Ressources</button>');
+          (mt.disques || []).map((x) => p("Disque " + esc(x[0]), esc(x[1] || "modèle non déclaré") + " · " + esc(String(x[2]).replace(/^([\d.]+)([KMGT])$/, (_, n, u) => fr(+n) + " " + u + "o")) + " <small>" + esc(x[3]) + "</small>")).join("") : "") + "</dl>", '<button class="btn s" data-a="page" data-p="ressources">Ressources</button>');
       h += bloc("Stockage", "où sont les fichiers", '<div class="rows">' + (d.disques || []).map((x) => '<div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"><div class="nm"><b class="mono">' + esc(x.montage) + "</b><small>" + (x.type ? esc(x.type) + " · " : "") + fr(x.utilise_go) + " sur " + fr(x.total_go) + " Go" +
         (x.inodes_pct != null ? " · inodes " + x.inodes_pct + " %" : "") + '</small></div><div class="mil" style="flex-direction:column;align-items:flex-start;gap:3px"><span style="display:flex;align-items:center;gap:8px;width:100%"><span class="pbar"><i class="' + niv(x.pct) + '" style="width:' + (x.pct || 0) +
         '%"></i></span><b class="num" style="color:var(--txt-strong,var(--txt))">' + (x.pct == null ? "—" : x.pct + " %") + '</b></span><small style="color:var(--' + (x.alerte ? "danger" : "txt-faint") + ');font-size:12.5px">' + esc(x.prevision.split(" (")[0]) + "</small></div></div>").join("") + "</div>",

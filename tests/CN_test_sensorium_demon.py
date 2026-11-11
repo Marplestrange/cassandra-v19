@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1ddfbb
+# VERSION CN : 0.1.0  #79e42f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve les garanties du démon du Sensorium que l'audit de novembre 2026 a corrigées : un échec de commande n'est pas « rien à signaler », un socket muet est lâché ou fait arrêter le collecteur, un jeton FastPanel expiré est renouvelé, un certificat expiré se compte, un journal d'accès se lit par blocs, une redirection rouverte alerte.
 # MÉTHODE    : charge CN_sensorium.py comme module sur une base et un socket temporaires, simule les commandes et l'API HTTP (aucun réseau, aucune commande système), puis appelle les fonctions du démon.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1ddfbb ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=79e42f ▼▼▼
 import gzip
 import importlib.util
 import json
@@ -621,6 +621,31 @@ class RelevesDeLaMachine(Base):
             m = self.m.collect_hardware_complet()[0]
         self.assertEqual((m["os"], m["cpu_modele"], m["disques"]), ("Debian", "", ""))                 # la fiche illisible : les colonnes restent, vides
         self.m._SSH_CONNU["t"] = 0.0
+
+    def test_les_renvois_de_nginx_se_lisent_dans_ses_fichiers(self):
+        """Sans `nginx -T` : depuis le collecteur, en lecture seule, il échoue en voulant ouvrir son journal d'erreurs."""
+        d = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, d, True)
+        (d / "sites").mkdir()
+        (d / "nginx.conf").write_text("http {\n    include sites/*.conf;   # les sites\n    include absent/*.conf;\n}\n", encoding="utf-8")
+        (d / "sites" / "coffre.conf").write_text("server {\n  server_name coffre.exemple.test;\n  listen 443 ssl;\n  include sites/coffre.inclus;\n}\n", encoding="utf-8")
+        (d / "sites" / "coffre.inclus").write_text("location / { proxy_pass http://127.0.0.1:8087; }\n", encoding="utf-8")
+        with mock.patch.object(self.m, "NGINX_CONF", ((d / "nginx.conf").as_posix(),)), mock.patch.object(self.m, "_qui", return_value="/usr/sbin/nginx"), \
+                mock.patch.object(self.m, "run_cmd_ex", side_effect=AssertionError("aucune commande ne doit être lancée")):
+            lignes = self.m.collect_reverse_proxies()
+        self.assertEqual([(l["nom"], l["chemin"], l["vers"], l["port"], l["tls"]) for l in lignes], [("coffre.exemple.test", "/", "127.0.0.1:8087", 8087, 1)])
+        with mock.patch.object(self.m, "NGINX_CONF", ((d / "absent.conf").as_posix(),)), mock.patch.object(self.m, "_qui", return_value="/usr/sbin/nginx"):
+            with self.assertRaises(RuntimeError):                                                    # illisible : le relevé est en panne, la table garde son état
+                self.m.collect_reverse_proxies()
+
+    def test_une_session_partie_ne_reste_pas(self):
+        self.m.save_many("active_sessions", [{"user": "sshd", "ip": "203.0.113.24", "login_time": "x", "last_check": "x"}])
+        self.m.save_many("active_sessions", [])
+        conn = self.m.get_conn()
+        try:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM active_sessions").fetchone()[0], 0)
+        finally:
+            conn.close()
 
     def test_les_nouvelles_tables_se_lisent_par_le_socket(self):
         for table in ("reverse_proxies", "ssh_logins", "hardware_state", "logiciels"):

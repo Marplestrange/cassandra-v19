@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.3.0  #1bee30
+# VERSION CN : 0.3.1  #391594
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=1bee30 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=391594 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1800,8 +1800,40 @@ def collect_reverse_proxies() -> list:
     se joint de l'extérieur. Strict : une lecture qui échoue garde la table en l'état, une configuration sans renvoi la vide."""
     if not _qui("nginx"):
         return []
+    texte = _nginx_texte()
+    if not texte:
+        raise RuntimeError("configuration de nginx illisible")
     now = datetime.now().isoformat()
-    return [dict(l, last_check=now) for l in _releves.proxys_nginx(run_cmd_strict(["nginx", "-T"], timeout=20))]
+    return [dict(l, last_check=now) for l in _releves.proxys_nginx(texte)]
+
+
+NGINX_CONF = ("/etc/nginx/nginx.conf", "/usr/local/nginx/conf/nginx.conf", "/usr/local/etc/nginx/nginx.conf")
+
+
+def _nginx_texte() -> str:
+    """La configuration de nginx sous la forme que `nginx -T` imprime, lue dans ses fichiers : le fichier principal, puis chaque fichier inclus.
+    `nginx -T` lui-même échoue depuis le collecteur, dont le système de fichiers est en lecture seule (il veut ouvrir son journal d'erreurs)."""
+    import glob as _glob
+    principal = next((c for c in NGINX_CONF if os.path.isfile(c)), "")
+    if not principal:
+        return ""
+    racine = os.path.dirname(principal) + "/"
+    vus, a_lire, morceaux = set(), [principal], []
+    while a_lire and len(vus) < 400:
+        chemin = a_lire.pop(0)
+        if chemin in vus:
+            continue
+        vus.add(chemin)
+        try:
+            with open(chemin, encoding="utf-8", errors="replace") as f:
+                texte = f.read()
+        except OSError:
+            continue
+        morceaux.append("# configuration file %s:\n%s\n" % (chemin, texte))
+        for motif in re.findall(r"^[ \t]*include\s+([^;#]+);", texte, re.M):
+            motif = motif.strip().strip("\"'")
+            a_lire.extend(f.replace(os.sep, "/") for f in sorted(_glob.glob(motif if os.path.isabs(motif) else racine + motif)) if os.path.isfile(f))
+    return "".join(morceaux)
 
 
 def collect_rclone_remotes():
@@ -5444,7 +5476,7 @@ def collect_mesures_diverses() -> list:
 # LES RELEVÉS D'ÉTAT INSTANTANÉ, où « vide » est une vraie réponse (24-09) : sans cette liste, un relevé vide ne
 # touchait pas la table, et le dernier service en échec (ou la dernière adresse bannie) y restait pour toujours —
 # openipmi, désactivé à 05:00, rouvrait « Service en échec » toute la journée sur Orion.
-_TABLES_INSTANTANE = {"failed_units", "fail2ban_banned_ips", "cassandra_config", "reverse_proxies"}      # cassandra_config : sur une machine V19, « rien » est la réponse, et l'ancienne ligne « fichier absent » doit partir
+_TABLES_INSTANTANE = {"failed_units", "fail2ban_banned_ips", "cassandra_config", "reverse_proxies", "active_sessions"}      # active_sessions : sans session ouverte, la dernière partie ne reste pas affichée      # cassandra_config : sur une machine V19, « rien » est la réponse, et l'ancienne ligne « fichier absent » doit partir
 
 
 def save_many(table: str, rows: list):
