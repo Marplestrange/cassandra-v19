@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3f6f1b
+# VERSION CN : 0.1.0  #a5ce4c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve les garanties du démon du Sensorium que l'audit de novembre 2026 a corrigées : un échec de commande n'est pas « rien à signaler », un socket muet est lâché ou fait arrêter le collecteur, un jeton FastPanel expiré est renouvelé, un certificat expiré se compte, un journal d'accès se lit par blocs, une redirection rouverte alerte.
 # MÉTHODE    : charge CN_sensorium.py comme module sur une base et un socket temporaires, simule les commandes et l'API HTTP (aucun réseau, aucune commande système), puis appelle les fonctions du démon.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3f6f1b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a5ce4c ▼▼▼
 import gzip
 import importlib.util
 import json
@@ -527,10 +527,115 @@ class CapacitesDuModule(Base):
         self.assertTrue(r.get("erreur"))
         self.assertNotIn("cpu", r)                           # aucune mesure inventée
 
+    def test_une_entite_dont_le_nom_porte_un_chiffre_se_lit(self):
+        """« fail2ban_banned_ips » était refusée (« nom d'entité illisible ») : l'écran affichait « 0 IP bannie » quand Sécurité en comptait dix."""
+        mod, impl, ctx = self._brancher()
+        with mock.patch.object(mod, "json_de", return_value=[{"jail": "sshd", "ip": "198.51.100.7"}]) as lu:
+            self.assertEqual(impl["entite"](ctx, "fail2ban_banned_ips"), [{"jail": "sshd", "ip": "198.51.100.7"}])
+        self.assertIn("fail2ban_banned_ips", str(lu.call_args))
+        for mauvais in ("../etc", "2fois", "A", "x;y", ""):
+            with self.assertRaises(ValueError):
+                impl["entite"](ctx, mauvais)
+
     def test_une_source_vivante_rend_ses_mesures(self):
         mod, impl, ctx = self._brancher()
         with mock.patch.object(mod, "json_de", return_value={"cpu": 12.3, "top_processes": []}):
             self.assertEqual(impl["metriques"](ctx), {"cpu": 12.3, "top_processes": []})
+
+
+class RelanceAutomatique(Base):
+    """11-11-2026 : le démon a servi quatorze heures de relevés figés (la livraison d'où il lisait ses fichiers avait été effacée) sans que rien
+    ne le relance. Trois garde-fous : il se relance seul, le noyau voit des relevés figés et le relance, et le constat le dit."""
+    def setUp(self):
+        super().setUp()
+        self.m._MONDE.update(echecs=0, dit=False)
+        self.m._sortir = mock.Mock()
+
+    def test_six_constructions_ratees_d_affilee_et_le_demon_se_relance(self):
+        for _ in range(self.m.MONDE_ECHECS_MAX - 1):
+            self.assertFalse(self.m._monde_echec(RuntimeError("base verrouillée")))
+        self.m._sortir.assert_not_called()
+        self.assertTrue(self.m._monde_echec(RuntimeError("base verrouillée")))
+        self.m._sortir.assert_called_once_with(75)                # un code d'échec : `Restart=on-failure` le relance
+
+    def test_une_construction_reussie_remet_le_compte_a_zero(self):
+        for _ in range(self.m.MONDE_ECHECS_MAX - 1):
+            self.m._monde_echec(RuntimeError("x"))
+        self.m._monde_reussi()
+        self.m._monde_echec(RuntimeError("x"))
+        self.m._sortir.assert_not_called()
+
+    def test_ses_fichiers_disparus_il_n_attend_pas(self):
+        e = RuntimeError("sensorium.duree_txt : la référence du dépôt a échoué (FileNotFoundError : [Errno 2] No such file or directory: '/x/EC_duree_txt.py')")
+        self.assertFalse(self.m._monde_echec(e))
+        self.assertTrue(self.m._monde_echec(e))                   # deux passes, pas six : rien ne reviendra sans relance
+        self.m._sortir.assert_called_once_with(75)
+
+    def test_au_plus_trois_relances_de_lui_meme_par_heure(self):
+        for _ in range(self.m.RELANCES_AUTO_MAX):
+            self.m._MONDE.update(echecs=self.m.MONDE_ECHECS_MAX - 1)
+            self.assertTrue(self.m._monde_echec(RuntimeError("x")))
+        self.assertEqual(self.m._sortir.call_count, self.m.RELANCES_AUTO_MAX)
+        self.m._MONDE.update(echecs=self.m.MONDE_ECHECS_MAX - 1)
+        self.assertFalse(self.m._monde_echec(RuntimeError("x")))  # la quatrième : il reste debout, une boucle de relances ne soigne rien
+        self.assertEqual(self.m._sortir.call_count, self.m.RELANCES_AUTO_MAX)
+
+    def _noyau(self, rows):
+        spec = importlib.util.spec_from_file_location("sensorium_module_relance", DOSSIER / "CN_module.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        moteurs, detecteurs, lectures = {}, {}, {}
+        ctx = mock.MagicMock()
+        ctx.moteur.side_effect = lambda nom, fn, *a: moteurs.__setitem__(nom, fn)
+        ctx.detecteur.side_effect = lambda nom, fn, *a: detecteurs.__setitem__(nom, fn)
+        ctx.implementer.side_effect = lambda nom, fn, *a: lectures.__setitem__(nom, fn)
+        ctx.racine.return_value = {"ok": True, "sortie": '{"ok": true, "silence_s": 4}'}
+        mod.brancher(ctx)
+        # La relève du monde nourrit aussi le suivi des mesures (CN_capteurs), dont l'état est partagé par tout le processus : on le laisse hors de ce banc.
+        for cible, nom, valeur in ((mod, "json_de", rows), (mod.capt, "ingerer_monde", None), (mod.capt, "ingerer_sante_web", None)):
+            patch = mock.patch.object(cible, nom, return_value=valeur)
+            patch.start()
+            self.addCleanup(patch.stop)
+        return mod, ctx, moteurs, detecteurs
+
+    @staticmethod
+    def _inscrit(ctx):
+        """Ce que la veille a écrit dans l'historique des redémarrages (les autres écritures de la passe ne comptent pas)."""
+        return [a[0][1] for a in ctx.stockage.ecrire.call_args_list if "sensorium_redemarrages" in str(a[0][0])]
+
+    @staticmethod
+    def _ligne(il_y_a_s):
+        return {"wkey": "system.hostname", "category": "system", "value": "argos", "severity": "info",
+                "observed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - il_y_a_s))}
+
+    def test_des_releves_frais_ne_declenchent_rien(self):
+        mod, ctx, moteurs, detecteurs = self._noyau([self._ligne(20)])
+        moteurs["veille_demon"](ctx)
+        ctx.racine.assert_not_called()
+        self.assertEqual(detecteurs["releves_figes"](ctx), [])
+
+    def test_des_releves_figes_sont_dits_et_le_demon_est_relance_une_fois(self):
+        mod, ctx, moteurs, detecteurs = self._noyau([self._ligne(14 * 3600)])
+        moteurs["veille_demon"](ctx)
+        ctx.racine.assert_called_once_with("redemarrer", ["maintenant"], delai=240)
+        inscrit = self._inscrit(ctx)[-1]
+        self.assertEqual(inscrit[0], "Cassandra (veille)")
+        self.assertIn("relevés figés", inscrit[1])
+        self.assertEqual(inscrit[3], "revenu")
+        c = detecteurs["releves_figes"](ctx)
+        self.assertEqual(len(c), 1)
+        self.assertEqual(c[0]["niveau"], "critique")
+        self.assertIn("ne relève plus depuis 14 h", c[0]["titre"])
+        moteurs["veille_demon"](ctx)                                     # la passe suivante : toujours figé, mais pas deux relances en une demi-heure
+        self.assertEqual(ctx.racine.call_count, 1)
+        self.assertEqual(len(self._inscrit(ctx)), 1)
+
+    def test_une_relance_qui_echoue_est_inscrite_comme_telle(self):
+        mod, ctx, moteurs, detecteurs = self._noyau([self._ligne(3600)])
+        ctx.racine.return_value = {"ok": False, "erreur": "le courtier ne répond pas", "sortie": ""}
+        moteurs["veille_demon"](ctx)
+        self.assertTrue(self._inscrit(ctx)[-1][3].startswith("échec"))
+        self.assertIn("échec", detecteurs["releves_figes"](ctx)[0]["detail"])
 
 
 class PointsEtChemins(Base):

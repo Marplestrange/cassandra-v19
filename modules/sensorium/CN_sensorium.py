@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.8  #8765be
+# VERSION CN : 0.2.9  #95368e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.8 empreinte=8765be ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.9 empreinte=95368e ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -5477,6 +5477,59 @@ _WORLD_VERROU = threading.Lock()
 _WORLD_REDEMANDE = [False]
 
 
+# LE DÉMON SE RELANCE SEUL QUAND IL NE RELÈVE PLUS (11-11-2026). Le battement du watchdog dit seulement que la boucle tourne : pendant quatorze
+# heures, chaque construction du monde a échoué (la livraison d'où il lisait ses fichiers avait été effacée par des déploiements), il répondait
+# sur sa socket, et servait des relevés figés sans que rien ne le relance. Désormais il compte ses constructions ratées d'affilée et sort de
+# lui-même : systemd (`Restart=on-failure`) le relance, sur la livraison courante. Garde-fou : au plus RELANCES_AUTO_MAX par heure ; au-delà il
+# reste debout et le dit une fois (le noyau, lui, voit des relevés figés et alerte : c'est qu'une relance ne suffit pas).
+MONDE_ECHECS_MAX = 6          # six constructions ratées d'affilée, une toutes les trente secondes : trois minutes sans un relevé neuf
+MONDE_ECHECS_PERDU = 2        # ses propres fichiers ont disparu : inutile d'attendre, rien ne reviendra sans relance
+RELANCES_AUTO_MAX = 3
+_MONDE = {"echecs": 0, "dit": False}
+_sortir = os._exit            # la construction tourne dans un fil : `sys.exit` n'arrêterait que lui
+
+
+def _fichier_relances() -> str:
+    return os.path.join(os.path.dirname(DB_PATH) or ".", "relances_auto.json")
+
+
+def _relances_auto() -> list:
+    """Les instants des relances que le démon s'est données lui-même depuis une heure."""
+    try:
+        with open(_fichier_relances(), encoding="utf-8") as f:
+            l = json.load(f)
+    except (OSError, ValueError):
+        return []
+    maintenant = time.time()
+    return [t for t in l if isinstance(t, (int, float)) and 0 <= maintenant - t < 3600] if isinstance(l, list) else []
+
+
+def _monde_reussi():
+    _MONDE["echecs"], _MONDE["dit"] = 0, False
+
+
+def _monde_echec(erreur) -> bool:
+    """Une construction du monde vient d'échouer. Rend vrai si le démon s'est relancé (au banc, où `_sortir` est remplacé)."""
+    _MONDE["echecs"] += 1
+    perdu = isinstance(erreur, FileNotFoundError) or "No such file or directory" in str(erreur)
+    if _MONDE["echecs"] < (MONDE_ECHECS_PERDU if perdu else MONDE_ECHECS_MAX):
+        return False
+    recentes = _relances_auto()
+    if len(recentes) >= RELANCES_AUTO_MAX:
+        if not _MONDE["dit"]:
+            _MONDE["dit"] = True
+            print("[COLLECTOR] le monde échoue toujours après %d relances en une heure : je reste debout, sans me relancer encore" % len(recentes), file=sys.stderr)
+        return False
+    try:
+        with open(_fichier_relances(), "w", encoding="utf-8") as f:
+            json.dump(recentes + [time.time()], f)
+    except OSError:
+        pass
+    print("[COLLECTOR] %d constructions du monde ratées d'affilée (%s) : je me relance" % (_MONDE["echecs"], str(erreur)[:160]), file=sys.stderr)
+    _sortir(75)
+    return True
+
+
 def build_world_model():
     """Une seule construction à la fois. Appelé par la boucle (toutes les 30 s) et par les deux vigies : sans verrou, deux
     constructions tenaient chacune une transaction d'écriture et se bloquaient (« database is locked »), et une construction lente
@@ -6026,8 +6079,10 @@ def _construire_world_model():
         for prefixe, vus in familles_ok:
             _world_elaguer(conn, prefixe, vus)
         conn.commit()
+        _monde_reussi()
     except Exception as e:
         print(f"[WORLD] build: {e}", file=sys.stderr)
+        _monde_echec(e)
     finally:
         try:
             conn.close()

@@ -6,18 +6,19 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.8  #5676ba
+# VERSION CN : 0.2.9  #35932b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.8 empreinte=5676ba ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.9 empreinte=35932b ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
 JSON), en fait des objets, des constats et des tuiles, et le tient à l'oeil. Un collecteur muet se voit : c'est un constat, jamais un silence.
 """
+import calendar
 import hashlib
 import html
 import json
@@ -37,7 +38,7 @@ except ImportError:                        # chargé hors de son paquet (les ban
 SOCKET = os.environ.get("SENSORIUM_SOCKET") or "/run/sensorium/knowledge.sock"
 DELAI = 5.0
 _CLE = re.compile(r"^[A-Za-z0-9_.:/\-]{1,200}$")
-_ENTITE = re.compile(r"^[a-z_]{1,64}$")
+_ENTITE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")          # des chiffres aussi : « fail2ban_banned_ips » était refusée, et l'écran affichait « 0 IP bannie »
 MACHINE = ("machine", "hote")
 
 
@@ -81,6 +82,11 @@ def _instant(t, nom) -> str:
     if not _INSTANT.match(t):
         raise ValueError("%s : un instant « AAAA-MM-JJ HH:MM » (heure UTC) est attendu" % nom)
     return t if len(t) == 19 else t + ":00"
+
+
+FIGE_S = 600                  # dix minutes sans un relevé neuf : le démon répond, mais il ne mesure plus
+MUET_S = 300                  # cinq minutes sans réponse : au-delà du watchdog de systemd, Cassandra s'en mêle
+RELANCE_ECART_S = 1800        # au plus une relance automatique par demi-heure
 
 
 def _arrondi(d, cle):
@@ -130,7 +136,52 @@ def brancher(ctx):
         etat["etat"] = sante
 
     # ------------------------------------------------------------------ le monde : ce que le collecteur sait, accepté et en maintenance déduits
-    monde_c = {"t": 0.0, "rows": None, "erreur": "", "vus": {}}
+    monde_c = {"t": 0.0, "rows": None, "erreur": "", "vus": {}, "age_s": None}
+
+    def age_du_monde(rows):
+        """L'âge du relevé le plus récent du monde, en secondes (None s'il n'y a aucune date lisible). Le démon reconstruit son monde toutes les trente secondes."""
+        plus_recent = None
+        for r in rows or []:
+            try:
+                t = calendar.timegm(time.strptime(str(r.get("observed_at") or "")[:19], "%Y-%m-%dT%H:%M:%S"))
+            except (TypeError, ValueError):
+                continue
+            plus_recent = t if plus_recent is None or t > plus_recent else plus_recent
+        return None if plus_recent is None else max(0, int(time.time() - plus_recent))
+
+    def veiller_demon(ctx, erreur=""):
+        """LA RELANCE AUTOMATIQUE (11-11-2026). Le démon peut répondre sur sa socket tout en ne relevant plus rien : ses passes échouent, son monde
+        reste celui d'il y a des heures, et ni le watchdog ni « le collecteur ne répond plus » ne le voient. Si le monde n'a pas bougé depuis FIGE_S,
+        ou si le démon ne répond plus depuis MUET_S, Cassandra le relance elle-même par la commande root « redemarrer » : au plus une fois par
+        RELANCE_ECART_S, chaque essai inscrit avec son motif dans l'historique des redémarrages. Le constat « relevés figés » dit le reste."""
+        v = monde_c.setdefault("veille", {"depuis": 0.0, "relance": 0.0, "essais": 0, "dernier": ""})
+        maintenant, age = time.time(), monde_c.get("age_s")
+        fige = not erreur and age is not None and age > FIGE_S
+        if not erreur and not fige:
+            v.update(depuis=0.0, essais=0, dernier="")
+            return None
+        v["depuis"] = v["depuis"] or maintenant
+        if erreur and maintenant - v["depuis"] < MUET_S:
+            return None                                          # un silence bref : le watchdog de systemd s'en charge
+        if maintenant - v["relance"] < RELANCE_ECART_S:
+            return None
+        motif = ("ne répond plus : %s" % erreur) if erreur else "relevés figés depuis %d min" % (age // 60)
+        v["relance"], v["essais"] = maintenant, v["essais"] + 1
+        sortie = {}
+        try:
+            r = ctx.racine("redemarrer", ["maintenant"], delai=240)
+            sortie = json.loads((r.get("sortie") or "").strip().splitlines()[-1])
+            reussi = bool(r.get("ok") and sortie.get("ok"))
+            raison = "" if reussi else str(sortie.get("erreur") or r.get("erreur") or "le redémarrage a échoué")[:200]
+        except Exception as ex:                                  # la commande n'est pas posée (banc, installation en cours), ou sa sortie est illisible
+            reussi, raison = False, str(ex)[:200] or "la commande « redemarrer » ne répond pas"
+        v["dernier"] = "revenu" if reussi else "échec : " + raison
+        try:
+            ctx.stockage.ecrire("INSERT INTO sensorium_redemarrages(qui, motif, silence_s, resultat) VALUES (?,?,?,?)", ("Cassandra (veille)", motif[:200], sortie.get("silence_s"), v["dernier"]))
+        except Exception as ex:
+            ctx.log.warning("relance automatique non inscrite : %s", ex)
+        ctx.emettre("machine.relance_auto", objet=MACHINE, donnees={"motif": motif[:200], "resultat": v["dernier"], "essai": v["essais"]})
+        return reussi
     def reglage_entier(ctx, nom):
         """Un seuil réglé (entier dans ses bornes), ou son défaut : un réglage illisible n'arrête rien."""
         d = lec.SEUILS[nom]
@@ -151,10 +202,10 @@ def brancher(ctx):
         try:
             rows = lec.lignes_du_monde(json_de("GET_WORLD", 20))
         except (OSError, ValueError, RuntimeError) as ex:
-            monde_c.update(rows=None, erreur=str(ex)[:200], t=time.time())
+            monde_c.update(rows=None, erreur=str(ex)[:200], t=time.time(), age_s=None)
             return
         vus = monde_c["vus"]
-        monde_c.update(rows=rows, erreur="", t=time.time(), vus={r["wkey"]: vus.get(r["wkey"], 0) + 1 for r in rows if r.get("severity") == "warning"})
+        monde_c.update(rows=rows, erreur="", t=time.time(), age_s=age_du_monde(rows), vus={r["wkey"]: vus.get(r["wkey"], 0) + 1 for r in rows if r.get("severity") == "warning"})
         try:                                     # les mesures du monde que l'on suit ou publie deviennent des lectures ; une panne ici ne touche jamais la relève
             capt.ingerer_monde(ctx, rows)
         except Exception as ex:
@@ -238,7 +289,7 @@ def brancher(ctx):
             corr = json_de("GET_CORRELATIONS", 10)
         except (OSError, ValueError, RuntimeError):
             corr = []                            # un démon d'avant cette lecture répond « ERROR » : pas de corrélations, pas d'erreur
-        return {"ok": True, "muet": False, "source": "collecteur", "rows": sortie, "changes": changes if isinstance(changes, list) else [],
+        return {"ok": True, "muet": False, "age_s": monde_c.get("age_s"), "fige": bool(monde_c.get("age_s") is not None and monde_c["age_s"] > FIGE_S), "source": "collecteur", "rows": sortie, "changes": changes if isinstance(changes, list) else [],
                 "correlations": corr if isinstance(corr, list) else [], "hote": hote, "fenetres": fen, "maintenant": n, "lu_a": monde_c["t"],
                 "familles": [[i, l] for i, l, _ in lec.FAMILLES], "domaines": [[i, l, list(fs)] for i, l, fs in lec.DOMAINES], "genres": list(lec.GENRES),
                 "seuils": seuils_lus(ctx), "gravites": [{"id": g[0], "libelle": g[1], "dit": g[2], "ouvre": gravite_permise(ctx, g[0])} for g in lec.GRAVITES]}
@@ -493,6 +544,23 @@ def brancher(ctx):
             return [{"objet": MACHINE, "titre": "Le Sensorium ne répond plus", "detail": m["donnees"].get("erreur", "")}]
         return []
 
+    def veille_demon(ctx):
+        """Le moteur de la veille : il relit le monde (ou constate le silence) et décide s'il faut relancer. Une lecture, elle, ne relance jamais rien."""
+        rows = monde_frais(ctx)
+        veiller_demon(ctx, erreur="" if rows is not None else (monde_c.get("erreur") or "muet"))
+
+    def releves_figes(ctx):
+        """Le démon répond, mais son monde n'a pas bougé depuis FIGE_S : il ne mesure plus. Tout ce que les écrans montrent date d'autant."""
+        age = monde_c.get("age_s")
+        v = monde_c.get("veille") or {}
+        if monde_c.get("rows") is None or age is None or age <= FIGE_S or not v.get("depuis"):
+            return []                                            # c'est la veille qui constate le gel : sans elle (banc, module tout juste branché), rien à dire
+        suite = ("Relance automatique : %s (essai %d)." % (v.get("dernier"), v.get("essais", 0))) if v.get("dernier") else "Relance automatique en cours."
+        heures, minutes = age // 3600, (age % 3600) // 60
+        depuis = ("%d h %02d" % (heures, minutes)) if heures else "%d min" % minutes
+        return [{"objet": MACHINE, "niveau": "critique", "titre": "Le Sensorium ne relève plus depuis %s" % depuis,
+                 "detail": "Le collecteur répond, mais ses relevés sont figés : les écrans et les alertes montrent un état ancien. %s" % suite}]
+
     def unites_en_echec(ctx):
         m = machine(ctx)
         n = m["donnees"].get("unites_en_echec", 0) if m and m["etat"] != "muet" else 0
@@ -590,12 +658,14 @@ def brancher(ctx):
 
     ctx.moteur("releve", releve)
     ctx.moteur("monde", releve_monde)
+    ctx.moteur("veille_demon", veille_demon)
     ctx.moteur("seuils", releve_seuils)
     ctx.detecteur("alertes_du_monde", alertes_du_monde)
     ctx.moteur("sante_modules", releve_modules)
     ctx.detecteur("modules_en_echec", modules_en_echec)
     ctx.detecteur("sans_administrateur", sans_administrateur)
     ctx.detecteur("collecteur_muet", collecteur_muet)
+    ctx.detecteur("releves_figes", releves_figes)
     ctx.detecteur("unites_en_echec", unites_en_echec)
     ctx.detecteur("erreurs_navigateur", erreurs_navigateur)
     ctx.implementer("sante", sante_lue)

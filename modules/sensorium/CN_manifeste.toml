@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.2.8  #62892b
+# VERSION CN : 0.2.9  #1656da
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.8 empreinte=62892b ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.9 empreinte=1656da ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.2.8"
+version = "0.2.9"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"
@@ -42,7 +42,7 @@ type = "mesure"
 libelle = "Une mesure (clé « espace.nom ») dont le Sensorium suit l'état : sert de sujet à l'événement mesure.change ; le Sensorium n'en pose aucune au registre (les états se lisent par ses capacités, cloisonnées)"
 
 [evenements]
-emet = ["machine.sante_change", "machine.muette", "machine.reprise", "module_noyau.en_echec", "module_noyau.retabli", "mesure.change"]
+emet = ["machine.sante_change", "machine.muette", "machine.reprise", "machine.relance_auto", "module_noyau.en_echec", "module_noyau.retabli", "mesure.change"]
 
 [[moteurs]]
 id = "releve"
@@ -141,6 +141,13 @@ toutes_les_s = 60
 duree_max_s = 30
 
 [[moteurs]]
+id = "veille_demon"
+libelle = "Veille sur le démon lui-même : s'il répond mais ne relève plus depuis dix minutes, ou s'il se tait depuis cinq, le relance (au plus une fois par demi-heure)"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 260
+
+[[moteurs]]
 id = "seuils"
 libelle = "Pose les seuils du démon dans son fichier (commande root « seuils »), au départ puis tant qu'un échec dure"
 mode = "periodique"
@@ -178,6 +185,11 @@ frequence_s = 300
 id = "collecteur_muet"
 libelle = "Le collecteur ne répond plus"
 frequence_s = 30
+
+[[detecteurs]]
+id = "releves_figes"
+libelle = "Le collecteur répond, mais ses relevés sont figés : il ne mesure plus (Cassandra le relance d'elle-même)"
+frequence_s = 60
 
 [[detecteurs]]
 id = "unites_en_echec"
