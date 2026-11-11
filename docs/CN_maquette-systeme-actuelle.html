@@ -1,0 +1,1125 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Maquette : Panorama, Détails système (page actuelle, à l'identique) -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : le tiroir « Détails système » du Panorama tel qu'il est aujourd'hui, à l'identique : le point de départ de sa refonte. -->
+<!-- MÉTHODE    : le balisage et les fonctions sont copiés mot pour mot de CN_index.html et CN_app.js ; un faux serveur leur sert des données fictives ; aucun geste n'écrit. -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=cad2cf ▼▼▼ -->
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette · Panorama · Détails système (page actuelle, à l'identique)</title>
+<!--
+  CETTE MAQUETTE EST LA PAGE ACTUELLE, SANS RIEN CHANGER. Elle sert de point de départ à la refonte : tout ce qu'elle montre et fait doit se retrouver.
+  « Détails système » n'est pas une page : c'est un tiroir de treize cartes, ouvert par la dernière entrée du Panorama (menu de gauche) et par le bouton
+  « Détails système » de la vue d'ensemble.
+
+  Ce qui est COPIÉ MOT POUR MOT de l'interface (commit e908144, découpé par un script, jamais retapé) :
+     CN_index.html lignes 1340 à 1435  (le voile et le tiroir : l'en-tête, les treize cartes)
+     CN_app.js lignes 55 à 55  (let cpuChart = null, cpuHistory = [], ra)
+     CN_app.js lignes 2976 à 3007  (ntFeuille)
+     CN_app.js lignes 3008 à 3008  (ntFeuilleEchap)
+     CN_app.js lignes 3009 à 3013  (ntFeuilleFermer)
+     CN_app.js lignes 3020 à 3035  (buDire)
+     CN_app.js lignes 3036 à 3050  (buConfirmer)
+     CN_app.js lignes 6651 à 6651  (sendQuickFix)
+     CN_app.js lignes 7052 à 7070  (apiGet)
+     CN_app.js lignes 7095 à 7095  (escapeHtml)
+     CN_app.js lignes 7099 à 7102  (escapeAttr)
+     CN_app.js lignes 7117 à 7120  (_colorStatVal)
+     CN_app.js lignes 7121 à 7124  (_setStatBar)
+     CN_app.js lignes 7125 à 7129  (_setMmsVal)
+     CN_app.js lignes 7138 à 7138  (const VU = {d:null, t:0, timer:null)
+     CN_app.js lignes 7413 à 7563  (tiroir)
+     CN_app.js lignes 23490 à 23551  (plein écran)
+     CN_app.js lignes 27095 à 27390  (cartes)
+     CN_app.js lignes 35191 à 35247  (_applyHealth)
+     CN_app.js lignes 35249 à 35262  (_applyProcesses)
+     CN_app.js lignes 35694 à 35708  (_fpEtatSommaire)
+     CN_app.js lignes 35719 à 35796  (fpLoadSummary)
+     CN_app.js lignes 38136 à 38139  (toast)
+     CN_app.js lignes 38141 à 38153  (showToast)
+  Les feuilles de style sont les vraies (../interface/CN_*.css), dans l'ordre où l'application les charge.
+
+  Ce qui est REMPLACÉ, parce que cela vit hors de la page (bloc « ÉCHAFAUDAGE », en bas) :
+     le serveur        : trois jeux de données fictives, de la forme exacte des réponses d'Argos du 11-11-2026 ;
+     les gestes        : déconnecter une session, acquitter les OOM, réinitialiser les unités répondent « fait » sans rien écrire ;
+     les sorties       : la conversation (bouton clé), l'onglet Hébergement (carte FastPanel) sont dits dans le journal de la maquette ;
+     le reste de l'app : le bandeau des constantes et l'onglet FastPanel, que deux fonctions mettent aussi à jour.
+  Ouvrir ce fichier dans un navigateur, depuis le dépôt (les chemins ../interface/ sont relatifs).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="../interface/CN_style.css">
+<link rel="stylesheet" href="../interface/CN_shell.css">
+<link rel="stylesheet" href="../interface/CN_disposition.css">
+<link rel="stylesheet" href="../interface/CN_habillage.css">
+<link rel="stylesheet" href="../interface/CN_aujourdhui.css">
+<style>
+  /* Rien ici ne touche au tiroir : seulement ce que la maquette ajoute autour de lui. */
+  .mq-fond{position:fixed;left:0;top:0;bottom:0;width:calc(100vw - min(760px,94vw));display:flex;align-items:center;justify-content:center;padding:0 24px;box-sizing:border-box;color:var(--txt-faint,#76808e);font:500 13px/1.6 Inter,system-ui,sans-serif;pointer-events:none}
+  .mq-fond div{max-width:320px}
+  @media (max-width:1100px){.mq-fond{display:none}}
+  .mq-fond b{display:block;color:var(--txt,#101828);font-size:15px;margin-bottom:6px}
+  .mq-boite{position:fixed;left:14px;bottom:14px;z-index:60;width:300px;max-width:calc(100vw - 28px);background:var(--surface-solid,#fff);color:var(--txt,#101828);border:1px solid var(--line,#d9e0e4);
+    border-radius:14px;box-shadow:0 10px 30px rgba(16,24,40,.18);font:500 12px/1.5 Inter,system-ui,sans-serif;padding:12px 14px}
+  .mq-boite h1{font:700 12.5px Inter,system-ui,sans-serif;margin:0 0 2px;display:flex;align-items:center;gap:8px;cursor:pointer}
+  .mq-boite h1::after{content:"▾";margin-left:auto;color:var(--txt-faint,#76808e)}
+  .mq-boite.plie{width:auto;padding:8px 12px}
+  .mq-boite.plie h1{margin:0}
+  .mq-boite.plie h1::after{content:"▴"}
+  .mq-boite.plie>:not(h1){display:none}
+  .mq-boite p{margin:0 0 8px;color:var(--txt-faint,#76808e);font-size:11.5px}
+  .mq-boite label{display:block;font-size:11px;color:var(--txt-faint,#76808e);margin:6px 0 3px}
+  .mq-boite select,.mq-boite button{font:600 12px Inter,system-ui,sans-serif;border:1px solid var(--line,#d9e0e4);background:var(--surface,#f5f7f8);color:inherit;border-radius:9px;padding:6px 9px;cursor:pointer}
+  .mq-boite select{width:100%}
+  .mq-rang{display:flex;gap:6px;flex-wrap:wrap}
+  .mq-journal{margin:8px 0 0;padding:0;list-style:none;max-height:120px;overflow:auto;border-top:1px solid var(--line,#d9e0e4)}
+  .mq-journal li{padding:5px 0;border-bottom:1px dashed var(--line,#d9e0e4);font-size:11.5px}
+  .mq-journal li:first-child{color:var(--txt,#101828)}
+  .mq-journal li i{font-style:normal;color:var(--txt-faint,#76808e);font-family:'JetBrains Mono',monospace;font-size:10.5px;margin-right:6px}
+  .mq-journal:empty::after{content:"Rien encore : les gestes et les sorties de la page s'écrivent ici.";display:block;padding:6px 0;color:var(--txt-faint,#76808e);font-size:11.5px}
+</style>
+</head>
+<body class="d19">
+<!-- Les ancêtres du tiroir dans l'application, dans le même ordre : des règles de style en dépendent (.mx-app, .tab-content.active). -->
+<div id="app-container" class="app-container" data-w="m"><div class="app-body"><div class="app-main">
+<div id="tab-overview" class="tab-content mx-app active" data-vue="verdict">
+  <div class="mq-fond"><div><b>Derrière le tiroir : l'application</b>Ici se trouvent le menu de gauche et la vue d'ensemble du Panorama, assombris par le voile. Un clic sur le voile, la croix ou Échap referme le tiroir, comme dans l'application.</div></div>
+<!-- ══════════════ COPIE : interface/CN_index.html, lignes 1340 à 1435 ══════════════ -->
+    <div class="sys-scrim" id="sys-scrim" onclick="fermerSysteme()"></div>
+    <aside class="sys-drawer" id="sys-drawer" aria-label="Détails système">
+      <header>
+        <h3>Détails système</h3>
+        <button class="hdr-btn" onclick="fermerSysteme()" aria-label="Fermer">✕</button>
+      </header>
+      <div class="sys-drawer-body">
+<div class="sys-col">
+        <!-- SANTÉ — ring visuel avec gradient conic -->
+        <div class="card">
+          <div class="card-title">SANTÉ SYSTÈME</div>
+          <div class="health-ring-wrap">
+            <div class="health-ring" id="health-ring">
+              <div class="health-ring-inner">
+                <div class="health-ring-score" id="health-score">–</div>
+                <div class="health-ring-lbl">/100</div>
+              </div>
+            </div>
+            <div class="health-ring-meta">
+              <div id="health-status"></div>
+              <div id="health-details" style="font-size:10px;color:var(--txt-faint);margin-top:3px;line-height:1.5"></div>
+            </div>
+          </div>
+          <!-- Infos serveur -->
+          <div class="sinfo-grid">
+            <div class="sinfo-row"><span class="sinfo-lbl">OS</span><span class="sinfo-val" id="si-os">–</span></div>
+            <div class="sinfo-row"><span class="sinfo-lbl">Kernel</span><span class="sinfo-val" id="si-kernel">–</span></div>
+            <div class="sinfo-row"><span class="sinfo-lbl">IP</span><span class="sinfo-val" id="si-ip">–</span></div>
+            <div class="sinfo-row"><span class="sinfo-lbl">CPU Cores</span><span class="sinfo-val" id="si-cores">–</span></div>
+            <div class="sinfo-row"><span class="sinfo-lbl">Uptime</span><span class="sinfo-val" id="si-uptime">–</span></div>
+            <div class="sinfo-row"><span class="sinfo-lbl">Disques</span><span class="sinfo-val" id="si-disks">–</span></div>
+          </div>
+        </div>
+        <!-- RESSOURCES — stat-cards compactes -->
+        <div class="card">
+          <div class="card-title">RESSOURCES</div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-top"><span class="stat-lbl">CPU</span><span class="stat-val" id="cpu-val">–</span></div>
+              <div class="stat-bar-mini"><div class="stat-bar-fill cpu" id="cpu-bar" style="width:0%"></div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-top"><span class="stat-lbl">RAM</span><span class="stat-val" id="ram-val">–</span></div>
+              <div class="stat-bar-mini"><div class="stat-bar-fill ram" id="ram-bar" style="width:0%"></div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-top"><span class="stat-lbl">DISQUE</span><span class="stat-val" id="disk-val">–</span></div>
+              <div class="stat-bar-mini"><div class="stat-bar-fill disk" id="disk-bar" style="width:0%"></div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-top"><span class="stat-lbl">LOAD</span><span class="stat-val" id="load-val" style="font-size:11px">–</span></div>
+            </div>
+          </div>
+          <div class="chart-container"><canvas id="cpu-chart"></canvas></div>
+        </div>
+        <div class="card"><div class="card-title">Tiroir cloud</div><div id="remotes-list"><div class="empty-state">Chargement...</div></div></div>
+        <div class="card"><div class="card-title">SSL <button class="fix-btn" onclick="sendQuickFix('Certificats SSL expirants ?')">🔧</button></div><div id="ssl-list"><div class="empty-state">Chargement...</div></div></div>
+        <div class="card"><div class="card-title">Tailscale</div><div id="tailscale-list"><div class="empty-state">Chargement...</div></div></div>
+        <div class="card"><div class="card-title">Fail2ban</div><div id="fail2ban-count">–</div></div>
+        <div class="card" id="fp-summary-card" style="display:none">
+          <div class="card-title">FastPanel <button class="fix-btn" onclick="switchTab('fastpanel')">→ Détails</button></div>
+          <div class="fp-sc-sub" id="fp-summary-etat" style="display:none;margin:0 0 6px"></div>
+          <div class="fp-summary-cards" id="fp-summary-grid">
+            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('domains')" title="Domaines hébergés">
+              <div class="fp-sc-label">Domaines</div><div class="fp-sc-value" id="fps-domains">–</div>
+            </div>
+            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('services')" title="Services actifs">
+              <div class="fp-sc-label">Services</div><div class="fp-sc-value" id="fps-services">–</div>
+              <div class="fp-sc-sub" id="fps-services-sub"></div>
+            </div>
+            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('databases')" title="Bases de données">
+              <div class="fp-sc-label">Bases DB</div><div class="fp-sc-value" id="fps-dbs">–</div>
+            </div>
+            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('mail')" title="Comptes mail">
+              <div class="fp-sc-label">Comptes mail</div><div class="fp-sc-value" id="fps-mail">–</div>
+            </div>
+            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('backups')" title="Backups">
+              <div class="fp-sc-label">Backups</div><div class="fp-sc-value" id="fps-backups">–</div>
+              <div class="fp-sc-sub" id="fps-backups-sub"></div>
+            </div>
+            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('users')" title="Utilisateurs">
+              <div class="fp-sc-label">Users</div><div class="fp-sc-value" id="fps-users">–</div>
+            </div>
+          </div>
+        </div>
+      </div>
+<div class="sys-col">
+        <div class="card"><div class="card-title">Top processus</div><div id="processes-list"><div class="empty-state">Chargement...</div></div></div>
+        <div class="card"><div class="card-title">Panne <button class="fix-btn" onclick="resetFailedUnits()" title="Réinitialiser les unités failed (reset-failed)">🧹</button><button class="fix-btn" onclick="sendQuickFix('Unités failed ?')">🔧</button></div><div id="failed-list"><div class="empty-state">Chargement...</div></div></div>
+        <div class="card"><div class="card-title">Sessions</div><div id="sessions-list"><div class="empty-state">Chargement...</div></div></div>
+        <div class="card"><div class="card-title">Ports</div><div id="ports-list"><div class="empty-state">Chargement...</div></div></div>
+        <div class="card"><div class="card-title">OOM <button class="fix-btn" onclick="clearOOM()" title="Acquitter / effacer les OOM affichés">🧹</button><button class="fix-btn" onclick="sendQuickFix('OOM récents ?')">🔧</button></div><div id="oom-list"><div class="empty-state">Chargement...</div></div></div>
+        <div class="card"><div class="card-title">Docker</div><div id="docker-list"><div class="empty-state">Chargement...</div></div></div>
+      </div>
+      </div>
+    </aside>
+<!-- ══════════════ FIN DE LA COPIE ══════════════ -->
+</div>
+</div></div></div>
+
+<!-- ÉCHAFAUDAGE : ce que deux fonctions de la page mettent aussi à jour, ailleurs dans l'application (conversation, onglet FastPanel). Caché. -->
+<div hidden>
+  <input id="chat-input">
+  <span id="fpbadge-domains"></span><span id="fpbadge-users"></span><span id="fpbadge-databases"></span><span id="fpbadge-mail"></span>
+</div>
+
+<!-- La boîte de la maquette : hors de la page clonée. -->
+<div class="mq-boite plie" id="mq-boite">
+  <h1 onclick="this.parentNode.classList.toggle('plie')" title="La boîte de la maquette : jeu de données, thème, journal des gestes">Maquette</h1>
+  <p><b>Détails système · page actuelle.</b> Le tiroir est le vrai code de l'interface, servi par de fausses données.</p>
+  <div class="mq-rang">
+    <button type="button" onclick="ouvrirSysteme()">Ouvrir le tiroir</button>
+    <button type="button" id="mq-theme" onclick="mqTheme()">Thème sombre</button>
+  </div>
+  <label for="mq-jeu">Jeu de données</label>
+  <select id="mq-jeu" onchange="mqJeu(this.value)">
+    <option value="argos">Comme sur Argos le 11-11 (données fictives, mêmes états)</option>
+    <option value="plein">Tout ce que la page sait afficher</option>
+    <option value="muet">Collecteur et panneau muets</option>
+  </select>
+  <ul class="mq-journal" id="mq-journal"></ul>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════
+//  ÉCHAFAUDAGE (1/2) — ce qui doit exister AVANT le code copié. Rien de ceci n'est dans la page d'origine.
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════
+const ETAT = { plan: {} };                      // dans l'application : l'état de tous les écrans ; la page n'emploie que ETAT.plan (cartes repliées)
+const sessionId = "maquette";
+const MQ = { jeu: "argos", jeux: {"argos": {"dashboard": {"sites": 3, "remotes": 0, "ssl_expiring": 0, "fail2ban_banned": 0, "tailscale_peers": 5, "oom_events_24h": 0, "failed_units": 0, "health_score": 95, "health_status": "excellent"}, "metrics": {"cpu": 12.7, "ram": 36.5, "disk": 80.9, "disk_free_gb": 16.8, "disk_total_gb": 74.8, "disk_used_gb": 58, "load_1m": 0.19, "load_5m": 0.39, "load_15m": 0.53, "ram_total_gb": 7.6, "ram_used_gb": 2.8, "swap": 5.6, "swap_total_gb": 4, "swap_used_gb": 0.2, "timestamp": 1794358953.96, "health_score": 95, "health_status": "excellent", "failed_units": [], "ssl_expiring": [], "sites": []}, "processes": [{"user": "cassand+", "cpu": 17, "command": "/usr/bin/python3 CN_main.py demarrer"}, {"user": "root", "cpu": 1.0, "command": "/sbin/init"}, {"user": "root", "cpu": 0.9, "command": "docker stats --no-stream --format {{json .}}"}, {"user": "mysql", "cpu": 0.8, "command": "/usr/sbin/mysqld"}, {"user": "cassand+", "cpu": 0.8, "command": "/usr/bin/python3 /var/cassandra/current/modules/sensorium/CN_collecteur.py"}, {"user": "977", "cpu": 0.4, "command": "searxng worker-1"}, {"user": "root", "cpu": 0.3, "command": "/go/bin/netbird-server --config /etc/netbird/config.yaml"}, {"user": "root", "cpu": 0.2, "command": "/usr/bin/containerd"}, {"user": "www-data", "cpu": 0.1, "command": "nginx: worker process"}, {"user": "root", "cpu": 0.1, "command": "/usr/sbin/sshd -D"}], "remotes": [], "ssl": [{"id": 3495, "domain": "machine.exemple.test", "cert_path": "/var/www/httpd-cert/machine.exemple.test_panel.crt", "issuer": "Let's Encrypt", "expiry_date": "2027-01-29", "days_left": 79, "status": "valid", "last_check": "2026-11-11T01:00:58.981391", "sans": "machine.exemple.test"}, {"id": 3496, "domain": "chat.exemple.test", "cert_path": "/var/www/httpd-cert/chat.exemple.test_panel.crt", "issuer": "Let's Encrypt", "expiry_date": "2027-01-29", "days_left": 82, "status": "valid", "last_check": "2026-11-11T01:00:58.981391", "sans": "chat.exemple.test"}, {"id": 3497, "domain": "reseau.exemple.test", "cert_path": "/var/www/httpd-cert/reseau.exemple.test_panel.crt", "issuer": "Let's Encrypt", "expiry_date": "2027-01-29", "days_left": 88, "status": "valid", "last_check": "2026-11-11T01:00:58.981391", "sans": "reseau.exemple.test"}, {"id": 3498, "domain": "_", "cert_path": "/var/www/httpd-cert/__panel.crt", "issuer": "Let's Encrypt", "expiry_date": "2027-01-29", "days_left": 354, "status": "valid", "last_check": "2026-11-11T01:00:58.981391", "sans": "_"}], "tailscale": [{"id": 120796, "name": "tel-lea", "dns_name": "tel-lea.exemple.ts.net.", "tailscale_ip": "100.64.0.11", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120797, "name": "atelier", "dns_name": "atelier.exemple.ts.net.", "tailscale_ip": "100.64.0.12", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120798, "name": "vega", "dns_name": "vega.exemple.ts.net.", "tailscale_ip": "100.64.0.13", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120799, "name": "tel-max", "dns_name": "tel-max.exemple.ts.net.", "tailscale_ip": "100.64.0.14", "online": 0, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120800, "name": "tel-noe", "dns_name": "tel-noe.exemple.ts.net.", "tailscale_ip": "100.64.0.15", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120801, "name": "atlas", "dns_name": "atlas.exemple.ts.net.", "tailscale_ip": "100.64.0.16", "online": 0, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120802, "name": "lyra", "dns_name": "lyra.exemple.ts.net.", "tailscale_ip": "100.64.0.17", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}], "fail2ban": [], "sessions": [{"id": 14723, "user": "sshd", "ip": "203.0.113.24", "login_time": "2026-11-11T00:06:10.744940", "last_check": "2026-11-11T00:06:10.744940"}], "ports": [{"id": 276874, "port": 21, "protocol": "tcp", "process": "proftpd", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276875, "port": 22, "protocol": "tcp", "process": "sshd", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276876, "port": 25, "protocol": "tcp", "process": "exim4", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276877, "port": 53, "protocol": "udp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276878, "port": 53, "protocol": "tcp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276879, "port": 68, "protocol": "udp", "process": "dhclient", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276880, "port": 80, "protocol": "tcp", "process": "nginx", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276881, "port": 81, "protocol": "tcp", "process": "apache2", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276882, "port": 110, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276883, "port": 143, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276884, "port": 443, "protocol": "udp", "process": "nginx", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276885, "port": 443, "protocol": "tcp", "process": "nginx", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276886, "port": 465, "protocol": "tcp", "process": "exim4", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276887, "port": 587, "protocol": "tcp", "process": "exim4", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276888, "port": 993, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276889, "port": 995, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276890, "port": 2812, "protocol": "tcp", "process": "monit", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276891, "port": 3306, "protocol": "tcp", "process": "mysqld", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276892, "port": 3478, "protocol": "udp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276893, "port": 4190, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276894, "port": 5353, "protocol": "udp", "process": "avahi-daemon", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276895, "port": 5432, "protocol": "tcp", "process": "postgres", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276896, "port": 6379, "protocol": "tcp", "process": "redis-server", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276897, "port": 7080, "protocol": "tcp", "process": "apache2", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276898, "port": 8080, "protocol": "tcp", "process": "docker-proxy", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276899, "port": 8081, "protocol": "tcp", "process": "docker-proxy", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276900, "port": 8443, "protocol": "tcp", "process": "nginx", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276901, "port": 8888, "protocol": "tcp", "process": "fastpanel", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276902, "port": 9000, "protocol": "tcp", "process": "php-fpm", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276903, "port": 9090, "protocol": "tcp", "process": "python3", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276904, "port": 10000, "protocol": "tcp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276905, "port": 11434, "protocol": "tcp", "process": "ollama", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276906, "port": 33073, "protocol": "tcp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276907, "port": 41641, "protocol": "udp", "process": "tailscaled", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276908, "port": 51820, "protocol": "udp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}], "oom": [], "failed": [], "docker": [{"id": 6098, "name": "reseau", "image": "netbirdio/netbird:latest", "status": "Up 23 hours", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 6099, "name": "reseau-tableau", "image": "netbirdio/dashboard:latest", "status": "Up 23 hours", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 6100, "name": "reseau-serveur", "image": "netbirdio/netbird-server:latest", "status": "Up 23 hours", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 6101, "name": "recherche", "image": "searxng/searxng:latest", "status": "Up 23 hours", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 6102, "name": "coffre", "image": "vaultwarden/server:latest", "status": "Up 23 hours", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}], "fp/summary": {"ok": true, "users_count": 1, "domains_count": 2, "databases_count": 0, "mail_count": 0, "ftp_count": 0, "dns_count": 0, "services_count": 8, "services_down": 8, "backups_count": 0, "backups_failed": 0, "crons_count": 0, "scans_count": 0, "php_count": 0, "source_erreur": ""}}, "plein": {"dashboard": {"sites": 12, "remotes": 2, "ssl_expiring": 2, "fail2ban_banned": 3, "tailscale_peers": 5, "oom_events_24h": 2, "failed_units": 2, "health_score": 62, "health_status": "warning"}, "metrics": {"cpu": 78.2, "ram": 91.4, "disk": 96.3, "disk_free_gb": 16.8, "disk_total_gb": 74.8, "disk_used_gb": 58, "load_1m": 4.12, "load_5m": 3.4, "load_15m": 2.2, "ram_total_gb": 7.6, "ram_used_gb": 2.8, "swap": 5.6, "swap_total_gb": 4, "swap_used_gb": 0.2, "timestamp": 1794358953.96, "health_score": 62, "health_status": "warning", "failed_units": [], "ssl_expiring": [], "sites": []}, "processes": [{"user": "www-data", "cpu": 61.5, "command": "php-fpm: pool boutique.exemple.test"}, {"user": "mysql", "cpu": 24.0, "command": "/usr/sbin/mysqld"}, {"user": "cassand+", "cpu": 17, "command": "/usr/bin/python3 CN_main.py demarrer"}, {"user": "root", "cpu": 1.0, "command": "/sbin/init"}, {"user": "root", "cpu": 0.9, "command": "docker stats --no-stream --format {{json .}}"}, {"user": "mysql", "cpu": 0.8, "command": "/usr/sbin/mysqld"}, {"user": "cassand+", "cpu": 0.8, "command": "/usr/bin/python3 /var/cassandra/current/modules/sensorium/CN_collecteur.py"}, {"user": "977", "cpu": 0.4, "command": "searxng worker-1"}, {"user": "root", "cpu": 0.3, "command": "/go/bin/netbird-server --config /etc/netbird/config.yaml"}, {"user": "root", "cpu": 0.2, "command": "/usr/bin/containerd"}], "remotes": [{"name": "copies-hors-site", "type": "s3"}, {"name": "archives", "type": "sftp"}], "ssl": [{"id": 3495, "domain": "boutique.exemple.test", "cert_path": "/var/www/httpd-cert/boutique.exemple.test_panel.crt", "issuer": "Let's Encrypt", "expiry_date": "2027-01-29", "days_left": 5, "status": "valid", "last_check": "2026-11-11T01:00:58.981391", "sans": "boutique.exemple.test"}, {"id": 3496, "domain": "blog.exemple.test", "cert_path": "/var/www/httpd-cert/blog.exemple.test_panel.crt", "issuer": "Let's Encrypt", "expiry_date": "2027-01-29", "days_left": 21, "status": "valid", "last_check": "2026-11-11T01:00:58.981391", "sans": "blog.exemple.test"}, {"id": 3497, "domain": "chat.exemple.test", "cert_path": "/var/www/httpd-cert/chat.exemple.test_panel.crt", "issuer": "Let's Encrypt", "expiry_date": "2027-01-29", "days_left": 82, "status": "valid", "last_check": "2026-11-11T01:00:58.981391", "sans": "chat.exemple.test"}], "tailscale": [{"id": 120796, "name": "tel-lea", "dns_name": "tel-lea.exemple.ts.net.", "tailscale_ip": "100.64.0.11", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120797, "name": "atelier", "dns_name": "atelier.exemple.ts.net.", "tailscale_ip": "100.64.0.12", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120798, "name": "vega", "dns_name": "vega.exemple.ts.net.", "tailscale_ip": "100.64.0.13", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120799, "name": "tel-max", "dns_name": "tel-max.exemple.ts.net.", "tailscale_ip": "100.64.0.14", "online": 0, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120800, "name": "tel-noe", "dns_name": "tel-noe.exemple.ts.net.", "tailscale_ip": "100.64.0.15", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120801, "name": "atlas", "dns_name": "atlas.exemple.ts.net.", "tailscale_ip": "100.64.0.16", "online": 0, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 120802, "name": "lyra", "dns_name": "lyra.exemple.ts.net.", "tailscale_ip": "100.64.0.17", "online": 1, "last_seen": "2026-11-10T18:10:00", "last_check": "2026-11-11T01:00:58.981391"}], "fail2ban": [{"ip": "198.51.100.7", "jail": "sshd"}, {"ip": "198.51.100.44", "jail": "sshd"}, {"ip": "203.0.113.90", "jail": "nginx-botsearch"}], "sessions": [{"id": 14723, "user": "sshd", "ip": "203.0.113.24", "login_time": "2026-11-11T00:06:10.744940", "last_check": "2026-11-11T00:06:10.744940"}, {"id": 14724, "user": "lea", "ip": "100.64.0.11", "login_time": "2026-11-10T22:41:03", "last_check": "2026-11-11T01:00:58.981391"}, {"id": 14725, "user": "depot", "ip": "198.51.100.20", "login_time": "2026-11-11T00:52:40", "last_check": "2026-11-11T01:00:58.981391", "type": "ftp"}], "ports": [{"id": 276874, "port": 21, "protocol": "tcp", "process": "proftpd", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276875, "port": 22, "protocol": "tcp", "process": "sshd", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276876, "port": 25, "protocol": "tcp", "process": "exim4", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276877, "port": 53, "protocol": "udp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276878, "port": 53, "protocol": "tcp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276879, "port": 68, "protocol": "udp", "process": "dhclient", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276880, "port": 80, "protocol": "tcp", "process": "nginx", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276881, "port": 81, "protocol": "tcp", "process": "apache2", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276882, "port": 110, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276883, "port": 143, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276884, "port": 443, "protocol": "udp", "process": "nginx", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276885, "port": 443, "protocol": "tcp", "process": "nginx", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276886, "port": 465, "protocol": "tcp", "process": "exim4", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276887, "port": 587, "protocol": "tcp", "process": "exim4", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276888, "port": 993, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276889, "port": 995, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276890, "port": 2812, "protocol": "tcp", "process": "monit", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276891, "port": 3306, "protocol": "tcp", "process": "mysqld", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276892, "port": 3478, "protocol": "udp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276893, "port": 4190, "protocol": "tcp", "process": "dovecot", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276894, "port": 5353, "protocol": "udp", "process": "avahi-daemon", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276895, "port": 5432, "protocol": "tcp", "process": "postgres", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276896, "port": 6379, "protocol": "tcp", "process": "redis-server", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276897, "port": 7080, "protocol": "tcp", "process": "apache2", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276898, "port": 8080, "protocol": "tcp", "process": "docker-proxy", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276899, "port": 8081, "protocol": "tcp", "process": "docker-proxy", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276900, "port": 8443, "protocol": "tcp", "process": "nginx", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276901, "port": 8888, "protocol": "tcp", "process": "fastpanel", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276902, "port": 9000, "protocol": "tcp", "process": "php-fpm", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276903, "port": 9090, "protocol": "tcp", "process": "python3", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276904, "port": 10000, "protocol": "tcp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276905, "port": 11434, "protocol": "tcp", "process": "ollama", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276906, "port": 33073, "protocol": "tcp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276907, "port": 41641, "protocol": "udp", "process": "tailscaled", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 276908, "port": 51820, "protocol": "udp", "process": "netbird", "pid": 0, "last_check": "2026-11-11T01:00:58.981391"}], "oom": [{"ts": "2026-11-10T03:12:44", "killed_process": "php-fpm", "memory_used_mb": 1840}, {"ts": "2026-11-09T21:05:10", "killed_process": "mysqld", "memory_used_mb": 2310}], "failed": [{"unit": "php8.3-fpm.service", "active_state": "failed"}, {"unit": "certbot.service", "active_state": "failed"}], "docker": [{"id": 6098, "name": "reseau", "image": "netbirdio/netbird:latest", "status": "running", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 6099, "name": "reseau-tableau", "image": "netbirdio/dashboard:latest", "status": "running", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 6100, "name": "reseau-serveur", "image": "netbirdio/netbird-server:latest", "status": "running", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 6101, "name": "recherche", "image": "searxng/searxng:latest", "status": "Exited (1) 2 hours ago", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}, {"id": 6102, "name": "coffre", "image": "vaultwarden/server:latest", "status": "Exited (1) 2 hours ago", "state": null, "ports": null, "created": null, "last_check": "2026-11-11T01:00:58.981391"}], "fp/summary": {"ok": true, "users_count": 4, "domains_count": 12, "databases_count": 9, "mail_count": 14, "ftp_count": 0, "dns_count": 0, "services_count": 8, "services_down": 0, "backups_count": 6, "backups_failed": 1, "crons_count": 0, "scans_count": 0, "php_count": 0, "source_erreur": "partielle : dns"}}, "muet": {"dashboard": {"sites": 0, "remotes": 0, "ssl_expiring": 0, "fail2ban_banned": 0, "tailscale_peers": 0, "oom_events_24h": 0, "failed_units": 0, "health_score": 0, "health_status": "unknown"}, "metrics": {"muet": true, "erreur": "le collecteur ne répond pas"}, "processes": [], "remotes": [], "ssl": [], "tailscale": [], "fail2ban": [], "sessions": [], "ports": [], "oom": [], "failed": [], "docker": [], "fp/summary": {"ok": false, "reason": "le panneau ne répond pas"}}}, tour: 0 };
+function mqDire(texte) {
+  const l = document.getElementById("mq-journal"); if (!l) return;
+  const li = document.createElement("li"), h = new Date().toTimeString().slice(0, 8);
+  li.innerHTML = "<i>" + h + "</i>"; li.appendChild(document.createTextNode(texte));
+  l.insertBefore(li, l.firstChild);
+}
+// Le serveur : la page lit par fetch (apiGet) et écrit par fetch ; on répond à sa place, sans réseau.
+const mqRepondre = (corps) => Promise.resolve(new Response(JSON.stringify(corps), { status: 200, headers: { "Content-Type": "application/json" } }));
+window.fetch = function (url, o) {
+  const chemin = String(url).split("?")[0].replace("/api/", ""), jeu = MQ.jeux[MQ.jeu], ecrit = o && o.method === "POST";
+  if (ecrit && chemin === "session/kill") {
+    const b = JSON.parse(o.body || "{}");
+    jeu.sessions = jeu.sessions.filter((s) => !(s.user === b.user && s.ip === b.ip));
+    mqDire("Geste : déconnecter la session de " + b.user + " (" + b.ip + "). Dans l'application : capacité securite.session_fermer. Ici, rien n'est écrit.");
+    return mqRepondre({ success: true, ok: true, killed: true });
+  }
+  if (ecrit && chemin === "oom/clear") { const n = jeu.oom.length; jeu.oom = []; mqDire("Geste : acquitter " + n + " OOM. Dans l'application : capacité securite.oom_acquitter. Ici, rien n'est écrit."); return mqRepondre({ ok: true, acquittes: n }); }
+  if (ecrit && chemin === "failed/reset") { jeu.failed = []; mqDire("Geste : réinitialiser les unités en panne. Dans l'application : capacité securite.unites_reinitialiser. Ici, rien n'est écrit."); return mqRepondre({ ok: true, success: true }); }
+  let d = jeu[chemin];
+  if (d === undefined) { mqDire("Lecture inconnue de la maquette : " + chemin); return mqRepondre([]); }
+  d = JSON.parse(JSON.stringify(d));
+  if (chemin === "metrics" && !d.muet) {                       // la machine vit : le processeur bouge un peu à chaque relecture (toutes les 5 s), comme sur Argos
+    const t = MQ.tour++, onde = [0, 3, 7, 4, -2, -6, -9, -5, 1, 5, 2, -3][t % 12];
+    d.cpu = Math.max(1, Math.round((d.cpu + onde) * 10) / 10); d.load_1m = Math.round((d.load_1m + onde / 60) * 100) / 100;
+  }
+  return mqRepondre(d);
+};
+function logout() {}
+// Les sorties de la page : elle quitte le tiroir pour un autre endroit de l'application. Ici, on le dit.
+function switchTab(nom) { mqDire("Sortie : dans l'application, ouvre l'onglet « " + ({ dashboard: "Conversation", fastpanel: "Hébergement (FastPanel)" }[nom] || nom) + " »."); }
+function sendMessage() { mqDire("Sortie : envoie à Cassandra la question « " + document.getElementById("chat-input").value + " »."); }
+function fpNav(section) { mqDire("Sortie : dans Hébergement, ouvre la section « " + section + " »."); }
+function addSystemMessage(m) { const d = document.createElement("div"); d.innerHTML = m; mqDire("Message posé dans la conversation : " + d.textContent); }
+// Ce que loadMetrics et fpLoadSummary mettent aussi à jour HORS du tiroir (le bandeau des constantes, l'onglet FastPanel).
+function majVitals() {}
+function fp2Bandeau() {}
+const _fp2Lu = {};
+let _fp2Panneau = null;
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════
+//  COPIE — interface/CN_app.js, mot pour mot. Les lignes d'origine sont listées en tête de fichier.
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════
+// ─── L'état partagé ───
+let cpuChart = null, cpuHistory = [], ramHistory = [];
+const VU = {d:null, t:0, timer:null, wsTs:0, sysCharge:false, sysTimers:[]};
+
+// ─── Lire le serveur ───
+async function apiGet(e){
+    const url=e+(e.includes('?')?'&':'?')+'_='+Date.now();
+    const r=await fetch(url,{headers:{'X-Session-Token':sessionId,'Cache-Control':'no-cache','Pragma':'no-cache'}});
+    if(r.status===401){logout();throw new Error('401');}
+    if(!r.ok){
+        // Un 4xx/5xx levait « 500 » et rien d'autre, alors que le serveur
+        // écrit la cause dans `error` ou `reason` : on lit le corps AVANT de
+        // lever, et la cause monte jusqu'à l'écran (fpLoadSection l'affiche).
+        // Sans corps JSON exploitable, le message reste le statut nu, comme
+        // avant : des appelants le comparent. (2026-09-05)
+        let msg=String(r.status);
+        try{
+            const j=JSON.parse(await r.text());
+            if(j&&(j.error||j.reason)) msg=String(j.error||j.reason);
+        }catch(_){}
+        throw new Error(msg);
+    }
+    return r.json();
+}
+
+// ─── Échapper ───
+function escapeHtml(t){ if(t==null)return ''; return String(t).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+function escapeAttr(t){
+    if(t==null) return '';
+    return String(t).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// ─── Colorer une jauge ───
+function _colorStatVal(id, pct){
+    const el=document.getElementById(id); if(!el) return;
+    el.className='stat-val '+(pct>=90?'critical':pct>=75?'warning':'ok');
+}
+function _setStatBar(id, pct){
+    const el=document.getElementById(id); if(!el) return;
+    el.style.width=pct+'%';
+}
+function _setMmsVal(id, txt, pct){
+    const el=document.getElementById(id); if(!el) return;
+    el.textContent=txt;
+    el.className='mms-val '+(pct>=90?'critical':pct>=75?'warning':'ok');
+}
+
+// ─── Ouvrir, fermer, charger les treize cartes ; les cartes une à une ───
+function ouvrirSysteme(){
+    const d=document.getElementById('sys-drawer'), s=document.getElementById('sys-scrim');
+    if(d) d.classList.add('on');
+    if(s) s.classList.add('on');
+    _sysCharger();
+}
+function fermerSysteme(){
+    const d=document.getElementById('sys-drawer'), s=document.getElementById('sys-scrim');
+    if(d) d.classList.remove('on');
+    if(s) s.classList.remove('on');
+    VU.sysTimers.forEach(t=>clearInterval(t)); VU.sysTimers=[];
+}
+// LES TREIZE CARTES SE CHARGENT ICI, à l'ouverture du tiroir — plus au démarrage de l'application, plus par
+// huit minuteurs qui tournaient tiroir fermé (21-09). Tant qu'il est ouvert, trois relectures courtes.
+function _sysCharger(){
+    const f=[loadDashboard, loadRemotes, loadSSLCerts, loadTailscale, loadFail2ban, loadProcesses, loadSessions, loadPorts, loadOOM, loadFailedUnits, loadDocker, fpLoadSummary, loadMetrics];
+    f.forEach(fn=>{ try{ if(typeof fn==='function') fn(); }catch(e){} });
+    VU.sysTimers.forEach(t=>clearInterval(t)); VU.sysTimers=[];
+    VU.sysTimers.push(setInterval(()=>{ try{ loadMetrics(); loadProcesses(); }catch(e){} }, 5000));
+    VU.sysTimers.push(setInterval(()=>{ try{ loadFailedUnits(); loadTailscale(); loadFail2ban(); loadDocker(); }catch(e){} }, 30000));
+    VU.sysTimers.push(setInterval(()=>{ try{ loadRemotes(); loadSSLCerts(); loadPorts(); loadOOM(); loadSessions(); }catch(e){} }, 60000));
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') fermerSysteme(); });
+
+// Source muette (collecteur absent ou muet) : un tiret, jamais un « 0% » posé comme mesure.
+function _metriquesMuettes(){
+    ['cpu-val','ram-val','disk-val','load-val','mmd-cpu','mmd-ram','mmd-disk','mmd-load'].forEach(function(id){
+        const el=document.getElementById(id); if(el) el.textContent='—';
+    });
+    ['mms-cpu','mms-ram','mms-disk'].forEach(function(id){
+        const el=document.getElementById(id); if(el){ el.textContent='—'; el.className='mms-val'; }
+    });
+    ['cpu-bar','ram-bar','disk-bar','mmd-cpu-bar','mmd-ram-bar','mmd-disk-bar'].forEach(function(id){ _setStatBar(id,0); });
+}
+async function loadMetrics(){
+    try{
+        const d=await apiGet('/api/metrics');
+        if(d&&d.muet){ _metriquesMuettes(); return; }
+        const cpu=Math.round(d.cpu||0), ram=Math.round(d.ram||0), disk=Math.round(d.disk||0);
+        const load=(d.load_1m||0)+' '+(d.load_5m||0)+' '+(d.load_15m||0);
+        // Desktop panels
+        document.getElementById('cpu-val').textContent=cpu+'%';  _colorStatVal('cpu-val',cpu);
+        document.getElementById('ram-val').textContent=ram+'%';  _colorStatVal('ram-val',ram);
+        document.getElementById('disk-val').textContent=disk+'%';_colorStatVal('disk-val',disk);
+        _setStatBar('cpu-bar',cpu);_setStatBar('ram-bar',ram);_setStatBar('disk-bar',disk);
+        document.getElementById('load-val').textContent=load;
+        // Mobile strip
+        _setMmsVal('mms-cpu',cpu+'%',cpu);
+        _setMmsVal('mms-ram',ram+'%',ram);
+        _setMmsVal('mms-disk',disk+'%',disk);
+        // Drawer
+        const mmdCpu=document.getElementById('mmd-cpu');
+        if(mmdCpu){mmdCpu.textContent=cpu+'%';_colorStatVal('mmd-cpu',cpu)}
+        const mmdRam=document.getElementById('mmd-ram');
+        if(mmdRam){mmdRam.textContent=ram+'%';_colorStatVal('mmd-ram',ram)}
+        const mmdDisk=document.getElementById('mmd-disk');
+        if(mmdDisk){mmdDisk.textContent=disk+'%';_colorStatVal('mmd-disk',disk)}
+        _setStatBar('mmd-cpu-bar',cpu);_setStatBar('mmd-ram-bar',ram);_setStatBar('mmd-disk-bar',disk);
+        const mmdLoad=document.getElementById('mmd-load');
+        if(mmdLoad) mmdLoad.textContent=load;
+        // Bandeau de constantes du tableau de bord
+        majVitals(cpu, ram, disk);
+        // Charts
+        cpuHistory.push(cpu); ramHistory.push(ram);
+        if(cpuHistory.length>60)cpuHistory.shift();
+        if(ramHistory.length>60)ramHistory.shift();
+        updateCharts();
+    }catch(e){}
+}
+function initCharts(){
+    const ctx=document.getElementById('cpu-chart').getContext('2d');
+    cpuChart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label:'CPU %',data:[],borderColor:'var(--accent)',backgroundColor:'rgba(0,255,204,.06)',fill:true,tension:0.4,pointRadius:0,borderWidth:2},{label:'RAM %',data:[],borderColor:'var(--violet)',backgroundColor:'rgba(124,92,252,.06)',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{beginAtZero:true,max:100,grid:{color:'var(--ov-04)'},ticks:{color:'var(--txt-faint)',font:{size:9}}}}}});
+}
+function updateCharts(){ if(!cpuChart)return; cpuChart.data.labels=cpuHistory.map((_,i)=>i); cpuChart.data.datasets[0].data=cpuHistory; cpuChart.data.datasets[1].data=ramHistory; cpuChart.update('none'); }
+
+async function loadDashboard(){
+    try{
+        const d=await apiGet('/api/dashboard');
+        _applyHealth({score:d.health_score||0, status:d.health_status,
+            sites:d.sites, ssl_expiring:d.ssl_expiring,
+            breakdown:{failed_units:d.failed_units}});
+    }catch(e){}
+}
+async function loadRemotes(){ try{ const d=await apiGet('/api/remotes'); document.getElementById('remotes-list').innerHTML=d.length?d.map(r=>`<div class="remote-item"><span class="remote-name">${escapeHtml(r.name)}</span><span class="remote-type">${escapeHtml(r.type||'?')}</span></div>`).join(''):'<div class="empty-state">Aucun remote</div>'; }catch(e){} }
+async function loadSSLCerts(){ try{ const d=await apiGet('/api/ssl'); const html=d.length?d.slice(0,10).map(c=>{const bc=c.days_left<=7?'badge-crit':c.days_left<=30?'badge-warn':'badge-ok'; return `<div class="info-row"><span class="info-name">${escapeHtml(c.domain)}</span><span class="badge ${bc}">${c.days_left}j</span></div>`;}).join(''):'<div class="empty-state">Aucun certificat</div>'; document.getElementById('ssl-list').innerHTML=html; const ms=document.getElementById('mmd-ssl');if(ms)ms.innerHTML=html; }catch(e){} }
+async function loadTailscale(){ try{ const d=await apiGet('/api/tailscale'); document.getElementById('tailscale-list').innerHTML=d.length?d.map(p=>`<div class="remote-item"><span class="remote-name">${escapeHtml(p.name||'?')}</span><span class="remote-type">${p.online?'🟢':'🔴'}&nbsp;<span style="color:var(--txt-faint);font-size:11px;font-family:'JetBrains Mono',monospace">${escapeHtml(p.tailscale_ip||p.ip||'')}</span></span></div>`).join(''):'<div class="empty-state">Aucun peer</div>'; }catch(e){} }
+async function loadFail2ban(){ try{ const d=await apiGet('/api/fail2ban'); document.getElementById('fail2ban-count').textContent=d.length+' IP bannie'+(d.length>1?'s':''); }catch(e){} }
+async function loadProcesses(){ try{ const d=await apiGet('/api/processes'); if(d.length){ _applyProcesses(d.map(p=>({name:p.command||'?',cpu_pct:p.cpu||0}))); } else { document.getElementById('processes-list').innerHTML='<div class="empty-state">Aucun processus</div>'; } }catch(e){} }
+async function loadSessions(){
+    try{
+        const d=await apiGet('/api/sessions');
+        document.getElementById('sessions-list').innerHTML=d.length
+            ? d.map(s=>`
+                <div class="remote-item session-item">
+                    <span class="remote-name">
+                        ${s.type==='ftp'?'📁':'🔒'} ${escapeHtml(s.user||'?')}
+                    </span>
+                    <span class="remote-type" style="flex:1;font-size:10px;font-family:'JetBrains Mono',monospace">
+                        ${escapeHtml(s.ip||'local')}
+                        ${s.login_time?`<span style="color:var(--txt-ghost);margin-left:4px">${escapeHtml(String(s.login_time).substring(0,16))}</span>`:''}
+                    </span>
+                    <button class="kill-session-btn" title="Déconnecter cette session"
+                        onclick="killSession('${escapeHtml(s.user||'')}','${escapeHtml(s.ip||'')}',this)"
+                        >✕</button>
+                </div>`).join('')
+            : '<div class="empty-state">Aucune session active</div>';
+    }catch(e){}
+}
+
+async function killSession(user, ip, btn){
+    if(!await buConfirmer(`Déconnecter la session de ${user} (${ip}) ?`)) return;
+    btn.disabled=true; btn.textContent='…';
+    try{
+        const r=await fetch('/api/session/kill',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-Session-Token':sessionId},
+            body:JSON.stringify({user,ip,session:sessionId})
+        });
+        const d=await r.json();
+        if(d.success){ btn.closest('.session-item').remove(); addSystemMessage(`Session de <strong>${escapeHtml(user)}</strong> (${escapeHtml(ip)}) déconnectée.`); }
+        else{ btn.disabled=false; btn.textContent='✕'; buDire('Erreur : '+(d.error||'inconnue')); }
+    }catch(e){ btn.disabled=false; btn.textContent='✕'; }
+}
+async function loadPorts(){ try{ const d=await apiGet('/api/ports'); document.getElementById('ports-list').innerHTML=d.length?d.slice(0,15).map(p=>`<div class="remote-item"><span class="remote-name">${p.port}/${escapeHtml(p.protocol||'?')}</span><span class="remote-type">${escapeHtml(p.process||'?')}</span></div>`).join(''):'<div class="empty-state">Aucun port</div>'; }catch(e){} }
+async function loadOOM(){ try{ const d=await apiGet('/api/oom'); document.getElementById('oom-list').innerHTML=d.length?d.slice(0,5).map(o=>`<div class="remote-item"><span class="remote-name">${escapeHtml(o.killed_process||'?')}</span><span class="remote-type critical">${o.memory_used_mb||0}MB</span></div>`).join(''):'<div class="empty-state">Aucun OOM</div>'; }catch(e){} }
+async function clearOOM(){
+    try{ await fetch('/api/oom/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session:sessionId})}); }catch(e){}
+    loadOOM();
+    if(typeof showToast==='function') showToast('💀 OOM acquittés','success',2500);
+}
+async function resetFailedUnits(){
+    try{ await fetch('/api/failed/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session:sessionId})}); }catch(e){}
+    setTimeout(loadFailedUnits, 1200);
+    if(typeof showToast==='function') showToast('⚠️ Unités failed réinitialisées','success',2500);
+}
+async function loadFailedUnits(){
+    try{
+        const d=await apiGet('/api/failed');
+        const html=d.length
+            ? d.slice(0,8).map(f=>`<div class="info-row">
+                <span class="info-name" style="color:#ff4466">${escapeHtml(f.unit||'?')}</span>
+                <span class="badge badge-crit">FAILED</span>
+              </div>`).join('')
+            : '<div class="empty-state">Aucune unité failed ✓</div>';
+        document.getElementById('failed-list').innerHTML=html;
+        const mmdF=document.getElementById('mmd-failed');
+        if(mmdF) mmdF.innerHTML=html;
+    }catch(e){}
+}
+async function loadDocker(){ try{ const d=await apiGet('/api/docker'); document.getElementById('docker-list').innerHTML=d.length?d.slice(0,8).map(c=>`<div class="remote-item"><span class="remote-name">${escapeHtml(c.name||'?')}</span><span class="remote-type">${c.status && c.status.toLowerCase().includes('run')?'🟢':'🔴'}</span></div>`).join(''):'<div class="empty-state">Aucun container</div>'; }catch(e){} }
+
+
+// ─── La santé et les processus ───
+function _applyHealth(h){
+    if(!h) return;
+    const s = h.score ?? 0;
+    const cls = s>=90?'excellent':s>=75?'good':s>=50?'warning':'critical';
+    const color = s>=90?'var(--ok)':s>=75?'var(--accent)':s>=50?'var(--orange)':'var(--red)';
+    // Score text inside ring
+    const el = document.getElementById('health-score');
+    if(el){ el.textContent = s; el.style.color = color; }
+    // la Vue d'ensemble : le compteur « Santé » suit la trame (21-09)
+    try{ const vk=[...document.querySelectorAll('#vu-kpis .mx-kpi')].find(k=>(k.querySelector('span')||{}).textContent==='Santé'); if(vk){ const b=vk.querySelector('b'); if(b){ b.textContent=s; b.className = s<50?'bad':(s<75?'avert':''); } } const sa=document.getElementById('vu-sante-age'); if(sa) sa.textContent='santé · WebSocket'; }catch(e){}
+    // Animate conic ring
+    const ring = document.getElementById('health-ring');
+    if(ring){
+        const deg = Math.round((Math.min(s,100)/100)*360);
+        ring.style.background = `conic-gradient(${color} ${deg}deg, var(--ov-06) ${deg}deg)`;
+    }
+    // Status pill
+    const st = document.getElementById('health-status');
+    if(st){
+        const label = h.status || (s>=90?'Excellent':s>=75?'Bon':s>=50?'Warning':'Critique');
+        st.innerHTML = `<span class="status-pill ${cls}">${label}</span>`;
+    }
+    // Details
+    const dt = document.getElementById('health-details');
+    if(dt){
+        const parts=[];
+        if(h.breakdown?.ssl)          parts.push(`SSL ${h.breakdown.ssl}pts`);
+        if(h.breakdown?.oom)          parts.push(`OOM ${h.breakdown.oom}pts`);
+        if(h.breakdown?.failed_units) parts.push(`Failed ${h.breakdown.failed_units}pts`);
+        // la flotte, toujours dite : un 100 sans détail ne prouvait rien
+        const fl = h.breakdown?.flotte;
+        if(fl){ const p=[]; if((fl.en_ligne||[]).length) p.push(`${fl.en_ligne.length} en ligne`);
+            if((fl.hors_ligne||[]).length) p.push(`${fl.hors_ligne.length} HORS LIGNE (${fl.hors_ligne.join(', ')}) ${fl.malus||0}pts`);
+            if((fl.intermittentes_hors_ligne||[]).length) p.push(`${fl.intermittentes_hors_ligne.length} intermittente(s) absente(s)`);
+            if((fl.retirees||[]).length) p.push(`${fl.retirees.length} retirée(s)`);
+            if(p.length) parts.push('Flotte : '+p.join(', ')); }
+        if(h.breakdown && parts.length) dt.textContent = parts.join(' · ');
+        else if(h.sites !== undefined) dt.textContent = `${h.sites||0} sites · ${h.ssl_expiring||0} SSL`;
+    }
+    // Mobile strip
+    _setMmsVal('mms-health', s+'', s);
+    // Drawer ring clone
+    const mmdRing=document.getElementById('mmd-health-ring');
+    if(mmdRing){
+        const deg=Math.round((Math.min(s,100)/100)*360);
+        mmdRing.style.background=`conic-gradient(${color} ${deg}deg,var(--ov-06) ${deg}deg)`;
+        const sc=document.getElementById('mmd-health-score');
+        if(sc){sc.textContent=s;sc.style.color=color;}
+    }
+    const mmdSt=document.getElementById('mmd-health-status');
+    if(mmdSt){
+        const label=h.status||(s>=90?'Excellent':s>=75?'Bon':s>=50?'Warning':'Critique');
+        mmdSt.innerHTML=`<span class="status-pill ${cls}">${label}</span>`;
+    }
+    const mmdDt=document.getElementById('mmd-health-details');
+    if(mmdDt&&dt) mmdDt.textContent=dt.textContent;
+}
+function _applyProcesses(procs){
+    if(!Array.isArray(procs)) return;
+    const html = procs.slice(0,8).map(p=>{
+        const cpu = parseFloat(p.cpu_pct||p.cpu||0);
+        const color = cpu>50?'var(--red)':cpu>20?'var(--orange)':'var(--accent)';
+        return `<div class="proc-row">
+            <span class="proc-name">${escapeHtml(p.name||p.comm||'?')}</span>
+            <div class="proc-bar-wrap"><div class="proc-bar-fill" style="width:${Math.min(cpu,100)}%;background:${color}"></div></div>
+            <span class="proc-pct" style="color:${color}">${cpu.toFixed(1)}%</span>
+        </div>`;
+    }).join('');
+    const el=document.getElementById('processes-list'); if(el) el.innerHTML=html;
+    const mmd=document.getElementById('mmd-procs');    if(mmd) mmd.innerHTML=html;
+}
+
+// ─── La carte FastPanel ───
+function _fpEtatSommaire(msg, niveau) {
+    const coul = niveau === 'warn' ? 'var(--warn)' : 'var(--danger)';
+    ['fp-side-etat', 'fp-summary-etat'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!msg) { el.style.display = 'none'; el.textContent = ''; return; }
+        el.style.display = '';
+        el.style.color = coul;
+        el.textContent = msg;
+    });
+    if (msg) document.querySelectorAll('#fp-nav .mx-st').forEach(b => {
+        b.title = msg;
+        if (b.textContent === '–') b.textContent = '?';
+    });
+}
+async function fpLoadSummary() {
+    let d;
+    try {
+        d = await apiGet('/api/fp/summary');
+    } catch(e) {
+        _fpEtatSommaire('Résumé indisponible : ' + ((e && e.message) || 'erreur réseau'), 'crit');
+        return;
+    }
+    if (!d || typeof d !== 'object') {
+        _fpEtatSommaire('Résumé indisponible : réponse vide', 'crit');
+        return;
+    }
+    if (d.ok === false) {
+        _fpEtatSommaire('Source injoignable : ' + (d.reason || 'raison inconnue'), 'crit');
+        return;
+    }
+    // Pas d'exception à partir d'ici : un identifiant absent est une faute
+    // d'écran, pas une panne de source. On laisse remonter à la console.
+    _fpEtatSommaire((d.source_erreur && !(_fp2Panneau && _fp2Panneau.nom === 'nu')) ? 'Source partielle : ' + d.source_erreur : '', 'warn');
+    _fp2Lu.summary = Date.now(); fp2Bandeau(d);
+    { const _pp = document.getElementById('fp2-panneau'); if (_pp) { _pp.className = 'fp2-panneau ' + (d.source_erreur ? 'hs' : 'ok'); _pp.title = d.source_erreur || 'résumé lu, base du panneau joignable'; } }
+    // Cartes de synthèse du tiroir « Détails système »
+    const card = document.getElementById('fp-summary-card');
+    if (card) card.style.display = '';
+    const fpTabBtn = document.getElementById('tab-fp-btn');
+    if (fpTabBtn) fpTabBtn.style.display = '';
+    document.getElementById('fps-domains').textContent  = d.domains_count  || 0;
+    document.getElementById('fps-dbs').textContent      = d.databases_count || 0;
+    document.getElementById('fps-mail').textContent     = d.mail_count      || 0;
+    document.getElementById('fps-users').textContent    = d.users_count     || 0;
+    const svcs = d.services_down || 0;
+    const svcEl = document.getElementById('fps-services');
+    svcEl.textContent = svcs === 0 ? '✓ OK' : svcs + ' ↓';
+    svcEl.parentElement.className = 'fp-sc ' + (svcs > 0 ? 'crit' : 'ok');
+    document.getElementById('fps-services-sub').textContent = svcs > 0 ? svcs + ' service(s) down' : 'Tous actifs';
+    const bkFail  = d.backups_failed || 0;
+    const bkTotal = d.backups_count  ?? -1;   // -1 = ancienne version sans ce champ
+    const bkEl    = document.getElementById('fps-backups');
+    const bkSub   = document.getElementById('fps-backups-sub');
+    if (bkTotal === 0) {
+        bkEl.textContent = '–';
+        bkEl.parentElement.className = 'fp-sc';
+        bkSub.textContent = 'Aucun configuré';
+    } else if (bkFail === 0) {
+        bkEl.textContent = '✓ OK';
+        bkEl.parentElement.className = 'fp-sc ok';
+        bkSub.textContent = '';
+    } else {
+        bkEl.textContent = bkFail + ' ✗';
+        bkEl.parentElement.className = 'fp-sc crit';
+        bkSub.textContent = bkFail + ' backup(s) en erreur';
+    }
+    // Badges sidebar
+    document.getElementById('fpbadge-domains').textContent   = d.domains_count  || 0;
+    document.getElementById('fpbadge-users').textContent     = d.users_count    || 0;
+    document.getElementById('fpbadge-databases').textContent = d.databases_count || 0;
+    document.getElementById('fpbadge-mail').textContent      = d.mail_count     || 0;
+    // Les comptes que le résumé porte depuis le 19-09 : un « – » ne disait pas « zéro », il disait « pas lu ».
+    for (const [sec, cle] of [['ftp','ftp_count'],['dns','dns_count'],['crons','crons_count'],['scans','scans_count'],['php','php_count']]) {
+        const b = document.getElementById('fpbadge-' + sec);
+        if (b && d[cle] != null) b.textContent = d[cle];
+    }
+    // Services et backups : mis à jour DANS TOUS LES CAS. Avant, un badge
+    // n'était touché que si > 0 : un service relevé gardait son « 2 ↓ »
+    // rouge jusqu'au rechargement de la page. (2026-09-05)
+    const bs = document.getElementById('fpbadge-services');
+    if (bs) {
+        // « 9/9 » plutôt que « 0 » : le compte des installés vient du résumé depuis le 19-09.
+        if (svcs > 0) { bs.textContent = svcs + ' ↓'; bs.className = 'mx-st off'; }
+        else          { bs.textContent = d.services_count != null ? d.services_count + '/' + d.services_count : '0'; bs.className = 'mx-st'; }
+    }
+    const bb = document.getElementById('fpbadge-backups');
+    if (bb) {
+        if (bkFail > 0) { bb.textContent = bkFail + ' ✗'; bb.className = 'mx-st off'; }
+        else if (bkTotal === 0) { bb.textContent = 'aucune'; bb.className = 'mx-st off'; }
+        else            { bb.textContent = String(bkTotal); bb.className = 'mx-st'; }
+    }
+}
+
+// ─── Le bouton « clé » : poser une question à Cassandra ───
+function sendQuickFix(msg){ switchTab('dashboard'); document.getElementById('chat-input').value = msg; sendMessage(); }
+
+// ─── La feuille de confirmation et le mot posé ───
+function ntFeuille(o){
+    ntFeuilleFermer();
+    const ov=document.createElement('div'); ov.className='nt-ov on'; ov.id='nt-fx';
+    // AU-DESSUS DE LA CLOCHE (10-10) : la feuille s'ouvre depuis le panneau des notifications (z 100000) et
+    // naissait dessous (z 80) — « Résoudre à la main ? » restait invisible, ses boutons cachés.
+    ov.style.zIndex = '100002';
+    ov.addEventListener('click', function(e){ if(e.target===ov) ntFeuilleFermer(); });
+    let h='<div class="nt-sh neutre'+(o.danger?' dgr':'')+'" role="dialog" aria-modal="true" aria-labelledby="nt-fx-t">'+
+      '<div class="nt-shh"><div class="t" id="nt-fx-t">'+escapeHtml(o.titre||'')+'</div>'+
+      (o.sous?'<div class="s">'+escapeHtml(o.sous)+'</div>':'')+'</div><div class="nt-shb">';
+    if(o.prov) h+='<div class="nt-prov"><b>Provenance externe</b>'+escapeHtml(o.prov)+'</div>';
+    if(o.cite) h+='<div class="nt-cite">« '+escapeHtml(o.cite)+' »</div>';
+    if(o.corps) h+='<div class="nt-what">'+escapeHtml(o.corps)+'</div>';
+    if(o.html) h+=o.html;
+    h+='</div><div class="nt-shf">'+(o.pied?'<span class="pied">'+escapeHtml(o.pied)+'</span>':'')+
+      '<div class="bu-sp"></div><button class="btn-x" onclick="ntFeuilleFermer()">'+escapeHtml(o.annuler||'Annuler')+'</button>';
+    (o.boutons||[]).forEach(function(b,i){
+        h+='<button class="btn-x '+(b.cls||'')+'" id="nt-fx-b'+i+'">'+escapeHtml(b.label)+'</button>';
+    });
+    h+='</div></div>';
+    ov.innerHTML=h;
+    document.body.appendChild(ov);
+    // LOT 7 : la feuille sait dire « annulé » — Échap, le fond, « Annuler » — sans quoi une
+    // promesse d'attente ne se résoudrait jamais. Un bouton pressé retire d'abord ce crochet.
+    ov._onAnnuler = (typeof o.onAnnuler === 'function') ? o.onAnnuler : null;
+    (o.boutons||[]).forEach(function(b,i){
+        const el=document.getElementById('nt-fx-b'+i);
+        if(el) el.onclick=function(){ ov._onAnnuler=null; ntFeuilleFermer(); try{ b.onclick(); }catch(e){} };
+    });
+    const f=ov.querySelector('button.btn-x:not(.dgr)'); if(f) f.focus();
+    document.addEventListener('keydown', ntFeuilleEchap);
+}
+function ntFeuilleEchap(e){ if(e.key==='Escape') ntFeuilleFermer(); }
+function ntFeuilleFermer(){
+    const ov=document.getElementById('nt-fx');
+    if(ov){ const a=ov._onAnnuler; ov._onAnnuler=null; ov.remove(); if(a){ try{ a(); }catch(e){} } }
+    document.removeEventListener('keydown', ntFeuilleEchap);
+}
+function buDire(msg, niveau){
+    const m = (msg == null) ? '' : String(msg);
+    const n = niveau || (/erreur|échec|refus|impossible|invalide|introuvable/i.test(m) ? 'warn' : 'info');
+    // Un mot long — plusieurs lignes, ou plus de 160 caractères — ne se lit pas dans un toast :
+    // il va dans la feuille, un seul bouton, « Fermer ».
+    if((m.length > 160 || m.indexOf('\n') >= 0) && typeof ntFeuille === 'function'){
+        const i = m.indexOf('\n');
+        const titre = (i > 0 ? m.slice(0, i) : m).slice(0, 140);
+        const reste = i > 0 ? m.slice(i + 1).replace(/^\n+/, '') : (m.length > 140 ? m : '');
+        try{ ntFeuille({titre: titre, danger: n === 'warn', annuler: 'Fermer',
+                        html: reste ? '<div class="nt-what" style="white-space:pre-wrap">' + escapeHtml(reste) + '</div>' : ''}); return; }catch(e){}
+    }
+    try{ if(typeof toast === 'function') return toast(m, n === 'warn' ? 'warning' : (n === 'ok' ? 'success' : n), 4500); }catch(e){}
+    try{ if(typeof showToast === 'function') return showToast(m, n, 4500); }catch(e){}
+    try{ console.log(m); }catch(e){}
+}
+function buConfirmer(msg, o){
+    o = o || {};
+    return new Promise(function(res){
+        let fini = false;
+        const fin = function(v){ if(fini) return; fini = true; res(v); };
+        const t = String(msg == null ? '' : msg).trim();
+        const i = t.indexOf('\n');
+        const titre = o.titre || (i > 0 ? t.slice(0, i) : t).slice(0, 140);
+        const reste = o.titre ? t : (i > 0 ? t.slice(i + 1).replace(/^\n+/, '') : '');
+        ntFeuille({titre: titre, sous: o.sous || '', danger: !!o.danger,
+                   html: reste ? '<div class="nt-what" style="white-space:pre-wrap">' + escapeHtml(reste) + '</div>' : '',
+                   annuler: o.annuler || 'Annuler', onAnnuler: function(){ fin(false); },
+                   boutons: [{label: o.ok || 'Confirmer', cls: o.danger ? 'dgr' : 'pri', onclick: function(){ fin(true); }}]});
+    });
+}
+
+// ─── Le toast ───
+function toast(message, type, duration){
+    const t = (type === 'err') ? 'error' : (type || 'info');
+    return showToast(message, t, duration || (t === 'error' ? 5000 : 3000));
+}
+function showToast(message, type = 'info', duration = 3000) {
+  let container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), duration);
+}
+
+// ─── Le plein écran d'une carte ───
+let _buPleinDe = null, _buPleinAncre = null;
+
+// Accepte un ÉLÉMENT ou un identifiant : les cartes du fichier n'en ont pas
+// toutes un, et leur en inventer un pour ce seul usage aurait ajouté des
+// centaines d'identifiants dont personne d'autre ne se sert — avec le risque
+// d'en poser deux fois le même.
+function buPlein(carte, titre){
+    if(_buPleinDe){ buPleinFermer(); return; }
+    const c = (typeof carte === 'string')
+        ? document.getElementById(carte) : carte;
+    if(!c) return;
+    // Le titre se DÉDUIT de l'en-tête quand on ne le donne pas : le répéter à
+    // l'appel, sur cent cartes, c'est cent occasions de le laisser diverger
+    // du titre affiché.
+    if(!titre){
+        const t = c.querySelector('.bu-ct, .card-title, .settings-section-title, h3, ' +
+                                  '.mx-chart-h > h2, .mx-rail-h > b');
+        titre = t ? (t.childNodes[0] && t.childNodes[0].nodeValue || t.textContent
+                     || '').trim().slice(0, 60) : '';
+        if(!titre) titre = c.getAttribute('data-pl-titre') || '';
+    }
+    _buPleinDe = c;
+    // Une ancre garde la place exacte : sans elle, on ne saurait pas où
+    // remettre la carte, et elle reviendrait en fin de conteneur.
+    _buPleinAncre = document.createComment('plein-ecran');
+    c.parentNode.insertBefore(_buPleinAncre, c);
+
+    const h = document.createElement('div');
+    h.id = 'bu-pleinecran';
+    // Une section de la grammaire commune garde son style hors de son onglet :
+    // neuf règles (`.mx-app .mx-pill`, `.mx-app .mx-kpi`…) ne vivent que sous
+    // cette classe. Le conteneur la porte, et ses propres règles (identifiant)
+    // l'emportent sur le peu que `.mx-app` fixe.
+    if(c.closest('.mx-app')) h.classList.add('mx-app');
+    h.innerHTML = '<div class="bu-pbar"><span class="ti">' +
+      escapeHtml(titre || '') + '</span><div class="bu-sp"></div>' +
+      '<span class="bu-note" style="border:0;padding:0">Échap pour revenir</span>' +
+      '<button class="btn-x" onclick="buPleinFermer()">✕ Quitter</button></div>' +
+      '<div class="bu-pcorps" id="bu-pcorps"></div>';
+    document.body.appendChild(h);
+    document.getElementById('bu-pcorps').appendChild(c);
+    document.addEventListener('keydown', buPleinEch);
+    // Déplacer un nœud RECHARGE ses iframes (l'aperçu de l'Atelier revenait vide) : on prévient l'élément.
+    try{ c.dispatchEvent(new CustomEvent('pl-deplace', {detail:{plein:true}})); }catch(e){}
+}
+
+function buPleinEch(e){ if(e.key === 'Escape') buPleinFermer(); }
+
+function buPleinFermer(){
+    const h = document.getElementById('bu-pleinecran');
+    const _de = _buPleinDe;
+    if(_buPleinDe && _buPleinAncre && _buPleinAncre.parentNode){
+        _buPleinAncre.parentNode.insertBefore(_buPleinDe, _buPleinAncre);
+        _buPleinAncre.parentNode.removeChild(_buPleinAncre);
+    }
+    if(_de) setTimeout(function(){ try{ _de.dispatchEvent(new CustomEvent('pl-deplace', {detail:{plein:false}})); }catch(e){} }, 0);
+    if(h) h.remove();
+    document.removeEventListener('keydown', buPleinEch);
+    _buPleinDe = null; _buPleinAncre = null;
+}
+
+
+// ─── Les commandes de chaque carte : rétrécir, élargir, plein écran, replier ───
+ETAT.plan._plPlies = null;
+
+function _plLu(){
+    if(ETAT.plan._plPlies) return ETAT.plan._plPlies;
+    try{ ETAT.plan._plPlies = JSON.parse(localStorage.getItem('cass_plies')||'{}'); }
+    catch(e){ ETAT.plan._plPlies = {}; }
+    return ETAT.plan._plPlies;
+}
+function _plEcrire(){
+    try{ localStorage.setItem('cass_plies', JSON.stringify(_plLu())); }catch(e){}
+}
+// La clé survit au redessin : ni identifiant ni position, mais le titre de la
+// carte, préfixé de son onglet — deux cartes homonymes dans deux onglets
+// restent distinctes.
+// Les trois formes d'en-tête employées dans l'application. Un seul endroit
+// décide : ailleurs, on demande `_plTete(carte)`.
+// Les quatre formes d'en-tête employées dans l'application. `.settings-section-title`
+// rejoint la liste : les sections des paramètres étaient les seules bulles sans
+// commandes, et leur titre en est un comme un autre.
+const PL_TETES = ':scope > .bu-ct, :scope > .card-title, :scope > h3, ' +
+                 ':scope > .settings-section-title, :scope > .rd-h, ' +
+                 ':scope > .mx-chart-h, :scope > .mx-rail-h, :scope > section > .mx-chart-h';
+// Ce que le moteur équipe. Une `.settings-section` n'est pas une `.card` — lui
+// coller la classe appliquerait tout le style de l'une par-dessus l'autre.
+// Grammaire commune (20-09) : les sections de la colonne et le rail sont des
+// bulles aussi. Pas les fiches ni les feuilles, qui vivent hors de `.mx-main`.
+// 24-09 : les CARTES de Réglages aussi (`.settings-section`) — seules leurs cartes intérieures avaient la barre.
+const PL_BULLES = '.card, .mx-app .mx-main .mx-sec, .mx-app .settings-corps .mx-sec, ' +
+                  '.mx-app .settings-corps .settings-section, .mx-app .mx-body > .mx-rail:not(.pl-sans)';
+function _plTete(carte){
+    // Une carte peut DÉCLARER un en-tête qui n'est pas dedans. Le chat d'Itare
+    // a sa rangée de réglages au-dessus du bloc, à dessein : lui ajouter un
+    // bandeau à lui reprendrait la hauteur qu'on cherche justement à gagner.
+    const d = carte.getAttribute('data-pl-tete');
+    if(d){
+        // DANS la carte d'abord : c'est le cas courant — une barre d'outils qui
+        // n'est ni `.bu-ct`, ni `.card-title`, ni un `<h3>`, et qui n'a donc
+        // jamais reçu de commandes.
+        let t = carte.querySelector(d);
+        if(t){ carte.classList.remove('pl-hors'); return t; }
+        // Sinon chez le parent : l'en-tête est dehors, comme la rangée de
+        // réglages du chat d'Itare. Le moteur le MARQUE, au lieu de laisser le
+        // CSS le déduire de la seule présence de l'attribut.
+        const p = carte.parentElement;
+        t = p ? p.querySelector(d) : null;
+        carte.classList.toggle('pl-hors', !!t);
+        return t;
+    }
+    return carte.querySelector(PL_TETES);
+}
+
+function _plCle(carte){
+    const t = _plTete(carte);
+    if(!t) return '';
+    // Une clé déclarée l'emporte sur le titre lu. Nécessaire dès que l'en-tête
+    // affiche une valeur qui bouge : celui du chat porte le nom du modèle, donc
+    // la clé aurait changé à chaque changement de modèle — l'état écrit sous un
+    // nom, relu sous un autre, et la carte se rouvrant toute seule.
+    const fixe = carte.getAttribute('data-pl-cle');
+    if(fixe) return _plOnglet(carte) + '|' + fixe;
+    // Grammaire commune : l'en-tête d'une section porte souvent un compte qui
+    // bouge (« Opérations 12 · lu à 04:12 ») — la clé se prend sur l'identifiant
+    // de la section, sinon sur son titre sans ses chiffres ; le rail a la sienne.
+    if(carte.matches('.mx-rail')) return _plOnglet(carte) + '|rail';
+    if(carte.matches('.mx-sec')){
+        if(carte.id) return _plOnglet(carte) + '|#' + carte.id;
+        const h2 = t.querySelector(':scope > h2');
+        let titre = (h2 ? h2.textContent : '').replace(/\d+/g, '')
+                    .replace(/\s+/g, ' ').trim().slice(0, 60);
+        if(!titre && t.classList.contains('pl-synth')) titre = _plSuite(carte).slice(0, 60);
+        if(titre) return _plOnglet(carte) + '|' + titre.toLowerCase();
+    }
+    // Le texte de l'en-tête SANS les commandes. Le chevron en fait partie et
+    // change quand on replie : la clé changeait avec lui, l'état était écrit
+    // sous un nom et relu sous un autre, et la carte se rouvrait aussitôt.
+    let nom = '';
+    t.childNodes.forEach(function(n){
+        if(n.nodeType === 1 && (n.classList.contains('pl-b') ||
+                                n.classList.contains('pl-cmd'))) return;
+        nom += (n.textContent || '');
+    });
+    nom = nom.replace(/\s+/g,' ').trim().slice(0,60);
+    if(!nom) return '';
+    return _plOnglet(carte) + '|' + nom.toLowerCase();
+}
+// Deux cartes homonymes dans deux onglets restent distinctes.
+function _plOnglet(carte){
+    const o = carte.closest('.tab-content, .bu-view, .it-vue');
+    // Un onglet à pages (Mémoire) marque sa colonne `data-pl-page` : la clé
+    // d'une section y est propre à la page, deux pages ne se replient pas
+    // l'une l'autre.
+    const p = carte.closest('[data-pl-page]');
+    return ((o && o.id) ? o.id : '') + ((p && p.dataset.plPage) ? '/' + p.dataset.plPage : '');
+}
+// Une section sans en-tête se nomme d'après ce qui la précède : l'aria-label
+// qu'elle déclare, sinon le dernier titre h2 avant elle dans la colonne
+// (« Souvenirs actifs · suite »), sinon son rang parmi les sections.
+function _plSuite(carte){
+    const al = carte.getAttribute('aria-label'); if(al) return al;
+    const main = carte.closest('.mx-main, .settings-corps') || carte.parentElement;
+    const h2s = main ? main.querySelectorAll('h2') : [];
+    let prev = null;
+    for(let i=0;i<h2s.length;i++){
+        if(h2s[i].compareDocumentPosition(carte) & Node.DOCUMENT_POSITION_FOLLOWING) prev = h2s[i];
+        else break;
+    }
+    if(prev) return prev.textContent.replace(/\d+/g, '').replace(/\s+/g, ' ').trim() + ' · suite';
+    const secs = main ? Array.prototype.slice.call(main.querySelectorAll('.mx-sec')) : [carte];
+    return '#' + secs.indexOf(carte);
+}
+// La largeur d'une carte : 1 (normale), 2 ou 3 fois la place. Élargir l'une
+// rétrécit les autres — c'est ce qu'on veut quand trois cartes se partagent une
+// rangée et qu'une seule mérite la place.
+function _plLargeur(carte, sens){
+    const k = _plCle(carte); if(!k) return;
+    const p = _plLu();
+    const cur = parseInt((p['l:' + k] || 1), 10) || 1;
+    const max = _plMax(carte);
+    let n = cur + (sens > 0 ? 1 : -1);
+    if(n < 1) n = 1;
+    if(n > max) n = max;
+    if(n === 1) delete p['l:' + k]; else p['l:' + k] = n;
+    _plEcrire();
+    _plAppliquer(carte);
+}
+// Trois crans par défaut. Une carte dont l'élargissement n'a que deux états
+// utiles le dit : afficher « ×3 » sans que rien ne bouge serait un mensonge.
+function _plMax(carte){
+    // Grammaire commune : une section empilée dans la colonne n'a pas de voisine
+    // à qui prendre la place — pas de largeur du tout ; dans une grille à deux
+    // colonnes, ×2 = toute la rangée ; le rail a deux crans.
+    if(carte.matches('.mx-sec')){
+        const p = carte.parentElement;
+        return (p && p.matches('.mx-grid2, .ev-grid2')) ? 2 : 1;
+    }
+    // Les cartes de Réglages s'empilent dans une colonne : pas de voisine, pas de largeur (⤢ ▾ seuls).
+    if(carte.matches('.settings-section')) return 1;
+    if(carte.matches('.mx-rail')) return 2;
+    const m = parseInt(carte.getAttribute('data-pl-max') || 3, 10);
+    return (m >= 1 && m <= 3) ? m : 3;
+}
+function _plBasculer(carte){
+    const k = _plCle(carte); if(!k) return;
+    const p = _plLu();
+    if(carte.classList.contains('pl-plie')){ delete p[k]; }
+    else { p[k] = 1; }
+    _plEcrire();
+    _plAppliquer(carte);
+}
+function _plAppliquer(carte){
+    const k = _plCle(carte); if(!k) return;
+    const p = _plLu();
+    const plie = !!p[k];
+    const lg = parseInt((p['l:' + k] || 1), 10) || 1;
+    carte.classList.toggle('pl-plie', plie);
+    if(lg > 1) carte.setAttribute('data-pl-l', String(lg));
+    else carte.removeAttribute('data-pl-l');
+    // La largeur ne s'applique pas toujours à la carte : quand elle n'est pas
+    // elle-même l'élément de disposition, elle désigne celui qui l'est. C'est
+    // le cas du chat, logé dans une colonne qui est, elle, dans la grille.
+    const plan = carte.getAttribute('data-pl-plan');
+    if(plan){
+        const cible = carte.closest(plan);
+        if(cible){
+            if(lg > 1) cible.setAttribute('data-pl-l', String(lg));
+            else cible.removeAttribute('data-pl-l');
+        }
+    }
+    // Les boutons se cherchent DANS l'en-tête, où qu'il soit — il peut être
+    // hors de la carte.
+    const t = _plTete(carte);
+    if(!t) return;
+    const b = t.querySelector(':scope > .pl-b');
+    if(b){
+        { const v = plie ? '▸' : '▾'; if(b.textContent !== v) b.textContent = v; }     // ne réécrire que ce qui change : chaque écriture relançait l'observateur, donc ce moteur tournait sans fin
+        b.setAttribute('aria-expanded', String(!plie));
+        b.title = plie ? 'Déplier cette carte' : 'Replier cette carte';
+    }
+    const m = t.querySelector(':scope > .pl-cmd > .pl-n');
+    if(m && m.textContent !== '×' + lg) m.textContent = '×' + lg;
+    const mo = t.querySelector(':scope > .pl-cmd > [data-pl="-"]');
+    if(mo) mo.disabled = (lg <= 1);
+    const pl = t.querySelector(':scope > .pl-cmd > [data-pl="+"]');
+    if(pl) pl.disabled = (lg >= _plMax(carte));
+    // Sans largeur possible, les trois commandes de largeur ne s'affichent pas :
+    // « − ×1 + » grisé en permanence serait une promesse jamais tenue.
+    const sansLargeur = (_plMax(carte) <= 1);
+    if(m) m.hidden = sansLargeur;
+    if(mo) mo.hidden = sansLargeur;
+    if(pl) pl.hidden = sansLargeur;
+    // Le rail replié ne montre de chaque entrée que sa pastille : son nom passe
+    // en infobulle. Posé à chaque application, donc aussi après un redessin.
+    if(carte.matches('.mx-rail')){
+        carte.querySelectorAll('.mx-item').forEach(function(b){
+            if(!b.title){ const nm = b.querySelector('.nm'); if(nm) b.title = nm.textContent.trim(); }
+        });
+    }
+}
+// Poser le bouton sur les cartes qui n'en ont pas encore. Appelé après chaque
+// changement du DOM : c'est le seul moyen de suivre des écrans qui se
+// reconstruisent entièrement.
+function _plPoser(racine){
+    const cartes = (racine||document).querySelectorAll(PL_BULLES);
+    for(let i=0;i<cartes.length;i++){
+        const c = cartes[i];
+        let t = _plTete(c);
+        // Grammaire commune : une section sans en-tête (la liste, le verdict,
+        // les compteurs) reçoit une tête minimale qui ne porte que les
+        // commandes. Elle se nomme d'après ce qui la précède, pour le titre de
+        // son plein écran.
+        if(!t && c.matches('.mx-sec')){
+            t = document.createElement('div');
+            t.className = 'mx-chart-h pl-synth';
+            c.insertBefore(t, c.firstChild);
+            c.setAttribute('data-pl-titre', _plSuite(c));
+        }
+        if(!t) continue;                       // sans en-tête, rien où poser
+        // Grammaire commune : l'en-tête peut être un cran plus bas (la courbe
+        // d'Historique). Son porteur est marqué : le repli l'épargne, et n'efface
+        // que ses voisins et le reste de la section.
+        if(c.matches('.mx-sec') && t.parentElement !== c) t.parentElement.classList.add('pl-porte');
+        // La marque sert au repli : « tout sauf l'en-tête » ne peut pas
+        // s'écrire `:not(h3)`, qui épargnerait aussi les titres du CORPS.
+        t.classList.add('pl-tete');
+        if(!t.querySelector('.pl-b')){
+            // `.bu-sp` pousse déjà à droite dans plusieurs en-têtes : on n'en
+            // ajoute un que s'il n'y en a pas, sinon deux espaceurs se battent.
+            if(!t.querySelector('.bu-sp')){
+                const sp = document.createElement('div');
+                sp.className = 'bu-sp';
+                // Grammaire commune : le titre à gauche, le reste de l'en-tête
+                // (compte, gestes) à droite contre les commandes — l'espaceur se
+                // glisse juste après le titre.
+                const h2 = t.matches('.mx-chart-h') ? t.querySelector(':scope > h2') : null;
+                if(h2 && h2.nextSibling) t.insertBefore(sp, h2.nextSibling);
+                else t.appendChild(sp);
+            }
+            // Les commandes de largeur d'abord, le repli en dernier : la
+            // main va au chevron, qui reste au même endroit sur toutes les
+            // cartes.
+            const g = document.createElement('span');
+            g.className = 'pl-cmd';
+            const moins = document.createElement('button');
+            moins.type = 'button'; moins.textContent = '−';
+            moins.setAttribute('data-pl', '-');
+            moins.title = 'Rétrécir cette carte — les voisines gagnent la place';
+            moins.onclick = function(e){ e.stopPropagation(); _plLargeur(c, -1); };
+            const nb = document.createElement('span');
+            nb.className = 'pl-n';
+            const plus = document.createElement('button');
+            plus.type = 'button'; plus.textContent = '+';
+            plus.setAttribute('data-pl', '+');
+            plus.title = 'Élargir cette carte — les voisines se resserrent';
+            plus.onclick = function(e){ e.stopPropagation(); _plLargeur(c, 1); };
+            // Le plein écran, à côté de `+` et `−`. Ils ne répondent pas au
+            // même besoin : `+` fait de la place AUX DÉPENS des voisines, le
+            // plein écran efface tout le reste — y compris le rail et les
+            // menus. Poser ce bouton écran par écran aurait demandé de le
+            // faire cent fois et d'en oublier ; ici, toutes les bulles
+            // l'ont, celles d'aujourd'hui comme celles qu'on écrira demain.
+            const gr = document.createElement('button');
+            gr.type = 'button';
+            gr.setAttribute('data-pl', 'plein');
+            gr.className = 'pl-plein';
+            gr.innerHTML = '&#10530;';
+            gr.title = 'Plein écran — Échap pour revenir';
+            gr.setAttribute('aria-label', gr.title);
+            gr.onclick = function(e){ e.stopPropagation(); buPlein(c); };
+            g.appendChild(moins); g.appendChild(nb); g.appendChild(plus);
+            g.appendChild(gr);
+            t.appendChild(g);
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'pl-b';
+            b.onclick = function(e){ e.stopPropagation(); _plBasculer(c); };
+            t.appendChild(b);
+        }
+        _plAppliquer(c);
+    }
+}
+(function(){
+    let attente = null;
+    const relancer = function(){
+        if(attente) clearTimeout(attente);
+        // Groupé : un écran qui se redessine déclenche des dizaines de
+        // mutations, et reposer les boutons à chacune coûterait cher.
+        attente = setTimeout(function(){ try{ _plPoser(document); }catch(e){} }, 60);
+    };
+    if(document.readyState !== 'loading') relancer();
+    else document.addEventListener('DOMContentLoaded', relancer);
+    try{
+        new MutationObserver(relancer).observe(document.documentElement,
+                                               {childList:true, subtree:true});
+    }catch(e){}
+})();
+
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════
+//  ÉCHAFAUDAGE (2/2) — la boîte de la maquette, et le démarrage que l'application fait ailleurs.
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════
+function mqTheme() {
+  const r = document.documentElement, sombre = r.getAttribute("data-theme") !== "dark";
+  r.setAttribute("data-theme", sombre ? "dark" : "light");
+  document.getElementById("mq-theme").textContent = sombre ? "Thème clair" : "Thème sombre";
+}
+function mqJeu(nom) {
+  MQ.jeu = nom; cpuHistory.length = 0; ramHistory.length = 0;
+  document.getElementById("fp-summary-card").style.display = "none";          // comme au chargement de l'application : la carte ne paraît que si le résumé se lit
+  mqDire("Jeu de données : " + document.querySelector('#mq-jeu option[value="' + nom + '"]').textContent + ".");
+  _sysCharger();
+}
+// L'état de départ peut se dire dans l'adresse, pour montrer un cas précis : #jeu=plein&theme=dark&defile=600&boite=1
+const mqDepart = new URLSearchParams(location.hash.slice(1));
+if (MQ.jeux[mqDepart.get("jeu")]) { MQ.jeu = mqDepart.get("jeu"); document.getElementById("mq-jeu").value = MQ.jeu; }
+if (mqDepart.get("theme") === "dark") mqTheme();
+if (mqDepart.get("boite")) document.getElementById("mq-boite").classList.remove("plie");
+if (mqDepart.get("defile")) setTimeout(function () { document.querySelector("#sys-drawer .sys-drawer-body").scrollTop = +mqDepart.get("defile"); }, 1500);
+initCharts();                // l'application le fait à son démarrage
+ouvrirSysteme();             // ce que font l'entrée « Détails système » du menu et le bouton de la vue d'ensemble
+</script>
+</body>
+</html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

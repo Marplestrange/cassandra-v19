@@ -1,0 +1,1031 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Maquette : Panorama, La machine (refonte de « Détails système ») -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : la refonte proposée du tiroir « Détails système » : une vraie page « La machine » à cinq sous-entrées, à valider avant tout code. -->
+<!-- MÉTHODE    : un seul fichier autonome, données fictives calquées sur Argos, quatre états de la machine ; la page « Ancienne page → nouvelle » prouve que rien n'est perdu. -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=a28cf7 ▼▼▼ -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — La machine (refonte de « Détails système »)</title>
+<!--
+  REFONTE DE « DÉTAILS SYSTÈME ». La page d'aujourd'hui est clonée à l'identique dans CN_maquette-systeme-actuelle.html : tout ce qu'elle montre et fait
+  se retrouve ici (page « Ancienne page → nouvelle », en bas du menu).
+  Le tiroir de treize cartes devient une vraie page du Panorama, « La machine » : tout s'y voit d'un coup d'œil, une tuile par sujet, comme avant ;
+  le détail d'un sujet ne s'ouvre qu'au clic sur sa tuile (deuxième version, à la demande d'Atek : la première découpait la page en cinq sous-entrées du menu).
+  Ce qu'un autre module fait déjà (ports, bannissements, certificats, Tailscale, NetBird, hébergement, dépôts distants) garde sa tuile et son chiffre, et s'ouvre chez lui.
+  Ces tuiles ne sont pas écrites en dur : une découverte automatique les fait paraître selon ce que la machine porte (bouton « Découverte »). Presque tout ce qui est « nouveau » vient de relevés que le Sensorium tient déjà (sensorium.etat) : rien à recoder côté collecteur.
+  Données fictives, calquées sur les états d'Argos du 11-11-2026. Aucun geste n'écrit.
+-->
+<style>
+:root{
+  --bg:#eef1f5; --bg2:#e9edf3; --surface:rgba(255,255,255,.72); --surface2:rgba(255,255,255,.5); --solid:#fff;
+  --line:rgba(16,24,40,.09); --line2:rgba(16,24,40,.16);
+  --strong:#101828; --txt:#2b3646; --soft:#5a6675; --muted:#667080;
+  --accent:#0a726b; --accent2:#0f9b90; --acc10:rgba(11,124,116,.10); --acc20:rgba(11,124,116,.20); --violet:#6d3fd1;
+  --ok:#047857; --warn:#b45309; --danger:#be123c; --info:#0369a1;
+  --ok10:rgba(4,120,87,.10); --warn10:rgba(180,83,9,.11); --dan10:rgba(190,18,60,.09); --inf10:rgba(3,105,161,.10);
+  --shadow:0 6px 24px rgba(16,24,40,.07),0 1px 2px rgba(16,24,40,.05); --lift:0 14px 40px rgba(16,24,40,.14),0 2px 6px rgba(16,24,40,.06);
+  --r:16px; --barre:linear-gradient(135deg,#0a726b,#0f9b90);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0e1417; --bg2:#111a1e; --surface:rgba(28,38,44,.78); --surface2:rgba(28,38,44,.5); --solid:#182228;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.17);
+  --strong:#f1f5f7; --txt:#d3dbe0; --soft:#a6b2ba; --muted:#93a0a9;
+  --accent:#3fc7ba; --accent2:#2aa99d; --acc10:rgba(63,199,186,.12); --acc20:rgba(63,199,186,.22); --violet:#a78bfa;
+  --ok:#34d399; --warn:#f0a94a; --danger:#fb7185; --info:#5cb8e6;
+  --ok10:rgba(52,211,153,.12); --warn10:rgba(240,169,74,.13); --dan10:rgba(251,113,133,.13); --inf10:rgba(92,184,230,.12);
+  --shadow:0 6px 24px rgba(0,0,0,.3); --lift:0 14px 40px rgba(0,0,0,.5); --barre:linear-gradient(135deg,#0b4f4a,#0d6b63);
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1417; --bg2:#111a1e; --surface:rgba(28,38,44,.78); --surface2:rgba(28,38,44,.5); --solid:#182228;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.17);
+  --strong:#f1f5f7; --txt:#d3dbe0; --soft:#a6b2ba; --muted:#93a0a9;
+  --accent:#3fc7ba; --accent2:#2aa99d; --acc10:rgba(63,199,186,.12); --acc20:rgba(63,199,186,.22); --violet:#a78bfa;
+  --ok:#34d399; --warn:#f0a94a; --danger:#fb7185; --info:#5cb8e6;
+  --ok10:rgba(52,211,153,.12); --warn10:rgba(240,169,74,.13); --dan10:rgba(251,113,133,.13); --inf10:rgba(92,184,230,.12);
+  --shadow:0 6px 24px rgba(0,0,0,.3); --lift:0 14px 40px rgba(0,0,0,.5); --barre:linear-gradient(135deg,#0b4f4a,#0d6b63);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:linear-gradient(160deg,var(--bg2),var(--bg) 40%,var(--bg2));background-attachment:fixed;color:var(--txt);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+.mono,code,.num{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+code{font-size:.92em;color:var(--strong)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+svg.i{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* barre de la maquette */
+.haut{background:var(--barre);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px;position:sticky;top:0;z-index:30;flex-wrap:wrap}
+.haut b{font-weight:650}
+.haut .note{font-size:12.5px;opacity:.9;margin:0 auto 0 0;color:#fff}
+.haut button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:10px;padding:6px 11px;font-size:13px}
+.haut button[aria-pressed="true"]{background:#fff;color:#0a726b}
+.seg{display:inline-flex;gap:2px;background:rgba(255,255,255,.12);padding:3px;border-radius:12px}
+.seg button{border:0;background:transparent}
+/* disposition */
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);gap:18px;max-width:1380px;margin:0 auto;padding:18px 16px 60px}
+@media (max-width:900px){.app{grid-template-columns:1fr}.menu{position:static!important;max-height:none!important}}
+.carte{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+/* menu de gauche */
+.menu{position:sticky;top:66px;align-self:start;padding:8px;max-height:calc(100vh - 84px);overflow:auto}
+.menu h2{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin:10px 12px 6px;font-weight:650}
+.mi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;border-radius:12px;padding:8px 12px;color:var(--txt);position:relative}
+.mi:hover{background:var(--acc10)}
+.mi svg.i{opacity:.75}
+.mi .chev{margin-left:auto;color:var(--muted);transition:transform .2s;font-size:12px}
+.mi[aria-expanded="true"]{font-weight:650;color:var(--strong)}
+.mi[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.mi.inerte{color:var(--muted)}
+.sous{margin:2px 0 6px 21px;padding-left:8px;border-left:2px solid var(--acc20);display:grid;gap:1px}
+.sous .mi{padding:6px 10px;font-size:14px}
+.sous .sous{margin-left:14px}
+.sous .sous .mi{font-size:13.5px}
+.mi[aria-current="page"]{background:var(--solid);box-shadow:var(--shadow);color:var(--accent);font-weight:650}
+.bad{margin-left:auto;white-space:nowrap;font-size:11.5px;border-radius:999px;padding:1px 8px;background:var(--line);color:var(--soft);font-weight:600}
+.bad.w{background:var(--warn10);color:var(--warn)}.bad.d{background:var(--dan10);color:var(--danger)}.bad.ok{background:var(--ok10);color:var(--ok)}
+.legende{margin:12px 6px 4px;padding:10px 6px 6px;border-top:1px solid var(--line);font-size:12px;color:var(--soft);display:grid;gap:6px}
+.de,.neuf,.ac{font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-radius:6px;padding:1px 5px;margin-left:6px;font-weight:650;white-space:nowrap;vertical-align:1px}
+.de{background:var(--inf10);color:var(--info)}.neuf{background:var(--acc10);color:var(--accent)}.ac{background:var(--warn10);color:var(--warn)}
+.legende .de,.legende .neuf,.legende .ac{margin-left:0;margin-right:6px}
+/* page */
+.fil{font-size:13px;color:var(--muted);margin:2px 0 6px}
+h1{font-size:26px;margin:0 0 4px;color:var(--strong);letter-spacing:-.2px}
+.tete{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.tete .meta{font-size:13px;color:var(--muted);margin-right:auto;flex:1 1 320px}
+.btn{background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:7px 13px;font-size:14px;color:var(--strong);display:inline-flex;align-items:center;gap:7px}
+.btn:hover{border-color:var(--accent)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.p{color:#06231f}
+.btn.d{color:var(--danger);border-color:var(--dan10)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.s{padding:4px 10px;font-size:13px}
+.sec{padding:16px 18px;margin-bottom:16px}
+.sec h2{font-size:16px;margin:0;color:var(--strong)}
+.sh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sh .meta{font-size:12.5px;color:var(--muted)}
+.sh .dr{margin-left:auto;display:flex;gap:6px;align-items:center}
+.cmd{background:transparent;border:0;color:var(--muted);border-radius:8px;padding:2px 7px;font-size:14px}
+.cmd:hover{background:var(--acc10);color:var(--strong)}
+.sec.plie>:not(.sh){display:none}.sec.plie .sh{margin-bottom:0}
+.sec.plein{position:fixed;inset:14px;z-index:50;overflow:auto;margin:0;background:var(--solid)}
+.age{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.age::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.age.mu::before{background:var(--danger)}.age.mu{color:var(--danger)}
+/* verdict */
+.verdict{display:flex;gap:14px;align-items:stretch}
+.vm{width:5px;border-radius:4px;background:var(--ok);flex:none}.vm.w{background:var(--warn)}.vm.d{background:var(--danger)}.vm.n{background:var(--line2)}
+.verdict p{margin:0}.vt{font-size:19px;font-weight:700;color:var(--strong)}.vs{color:var(--soft);font-size:14px;margin-top:2px!important}
+.gestes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+/* jauges */
+.jauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.jg{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:11px 13px}
+.jg span{display:block;font-size:12.5px;color:var(--muted)}
+.jg b{display:block;font:650 24px/1.2 "JetBrains Mono",ui-monospace,monospace;color:var(--strong)}
+.jg b.w{color:var(--warn)}.jg b.d{color:var(--danger)}.jg b.mu{color:var(--muted)}
+.jg em{display:block;font-style:normal;font-size:12.5px;color:var(--soft)}
+.barre{height:5px;border-radius:3px;background:var(--line);margin:7px 0 4px;overflow:hidden}
+.barre i{display:block;height:100%;border-radius:3px;background:var(--accent);transition:width .6s}
+.barre i.w{background:var(--warn)}.barre i.d{background:var(--danger)}
+.courbe{width:100%;height:150px;display:block}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
+.leg i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}
+/* pastilles, lignes, paires */
+.pl{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:999px;padding:2px 9px;background:var(--line);color:var(--soft);white-space:nowrap}
+.pl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pl.ok{background:var(--ok10);color:var(--ok)}.pl.w{background:var(--warn10);color:var(--warn)}.pl.d{background:var(--dan10);color:var(--danger)}.pl.i{background:var(--inf10);color:var(--info)}
+.rows{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.2fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:9px 13px}
+.row .nm{min-width:0}.row .nm b{display:block;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}
+.row .nm small{color:var(--muted);font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .mil{font-size:13px;color:var(--soft);min-width:0;display:flex;align-items:center;gap:8px}
+.row .cote{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:760px){.row{grid-template-columns:1fr}.row .cote{justify-content:flex-start}}
+.paires{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2px 26px;margin:0}
+.paires div{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px;align-items:baseline}
+.paires dt{color:var(--muted);flex:0 0 118px;font-size:13px}.paires dd{margin:0;color:var(--strong);min-width:0}
+.paires dd small{display:block;color:var(--soft);font-size:12.5px}
+.vide{color:var(--muted);font-size:14px;padding:6px 0}
+.muet{background:var(--dan10);border:1px solid var(--line);border-radius:13px;padding:11px 14px;font-size:14px;color:var(--strong)}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px}
+input[type=search]{font:inherit;color:var(--strong);background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:6px 11px;min-width:0;width:220px}
+.pbar{flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden;min-width:60px}
+.pbar i{display:block;height:100%;background:var(--accent)}.pbar i.w{background:var(--warn)}.pbar i.d{background:var(--danger)}
+/* ce qui vit ailleurs */
+.tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px}
+.tuile{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:13px 14px;display:flex;flex-direction:column;gap:6px}
+.tuile .t{display:flex;align-items:center;gap:8px;color:var(--strong);font-weight:650}
+.tuile .t small{margin-left:auto;font-weight:500;color:var(--muted);font-size:12px}
+.tuile p{margin:0;font-size:14px;color:var(--soft)}
+.tuile .gestes{margin-top:auto;padding-top:6px}
+.puces{display:flex;gap:6px;flex-wrap:wrap}
+.puce{background:var(--solid);border:1px solid var(--line2);border-radius:10px;padding:3px 9px;font-size:12.5px;color:var(--strong)}
+.puce:hover{border-color:var(--accent)}
+/* la page d'ensemble : une tuile par sujet */
+.bandeau-v{padding:14px 18px;margin-bottom:6px}
+.bandeau-v .vt{font-size:18px}
+.note-sante{text-align:right;min-width:150px;cursor:help}
+.note-sante span,.note-sante em{display:block;font-size:12.5px;color:var(--muted);font-style:normal}
+.note-sante b{display:block;font-size:28px;line-height:1.1}.note-sante b small{font-size:13px;color:var(--muted)}
+.gt{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin:14px 4px 8px;font-weight:650;display:flex;align-items:center;gap:8px;min-height:26px}
+.gt .btn{margin-left:auto;text-transform:none;letter-spacing:0}
+.gt span{text-transform:none;letter-spacing:0;font-weight:500}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:10px}
+.tu{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 13px 10px;display:flex;flex-direction:column;gap:5px;cursor:pointer;box-shadow:var(--shadow);min-height:158px;min-width:0}
+.tu:hover{border-color:var(--accent);background:var(--solid)}
+.tu.ext{background:var(--surface2);box-shadow:none}
+.tu.mu>:not(.tt):not(.tp){opacity:.42;filter:grayscale(1)}
+.tu .tt{display:flex;align-items:center;gap:8px;color:var(--strong);font-size:14px;margin-bottom:2px}
+.tu .tt b{font-weight:650}.tu .tt .pl{margin-left:auto}
+.tu .gr{font:650 25px/1.1 "JetBrains Mono",ui-monospace,monospace;color:var(--strong)}
+.tu .gr.w{color:var(--warn)}.tu .gr.d{color:var(--danger)}.tu .gr.mu{color:var(--muted)}
+.tu .cc{display:flex;flex-direction:column;gap:5px}
+.tu .li{font-size:12.5px;color:var(--soft);display:flex;gap:8px;align-items:center;min-width:0}
+.tu .li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tu .li small{color:var(--muted)}
+.tu .li b{color:var(--strong);font-weight:600;font-size:12px;white-space:nowrap}
+.tu .mb{display:grid;grid-template-columns:74px 1fr 42px;gap:8px;align-items:center;font-size:12.5px;color:var(--soft)}
+.tu .mb b{text-align:right;font-size:12px}
+.tu .tp{margin-top:auto;padding-top:5px;font-size:12px;font-weight:600;color:var(--accent)}
+.tu.ext .tp{color:var(--muted)}
+.tu .puces{margin-top:2px}.tu .puce{padding:2px 7px;font-size:12px}
+.tu .btn.s{padding:2px 8px;font-size:12px}
+.grille.v{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
+.grille.v .tu{min-height:124px;padding:10px 10px 8px}
+.grille.v .tu .gr{font-size:21px}
+.grille.v .tu .tt{font-size:13px;flex-wrap:wrap;gap:6px}
+.grille.v .tu .tt svg.i{width:15px;height:15px}
+.grille.v .tu .tt .pl{font-size:11px;padding:1px 7px}
+.grille.v .tu .li{flex-wrap:wrap}
+.grille.v .tu .li .n{white-space:normal}
+/* la fiche de la machine : des blocs deux par deux */
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:16px;margin-bottom:16px;align-items:start}
+@media (max-width:560px){.duo{grid-template-columns:1fr}}
+.duo .paires.un dt{flex-basis:118px}
+/* l'appel à Cassandra, les filtres, le plan, la mémoire */
+.cass{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--acc10);border:1px solid var(--acc20);border-radius:12px;padding:4px 8px 4px 10px;font-size:13px;color:var(--accent)}
+.cass b{font-weight:650;margin-right:2px}.cass .puce{font-size:12.5px;padding:3px 9px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{background:transparent;border:1px solid var(--line2);border-radius:999px;padding:3px 11px;font-size:13px;color:var(--soft)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#06231f}
+.feuille h4{margin:14px 0 6px;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:650}
+.coche{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--txt);padding:4px 0}
+.coche input{accent-color:var(--accent);width:16px;height:16px}
+.plan{margin:0 0 12px;padding-left:22px;font-size:14px;color:var(--strong);display:grid;gap:6px}
+.pile{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--line);gap:2px}
+.pile i{display:block;height:100%}
+.dit{margin:0 0 4px;font-size:14px;color:var(--txt)}
+pre.jl{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:11.5px/1.5 "JetBrains Mono",ui-monospace,monospace;color:var(--txt);white-space:pre-wrap;word-break:break-word}
+/* la page Conteneurs : une ligne par conteneur, sa fiche au clic */
+.cts{display:grid;gap:6px}
+.ct{background:var(--surface2);border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.ct.ouvert{border-color:var(--acc20);background:var(--solid)}
+.ctl{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.25fr) minmax(0,1.15fr) 200px 14px;gap:14px;align-items:center;width:100%;text-align:left;background:transparent;border:0;padding:10px 13px}
+.ctl:hover{background:var(--acc10)}
+.ctl>span{min-width:0;display:flex;flex-direction:column;gap:2px}
+.ctl b,.ctl .mono{color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
+.ctl b{font-weight:650;font-size:14.5px}
+.ctl small{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctl .c3{flex-direction:row;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.ctl .c3 small{flex:1 1 100%}
+.ctl .c4{align-items:flex-end}
+.ctl .chev{color:var(--muted);transition:transform .2s}
+.ct.ouvert .ctl .chev{transform:rotate(90deg)}
+.pc{font:600 12px "JetBrains Mono",ui-monospace,monospace;border:1px solid var(--line2);border-radius:7px;padding:1px 6px;color:var(--strong);background:var(--solid)}
+.pc.w{border-color:var(--warn);color:var(--warn);background:var(--warn10)}
+.ctf{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:4px 26px;padding:6px 16px 14px;border-top:1px solid var(--line)}
+.ctf .bloc{min-width:0;padding-top:8px}
+.ctf h3{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:0 0 4px;font-weight:650}
+.ctf h3 .ac{text-transform:uppercase}
+.ctf table.ptab{font-size:13px}.ctf table.ptab th{font-size:11px;padding:4px 6px}.ctf table.ptab td{padding:5px 6px;font-weight:500;color:var(--txt);white-space:nowrap}
+.ctf table.ptab td:first-child{font-weight:500}
+.paires.un{grid-template-columns:1fr}
+.paires.un div{padding:5px 0;font-size:13.5px}.paires.un dt{flex-basis:104px}
+.paires.un dd small{display:inline;margin-left:4px}
+.chemin{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:13px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.chemin .fl{color:var(--muted);font-size:12px}
+.ctf a,.note a{color:var(--accent);cursor:pointer}
+@media (max-width:860px){.ctl{grid-template-columns:1fr}.ctl .c4{align-items:flex-start}.ctl .chev{display:none}}
+.lk{cursor:pointer;background:none;border:0;padding:0;color:var(--soft);font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px}
+.lk:hover{color:var(--accent)}
+.tu.det{border-style:dashed}
+.tu.det .tp{color:var(--accent)}
+.pt{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:4px}.pt.d{background:var(--danger)}
+.pied{font-size:13px;color:var(--muted);margin:14px 4px 0}
+.pied a,.fil a{color:var(--accent);cursor:pointer}
+/* tableau de correspondance */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line2)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{color:var(--strong);font-weight:650;white-space:nowrap}
+/* feuille et toast */
+.voile{position:fixed;inset:0;background:rgba(16,24,40,.34);z-index:80;display:none;align-items:center;justify-content:center;padding:16px}
+.voile.on{display:flex}
+.feuille{background:var(--solid);border-radius:16px;box-shadow:var(--lift);max-width:620px;width:100%;padding:18px 20px;max-height:86vh;overflow:auto}
+.feuille h3{margin:0 0 4px;color:var(--strong);font-size:17px}
+.feuille p{margin:0 0 12px;color:var(--soft);font-size:14px}
+.feuille pre{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:10px 12px;font:12px/1.55 "JetBrains Mono",ui-monospace,monospace;overflow:auto;max-height:46vh;color:var(--txt)}
+.feuille .gestes{justify-content:flex-end}
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--strong);color:var(--bg);padding:9px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;z-index:90;max-width:min(680px,92vw)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="haut">
+  <b>Maquette</b><span class="note">La machine — refonte de « Détails système » · données fictives, rien n'est écrit</span>
+  <span class="seg" role="group" aria-label="État de la machine montré">
+    <button onclick="etat('argos')" id="e-argos" aria-pressed="true">Comme sur Argos</button>
+    <button onclick="etat('chaud')" id="e-chaud" aria-pressed="false">Ça chauffe</button>
+    <button onclick="etat('calme')" id="e-calme" aria-pressed="false">Tout va bien</button>
+    <button onclick="etat('muet')" id="e-muet" aria-pressed="false">Collecteur muet</button>
+  </span>
+  <button onclick="theme()">Thème</button>
+</div>
+<div class="app">
+  <nav class="menu carte" id="menu" aria-label="Menu de gauche"></nav>
+  <main id="page"></main>
+</div>
+<div class="voile" id="voile" onclick="if(event.target===this)fermer()"><div class="feuille" id="feuille" role="dialog" aria-modal="true"></div></div>
+<div id="toast" role="status"></div>
+
+<script>
+// ───────────────────────────── icônes au trait (les mêmes dessins que le menu de l'application)
+const IC = {
+  panorama: '<rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/>',
+  verdict: '<path d="M12 3l8 3v6c0 4.5-3.2 7.6-8 9-4.800-1.400-8-4.500-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  geste: '<path d="M5 3l14 8-6 2-2 6z"/>', cass: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  fil: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', machine: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  direct: '<path d="M3 12h4l2-6 4 12 2-6h6"/>', proc: '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+  services: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+  conteneurs: '<path d="M12 3l9 5v8l-9 5-9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/>', ailleurs: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>', flotte: '<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/>',
+  bouclier: '<path d="M12 3l8 3v6c0 4.500-3.200 7.600-8 9-4.800-1.400-8-4.500-8-9V6z"/>', base: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.700 3.600 3 8 3s8-1.300 8-3V6M4 12c0 1.700 3.600 3 8 3s8-1.300 8-3"/>',
+  boucle: '<path d="M4 9h13l-3-3M20 15H7l3 3"/>', table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/>', bulle: '<path d="M4 5h16v11H9l-5 4z"/>',
+};
+const ico = k => '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">' + (IC[k] || '') + '</svg>';
+
+// ───────────────────────────── données fictives, calquées sur les états d'Argos du 11-11-2026
+const BASE = {
+  nom: 'argos', os: 'Debian GNU/Linux 12 (bookworm)', archi: 'x86_64 · kvm', noyau: '6.1.0-54-amd64', allumee: '10 j 21 h', fuseau: 'Etc/UTC', horloge: 'synchronisée (NTP)', redemarrage: false,
+  maj: {total: 3, secu: 0}, interfaces: [['eth0', 'publique', '203.0.113.52'], ['tailscale0', 'Tailscale', '100.64.0.10'], ['wt0', 'NetBird', '100.72.0.10']], dns: 'le résolveur répond juste (29 ms)',
+  sante: {score: 65, mot: 'à surveiller', alertes: 6, ressources: 95},
+  cpu: 13, ram: 36.5, ramGo: [2.8, 7.6], swap: 5.6, swapGo: [0.2, 4], disque: 80.9, disqueGo: [58, 75], charge: [0.19, 0.39, 0.53],
+  disques: [['/', 81, 58, 75, 'plein dans environ 2 jours (+6,2 Go par jour, 17 Go libres)', 'd'], ['/boot/efi', 3, 0.01, 0.5, 'stable', 'ok']],
+  cloche: [['d', 'Le disque / sera plein dans environ 2 jours', 'prévision · +6,2 Go par jour'], ['w', 'sshd : 17 erreurs dans l’heure', 'erreurs des journaux'], ['w', 'Aucune copie hors de cette machine', 'sauvegardes']],
+  proc: [['cassand+', 17, '/usr/bin/python3 CN_main.py demarrer'], ['root', 1.0, '/sbin/init'], ['root', 0.9, 'docker stats --no-stream --format {{json .}}'], ['mysql', 0.8, '/usr/sbin/mysqld'],
+    ['cassand+', 0.8, '/usr/bin/python3 /var/cassandra/current/modules/sensorium/CN_collecteur.py'], ['977', 0.4, 'searxng worker-1'], ['root', 0.3, '/go/bin/netbird-server --config /etc/netbird/config.yaml'],
+    ['root', 0.2, '/usr/bin/containerd'], ['www-data', 0.1, 'nginx: worker process'], ['root', 0.1, '/usr/sbin/sshd -D']],
+  oom: [], echecs: [], memoire: {applis: 2.8, cache: 3.2, libre: 1.6, total: 7.6, pression: 'aucune'},
+  refus: {total: 41, adresses: [['203.0.113.24', 14, false], ['198.51.100.77', 10, true], ['192.0.2.19', 6, true]]},
+  reussies: [['lea', 'Tailscale · tel-lea', 'hier 22:41', 'clé « lea@portable »', '1 h 12'], ['root', 'Tailscale · atelier', 'il y a 2 jours', 'clé « claude-session »', '14 min'], ['fastuser', 'Internet · Exemple Télécom', 'il y a 4 jours', 'mot de passe', '3 min']],
+  maison: [['cassandra-noyau', 'le noyau de Cassandra', 'active (running)', 'depuis 41 min', 'noyau'], ['sensorium', 'le collecteur du Sensorium', 'active (running)', 'depuis 10 j', 'collecteur'],
+    ['ollama', 'les modèles locaux', 'active (running)', 'depuis 10 j', 'ollama'], ['nginx', 'les sites web', 'active (running)', 'depuis 10 j', 'nginx']],
+  services: {actifs: 58, inactifs: 3, liste: ['apache2', 'cron', 'docker', 'dovecot', 'exim4', 'fail2ban', 'fastpanel2', 'mysql', 'netbird', 'proftpd', 'ssh', 'tailscaled']},
+  cron: 17,
+  conteneurs: [['reseau', 'netbirdio/netbird:latest', 'tourne depuis 23 h', 12, 0.04, '45 Mo', true], ['reseau-tableau', 'netbirdio/dashboard:latest', 'tourne depuis 23 h', 14, 0.02, '23 Mo', true],
+    ['reseau-serveur', 'netbirdio/netbird-server:latest', 'tourne depuis 23 h', 12, 1.08, '49 Mo', true], ['recherche', 'searxng/searxng:latest', 'tourne depuis 23 h', 9, 0.3, '182 Mo', true],
+    ['coffre', 'vaultwarden/server:latest', 'tourne depuis 23 h', 9, 0.01, '31 Mo', true]],
+  sessions: [['sshd', '203.0.113.24', 'depuis 00:06', 'ssh']],
+  ailleurs: {ports: [35, 8, 3], bannies: [10, 'sshd'], certs: [4, 79, 'machine.exemple.test'], tailscale: [5, 7, 'tel-max, atlas'], netbird: [3, 4, 'atelier', 'reseau.exemple.test'], heberg: {Sites: 2, Services: '8 arrêtés', Bases: 0, 'Boîtes': 0, Copies: 0, Comptes: 1},
+    depots: 0, releves: 356},
+};
+const ETATS = {
+  argos: {},
+  chaud: {sante: {score: 38, mot: 'en danger', alertes: 11, ressources: 41}, cpu: 92, ram: 91.4, ramGo: [6.9, 7.6], swap: 62, swapGo: [2.5, 4], disque: 96.3, disqueGo: [72, 75], charge: [6.12, 4.4, 2.9],
+    disques: [['/', 96, 72, 75, 'plein dans quelques heures (+6,2 Go par jour, 3 Go libres)', 'd'], ['/boot/efi', 3, 0.01, 0.5, 'stable', 'ok']], redemarrage: true, maj: {total: 9, secu: 2},
+    cloche: [['d', 'Le disque / est plein à 96 %', 'ressources'], ['d', 'php8.3-fpm est en échec', 'services'], ['d', '2 processus tués faute de mémoire', 'mémoire'], ['w', 'Le conteneur recherche est arrêté', 'conteneurs']],
+    proc: [['www-data', 61.5, 'php-fpm: pool boutique.exemple.test'], ['mysql', 24.0, '/usr/sbin/mysqld'], ['cassand+', 17, '/usr/bin/python3 CN_main.py demarrer'], ['root', 4.1, 'clamscan -r /var/www'],
+      ['root', 1.0, '/sbin/init'], ['root', 0.9, 'docker stats --no-stream --format {{json .}}'], ['cassand+', 0.8, '/usr/bin/python3 /var/cassandra/current/modules/sensorium/CN_collecteur.py'],
+      ['977', 0.4, 'searxng worker-1'], ['root', 0.3, '/go/bin/netbird-server --config /etc/netbird/config.yaml'], ['root', 0.2, '/usr/bin/containerd']],
+    oom: [['php-fpm', 1840, 'hier 03:12'], ['mysqld', 2310, 'avant-hier 21:05']], memoire: {applis: 6.9, cache: 0.3, libre: 0.4, total: 7.6, pression: 'forte : la machine échange sur le disque'}, echecs: [['php8.3-fpm.service', 'depuis 02:47'], ['certbot.service', 'depuis hier 04:00']],
+    conteneurs: [['reseau', 'netbirdio/netbird:latest', 'tourne depuis 23 h', 12, 0.04, '45 Mo', true], ['reseau-tableau', 'netbirdio/dashboard:latest', 'tourne depuis 23 h', 14, 0.02, '23 Mo', true],
+      ['reseau-serveur', 'netbirdio/netbird-server:latest', 'tourne depuis 23 h', 12, 1.08, '49 Mo', true], ['recherche', 'searxng/searxng:latest', 'arrêté depuis 2 h (code 1)', 9, 0, '—', false],
+      ['coffre', 'vaultwarden/server:latest', 'tourne depuis 23 h', 9, 0.01, '31 Mo', true]],
+    sessions: [['sshd', '203.0.113.24', 'depuis 00:06', 'ssh'], ['lea', '100.64.0.11', 'depuis hier 22:41', 'ssh'], ['depot', '198.51.100.20', 'depuis 00:52', 'ftp']]},
+  calme: {sante: {score: 97, mot: 'excellent', alertes: 0, ressources: 98}, cpu: 4, disque: 41, disqueGo: [31, 75], disques: [['/', 41, 31, 75, 'stable (+0,1 Go par jour)', 'ok'], ['/boot/efi', 3, 0.01, 0.5, 'stable', 'ok']],
+    cloche: [], sessions: [], maj: {total: 0, secu: 0}},
+  muet: {muet: 'le collecteur ne répond plus depuis 12 min'},
+};
+// LA DÉCOUVERTE AUTOMATIQUE. Une vignette de voisin n'est pas écrite en dur : elle paraît quand son sujet est trouvé sur la machine.
+//   « module »  : le module de Cassandra est là et répond (sa lecture d'état) -> vignette complète, qui mène chez lui ;
+//   « detecte » : le Sensorium voit le logiciel sur la machine, mais aucun module ne le suit -> vignette « détecté », qui propose d'installer le module ;
+//   « absent »  : ni l'un ni l'autre -> aucune vignette, jamais une case vide.
+// [clé, nom, la preuve relevée par le Sensorium, le module qui le suit, sa lecture d'état]
+const DECOUVRABLES = [
+  ['ports', 'Ports ouverts', 'toujours : toute machine a des ports', 'Sécurité', 'sensorium.entite'],
+  ['bannies', 'Bannissements', 'service fail2ban actif', 'Sécurité', 'sensorium.entite'],
+  ['certs', 'Certificats', '4 certificats trouvés sur le disque', 'Certificats', 'certificats.etat'],
+  ['tailscale', 'Tailscale', 'interface tailscale0 · tailscaled actif', 'Tailscale', 'tailscale.etat'],
+  ['netbird', 'NetBird', 'interface wt0 · conteneur netbirdio/netbird', 'NetBird', 'netbird.etat'],
+  ['heberg', 'Hébergement', 'service fastpanel2 · port 8888', 'FastPanel', 'fastpanel.sites'],
+  ['depots', 'Dépôts distants', 'module Sauvegardes installé', 'Sauvegardes', 'sauvegardes.destinations'],
+  ['docker', 'Conteneurs (Docker)', 'service docker actif · 5 conteneurs', '— (tuile de cette page)', 'sensorium.etat'],
+  ['wireguard', 'WireGuard', 'interface wg0', 'aucun module', ''],
+  ['crowdsec', 'CrowdSec', 'service crowdsec', 'Sécurité › Outils', ''],
+];
+// La fiche de chaque conteneur. ports : [publié sur, port hôte, port interne, protocole, qui peut le joindre, niveau] ; proxy : [nom public, chemin, vers, jours du certificat, trafic].
+const CT = {
+  'reseau': {distrib: 'Alpine Linux 3.20', taille: '86 Mo', reseau: 'host (celui de la machine)', ip: '—', politique: 'unless-stopped', sante: 'sans contrôle de santé', redemarrages: 0, compose: 'conteneur seul (posé par le module NetBird)',
+    ports: [], proxy: [], volumes: [['netbird-client', '/etc/netbird', '1 Mo']], failles: [0, 0], role: 'le client NetBird de la machine'},
+  'reseau-tableau': {distrib: 'Debian 12 (bookworm) · nginx 1.27', taille: '192 Mo', reseau: 'reseau_default (pont)', ip: '172.20.0.3', politique: 'unless-stopped', sante: 'sans contrôle de santé', redemarrages: 0, compose: '/opt/reseau/docker-compose.yml · service dashboard',
+    ports: [['127.0.0.1', 8081, 80, 'tcp', 'la machine seule', 'ok']], proxy: [['reseau.exemple.test', '/', '127.0.0.1:8081', 88, '675 requêtes dans l’heure · 0 % d’erreurs']], volumes: [], failles: [0, 3], role: 'le tableau de bord de NetBird'},
+  'reseau-serveur': {distrib: 'Debian 12 (bookworm)', taille: '148 Mo', reseau: 'reseau_default (pont)', ip: '172.20.0.2', politique: 'unless-stopped', sante: 'sans contrôle de santé', redemarrages: 1, compose: '/opt/reseau/docker-compose.yml · service netbird-server',
+    ports: [['127.0.0.1', 8080, 80, 'tcp', 'la machine seule', 'ok'], ['0.0.0.0', 3478, 3478, 'udp', 'Internet', 'w'], ['127.0.0.1', 10000, 10000, 'tcp', 'la machine seule', 'ok']],
+    proxy: [['reseau.exemple.test', '/api', '127.0.0.1:8080', 88, 'même site'], ['reseau.exemple.test', '/signalexchange (gRPC)', '127.0.0.1:10000', 88, 'même site']], volumes: [['reseau_data', '/var/lib/netbird', '38 Mo']], failles: [0, 1], role: 'le serveur de gestion, de signal et de relais de NetBird'},
+  'recherche': {distrib: 'Alpine Linux 3.21', taille: '214 Mo', reseau: 'bridge', ip: '172.17.0.2', politique: 'always', sante: 'sans contrôle de santé', redemarrages: 0, compose: 'conteneur seul',
+    ports: [['127.0.0.1', 8087, 8080, 'tcp', 'la machine seule', 'ok']], proxy: [], volumes: [['/opt/recherche/settings.yml', '/etc/searxng/settings.yml', 'fichier']], failles: [0, 0], role: 'le moteur de recherche que Cassandra interroge, sans nom public'},
+  'coffre': {distrib: 'Debian 12 (bookworm-slim)', taille: '268 Mo', reseau: 'bridge', ip: '172.17.0.3', politique: 'unless-stopped', sante: 'sain (contrôle toutes les 60 s)', redemarrages: 0, compose: 'conteneur seul',
+    ports: [['127.0.0.1', 8890, 80, 'tcp', 'la machine seule', 'ok']], proxy: [['coffre.exemple.test', '/', '127.0.0.1:8890', 61, '212 requêtes dans l’heure · 0 % d’erreurs']], volumes: [['/opt/coffre/data', '/data', '412 Mo']], failles: [4, 9], role: 'le gestionnaire de mots de passe'},
+};
+const DEC0 = {ports: 'module', bannies: 'module', certs: 'module', tailscale: 'module', netbird: 'module', heberg: 'module', depots: 'module', docker: 'module', wireguard: 'absent', crowdsec: 'absent'};
+const E = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const $ = id => document.getElementById(id);
+const fr = (v, d = 1) => Number(v).toLocaleString('fr-FR', {maximumFractionDigits: d});
+// LES SERVICES. [unité, ce que c'est, famille, pid, mémoire (Mo), processeur (%), ports écoutés, ce qui tombe si on l'arrête, geste qui existe déjà, pourquoi on ne l'arrête pas d'ici]
+const SV = [
+  ['cassandra-noyau', 'Le noyau de Cassandra : cette interface, les modules, les agents.', 'maison', 41822, 412, 17, ['9000/tcp'], 'Cassandra entière s’arrête : interface, agents, alertes.', 'noyau', 'Arrêter Cassandra depuis Cassandra ne laisserait rien pour la relancer : d’ici, elle se relance, elle ne s’arrête pas.'],
+  ['sensorium', 'Le collecteur du Sensorium : il relève la machine, toutes les 30 secondes à 60 minutes selon le capteur.', 'maison', 2210, 96, 0.8, [], 'Plus aucun relevé : toutes les pages disent « inconnu », les alertes se taisent.', 'collecteur', ''],
+  ['cassandra-courtier', 'Le courtier racine : il exécute les commandes nommées que Cassandra demande, une à la fois, puis se rendort.', 'maison', 0, 0, 0, [], 'Plus aucun geste root ne passe : relances, bannissements, mises à jour.', '', ''],
+  ['ollama', 'Les modèles de langage locaux, pour les agents qui ne passent pas par un fournisseur en ligne.', 'maison', 3105, 1240, 0, ['11434/tcp'], 'Les agents réglés sur un modèle local ne répondent plus.', 'ollama', ''],
+  ['nginx', 'Le serveur web de façade : il reçoit toutes les visites et les passe aux sites et aux conteneurs.', 'web', 1629, 48, 0.1, ['80/tcp', '443/tcp', '443/udp'], 'Tous les sites et les noms publics des conteneurs ne répondent plus : chat, reseau, coffre.', 'nginx', ''],
+  ['apache2', 'Le serveur web derrière nginx, pour les sites PHP du panneau.', 'web', 1702, 86, 0, ['81/tcp'], 'Les sites PHP du panneau ne répondent plus.', '', ''],
+  ['php8.3-fpm', 'L’interpréteur PHP des sites (WordPress, boutique).', 'web', 52110, 310, 0.2, [], 'Les sites PHP affichent une erreur 502.', '', ''],
+  ['mysql', 'La base de données MySQL des sites.', 'données', 1412, 486, 0.8, ['3306/tcp'], 'Les sites qui ont une base de données tombent en erreur.', '', ''],
+  ['dovecot', 'Les boîtes aux lettres : la lecture du courrier (IMAP, POP).', 'courrier', 1380, 22, 0, ['110/tcp', '143/tcp', '993/tcp', '995/tcp'], 'Plus personne ne peut relever son courrier.', '', ''],
+  ['exim4', 'Le transport du courrier : envoi et réception (SMTP).', 'courrier', 1466, 18, 0, ['25/tcp', '465/tcp', '587/tcp'], 'Le courrier n’entre plus et ne sort plus ; il attend chez les expéditeurs.', '', ''],
+  ['proftpd', 'Le transfert de fichiers FTP vers les sites.', 'web', 1290, 9, 0, ['21/tcp'], 'Les dépôts de fichiers par FTP échouent.', '', ''],
+  ['fastpanel2', 'Le panneau d’hébergement FastPanel.', 'web', 1555, 140, 0.1, ['8888/tcp'], 'Le panneau ne répond plus ; les sites, eux, continuent.', '', ''],
+  ['docker', 'Le moteur qui fait tourner les conteneurs.', 'système', 960, 74, 0.3, [], 'Les cinq conteneurs s’arrêtent : NetBird, la recherche, le coffre.', '', ''],
+  ['cron', 'Les tâches planifiées (17 tâches).', 'système', 820, 3, 0, [], 'Sauvegardes, renouvellements et balayages ne se lancent plus.', '', ''],
+  ['fail2ban', 'Le gardien : il bannit les adresses qui insistent sur SSH.', 'sécurité', 1101, 31, 0, [], 'Plus aucun bannissement : les tentatives ne sont plus freinées.', '', ''],
+  ['ssh', 'L’accès distant à la machine.', 'sécurité', 901, 9, 0.1, ['22/tcp'], 'Plus personne n’entre sur la machine à distance, toi compris.', '', 'L’arrêter te fermerait la porte : d’ici, il se redémarre, il ne s’arrête pas.'],
+  ['certbot', 'Le renouvellement des certificats Let’s Encrypt : il se lance deux fois par jour, puis s’arrête.', 'sécurité', 0, 0, 0, [], 'Les certificats ne se renouvellent plus.', '', ''],
+  ['tailscaled', 'Le réseau privé Tailscale.', 'réseau', 870, 44, 0.1, ['41641/udp'], 'La machine quitte le réseau Tailscale : elle n’est plus joignable par ses adresses privées.', '', ''],
+];
+const SV_REPOS = ['cassandra-courtier', 'certbot'];                    // au repos entre deux lancements : c'est leur état normal, pas une panne
+const SV_JOURNAL = {
+  'php8.3-fpm': ['02:47:11 ERROR: unable to bind listening socket for address /run/php/php8.3-fpm.sock: Address already in use', '02:47:11 ERROR: FPM initialization failed', '02:47:11 Main process exited, code=exited, status=78/CONFIG'],
+  'certbot': ['04:00:07 Renewing an existing certificate for blog.exemple.test', '04:00:19 Challenge failed for domain blog.exemple.test', '04:00:19 1 renew failure(s), 0 parse failure(s)'],
+};
+// LES PROCESSUS. Par commande : [pid, mémoire (Mo), lancé depuis, à qui il appartient [genre, nom], ce que c'est, pourquoi on ne l'arrête pas d'ici]
+const PR = {
+  '/usr/bin/python3 CN_main.py demarrer': [41822, 412, '41 min', ['service', 'cassandra-noyau'], 'Le noyau de Cassandra : cette interface, les modules, les agents.', 'C’est Cassandra elle-même : elle se relance depuis Services.'],
+  '/sbin/init': [1, 12, '10 j 21 h', ['système', ''], 'Le premier processus de la machine : il lance et surveille tous les autres.', 'L’arrêter arrêterait la machine.'],
+  'docker stats --no-stream --format {{json .}}': [60211, 38, '12 s', ['service', 'sensorium'], 'Une mesure du collecteur : la charge de chaque conteneur. Il se termine tout seul.', ''],
+  '/usr/sbin/mysqld': [1412, 486, '10 j 21 h', ['service', 'mysql'], 'La base de données MySQL des sites.', ''],
+  '/usr/bin/python3 /var/cassandra/current/modules/sensorium/CN_collecteur.py': [2210, 96, '10 j 21 h', ['service', 'sensorium'], 'Le collecteur du Sensorium : il relève la machine.', ''],
+  'searxng worker-1': [8841, 182, '23 h', ['conteneur', 'recherche'], 'Le moteur de recherche que Cassandra interroge.', ''],
+  '/go/bin/netbird-server --config /etc/netbird/config.yaml': [7719, 49, '23 h', ['conteneur', 'reseau-serveur'], 'Le serveur de gestion de NetBird.', ''],
+  '/usr/bin/containerd': [988, 61, '10 j 21 h', ['service', 'docker'], 'Le socle de Docker : il porte les conteneurs.', ''],
+  'nginx: worker process': [1630, 24, '10 j 21 h', ['service', 'nginx'], 'Un ouvrier du serveur web : il sert les visites.', ''],
+  '/usr/sbin/sshd -D': [901, 9, '10 j 21 h', ['service', 'ssh'], 'L’accès distant à la machine.', 'C’est ta porte d’entrée sur la machine.'],
+  'php-fpm: pool boutique.exemple.test': [52110, 1840, '6 h', ['service', 'php8.3-fpm'], 'Les pages PHP du site boutique.exemple.test.', ''],
+  'clamscan -r /var/www': [53300, 912, '38 min', ['tâche planifiée', 'antivirus hebdomadaire'], 'L’antivirus qui balaie les fichiers des sites, une fois par semaine.', ''],
+};
+// Ce que l'on sait d'un processus tué faute de mémoire : [son service, ce qui s'est passé ensuite, ce qui se passait au même moment]
+const OOMD = {'php-fpm': ['php8.3-fpm', 'relancé par systemd 4 secondes après', 'au même moment : le balayage antivirus et un pic de visites sur boutique.exemple.test'],
+  'mysqld': ['mysql', 'relancé par systemd 6 secondes après', 'au même moment : la sauvegarde des bases']};
+// LES SESSIONS. Par « utilisateur@adresse » : ce que c'est, comment le lire, d'où elle vient, si on la connaît, comment elle s'est identifiée, son terminal, son inactivité, ce qu'elle fait, son niveau.
+const SE = {
+  'sshd@203.0.113.24': ['Connexion SSH pas encore identifiée', 'L’utilisateur « sshd » veut dire que personne n’est encore entré : quelqu’un frappe à la porte. Le plus souvent, c’est une tentative automatique, qui sera refusée.',
+    ['Internet', 'hébergeur Exemple Cloud · Singapour'], 'jamais vue avant · 14 tentatives refusées depuis cette adresse en une heure', 'aucune pour l’instant', '—', '—', 'en attente d’identification', 'w'],
+  'lea@100.64.0.11': ['Session SSH de lea', 'Une session ordinaire, ouverte depuis une machine de ton réseau privé, avec une clé connue.',
+    ['Tailscale', 'la machine tel-lea'], 'adresse habituelle · 31 connexions en 30 jours', 'clé ed25519 « lea@portable »', 'pts/0', '3 min', 'htop', 'ok'],
+  'depot@198.51.100.20': ['Dépôt de fichiers par FTP', 'Un compte FTP du panneau, qui envoie des fichiers vers un site.',
+    ['Internet', 'fournisseur d’accès Exemple Télécom · France'], 'déjà vue 4 fois ce mois-ci', 'mot de passe', 'ftp', '12 s', 'envoi vers /var/www/boutique/wp-content/uploads', ''],
+};
+// LA FICHE DE LA MACHINE : ce qui ne change pas d'un état à l'autre.
+const FICHE = {
+  role: 'le serveur principal : il porte Cassandra, les sites et le réseau privé', hebergeur: 'Exemple Cloud · centre de données d’Helsinki', installee: 'le 14 mars 2026 (il y a 8 mois)',
+  dernierDemarrage: 'le 31 octobre à 03:12, après une mise à jour du noyau', virtualisation: 'machine virtuelle (kvm)',
+  cpu: ['AMD EPYC (processeur virtuel)', 4, 4, '2,4 GHz'], carte: 'machine virtuelle : pas de carte mère ni de BIOS propres', temperature: 'non relevée : une machine virtuelle n’a pas de sonde',
+  disquesPhysiques: [['sda', 'QEMU HARDDISK', '80 Go', 'disque virtuel : pas d’état SMART', '']],
+  montages: {'/': ['ext4', '2,1 millions de fichiers · 18 % des inodes'], '/boot/efi': ['vfat', '—']},
+  ipv6: {eth0: '2001:db8:c012:1b78::1', tailscale0: 'fd7a:115c:a1e0::10', wt0: 'fddf:b476:b32f::10'}, route: 'eth0', passerelle: '203.0.113.1', inverse: 'machine.exemple.test', publique: '203.0.113.52 (la même que eth0 : pas de box devant)',
+  pareFeu: 'iptables (42 règles) · politique d’entrée : refuser', noyauSecu: 'AppArmor', majAuto: 'chaque nuit, les correctifs de sécurité seulement', paquets: ['libssl3', 'openssl', 'tzdata'],
+  logiciels: [['nginx', '1.22'], ['apache2', '2.4'], ['php', '8.3'], ['mysql', '8.0'], ['docker', '27.3'], ['python3', '3.11'], ['exim4', '4.96'], ['dovecot', '2.3'], ['proftpd', '1.3'], ['fail2ban', '1.0'], ['ollama', '0.5'], ['tailscale', '1.76'], ['git', '2.39'], ['rclone', '1.60']],
+  absents: ['caddy', 'certbot', 'postgresql', 'redis', 'crowdsec', 'wireguard'],
+  cassandra: {version: '19.0', livraison: '20261111-005709', dossier: '/var/cassandra', modules: 50, scelle: '1 305 fichiers conformes au scellé', bases: '40 bases · 212 Mo', courtier: '21 commandes root déclarées, pour 8 modules'},
+};
+const MAJ0 = {coffre: 'image publiée il y a 3 jours', recherche: 'image publiée hier'};
+const S = {etat: 'argos', prevu: '', ct: '', sv: '', svF: 'tous', svQ: '', svE: {}, svB: {}, pr: '', tri: 'cpu', se: '', maj: Object.assign({}, MAJ0), gestes: [], dec: Object.assign({}, DEC0), page: 'vue', q: '', groupe: false, hist: {cpu: [], ram: []}, t: 0};
+let M = JSON.parse(JSON.stringify(BASE));
+const niv = v => v >= 90 ? 'd' : v >= 75 ? 'w' : '';
+const pill = (t, c) => `<span class="pl ${c || ''}">${E(t)}</span>`;
+const neuf = '<span class="neuf">nouveau</span>', creer = t => `<span class="ac">${t || 'à créer'}</span>`, deja = t => `<span class="de">${E(t)}</span>`;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 3600); }
+const demander = q => toast('Ouvre la conversation avec la question : « ' + q + ' »');
+const versModule = m => toast('Ouvre ' + m + ' (hors maquette).');
+const age = (s = 4) => M.muet ? `<span class="age mu">${E(M.muet)}</span>` : `<span class="age">collecteur · il y a ${s} s</span>`;
+// Chaque bloc porte les commandes communes de l'application : plein écran et repli.
+const sec = (titre, meta, corps, droite = '') => `<section class="carte sec"><div class="sh"><h2>${titre}</h2><span class="meta">${meta}</span><span class="dr">${droite}<button class="cmd" title="Plein écran — Échap pour revenir" aria-label="Plein écran" onclick="plein(this)">⤢</button><button class="cmd" title="Replier ce bloc" aria-label="Replier" onclick="this.closest('.sec').classList.toggle('plie')">▾</button></span></div>${corps}</section>`;
+function plein(b){ document.querySelectorAll('.sec.plein').forEach(x => x !== b.closest('.sec') && x.classList.remove('plein')); b.closest('.sec').classList.toggle('plein'); }
+const muetBloc = quoi => `<div class="muet"><b>${E(quoi)} : inconnu.</b> ${E(M.muet)}. Rien n'est affiché à la place — ni zéro, ni « aucun ». <button class="btn s" style="margin-left:8px" onclick="toast('Redémarre le collecteur après sa passe (capacité sensorium.redemarrer).')">Redémarrer le collecteur</button></div>`;
+
+// ───────────────────────────── le menu de gauche : une seule entrée, « La machine » (le détail s'ouvre depuis la page, pas depuis le menu)
+function menu(){
+  const graves = M.muet ? ['muet', 'd'] : (M.cloche.filter(c => c[0] === 'd').length ? [M.cloche.filter(c => c[0] === 'd').length, 'd'] : null);
+  const inerte = (ic, t) => `<button class="mi inerte" onclick="toast('« ${t} » : hors de cette maquette, inchangé.')">${ico(ic)}<span>${t}</span></button>`;
+  $('menu').innerHTML = `<h2>Parc</h2>
+    <button class="mi" aria-expanded="true">${ico('panorama')}<span>Panorama</span><span class="chev">›</span></button>
+    <div class="sous">${inerte('verdict', 'Le verdict')}${inerte('geste', 'Ce qui demande un geste')}${inerte('cass', 'Cassandra, maintenant')}${inerte('fil', 'Ce qui a changé')}
+      <button class="mi" ${S.page !== 'corr' ? 'aria-current="page"' : ''} onclick="aller('vue')">${ico('machine')}<span>La machine</span>${graves ? `<span class="bad ${graves[1]}">${graves[0]}</span>` : ''}</button>
+    </div>
+    ${inerte('globe', 'Zones DNS')}${inerte('flotte', 'Flotte')}${inerte('globe', 'Tailscale')}${inerte('bouclier', 'NetBird')}${inerte('globe', 'Sites')}${inerte('base', 'Hébergement')}${inerte('boucle', 'Automatismes')}
+    <h2>La maquette</h2>
+    <button class="mi" ${S.page === 'corr' ? 'aria-current="page"' : ''} onclick="aller('corr')">${ico('table')}<span>Ancienne page → nouvelle</span></button>
+    <div class="legende"><div><span class="neuf">nouveau</span>absent de la page actuelle</div><div><span class="de">déjà là</span>relevé ou geste qui existe déjà</div><div><span class="ac">à créer</span>demande du code côté serveur</div><div><span class="ac">à trancher</span>ta décision</div></div>`;
+}
+// L'en-tête d'une page de détail : le fil, et le retour à la page d'ensemble.
+const tete = (titre, meta, droite = '') => `<p class="fil">Parc › Panorama › <a onclick="aller('vue')">La machine</a> › ${E(titre)}</p><div class="tete"><button class="btn s" onclick="aller('vue')" title="Revenir à la page d'ensemble">‹ La machine</button><h1>${E(titre)}</h1><span class="meta">${meta}</span>${droite}</div>`;
+
+// ───────────────────────────── la page d'ensemble : tout d'un coup d'œil, une tuile par sujet, le détail au clic
+// Une tuile : `ou` vide = son détail est sur cette page ; sinon le sujet vit dans un autre module, et la tuile y mène.
+function tuile(id, ic, titre, etat, corps, ou, action){
+  const inconnu = M.muet && id !== 'voisin-fixe';
+  return `<div class="tu ${ou ? 'ext' : ''} ${inconnu ? 'mu' : ''}" id="t-${id}" role="link" tabindex="0" onclick="${action}" onkeydown="if(event.key==='Enter')this.click()">
+    <span class="tt">${ico(ic)}<b>${titre}</b>${inconnu ? pill('vu il y a 12 min', '') : (etat ? pill(etat[0], etat[1]) : '')}</span>
+    ${corps}
+    <span class="tp">${ou ? '↗ ' + E(ou) : 'Détail ›'}</span></div>`;
+}
+const gr = (v, c = '') => `<span class="gr ${c}">${v}</span>`;
+const li = (g, d = '', c = '') => `<span class="li"><span class="n">${g}</span>${d ? `<b class="num" ${c ? `style="color:var(--${c})"` : ''}>${d}</b>` : ''}</span>`;
+const mb = (nom, pct, val) => `<span class="mb"><span>${nom}</span><span class="pbar"><i class="${niv(pct)}" style="width:${Math.min(pct, 100)}%"></i></span><b class="num" style="color:var(--${pct >= 90 ? 'danger' : pct >= 75 ? 'warn' : 'strong'})">${val}</b></span>`;
+const stop = "event.stopPropagation();";
+const corpsRes = () => mb('Processeur', M.cpu, fr(M.cpu, 0) + ' %') + mb('Mémoire', M.ram, fr(M.ram, 0) + ' %') + mb('Échange', M.swap, fr(M.swap, 0) + ' %') + mb('Disque /', M.disque, fr(M.disque, 0) + ' %')
+  + li(`charge ${M.charge.map(c => fr(c, 2)).join(' · ')}`, '') ;
+const corpsProc = () => M.proc.slice(0, 4).map(p => li(`<span class="mono">${E(p[2].split(' ')[0].split('/').pop() || p[2])}</span> <small>${E(p[0])}</small>`, fr(p[1]) + ' %', p[1] > 50 ? 'danger' : p[1] > 20 ? 'warn' : '')).join('');
+// Les vignettes des voisins : chacune n'existe que si la découverte a trouvé son sujet (S.dec).
+function voisins(){
+  const a = M.ailleurs;
+  const F = {
+    ports: () => tuile('ports', 'bouclier', 'Ports ouverts', a.ports[2] ? [a.ports[2] + ' publics', 'w'] : ['aucun public', 'ok'], gr(a.ports[0]) + li(`${a.ports[1]} au réseau local`) + li(`<span style="color:var(--${a.ports[2] ? 'warn' : 'soft'})">${a.ports[2]} depuis Internet</span>`), 'Sécurité › Exposition', "versModule('Sécurité › Exposition')"),
+    bannies: () => tuile('bannies', 'bouclier', 'Bannissements', null, gr(a.bannies[0]) + li(`par fail2ban · ${E(a.bannies[1])}`), 'Sécurité › Défenses', "versModule('Sécurité › Défenses')"),
+    certs: () => tuile('certs', 'bouclier', 'Certificats', [a.certs[1] + ' j', a.certs[1] < 7 ? 'd' : a.certs[1] < 21 ? 'w' : 'ok'], gr(a.certs[0]) + li(`le plus court : ${a.certs[1]} j`) + `<span class="li"><button class="btn s" onclick="${stop}demander('Certificats SSL expirants ?')">Demander</button></span>`, 'Sécurité › Certificats', "versModule('Sécurité › Certificats')"),
+    tailscale: () => tuile('tailscale', 'globe', 'Tailscale', a.tailscale[0] < a.tailscale[1] ? [(a.tailscale[1] - a.tailscale[0]) + ' hors ligne', ''] : ['toutes en ligne', 'ok'], gr(a.tailscale[0] + ' / ' + a.tailscale[1]) + li(`hors ligne : ${E(a.tailscale[2])}`), 'Parc › Tailscale', "versModule('Parc › Tailscale')"),
+    netbird: () => tuile('netbird', 'bouclier', 'NetBird', a.netbird[0] < a.netbird[1] ? [(a.netbird[1] - a.netbird[0]) + ' hors ligne', ''] : ['toutes en ligne', 'ok'], gr(a.netbird[0] + ' / ' + a.netbird[1]) + li(`hors ligne : ${E(a.netbird[2])}`) + li('serveur auto-hébergé'), 'Parc › NetBird', "versModule('Parc › NetBird')"),
+    heberg: () => tuile('heberg', 'base', 'Hébergement', null, gr(a.heberg.Sites) + `<span class="li" style="flex-wrap:wrap;gap:2px 8px">${Object.entries(a.heberg).map(([k, v]) => `<button class="lk" onclick="${stop}versModule('Hébergement › ${k}')">${k.toLowerCase()} <b>${E(v)}</b></button>`).join('')}</span>`, 'Parc › Hébergement', "versModule('Parc › Hébergement')"),
+    depots: () => tuile('depots', 'base', 'Dépôts distants', a.depots ? null : ['à regarder', 'w'], gr(a.depots, a.depots ? '' : 'w') + li(a.depots ? 'dépôts de copie distants' : 'rien hors de la machine'), 'Sauvegardes › Destinations', "versModule('Sauvegardes › Destinations')"),
+  };
+  const detecte = d => () => `<div class="tu ext det" role="link" tabindex="0" onclick="versModule('Logithèque')"><span class="tt">${ico('ailleurs')}<b>${E(d[1])}</b>${pill('détecté', 'i')}</span><span class="li"><span class="n" style="white-space:normal">trouvé sur la machine : ${E(d[2])}</span></span><span class="li"><span class="n" style="white-space:normal">aucun module ne le suit encore</span></span><span class="tp">Installer le module ›</span></div>`;
+  return DECOUVRABLES.filter(d => d[0] !== 'docker').map(d => S.dec[d[0]] === 'module' && F[d[0]] ? F[d[0]] : S.dec[d[0]] === 'detecte' ? detecte(d) : null).filter(Boolean);
+}
+// La feuille de la découverte : ce que la machine porte, la preuve, et ce que cela donne. Dans la maquette, chaque ligne se bascule pour voir l'effet.
+function decouverte(){
+  const mots = {module: ['vignette', 'ok'], detecte: ['détecté, sans module', 'i'], absent: ['absent : pas de vignette', '']};
+  $('feuille').innerHTML = `<h3>Découverte automatique</h3><p>Aucune vignette n'est écrite en dur. Le Sensorium relève ce que la machine porte (logiciels, services, interfaces) ; chaque module de Cassandra déclare sa vignette ; la page n'affiche que ce qui est trouvé. Clique un état pour le changer et voir la page s'adapter.</p><div class="rows">${DECOUVRABLES.map(d => `<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>${E(d[1])}</b><small style="white-space:normal">preuve : ${E(d[2])} · module : ${E(d[3])}${d[4] ? ' · lit <span class="mono">' + E(d[4]) + '</span>' : ''}</small></div><button class="btn s" onclick="basculer('${d[0]}')">${pill(mots[S.dec[d[0]]][0], mots[S.dec[d[0]]][1])}</button></div>`).join('')}</div><p class="note">Ce qui existe déjà : le relevé des logiciels, services et interfaces par le Sensorium, et la lecture d'état de chaque module. Ce qui est à créer : la déclaration de vignette dans le manifeste des modules, pour qu'un module ajouté demain apporte la sienne sans toucher à cette page. ${creer()}</p><div class="gestes"><button class="btn" onclick="S.dec = Object.assign({}, DEC0); rendre(); decouverte()">Revenir à Argos</button><button class="btn p" onclick="fermer()">Fermer</button></div>`;
+  $('voile').classList.add('on');
+}
+function basculer(k){ const o = k === 'docker' || k === 'ports' ? ['module', 'absent'] : ['module', 'detecte', 'absent']; S.dec[k] = o[(o.indexOf(S.dec[k]) + 1) % o.length]; rendre(); decouverte(); }
+const PAGES = {
+  vue(){
+    const mu = M.muet, a = M.ailleurs, pire = M.cloche[0], c = mu ? 'n' : (pire ? pire[0] : '');
+    const d0 = M.disques[0], ko = M.conteneurs.filter(x => !x[6]), sess = M.sessions || [];
+    const titre = mu ? 'La machine est inconnue : ' + E(mu) : (pire ? E(pire[1]) : 'Rien ne cloche sur la machine');
+    const sous = mu ? 'Chaque tuile garde sa dernière valeur connue, grisée et datée. Aucune ne passe à zéro ni n’écrit « tout va bien ».'
+      : (pire ? (M.cloche.length > 1 ? 'Et ' + (M.cloche.length - 1) + ' autre' + (M.cloche.length > 2 ? 's points' : ' point') + ' : ' + M.cloche.slice(1).map(x => E(x[1]).toLowerCase()).join(' ; ') + '.' : 'Rien d’autre ne cloche.')
+        : `Aucune unité en échec, ${M.conteneurs.length} conteneurs sur ${M.conteneurs.length} tournent, le disque est stable.`);
+    const gestes = mu ? `<button class="btn s p" onclick="toast('Redémarre le collecteur après sa passe (capacité sensorium.redemarrer).')">Redémarrer le collecteur</button><button class="btn s" onclick="versModule('Sensorium › Le démon')">Le démon du Sensorium</button>`
+      : (pire && /disque/i.test(pire[1]) ? `<button class="btn s p" onclick="aller('ressources')">Voir le disque</button><button class="btn s" onclick="demander('Qu’est-ce qui remplit le disque d’argos ?')">${ico('bulle')}Qu'est-ce qui le remplit ?</button>` : '')
+        + (M.echecs.length ? `<button class="btn s p" onclick="aller('services')">Les ${M.echecs.length} unités en échec</button>` : '') + (S.prevu ? `<button class="btn s" onclick="annulerRedemarrage()">Redémarrage prévu ${E(S.prevu)} · annuler</button>` : M.redemarrage ? `<button class="btn s d" onclick="redemarrerMachine()">Redémarrage requis…</button>` : '') + `<button class="btn s" onclick="versModule('Sensorium › Maintenant')">Les ${M.sante.alertes} alertes du Sensorium</button>`;
+    return `<p class="fil">Parc › Panorama › La machine</p>
+      <div class="tete"><h1>La machine</h1><span class="meta"><b style="color:var(--strong)">${E(M.nom)}</b> · ${E(M.os)} · ${E(M.archi)} · allumée depuis ${E(M.allumee)}</span>${age()}
+        <button class="btn" onclick="demander('Fais-moi le point sur la machine argos.')">${ico('bulle')}Demander à Cassandra</button></div>
+      <section class="carte sec bandeau-v"><div class="verdict"><div class="vm ${c}"></div><div style="flex:1;min-width:0"><p class="vt">${titre}</p><p class="vs">${sous}</p><div class="gestes">${gestes}</div></div>
+        ${mu ? '' : `<div class="note-sante" title="La page actuelle affiche ${M.sante.ressources} : c'est la note des ressources seules. Le Sensorium tient la note d'ensemble."><span>Santé</span><b class="num" style="color:var(--${M.sante.score < 50 ? 'danger' : M.sante.score < 80 ? 'warn' : 'ok'})">${M.sante.score}<small> /100</small></b><em>${E(M.sante.mot)} · ressources ${M.sante.ressources}</em></div>`}</div></section>
+      <h2 class="gt">Sur cette machine <span>un clic ouvre le détail</span></h2>
+      <div class="grille">
+        ${tuile('res', 'direct', 'Ressources', null, `<span id="c-res" class="cc">${corpsRes()}</span>`, '', "aller('ressources')")}
+        ${tuile('disque', 'base', 'Disque', [d0[5] === 'ok' ? 'stable' : 'à regarder', d0[5]], gr(d0[1] + ' %', niv(d0[1])) + li(`${fr(d0[2], 0)} sur ${fr(d0[3], 0)} Go · ${fr(d0[3] - d0[2], 0)} Go libres`) + li(`<span style="color:var(--${d0[5] === 'ok' ? 'soft' : 'danger'})">${E(d0[4].split(' (')[0])}</span>`), '', "aller('ressources')")}
+        ${tuile('proc', 'proc', 'Processus', null, `<span id="c-proc" class="cc">${corpsProc()}</span>`, '', "aller('proc')")}
+        ${tuile('oom', 'proc', 'Mémoire saturée', M.oom.length ? [M.oom.length + ' tués', 'd'] : ['aucun', 'ok'], gr(M.oom.length, M.oom.length ? 'd' : '') + (M.oom.length ? M.oom.slice(0, 2).map(o => li(`<span class="mono">${E(o[0])}</span> <small>${E(o[2])}</small>`, fr(o[1] / 1024) + ' Go')).join('') : li('aucun processus tué faute de mémoire')), '', "aller('proc')")}
+        ${tuile('services', 'services', 'Services', M.echecs.length ? [M.echecs.length + ' en échec', 'd'] : ['aucun échec', 'ok'], gr(M.echecs.length, M.echecs.length ? 'd' : '') + (M.echecs.length ? M.echecs.slice(0, 2).map(u => li(`<span class="mono">${E(u[0])}</span>`)).join('') : li('aucune unité en échec')) + li(`${M.services.actifs} actifs · noyau, collecteur, Ollama, nginx tournent`), '', "aller('services')")}
+        ${S.dec.docker !== 'module' ? '' : tuile('conteneurs', 'conteneurs', 'Conteneurs', ko.length ? [ko.length + ' arrêté', 'w'] : ['tous tournent', 'ok'], gr((M.conteneurs.length - ko.length) + ' / ' + M.conteneurs.length, ko.length ? 'w' : '') + li(M.conteneurs.map(x => `<span class="pt ${x[6] ? 'ok' : 'd'}"></span>${E(x[0])}`).join(' &nbsp;')), '', "aller('conteneurs')")}
+        ${tuile('sessions', 'bouclier', 'Sessions', sess.length ? [sess.length + ' ouverte' + (sess.length > 1 ? 's' : ''), 'i'] : ['aucune', ''], sess.length ? sess.slice(0, 3).map((s, i) => `<span class="li"><span class="n mono">${E(s[0])} · ${E(s[1])}</span><button class="btn s d" onclick="${stop}deconnecter(${i})">Déconnecter</button></span>`).join('') : gr('0') + li('aucune session ouverte'), '', "aller('sessions')")}
+        ${tuile('fiche', 'machine', 'La fiche', M.redemarrage ? ['redémarrage requis', 'd'] : null, li('noyau', E(M.noyau)) + li('adresse', E(M.interfaces[0][2])) + li('mises à jour', M.maj.total ? M.maj.total + (M.maj.secu ? ' dont ' + M.maj.secu + ' de sécurité' : ' en attente') : 'à jour', M.maj.secu ? 'danger' : '') + li('horloge', 'synchronisée'), '', "aller('fiche')")}
+      </div>
+      <h2 class="gt">Chez les voisins <span>découverte automatique : ${voisins().length} trouvés sur cette machine · un clic mène chez eux</span>
+        <button class="btn s" onclick="decouverte()">Découverte</button></h2>
+      <div class="grille v">${voisins().map(v => v()).join('')}</div>
+      <p class="pied">Les courbes longues : <a onclick="versModule('Observatoire › Historique')">Historique →</a> · tous les relevés, les alertes et leurs seuils : <a onclick="versModule('Observatoire › Sensorium')">Sensorium →</a> · les autres machines : <a onclick="versModule('Parc › Flotte')">Flotte →</a></p>`;
+  },
+  ressources(){
+    if (M.muet) return tete('Ressources', 'processeur, mémoire, disques', age()) + muetBloc('Les ressources');
+    return tete('Ressources', 'processeur, mémoire, échange, disques', age(3))
+    + sec('Ressources', 'relues toutes les 5 s', `<div class="jauges" id="jauges">${jauges()}</div>
+        <svg class="courbe" id="courbe" viewBox="0 0 600 150" preserveAspectRatio="none" role="img" aria-label="Processeur et mémoire sur les cinq dernières minutes"></svg>
+        <div class="leg"><span><i style="background:var(--accent)"></i>processeur</span><span><i style="background:var(--violet)"></i>mémoire</span><span>les cinq dernières minutes · un point toutes les 5 s · de 0 à 100 %</span>
+        <a style="margin-left:auto;color:var(--accent);cursor:pointer" onclick="versModule('Historique')">Les courbes longues dans Historique →</a></div>
+        <p class="note">Les vraies grandeurs (Go utilisés, échange, charge sur 1, 5 et 15 min) ${neuf} sont déjà dans le relevé : la page actuelle ne montre que des pourcentages. ${deja('sensorium.metriques')}</p>`, age(3))
+    + sec('Disques', 'place et prévision', `<div class="rows">${M.disques.map(d => `<div class="row"><div class="nm"><b class="mono">${E(d[0])}</b><small>${fr(d[2])} sur ${fr(d[3])} Go</small></div>
+        <div class="mil"><span class="pbar"><i class="${niv(d[1])}" style="width:${d[1]}%"></i></span><b class="num" style="color:var(--strong)">${d[1]} %</b></div><div class="cote">${pill(d[4], d[5])}</div></div>`).join('')}</div>
+        <p class="note">La prévision ${neuf} vient du Sensorium (« ce qui va arriver ») ; sa courbe est dans Historique › Prévision du disque. ${deja('Sensorium')}</p>`, `<button class="btn s" onclick="versModule('Historique › Prévision du disque')">Prévision</button>`);
+  },
+  fiche(){
+    if (M.muet) return tete('La fiche de la machine', 'ce qu’elle est', age()) + muetBloc('La fiche de la machine');
+    const f = FICHE, D = deja('déjà là'), C = creer(), d0 = M.disques[0];
+    const p = (dt, dd, tag = '') => `<div><dt>${dt}</dt><dd>${dd} ${tag}</dd></div>`;
+    const bloc = (titre, meta, corps, droite = '') => sec(titre, meta, corps, droite).replace('class="carte sec"', 'class="carte sec" style="margin:0"');
+    const texte = [`Machine : ${M.nom}`, `Système : ${M.os} · ${M.archi}`, `Noyau : ${M.noyau}`, `Processeur : ${f.cpu[0]} · ${f.cpu[1]} cœurs`, `Mémoire : ${fr(M.ramGo[1])} Go · échange ${fr(M.swapGo[1])} Go`, `Disque / : ${fr(d0[3], 0)} Go`, `Adresses : ${M.interfaces.map(i => i[2] + ' (' + i[0] + ')').join(', ')}`, `Allumée depuis : ${M.allumee}`, `Cassandra : ${f.cassandra.version} · livraison ${f.cassandra.livraison}`].join('\n');
+    return tete('La fiche de la machine', 'ce qu’elle est, ce qu’elle porte', age(40))
+    + `<section class="carte sec bandeau-v"><div class="verdict"><div class="vm ${M.redemarrage ? 'd' : ''}"></div><div style="flex:1;min-width:0"><p class="vt mono" style="font-size:22px">${E(M.nom)}</p><p class="vs">${E(f.role)}</p>
+        <div class="puces" style="margin-top:8px"><span class="puce">${E(M.os)}</span><span class="puce">${E(f.virtualisation)}</span><span class="puce">${f.cpu[1]} cœurs</span><span class="puce">${fr(M.ramGo[1])} Go de mémoire</span><span class="puce">${fr(d0[3], 0)} Go de disque</span><span class="puce">allumée depuis ${E(M.allumee)}</span>${M.redemarrage ? '<span class="puce" style="border-color:var(--danger);color:var(--danger)">redémarrage requis</span>' : ''}${S.prevu ? `<span class="puce" style="border-color:var(--info);color:var(--info)">redémarrage prévu ${E(S.prevu)} <button class="lk" style="margin-left:6px" onclick="annulerRedemarrage()">annuler</button></span>` : ''}</div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><span style="display:flex;gap:6px"><button class="btn s" onclick="copierFiche()">Copier la fiche</button><button class="btn s ${M.redemarrage ? 'd' : ''}" onclick="redemarrerMachine()">Redémarrer la machine</button></span>${cass([['Présente-la-moi', 'Présente-moi la machine argos : ce qu’elle est, ce qu’elle porte, ce qui mérite mon attention.'], ['Est-elle assez grande ?', 'La machine argos est-elle bien dimensionnée pour ce qu’elle porte (processeur, mémoire, disque) ?']])}</div></div>
+        <textarea id="fiche-texte" hidden>${E(texte)}</textarea></section>`
+    + `<div class="duo">`
+    + bloc('Identité', 'qui elle est', `<dl class="paires un">
+        ${p('Nom', `<span class="mono">${E(M.nom)}</span>`, D)}${p('Rôle', E(f.role), C)}
+        ${p('Système', `${E(M.os)} <small>${E(M.archi)}</small>`, D)}${p('Nature', E(f.virtualisation), D)}
+        ${p('Hébergeur', E(f.hebergeur), C)}${p('Installée', E(f.installee), C)}
+        ${p('Noyau', `<span class="mono">${E(M.noyau)}</span>`, D)}
+        ${p('Allumée depuis', `${E(M.allumee)} <small>dernier démarrage ${E(f.dernierDemarrage)}</small>`, D)}
+        ${p('Redémarrage', (S.prevu ? `<span style="color:var(--info)">prévu ${E(S.prevu)}</span> <button class="lk" onclick="annulerRedemarrage()">annuler</button>` : M.redemarrage ? `<span style="color:var(--danger)">requis</span> <small>demandé par : ${f.paquets.slice(0, 2).map(E).join(', ')}</small>` : 'pas de redémarrage requis') + ` <button class="btn s ${M.redemarrage && !S.prevu ? 'd' : ''}" style="margin-left:6px" onclick="redemarrerMachine()">Redémarrer…</button>`, D)}</dl>`)
+    + bloc('Matériel', 'ce qu’elle a', `<dl class="paires un">
+        ${p('Processeur', `${E(f.cpu[0])} <small>${f.cpu[1]} cœurs · ${f.cpu[2]} fils · ${E(f.cpu[3])}</small>`, C)}
+        ${p('Mémoire', `${fr(M.ramGo[1])} Go <small>${fr(M.ramGo[0])} Go utilisés</small>`, D)}${p('Échange', `${fr(M.swapGo[1])} Go <small>${fr(M.swapGo[0])} Go utilisés</small>`, D)}
+        ${p('Température', E(f.temperature), D)}${p('Carte mère', E(f.carte), C)}
+        ${f.disquesPhysiques.map(x => p('Disque ' + x[0], `${E(x[1])} · ${E(x[2])} <small>${E(x[3])}</small>`, D)).join('')}</dl>
+        <p class="note">Sur une machine physique, ce bloc montre aussi la batterie, la température, et pour chaque disque sa santé SMART, ses heures de marche et ses secteurs réalloués : le collecteur les relève déjà.</p>`,
+        `<button class="btn s" onclick="aller('ressources')">Ressources</button>`)
+    + bloc('Stockage', 'où sont les fichiers', `<div class="rows">${M.disques.map(d => `<div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"><div class="nm"><b class="mono">${E(d[0])}</b><small>${E((f.montages[d[0]] || ['', ''])[0])} · ${fr(d[2])} sur ${fr(d[3])} Go</small></div>
+        <div class="mil" style="flex-direction:column;align-items:flex-start;gap:3px"><span style="display:flex;align-items:center;gap:8px;width:100%"><span class="pbar"><i class="${niv(d[1])}" style="width:${d[1]}%"></i></span><b class="num" style="color:var(--strong)">${d[1]} %</b></span><small style="color:var(--${d[5] === 'ok' ? 'muted' : 'danger'});font-size:12.5px">${E(d[4].split(' (')[0])}</small></div></div>`).join('')}</div>
+        <dl class="paires un" style="margin-top:8px">${p('Fichiers', E(f.montages['/'][1]), C)}${p('Type', M.disques.map(d => `<span class="mono">${E(d[0])}</span> ${E((f.montages[d[0]] || [''])[0])}`).join(' · '), C)}</dl>
+        <p class="note">La place et sa prévision sont déjà relevées ; le type de système de fichiers et le nombre de fichiers (inodes) sont à créer.</p>`,
+        `<button class="btn s" onclick="versModule('Historique › Prévision du disque')">Prévision</button>`)
+    + bloc('Réseau', 'comment on la joint', `<div class="rows">${M.interfaces.map(i => `<div class="row" style="grid-template-columns:minmax(0,.7fr) minmax(0,1.6fr) auto"><div class="nm"><b class="mono">${E(i[0])}</b><small>${E(i[1])}</small></div>
+        <div class="mil" style="flex-direction:column;align-items:flex-start;gap:1px"><span class="mono" style="color:var(--strong)">${E(i[2])}</span><small class="mono" style="color:var(--muted);font-size:12px">${E(f.ipv6[i[0]] || '')}</small></div><div class="cote">${pill('active', 'ok')}${i[0] === f.route ? pill('route par défaut', 'i') : ''}</div></div>`).join('')}</div>
+        <dl class="paires un" style="margin-top:8px">${p('Passerelle', `<span class="mono">${E(f.passerelle)}</span>`, C)}${p('Vue de dehors', E(f.publique), D)}
+        ${p('Nom inverse', `<span class="mono">${E(f.inverse)}</span>`, C)}${p('Résolution DNS', E(M.dns), D)}</dl>`,
+        `<button class="btn s" onclick="versModule('Sécurité › Exposition')">Exposition</button>`)
+    + bloc('Horloge', 'l’heure qu’elle croit', `<dl class="paires un">${p('Synchronisation', E(M.horloge), D)}${p('Fuseau', `<span class="mono">${E(M.fuseau)}</span>`, D)}${p('Heure du serveur', '<span class="mono">01:12</span> <small>une heure de moins qu’à Paris : les heures de Cassandra sont celles du serveur</small>', D)}</dl>`)
+    + bloc('Protections de base', 'résumé ici · réglé dans Sécurité', `<dl class="paires un">
+        ${p('Pare-feu', E(f.pareFeu), D)}${p('Protection du noyau', E(f.noyauSecu), D)}
+        ${p('Mises à jour', (M.maj.total ? M.maj.total + ' en attente' + (M.maj.secu ? `, <span style="color:var(--danger)">dont ${M.maj.secu} de sécurité</span>` : ', aucune de sécurité') + ` <small class="mono">${f.paquets.map(E).join(', ')}</small>` : 'à jour'), D)}
+        ${p('Automatiques', E(f.majAuto), D)}</dl>`,
+        `<button class="btn s" onclick="versModule('Sécurité › Mises à jour et noyau')">Mises à jour</button><button class="btn s" onclick="versModule('Sécurité › Pare-feu')">Pare-feu</button>`)
+    + `</div>`
+    + sec('Logiciels installés', `${f.logiciels.length} trouvés · ${f.absents.length} cherchés et absents`, `<div class="puces">${f.logiciels.map(l => `<span class="puce"><span class="mono">${E(l[0])}</span> <b>${E(l[1])}</b></span>`).join('')}</div>
+        <p class="note" style="margin-top:10px">Cherchés et absents : ${f.absents.map(x => `<span class="mono">${E(x)}</span>`).join(', ')}.</p>
+        <p class="note">Le collecteur sait déjà quels logiciels sont installés et où (c'est ce qui nourrit la découverte des vignettes) ${D} ; leur version est à créer ${C}.</p>`,
+        cass([['Que mettre à jour ?', 'Quels logiciels de la machine argos sont en retard d’une version importante ou en fin de vie, et par quoi commencer ?']]))
+    + sec('Cassandra sur cette machine', 'ce qu’elle y a posé', `<dl class="paires">
+        ${p('Version', `<span class="mono">${E(f.cassandra.version)}</span> · livraison <span class="mono">${E(f.cassandra.livraison)}</span>`, D)}${p('Dossier', `<span class="mono">${E(f.cassandra.dossier)}</span>`, D)}
+        ${p('Modules', f.cassandra.modules + ' actifs', D)}${p('Code', E(f.cassandra.scelle), D)}
+        ${p('Bases', E(f.cassandra.bases), D)}${p('Courtier', E(f.cassandra.courtier), D)}</dl>`,
+        `<button class="btn s" onclick="aller('services')">Ses services</button><button class="btn s" onclick="versModule('Réglages › Maintenance')">Maintenance</button>`)
+    + sec('Ce qui existe déjà, et ce qui manque', '', `<div class="rows">
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b style="white-space:normal">Nom, système, architecture, nature, noyau, durée de marche, redémarrage requis, mémoire, échange, température, disques et leur santé, interfaces et adresses, DNS, horloge, pare-feu, protection du noyau, mises à jour, logiciels installés, état de Cassandra</b><small style="white-space:normal">déjà relevés par le collecteur : la page actuelle n'en montre aucun (ses six lignes sont vides)</small></div>${deja('déjà là')}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b style="white-space:normal">Processeur (modèle, cœurs), carte mère, hébergeur, date d'installation, passerelle, nom inverse, type de système de fichiers et inodes, version des logiciels</b><small style="white-space:normal">des lectures simples à ajouter au collecteur</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b style="white-space:normal">Le rôle de la machine</b><small style="white-space:normal">une phrase que tu écris toi-même, une fois</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b style="white-space:normal">Redémarrer la machine</b><small style="white-space:normal">décidé : à intégrer. Le geste dit ce qui s'arrête, vérifie avant de partir, se fait maintenant ou à une heure choisie, pose la fenêtre de maintenance, prévient au retour, et demande le nom de la machine</small></div>${creer()}</div></div>`)
+    + blocGestes();
+  },
+  sessions(){
+    if (M.muet) return tete('Sessions', 'qui est connecté à argos', age()) + muetBloc('Les sessions');
+    const sess = M.sessions || [], rf = M.refus;
+    const ligne = (s, i) => { const k = s[0] + '@' + s[1], d = SE[k] || ['Session de ' + s[0], '', ['?', ''], '', '?', '?', '?', '?', ''], ouvert = S.se === k;
+      return `<div class="ct ${ouvert ? 'ouvert' : ''}"><button class="ctl" aria-expanded="${ouvert}" onclick="S.se = S.se === '${k}' ? '' : '${k}'; rendre()">
+          <span class="nm"><b class="mono">${E(s[0])}</b><small>${E(d[0])}</small></span>
+          <span class="c2"><span class="mono">${E(s[1])}</span><small>${E(d[2][0])} · ${E(d[2][1])}</small></span>
+          <span class="c3" style="flex-direction:column;align-items:flex-start"><span style="font-size:13.5px;color:var(--strong)">${E(s[2])}</span><small>${E(s[3].toUpperCase())}${d[6] !== '—' ? ' · inactive depuis ' + E(d[6]) : ''}</small></span>
+          <span class="c4">${pill(d[8] === 'w' ? 'inhabituelle' : d[8] === 'ok' ? 'connue' : 'à regarder', d[8])}<small>${E(d[4])}</small></span><span class="chev">›</span></button>
+        ${ouvert ? `<div class="ctf">
+          <div class="bloc" style="grid-column:1/-1"><h3>Ce que c'est</h3><p class="dit">${E(d[1])}</p></div>
+          <div class="bloc"><h3>D'où elle vient</h3><dl class="paires un">
+            <div><dt>Adresse</dt><dd class="mono">${E(s[1])}</dd></div>
+            <div><dt>Réseau</dt><dd>${E(d[2][0])} ${d[2][0] === 'Tailscale' ? deja('Tailscale') : ''}</dd></div>
+            <div><dt>${d[2][0] === 'Tailscale' ? 'Machine' : 'Fournisseur'}</dt><dd>${E(d[2][1])} ${d[2][0] === 'Tailscale' ? '' : creer()}</dd></div>
+            <div><dt>Déjà vue</dt><dd>${E(d[3])} ${creer()}</dd></div></dl></div>
+          <div class="bloc"><h3>Comment elle est entrée, ce qu'elle fait</h3><dl class="paires un">
+            <div><dt>Identification</dt><dd>${E(d[4])} ${/clé/.test(d[4]) ? deja('Sensorium') : creer()}</dd></div>
+            <div><dt>Ouverte</dt><dd>${E(s[2])} ${deja('Sensorium')}</dd></div>
+            <div><dt>Terminal</dt><dd class="mono">${E(d[5])}</dd></div>
+            <div><dt>Inactive depuis</dt><dd>${E(d[6])} ${creer()}</dd></div>
+            <div><dt>En cours</dt><dd class="mono">${E(d[7])} ${creer()}</dd></div></dl></div>
+          <div class="gestes" style="grid-column:1/-1;align-items:center"><button class="btn s d" onclick="deconnecter(${i})">Déconnecter</button>
+            ${d[2][0] === 'Internet' ? `<button class="btn s d" onclick="bannir(${i})">Bannir l'adresse</button>` : ''}<span style="flex:1"></span>
+            ${cass([['Qui est-ce ?', 'Qui se cache derrière la session ' + s[0] + ' depuis ' + s[1] + ' sur argos ?'], ['Est-ce normal ?', 'La session ' + s[0] + ' depuis ' + s[1] + ' sur argos est-elle normale ? Que me conseilles-tu ?'], ['Qu’a-t-elle fait ?', 'Qu’a fait la session ' + s[0] + ' depuis ' + s[1] + ' sur argos depuis son ouverture ?']])}
+            <span style="flex:1 1 100%;font-size:12.5px;color:var(--muted)">« Déconnecter » existe déjà. ${deja('securite.session_fermer')} « Bannir l'adresse » est à créer ; la liste des bannies et « Débannir » sont dans Sécurité › Défenses. ${creer()}</span></div></div>` : ''}</div>`; };
+    return tete('Sessions', `qui est connecté à argos · ${sess.length} ouverte${sess.length > 1 ? 's' : ''} · ${rf.total} tentatives refusées dans l'heure`, age(20))
+    + sec('Sessions ouvertes', 'un clic ouvre la fiche', sess.length ? `<div class="cts">${sess.map(ligne).join('')}</div>` : '<p class="vide">Aucune session ouverte.</p>',
+        (sess.length > 1 ? `<button class="btn s d" onclick="confirmer('Déconnecter tout le monde, sauf vous ?', 'Toutes les sessions de la machine sont fermées, sauf la vôtre.', 'Déconnecter tout le monde', () => { M.sessions = []; rendre(); toast('Tout le monde est dehors (le geste existe déjà dans Sécurité › Accès).'); })">Tout le monde dehors</button>` : '') + `<button class="btn s" onclick="versModule('Sécurité › Accès')">Sécurité › Accès</button>`)
+    + sec(`Tentatives refusées ${neuf}`, `${rf.total} dans la dernière heure`, `<div class="rows">${rf.adresses.map(a => `<div class="row"><div class="nm"><b class="mono">${E(a[0])}</b><small>${a[1]} tentatives en une heure</small></div><div class="mil"><span class="pbar"><i class="w" style="width:${Math.min(100, a[1] * 6)}%"></i></span></div>
+        <div class="cote">${a[2] ? pill('bannie', 'ok') : pill('pas encore bannie', 'w')}</div></div>`).join('')}</div>
+        <p class="note">Le Sensorium compte déjà les échecs SSH et leurs adresses ; la page actuelle n'en dit rien. Bannir et débannir se font dans Sécurité › Défenses. ${deja('Sensorium')}</p>`,
+        `<button class="btn s" onclick="versModule('Sécurité › Défenses')">Sécurité › Défenses</button>` + cass([['Est-on attaqué ?', 'Y a-t-il une attaque en cours sur le SSH d’argos ? Que me conseilles-tu ?']]))
+    + sec(`Dernières connexions réussies ${neuf}`, 'les sept derniers jours', `<div class="rows">${M.reussies.map(x => `<div class="row"><div class="nm"><b class="mono">${E(x[0])}</b><small>${E(x[1])}</small></div><div class="mil">${E(x[2])} · ${E(x[3])}</div><div class="cote"><span class="num" style="font-size:13px;color:var(--soft)">${E(x[4])}</span></div></div>`).join('')}</div>
+        <p class="note">Qui est entré, d'où, avec quoi, et combien de temps : le collecteur ne garde aujourd'hui que les sessions ouvertes à l'instant. ${creer()}</p>`)
+    + blocGestes()
+    + `<p class="note" style="margin:-6px 4px 0">Les sessions des comptes de Cassandra elle-même (l'interface) sont dans Sécurité › Accès et dans Mon compte. La liste des sessions de la machine reste ici, ou part dans Sécurité › Accès ? ${creer('à trancher')}</p>`;
+  },
+  proc(){
+    if (M.muet) return tete('Processus et mémoire', 'ce qui tourne sur argos', age()) + muetBloc('Les processus') ;
+    const det = p => PR[p[2]] || [0, 0, '?', ['?', ''], '', ''], me = M.memoire;
+    const q = S.q.toLowerCase(), l = M.proc.filter(p => !q || (p[2] + ' ' + p[0] + ' ' + det(p)[3][1]).toLowerCase().includes(q)).sort((a, b) => S.tri === 'mem' ? det(b)[1] - det(a)[1] : b[1] - a[1]);
+    const mo = v => v >= 1024 ? fr(v / 1024) + ' Go' : v + ' Mo';
+    const ligne = p => { const d = det(p), i = M.proc.indexOf(p), ouvert = S.pr === p[2], court = p[2].split(' ')[0].split('/').pop() || p[2];
+      return `<div class="ct ${ouvert ? 'ouvert' : ''}"><button class="ctl" aria-expanded="${ouvert}" onclick="S.pr = S.pr === M.proc[${i}][2] ? '' : M.proc[${i}][2]; rendre()">
+          <span class="nm"><b class="mono" title="${E(p[2])}">${E(p[2])}</b><small>${E(d[4])}</small></span>
+          <span class="c2"><span style="font-size:13.5px;color:var(--strong)">${E(p[0])} <small style="display:inline">· n° ${d[0]}</small></span><small>lancé depuis ${E(d[2])}</small></span>
+          <span class="c3">${d[3][1] ? `<span class="pc">${E(d[3][0])} ${E(d[3][1])}</span>` : `<small>${E(d[3][0])}</small>`}</span>
+          <span class="c4"><b class="num" style="font-size:13.5px;color:var(--${p[1] > 50 ? 'danger' : p[1] > 20 ? 'warn' : 'strong'})">${fr(p[1])} %</b><small class="num">${mo(d[1])}</small></span><span class="chev">›</span></button>
+        ${ouvert ? `<div class="ctf">
+          <div class="bloc" style="grid-column:1/-1"><h3>Ce que c'est</h3><p class="dit">${E(d[4])}</p><p class="dit mono" style="font-size:12.5px;color:var(--soft);word-break:break-all">${E(p[2])}</p></div>
+          <div class="bloc"><h3>Identité ${creer()}</h3><dl class="paires un">
+            <div><dt>Numéro (PID)</dt><dd class="mono">${d[0]}</dd></div><div><dt>Utilisateur</dt><dd class="mono">${E(p[0])} ${deja('déjà là')}</dd></div>
+            <div><dt>Lancé depuis</dt><dd>${E(d[2])}</dd></div>
+            <div><dt>Appartient à</dt><dd>${d[3][1] ? E(d[3][0]) + ' <span class="mono">' + E(d[3][1]) + '</span>' : 'le système'} ${d[3][0] === 'service' ? `<small><a onclick="S.sv='${E(d[3][1])}';S.svF='tous';aller('services')">ouvrir le service →</a></small>` : d[3][0] === 'conteneur' ? `<small><a onclick="S.ct='${E(d[3][1])}';aller('conteneurs')">ouvrir le conteneur →</a></small>` : ''}</dd></div></dl></div>
+          <div class="bloc"><h3>Ce qu'il consomme</h3><dl class="paires un">
+            <div><dt>Processeur</dt><dd><span class="pbar" style="display:inline-block;width:120px;vertical-align:2px;margin-right:8px"><i class="${p[1] > 50 ? 'd' : p[1] > 20 ? 'w' : ''}" style="width:${Math.min(p[1], 100)}%"></i></span>${fr(p[1])} % ${deja('déjà là')}</dd></div>
+            <div><dt>Mémoire</dt><dd>${mo(d[1])} · ${fr(d[1] / (me.total * 10.24), 1)} % de la machine ${creer()}</dd></div></dl></div>
+          <div class="gestes" style="grid-column:1/-1;align-items:center">${d[5] ? `<span class="pl w" style="white-space:normal;border-radius:10px;padding:4px 10px">Pas d'arrêt d'ici : ${E(d[5])}</span>` :
+            (d[3][0] === 'service' ? `<button class="btn s p" onclick="S.sv='${E(d[3][1])}';S.svF='tous';aller('services')">Redémarrer son service</button>` : '') + `<button class="btn s" onclick="prGeste(${i}, 'terminer')">Terminer</button><button class="btn s d" onclick="prGeste(${i}, 'forcer')">Forcer l'arrêt</button><button class="btn s" onclick="prGeste(${i}, 'calmer')">Baisser sa priorité</button>`}<span style="flex:1"></span>
+            ${cass([['Que fait-il ?', 'Que fait le processus « ' + court + ' » (n° ' + d[0] + ') sur argos ?'], ['Est-ce normal ?', 'Est-ce normal que « ' + court + ' » prenne ' + fr(p[1]) + ' % du processeur et ' + mo(d[1]) + ' de mémoire sur argos ?'], ['Que faire ?', 'Le processus « ' + court + ' » pèse sur argos : que me conseilles-tu, sans rien casser ?']])}
+            <span style="flex:1 1 100%;font-size:12.5px;color:var(--muted)">Terminer, forcer l'arrêt, baisser la priorité : à créer, comme des commandes nommées du courtier qui refusent les processus protégés ; jamais une commande libre. ${creer()}</span></div></div>` : ''}</div>`; };
+    let corps;
+    if (S.groupe){ const g = {}; l.forEach(p => { g[p[0]] = g[p[0]] || [0, 0, 0]; g[p[0]][0] += p[1]; g[p[0]][1]++; g[p[0]][2] += det(p)[1]; });
+      corps = `<div class="rows">${Object.entries(g).sort((a, b) => b[1][0] - a[1][0]).map(([u, v]) => `<div class="row"><div class="nm"><b class="mono">${E(u)}</b><small>${v[1]} processus · ${mo(v[2])}</small></div><div class="mil"><span class="pbar"><i class="${v[0] > 50 ? 'd' : v[0] > 20 ? 'w' : ''}" style="width:${Math.min(v[0], 100)}%"></i></span><b class="num" style="color:var(--strong)">${fr(v[0])} %</b></div><div class="cote"></div></div>`).join('')}</div>`;
+    } else corps = `<div class="cts">${l.map(ligne).join('') || '<p class="vide">Aucun processus ne correspond.</p>'}</div>`;
+    const part = v => (v / me.total * 100).toFixed(1), gros = M.proc.slice().sort((a, b) => det(b)[1] - det(a)[1]).slice(0, 4);
+    return tete('Processus et mémoire', 'ce qui tourne sur argos, et où va la mémoire', age(2))
+    + sec('Les processus', `${l.length} sur ${M.proc.length} relevés · relus toutes les 5 s · un clic ouvre la fiche`, corps + `
+        <p class="note">La page actuelle montre 8 processus sur les 10 relevés, sans rien d'autre que leur nom. Le collecteur relève déjà l'utilisateur et le processeur ; le numéro, la mémoire, l'âge et l'appartenance à un service ou à un conteneur sont à créer.</p>`,
+        `<input type="search" placeholder="Filtrer…" aria-label="Filtrer les processus" value="${E(S.q)}" oninput="S.q=this.value;rendre('q')" id="q"><button class="btn s" onclick="S.tri = S.tri === 'cpu' ? 'mem' : 'cpu'; rendre()">Tri : ${S.tri === 'cpu' ? 'processeur' : 'mémoire'}</button><button class="btn s" aria-pressed="${S.groupe}" onclick="S.groupe=!S.groupe;rendre()">${S.groupe ? 'Un par un' : 'Par utilisateur'}</button>`)
+    + sec(`Où va la mémoire ${neuf}`, `${fr(me.total)} Go · pression : ${E(me.pression)}`, `<div class="pile"><i style="width:${part(me.applis)}%;background:var(--accent)" title="programmes"></i><i style="width:${part(me.cache)}%;background:var(--violet);opacity:.55" title="cache"></i><i style="width:${part(me.libre)}%;background:var(--line2)" title="libre"></i></div>
+        <div class="leg"><span><i style="background:var(--accent);height:10px"></i>programmes ${fr(me.applis)} Go</span><span><i style="background:var(--violet);opacity:.55;height:10px"></i>cache ${fr(me.cache)} Go · rendu dès qu'un programme en a besoin</span><span><i style="background:var(--line2);height:10px"></i>libre ${fr(me.libre)} Go</span><span>échange ${fr(M.swapGo[0])} sur ${fr(M.swapGo[1])} Go</span></div>
+        <div class="rows" style="margin-top:12px">${gros.map(p => `<div class="row"><div class="nm"><b class="mono">${E((p[2].split(' ')[0].split('/').pop() || p[2]).replace(/:$/, ''))}</b><small>${E(det(p)[4])}</small></div><div class="mil"><span class="pbar"><i style="width:${Math.min(100, det(p)[1] / (me.total * 10.24))}%"></i></span><b class="num" style="color:var(--strong)">${mo(det(p)[1])}</b></div><div class="cote"></div></div>`).join('')}</div>
+        <p class="note">Le total, l'utilisé et l'échange sont déjà relevés ; la part du cache et la mémoire de chaque processus sont à créer. ${creer()}</p>`,
+        cass([['Qui prend la mémoire ?', 'Qui consomme la mémoire sur argos en ce moment, et est-ce normal ?'], ['Risque-t-on un plantage ?', 'Y a-t-il un risque que des processus soient tués faute de mémoire sur argos ? Que faire pour l’éviter ?']]))
+    + sec('Tués faute de mémoire', 'OOM · les dernières 24 h', M.oom.length ? `<div class="rows">${M.oom.map((o, i) => { const d = OOMD[o[0]] || ['', '', '']; return `<div class="row" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1.6fr) auto"><div class="nm"><b class="mono">${E(o[0])}</b><small>${E(o[2])} · occupait ${fr(o[1] / 1024)} Go${d[0] ? ' · service ' + E(d[0]) : ''}</small></div>
+        <div class="mil" style="flex-direction:column;align-items:flex-start;gap:2px"><span>${E(d[1])} ${creer()}</span><small style="color:var(--muted);font-size:12.5px">${E(d[2])} ${deja('Sensorium')}</small></div>
+        <div class="cote"><button class="btn s" onclick="demander('Pourquoi ${E(o[0])} a-t-il été tué faute de mémoire ${E(o[2])} sur argos, et comment éviter que cela recommence ?')">${ico('bulle')}Pourquoi ?</button>${d[0] ? `<button class="btn s" onclick="limiter('${E(d[0])}')">Limiter sa mémoire</button>` : ''}<button class="btn s" onclick="acquitter(${i})">Acquitter</button></div></div>`; }).join('')}</div>`
+        : '<p class="vide">Aucun processus tué faute de mémoire.</p>',
+        (M.oom.length ? `<button class="btn s" onclick="acquitter()">Tout acquitter</button>` : '') + `<button class="btn s" onclick="demander('Y a-t-il eu des processus tués faute de mémoire récemment sur argos, et pourquoi ?')">${ico('bulle')}Demander</button>`)
+    + `<p class="note" style="margin:-6px 4px 12px">« Tout acquitter » et la question à Cassandra existent déjà ${deja('securite.oom_acquitter')} ; la date, l'acquittement un par un, ce qui s'est passé ensuite et « Limiter sa mémoire » sont nouveaux.</p>`
+    + blocGestes();
+  },
+  services(){
+    if (M.muet) return tete('Services', 'les unités systemd d’argos', age()) + muetBloc('Les services');
+    const FAM = ['tous', 'en échec', 'maison', 'web', 'courrier', 'données', 'réseau', 'sécurité', 'système'];
+    const q = S.svQ.toLowerCase(), l = SV.filter(s => (S.svF === 'tous' || (S.svF === 'en échec' ? svEtat(s[0]).cle === 'echec' : s[2] === S.svF)) && (!q || (s[0] + ' ' + s[1]).toLowerCase().includes(q)));
+    const nEchec = SV.filter(s => svEtat(s[0]).cle === 'echec').length;
+    const ligne = s => { const e = svEtat(s[0]), ouvert = S.sv === s[0], vit = e.cle === 'actif', boot = S.svB[s[0]] !== false;
+      return `<div class="ct ${ouvert ? 'ouvert' : ''}"><button class="ctl" aria-expanded="${ouvert}" onclick="S.sv = S.sv === '${s[0]}' ? '' : '${s[0]}'; rendre()">
+          <span class="nm"><b class="mono">${E(s[0])}</b><small>${E(s[1])}</small></span>
+          <span class="c2"><span style="font-size:13.5px;color:var(--strong)">${E(s[2])}</span><small>${boot ? 'démarre avec la machine' : 'ne démarre pas avec la machine'}</small></span>
+          <span class="c3">${s[6].length ? s[6].map(p => `<span class="pc">${E(p)}</span>`).join('') : '<small>aucun port</small>'}</span>
+          <span class="c4">${pill(e.texte, e.coul)}<small class="num">${vit && s[3] ? fr(s[5]) + ' % · ' + s[4] + ' Mo' : E(e.depuis)}</small></span><span class="chev">›</span></button>
+        ${ouvert ? svFiche(s, e, boot) : ''}</div>`; };
+    return tete('Services', `${M.services.actifs - nEchec} actifs · ${M.services.inactifs} inactifs · ${nEchec} en échec`, age(40))
+    + (nEchec ? `<section class="carte sec bandeau-v"><div class="verdict"><div class="vm d"></div><div style="flex:1"><p class="vt">${nEchec} service${nEchec > 1 ? 's' : ''} en échec : ${SV.filter(s => svEtat(s[0]).cle === 'echec').map(s => E(s[0])).join(', ')}</p>
+        <p class="vs">${SV.filter(s => svEtat(s[0]).cle === 'echec').map(s => E(s[7])).join(' ')}</p>
+        <div class="gestes"><button class="btn s p" onclick="reparer()">${ico('bulle')}Demander à Cassandra de réparer</button><button class="btn s" onclick="S.svF='en échec';rendre()">Ne voir qu'eux</button>
+          <button class="btn s" onclick="reinitialiser()" title="systemctl reset-failed : elles ne sont plus comptées en panne ; rien n'est redémarré">Réinitialiser le compteur</button></div></div></div></section>` : '')
+    + sec('Les services', `${l.length} sur ${SV.length} suivis de près · un clic ouvre la fiche`, `<div class="chips">${FAM.map(f => `<button class="chip" aria-pressed="${S.svF === f}" onclick="S.svF='${f}';rendre()">${f}${f === 'en échec' && nEchec ? ' · ' + nEchec : ''}</button>`).join('')}</div>
+        <div class="cts">${l.map(ligne).join('') || '<p class="vide">Aucun service ne correspond.</p>'}</div>
+        <p class="note">Les ${M.services.actifs + M.services.inactifs - SV.length} autres unités de la machine (montages, minuteurs, services du système) restent dans le Sensorium, famille « Services ». Les tâches planifiées ont leur écran, Automatismes.</p>`,
+        `<input type="search" placeholder="Filtrer…" aria-label="Filtrer les services" value="${E(S.svQ)}" oninput="S.svQ=this.value;rendre('q')" id="q"><button class="btn s" onclick="versModule('Sensorium › Services')">Sensorium</button>`)
+    + blocGestes()
+    + sec('Ce qui existe déjà, et ce qui manque', '', `<div class="rows">
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>L'état de chaque service et s'il démarre avec la machine</b><small style="white-space:normal">déjà relevés par le Sensorium (61 unités) : la page actuelle ne montre que celles en échec</small></div>${deja('déjà là')}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Recharger nginx, relancer Ollama, relancer le noyau, redémarrer le collecteur ; le journal de ces quatre services</b><small style="white-space:normal">des gestes qui existent, mais qu'aucun écran ne rassemble</small></div>${deja('déjà là')}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Demander à Cassandra de réparer</b><small style="white-space:normal">son palier d'autonomie « proposer » existe : elle propose un plan, tu l'approuves, chaque étape s'inscrit au journal</small></div>${deja('déjà là')}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>La description, le numéro, la mémoire et le processeur de chaque service ; ce qui tombe si on l'arrête</b><small style="white-space:normal">la description est un texte à écrire une fois par service connu ; le reste est une lecture de systemd</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Démarrer, arrêter, redémarrer, recharger n'importe quel service suivi ; le lancer ou non avec la machine ; son journal</b><small style="white-space:normal">élargir la table fermée de quatre services à la liste suivie ici ; les services protégés (ssh, le noyau) ne s'arrêtent pas</small></div>${creer()}</div></div>`);
+  },
+  conteneurs(){
+    if (M.muet) return tete('Conteneurs', 'Docker sur argos', age()) + muetBloc('Les conteneurs');
+    const ko = M.conteneurs.filter(c => !c[6]).length, pub = M.conteneurs.filter(c => CT[c[0]].ports.some(p => p[5] !== 'ok')).length, noms = M.conteneurs.filter(c => CT[c[0]].proxy.length).length;
+    const port = p => `<span class="pc ${p[5] === 'ok' ? '' : 'w'}" title="${E(p[0])}:${p[1]} → ${p[2]}/${p[3]} dans le conteneur">${p[1]}/${p[3]}</span>`;
+    const ligne = c => { const d = CT[c[0]], ouvert = S.ct === c[0];
+      return `<div class="ct ${ouvert ? 'ouvert' : ''}"><button class="ctl" aria-expanded="${ouvert}" onclick="S.ct = S.ct === '${c[0]}' ? '' : '${c[0]}'; rendre()">
+          <span class="nm"><b class="mono">${E(c[0])}</b><small>${E(d.role)}</small></span>
+          <span class="c2"><span class="mono">${E(c[1])}</span><small>${E(d.distrib)}</small></span>
+          <span class="c3">${d.ports.length ? d.ports.map(port).join('') : '<small>aucun port publié</small>'}${d.proxy.length ? `<small>↳ ${E([...new Set(d.proxy.map(x => x[0]))].join(', '))}</small>` : ''}</span>
+          <span class="c4">${pill(c[2], c[7] === 'pause' ? 'w' : c[6] ? 'ok' : 'd')}<small class="num">${c[6] && c[7] !== 'pause' ? fr(c[4], 2) + ' % · ' + E(c[5]) : '—'}</small>${S.maj[c[0]] ? pill('mise à jour disponible', 'i') : ''}</span><span class="chev">›</span></button>
+        ${ouvert ? fiche(c, d) : ''}</div>`; };
+    const fiche = (c, d) => `<div class="ctf">
+        <div class="bloc"><h3>Ports ${creer()}</h3>${d.ports.length ? `<table class="ptab"><thead><tr><th>Sur la machine</th><th>Dans le conteneur</th><th>Qui peut le joindre</th></tr></thead><tbody>${d.ports.map(p => `<tr><td class="mono">${E(p[0])}:${p[1]}</td><td class="mono">${p[2]}/${p[3]}</td><td>${pill(p[4], p[5])}</td></tr>`).join('')}</tbody></table>
+            <p class="note"><a onclick="versModule('Sécurité › Exposition')">Sécurité › Exposition →</a> dit qui joint chaque port de la machine ; ici, à quel conteneur il appartient.</p>` : `<p class="vide">Aucun port publié${d.reseau.startsWith('host') ? ' : ce conteneur partage le réseau de la machine, ses ports sont ceux de la machine.' : '.'}</p>`}</div>
+        <div class="bloc"><h3>Reverse proxy ${creer()}</h3>${d.proxy.length ? `<div class="rows">${d.proxy.map(x => `<div class="chemin"><span class="mono"><b>${E(x[0])}</b>${E(x[1] === '/' ? '' : x[1])}</span><span class="fl">→ nginx →</span><span class="mono">${E(x[2])}</span><span class="fl">→</span><span class="mono">${E(c[0])}</span></div>`).join('')}</div>
+            <dl class="paires un"><div><dt>Certificat</dt><dd>${d.proxy[0][3]} jours restants <small><a onclick="versModule('Sécurité › Certificats')">Certificats →</a></small></dd></div><div><dt>Trafic</dt><dd>${E(d.proxy[0][4])} ${deja('Sensorium')}</dd></div></dl>`
+            : '<p class="vide">Aucun nom public ne mène à ce conteneur : il n’est joint que depuis la machine.</p>'}</div>
+        <div class="bloc"><h3>Image</h3><dl class="paires un">
+            <div><dt>Image</dt><dd class="mono">${E(c[1])}</dd></div>
+            <div><dt>Distribution</dt><dd>${E(d.distrib)} ${creer()}</dd></div>
+            <div><dt>Construite</dt><dd>il y a ${c[3]} jours · ${E(d.taille)} ${deja('Sensorium')}</dd></div>
+            <div><dt>Mise à jour</dt><dd>${S.maj[c[0]] ? `<span style="color:var(--info)">disponible : ${E(S.maj[c[0]])}</span>` : 'à jour'} ${creer()}</dd></div>
+            <div><dt>Failles connues</dt><dd>${d.failles[0] ? `<span style="color:var(--danger)">${d.failles[0]} critiques</span>, ` : ''}${d.failles[1] ? d.failles[1] + ' autres' : (d.failles[0] ? '' : 'aucune')} <small><a onclick="versModule('Sécurité › Outils (Trivy)')">Sécurité › Outils →</a></small> ${deja('Trivy')}</dd></div></dl></div>
+        <div class="bloc"><h3>Marche</h3><dl class="paires un">
+            <div><dt>État</dt><dd>${E(c[2])} ${deja('Sensorium')}</dd></div>
+            <div><dt>Ressources</dt><dd>${c[6] ? 'processeur ' + fr(c[4], 2) + ' % · mémoire ' + E(c[5]) : '—'} ${deja('Sensorium')}</dd></div>
+            <div><dt>Santé</dt><dd>${E(d.sante)} ${creer()}</dd></div>
+            <div><dt>Redémarrage</dt><dd>politique « ${E(d.politique)} » · ${d.redemarrages} redémarrage${d.redemarrages > 1 ? 's' : ''} ${creer()}</dd></div></dl></div>
+        <div class="bloc"><h3>Réseau et volumes ${creer()}</h3><dl class="paires un">
+            <div><dt>Réseau</dt><dd>${E(d.reseau)}${d.ip !== '—' ? ` · <span class="mono">${E(d.ip)}</span>` : ''}</dd></div>
+            <div><dt>Volumes</dt><dd>${d.volumes.length ? d.volumes.map(v => `<span class="mono">${E(v[0])}</span> → <span class="mono">${E(v[1])}</span> <small style="display:inline">${E(v[2])}</small>`).join('<br>') : 'aucun : rien n’est gardé si le conteneur est recréé'}</dd></div>
+            <div><dt>Posé par</dt><dd>${E(d.compose)}</dd></div></dl></div>
+        ${gestesCt(c)}</div>`;
+    return tete('Conteneurs', `${M.conteneurs.length - ko} sur ${M.conteneurs.length} tournent · ${pub} avec un port ouvert au-delà de la machine · ${noms} derrière un nom public`, age(110))
+    + sec('Les conteneurs', 'Docker · un clic ouvre la fiche', `<div class="cts">${M.conteneurs.map(ligne).join('')}</div>
+        <p class="note">Sur chaque ligne : le nom et son rôle, l'image et sa distribution, les ports publiés (en orange : ouverts au-delà de la machine) et le nom public qui y mène, l'état et la charge.</p>`,
+        (Object.keys(S.maj).length ? `<button class="btn s p" onclick="ctToutMaj()">Tout mettre à jour (${Object.keys(S.maj).length})</button>` : '') + `<button class="btn s" onclick="versModule('Sécurité › Outils (Trivy)')" title="Les failles connues dans les images">Failles des images</button>`)
+    + blocGestes()
+    + sec('Ce que le collecteur relève aujourd’hui', 'et ce qui lui manque', `<div class="rows">
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Nom, image, état, âge de l'image, processeur et mémoire, failles des images, trafic des sites</b><small style="white-space:normal">déjà relevés : la page actuelle n'en montre que le nom (et l'état, faux)</small></div>${deja('déjà là')}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Ports de chaque conteneur</b><small style="white-space:normal">la colonne existe dans la base du collecteur, mais il ne la remplit pas : une option à ajouter à sa lecture de Docker</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Reverse proxy</b><small style="white-space:normal">lire dans la configuration de nginx quel nom public renvoie vers quel port ; le collecteur le fait déjà pour trouver le port de FastPanel</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Distribution, santé, politique de redémarrage, réseau, volumes, origine</b><small style="white-space:normal">une lecture « docker inspect » par conteneur, et le fichier de version du système dans l'image</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Les gestes : démarrer, arrêter, redémarrer, pause et reprise, mettre à jour, journal</b><small style="white-space:normal">aucun n'existe aujourd'hui. Chacun serait une commande nommée du courtier, avec sa confirmation, sa preuve et son retour ; jamais une commande libre</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Savoir qu'une mise à jour existe</b><small style="white-space:normal">comparer l'image posée à celle du dépôt d'images, une fois par jour</small></div>${creer()}</div></div>`);
+  },
+  corr(){
+    const L = [
+      ['Santé système', 'score 95, « 3 sites · 0 SSL », six lignes serveur vides', 'Le bandeau en tête : ce qui cloche et la note d’ensemble du Sensorium ; tuile « La fiche » et son détail : identité, matériel, stockage, réseau, horloge, protections, logiciels, Cassandra sur la machine', ''],
+      ['Ressources', 'quatre pourcentages, une courbe noire', 'Tuiles « Ressources » et « Disque » ; détail : jauges en vraies grandeurs, courbe aux couleurs du thème, disques et prévision', ''],
+      ['Tiroir cloud', 'dépôts distants de copie', 'Tuile « Dépôts distants » → Sauvegardes', ''],
+      ['SSL', '10 certificats, bouton question', 'Tuile « Certificats » → Sécurité › Certificats ; le bouton question reste sur la tuile', ''],
+      ['Tailscale', 'machines et adresses', 'Tuile « Tailscale » → Parc › Tailscale', ''],
+      ['Fail2ban', 'un compte (faux : 0 au lieu de 10)', 'Tuile « Bannissements » → Sécurité › Défenses, qui a la liste et « Débannir »', ''],
+      ['FastPanel', 'six tuiles cliquables', 'Tuile « Hébergement » : les six compteurs, chacun ouvre sa section', ''],
+      ['Top processus', '8 sur 10, sans utilisateur', 'Tuile « Processus » (les quatre premiers) ; détail : les dix, leur fiche au clic (ce que c’est, numéro, utilisateur, âge, service ou conteneur, processeur, mémoire), tri, filtre, regroupement, gestes, questions à Cassandra ; et « Où va la mémoire »', ''],
+      ['Panne', 'unités en échec, réinitialiser, question', 'Tuile « Services » ; détail : chaque service suivi avec sa description et sa fiche (état, démarrage, ports, ce qui tombe si on l’arrête, journal), ses gestes, les questions à Cassandra, et « Demander à Cassandra de réparer »', ''],
+      ['Sessions', 'liste, déconnecter', 'Tuile « Sessions » : la liste et « Déconnecter » dès la page d’ensemble ; détail : la fiche de chaque session (d’où elle vient, comment elle est entrée, ce qu’elle fait), les tentatives refusées, les dernières connexions réussies', 'à trancher : ici ou dans Sécurité › Accès'],
+      ['Ports', '15 sur 35', 'Tuile « Ports ouverts » → Sécurité › Exposition, qui les a tous, par anneau', ''],
+      ['OOM', '5 événements, acquitter, question', 'Tuile « Mémoire saturée » ; détail : mêmes gestes, plus la date, le service touché, ce qui s’est passé ensuite, la cause probable, « Limiter sa mémoire »', ''],
+      ['Docker', 'liste, tous en rouge', 'Tuile « Conteneurs » ; détail : une ligne par conteneur (rôle, image et distribution, ports, nom public, état, charge) et sa fiche au clic : ports, reverse proxy, image, marche, réseau et volumes, et ses gestes (démarrer, arrêter, redémarrer, pause, mettre à jour, journal)', ''],
+      ['NetBird', 'absent du tiroir', 'Tuile « NetBird » : machines en ligne, serveur ; elle lit netbird.etat, qui existe déjà', ''],
+      ['Découverte', 'treize cartes écrites en dur, FastPanel compris', 'Les tuiles des voisins paraissent selon ce que la machine porte : module présent, logiciel détecté sans module, ou rien', ''],
+      ['Tout d’un coup d’œil', 'treize cartes dans un tiroir', 'Une tuile par sujet sur une seule page (quinze sur Argos) ; le détail ne s’ouvre qu’au clic', ''],
+      ['Commandes de carte', 'rétrécir, élargir, plein écran, replier', 'Les tuiles sont fixes ; plein écran et repli restent sur les blocs des pages de détail', 'à trancher'],
+      ['Relecture', '5 s, 30 s, 60 s selon la carte, sans le dire', 'La page dit sa source et son âge ; collecteur muet : chaque tuile garde sa dernière valeur, grisée et datée, jamais zéro', ''],
+      ['Ouverture', 'un tiroir par-dessus le Panorama', 'Une vraie page, « La machine », dans le Panorama ; l’entrée « Détails système » disparaît', 'à trancher : le nom et la place dans le menu'],
+    ];
+    return `<p class="fil">La maquette › Ancienne page → nouvelle</p><div class="tete"><h1>Rien n'est perdu</h1><span class="meta">chaque carte du tiroir actuel, et où elle se retrouve</span>
+      <button class="btn" onclick="toast('Le clone de la page actuelle : docs/CN_maquette-systeme-actuelle.html')">La page actuelle, clonée</button></div>`
+    + `<section class="carte sec" style="overflow:auto"><table><thead><tr><th>Aujourd'hui</th><th>Ce qu'elle montre</th><th>Dans la nouvelle page</th><th></th></tr></thead><tbody>${L.map(l => `<tr><td>${E(l[0])}</td><td style="color:var(--soft)">${E(l[1])}</td><td>${E(l[2])}</td><td>${l[3] ? creer(E(l[3])) : ''}</td></tr>`).join('')}</tbody></table></section>`
+    + sec('Ce qui demande du code côté serveur', 'tout le reste se lit déjà', `<div class="rows">
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>La déclaration de vignette</b><small style="white-space:normal">chaque module dit dans son manifeste quelle vignette il apporte à cette page et quelle preuve le Sensorium doit trouver ; la page les découvre</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Nombre de cœurs du processeur</b><small>le seul champ de la fiche que le collecteur ne relève pas</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>La fiche des processus et leurs gestes</b><small style="white-space:normal">numéro, mémoire, âge, service ou conteneur d'appartenance ; terminer, forcer l'arrêt, baisser la priorité, refusés aux processus protégés</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>La fiche des services et leurs gestes</b><small style="white-space:normal">description, numéro, mémoire, ce qui tombe si on l'arrête ; démarrer, arrêter, redémarrer, recharger, lancer ou non au démarrage, pour la liste suivie</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>La fiche des sessions</b><small style="white-space:normal">fournisseur et pays de l'adresse, déjà vue ou non, inactivité, commande en cours, connexions réussies des sept derniers jours ; bannir une adresse</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Redémarrer la machine</b><small style="white-space:normal">décidé : à intégrer. Maintenant ou programmé, avec vérifications, fenêtre de maintenance, annonce du retour, et le nom de la machine à taper</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>La fiche des conteneurs</b><small style="white-space:normal">ports de chaque conteneur, reverse proxy, distribution, santé, politique de redémarrage, réseau, volumes : le collecteur ne lit aujourd'hui que le nom, l'état et l'image</small></div>${creer()}</div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>Les gestes sur un conteneur</b><small style="white-space:normal">démarrer, arrêter, redémarrer, pause et reprise, mettre à jour (avec retour à l'image d'avant), journal ; et savoir qu'une mise à jour existe. Des commandes nommées du courtier, chacune avec sa preuve et son retour</small></div>${creer()}</div></div>`)
+    + sec('Trois décisions pour toi', '', `<div class="rows">
+        <div class="row" style="grid-template-columns:minmax(0,1fr)"><div class="nm"><b>Le nom et la place</b><small style="white-space:normal">Proposé : « La machine » du Panorama devient cette page et absorbe « Détails système » ; les détails s'ouvrent au clic, sans entrée de menu. Autres choix : une entrée « Machine » à part dans le Parc ; ou ajouter les détails en sous-entrées du menu, comme raccourcis.</small></div></div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr)"><div class="nm"><b>Les sessions</b><small style="white-space:normal">Proposé : la liste et « Déconnecter » restent ici tant que Sécurité › Accès ne les a pas. Autre choix : les y déplacer.</small></div></div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr)"><div class="nm"><b>Les tuiles des voisins</b><small style="white-space:normal">Proposé : ports, bannissements, certificats, Tailscale, NetBird, hébergement, dépôts distants montrent leur chiffre ici et s'ouvrent chez leur module. Autre choix : leur donner aussi un détail sur cette page.</small></div></div></div>`);
+  },
+};
+function jauge(nom, valeur, pct, sous, id = ''){ return `<div class="jg"><span>${nom}</span><b class="${niv(pct)}" ${id ? `id="${id}"` : ''}>${valeur}</b><div class="barre"><i class="${niv(pct)}" style="width:${Math.min(pct, 100)}%"></i></div><em>${sous}</em></div>`; }
+function jauges(){
+  return jauge('Processeur', fr(M.cpu, 0) + ' %', M.cpu, 'charge ' + M.charge.map(c => fr(c, 2)).join(' · ') + ' <small>(1, 5, 15 min)</small>')
+    + jauge('Mémoire', fr(M.ram, 0) + ' %', M.ram, fr(M.ramGo[0]) + ' sur ' + fr(M.ramGo[1]) + ' Go')
+    + jauge('Échange (swap)', fr(M.swap, 0) + ' %', M.swap, fr(M.swapGo[0]) + ' sur ' + fr(M.swapGo[1]) + ' Go')
+    + jauge('Disque /', fr(M.disque, 0) + ' %', M.disque, fr(M.disqueGo[0], 0) + ' sur ' + fr(M.disqueGo[1], 0) + ' Go · ' + fr(M.disqueGo[1] - M.disqueGo[0], 0) + ' Go libres');
+}
+function courbe(){
+  const z = $('courbe'); if (!z) return;
+  const tr = (l, c) => { if (l.length < 2) return ''; const n = 60, pts = l.map((v, i) => [(600 - (l.length - 1 - i) * (600 / (n - 1))).toFixed(1), (140 - v * 1.3).toFixed(1)]);
+    return `<path d="M${pts.map(p => p.join(',')).join(' L')}" fill="none" stroke="${c}" stroke-width="2" vector-effect="non-scaling-stroke"/>`; };
+  z.innerHTML = [0, 25, 50, 75, 100].map(v => `<line x1="0" x2="600" y1="${140 - v * 1.3}" y2="${140 - v * 1.3}" stroke="var(--line)" vector-effect="non-scaling-stroke"/>`).join('') + tr(S.hist.ram, 'var(--violet)') + tr(S.hist.cpu, 'var(--accent)');
+}
+// La machine vit : le processeur bouge à chaque relecture (ici toutes les 2 s, pour ne pas attendre ; 5 s dans l'application).
+function battre(){
+  if (M.muet) return;
+  const onde = [0, 3, 7, 4, -2, -6, -9, -5, 1, 5, 2, -3][S.t++ % 12], b = ETATS[S.etat].cpu ?? BASE.cpu;
+  M.cpu = Math.max(1, Math.min(100, b + onde)); if (M.proc[0] && M.proc[0][2] === (ETATS[S.etat].proc || BASE.proc)[0][2]) M.proc[0][1] = Math.max(0.5, (ETATS[S.etat].proc || BASE.proc)[0][1] + onde / 2);
+  S.hist.cpu.push(M.cpu); S.hist.ram.push(M.ram + (onde > 4 ? 0.4 : 0)); if (S.hist.cpu.length > 60){ S.hist.cpu.shift(); S.hist.ram.shift(); }
+  if (S.page === 'ressources' && $('jauges')){ $('jauges').innerHTML = jauges(); courbe(); }
+  if (S.page === 'vue' && $('c-res')){ $('c-res').innerHTML = corpsRes(); $('c-proc').innerHTML = corpsProc(); }
+  if (S.page === 'proc' && !document.activeElement.matches('#q') && !$('voile').classList.contains('on')) rendre();
+}
+// ───────────────────────────── gestes (aucun n'écrit)
+function acquitter(i){ const n = i == null ? M.oom.length : 1; if (i == null) M.oom = []; else M.oom.splice(i, 1); rendre(); toast(n + ' événement' + (n > 1 ? 's' : '') + ' acquitté' + (n > 1 ? 's' : '') + ' (capacité securite.oom_acquitter).'); }
+function reinitialiser(){ confirmer('Réinitialiser les unités en échec ?', 'Elles ne seront plus comptées en panne. Rien n’est redémarré.', 'Réinitialiser', () => { M.echecs = []; rendre(); toast('Unités réinitialisées (capacité securite.unites_reinitialiser).'); }); }
+function deconnecter(i){ const s = M.sessions[i]; confirmer('Déconnecter la session de ' + s[0] + ' (' + s[1] + ') ?', 'Son terminal est retrouvé par le courtier, puis fermé.', 'Déconnecter', () => { M.sessions.splice(i, 1); S.se = ''; noter(s[0] + ' · ' + s[1], 'Déconnecter la session', 'session absente à la relecture', '', null); rendre(); toast('Session fermée (capacité securite.session_fermer).'); }); }
+function confirmer(titre, texte, bouton, suite){ $('feuille').innerHTML = `<h3>${E(titre)}</h3><p>${E(texte)}</p><div class="gestes"><button class="btn" onclick="fermer()">Annuler</button><button class="btn p" id="oui">${E(bouton)}</button></div>`;
+  $('voile').classList.add('on'); $('oui').onclick = () => { fermer(); suite ? suite() : toast(bouton + ' : fait (maquette).'); }; $('oui').focus(); }
+function journal(s){ const l = ['00:17:02 démarrage', '00:17:03 configuration lue', '00:17:04 prêt', '00:21:40 passe terminée en 412 ms', '00:26:40 passe terminée en 398 ms', '00:31:41 passe terminée en 405 ms'];
+  $('feuille').innerHTML = `<h3>Journal de ${E(s)}</h3><p>Les 200 dernières lignes, en lecture seule. ${deja('securite.journal_service')}</p><pre>${l.map(x => '11-11 ' + x + ' · ' + E(s)).join('\n')}</pre><div class="gestes"><button class="btn" onclick="demander('Lis le journal de ${E(s)} sur argos : y a-t-il quelque chose d’anormal ?')">${ico('bulle')}Demander à Cassandra</button><button class="btn p" onclick="fermer()">Fermer</button></div>`;
+  $('voile').classList.add('on'); }
+// L'APPEL À CASSANDRA : des questions prêtes, posées avec le contexte de la ligne ouverte. Elles ouvrent la conversation, déjà remplie.
+const cass = qs => `<span class="cass">${ico('bulle')}<b>Cassandra</b>${qs.map(q => `<button class="puce" onclick="demander('${E(q[1]).replace(/'/g, '’')}')">${E(q[0])}</button>`).join('')}</span>`;
+// LE JOURNAL DES GESTES, commun aux pages : qui, quoi, la preuve relue, et ce qui peut encore se défaire.
+function blocGestes(){
+  return sec(`Derniers gestes ${creer()}`, 'qui, quoi, et ce qui peut encore se défaire', S.gestes.length ? `<div class="rows">${S.gestes.map((g, i) => `<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>${E(g.quoi)} <span class="mono">${E(g.nom)}</span></b><small>${E(g.quand)} · par ${E(g.par || 'vous')} · preuve : ${E(g.preuve)}</small></div>
+      <div class="cote">${g.defait ? pill('défait', '') : g.defaire ? `<button class="btn s" onclick="defaire(${i})">${E(g.retour)}</button>` : '<small style="color:var(--muted)">ne se défait pas</small>'}</div></div>`).join('')}</div>`
+      : '<p class="vide">Aucun geste encore. Chaque geste s’inscrit ici avec sa preuve, et se défait d’un clic tant que c’est possible — comme le journal de Tailscale et de NetBird.</p>');
+}
+function noter(nom, quoi, preuve, retour, defaireFn, par){ S.gestes.unshift({nom, quoi, quand: 'à l’instant', preuve, retour, defaire: defaireFn || null, defait: false, par}); }
+function defaire(i){ const g = S.gestes[i]; if (!g.defaire) return; g.defaire(); g.defait = true; rendre(); toast('Défait : ' + g.retour.toLowerCase() + ' (' + g.nom + ').'); }
+// Le plan que Cassandra propose : rien ne part sans accord.
+function plan(titre, quoi, etapes, fait){
+  $('feuille').innerHTML = `<h3>${E(titre)}</h3><p>${E(quoi)}</p><ol class="plan">${etapes.map(e => `<li>${E(e)}</li>`).join('')}</ol>
+    <p class="note">Cassandra n'exécute rien avant ton accord. Chaque étape s'inscrit au journal avec sa preuve ; si l'une échoue, elle s'arrête et te le dit. ${deja('palier « proposer »')}</p>
+    <div class="gestes"><button class="btn" onclick="fermer()">Refuser</button><button class="btn" onclick="fermer();demander('${E(titre).replace(/'/g, '’')} : explique-moi ton plan avant que je l’approuve.')">En discuter</button><button class="btn p" id="oui">Approuver et lancer</button></div>`;
+  $('voile').classList.add('on'); $('oui').onclick = () => { fermer(); fait(); };
+}
+// LES SERVICES : leur état (les échecs de la machine, les gestes faits ici), leur fiche, leurs gestes.
+function svEtat(u){
+  const e = S.svE[u], ko = (M.echecs || []).find(x => x[0].replace('.service', '') === u);
+  if (e === 'arret') return {cle: 'arret', texte: 'arrêté', coul: 'd', depuis: 'arrêté à l’instant'};
+  if (e === 'actif') return {cle: 'actif', texte: 'actif', coul: 'ok', depuis: 'depuis quelques secondes'};
+  if (ko) return {cle: 'echec', texte: 'en échec', coul: 'd', depuis: ko[1]};
+  if (SV_REPOS.includes(u)) return {cle: 'repos', texte: 'au repos', coul: '', depuis: 'lancé à la demande'};
+  return {cle: 'actif', texte: 'actif', coul: 'ok', depuis: u === 'cassandra-noyau' ? 'depuis 41 min' : 'depuis 10 j 21 h'};
+}
+function svFiche(s, e, boot){
+  const u = s[0], vit = e.cle === 'actif', jl = SV_JOURNAL[u] && e.cle === 'echec' ? SV_JOURNAL[u] : vit ? ['démarrage', 'configuration lue', 'prêt'].map((x, i) => '00:17:0' + (2 + i) + ' ' + x) : ['arrêt demandé', 'arrêté proprement'].map((x, i) => '00:5' + i + ':10 ' + x);
+  const b = (g, t, cls = '') => `<button class="btn s ${cls}" onclick="svGeste('${u}', '${g}')">${t}</button>`;
+  const existe = {noyau: 'Relancer', collecteur: 'Redémarrer', ollama: 'Relancer', nginx: 'Recharger'}[s[8]];
+  const gestes = e.cle === 'echec' ? `<button class="btn s p" onclick="reparer('${u}')">${ico('bulle')}Demander à Cassandra de le réparer</button>` + b('redemarrer', 'Redémarrer') + b('arreter', 'Arrêter', 'd')
+    : vit ? b('redemarrer', s[8] === 'noyau' || s[8] === 'ollama' ? 'Relancer' : 'Redémarrer') + (['nginx', 'apache2', 'php8.3-fpm', 'dovecot', 'exim4', 'ssh', 'fail2ban'].includes(u) ? b('recharger', 'Recharger') : '') + (s[9] ? `<button class="btn s" disabled title="${E(s[9])}">Arrêter</button>` : b('arreter', 'Arrêter', 'd'))
+    : e.cle === 'repos' ? b('demarrer', 'Lancer maintenant') : b('demarrer', 'Démarrer', 'p');
+  return `<div class="ctf">
+      <div class="bloc" style="grid-column:1/-1"><h3>Ce que c'est ${creer()}</h3><p class="dit">${E(s[1])}</p></div>
+      <div class="bloc"><h3>État</h3><dl class="paires un">
+        <div><dt>État</dt><dd>${pill(e.texte, e.coul)} ${E(e.depuis)} ${deja('Sensorium')}</dd></div>
+        <div><dt>Au démarrage</dt><dd>${boot ? 'se lance avec la machine' : 'ne se lance pas avec la machine'} ${deja('Sensorium')} <button class="btn s" style="margin-left:6px" onclick="svGeste('${u}', '${boot ? 'debrancher' : 'brancher'}')">${boot ? 'Ne plus le lancer' : 'Le lancer'}</button></dd></div>
+        <div><dt>Processus</dt><dd>${vit && s[3] ? 'n° <span class="mono">' + s[3] + '</span> · processeur ' + fr(s[5]) + ' % · mémoire ' + s[4] + ' Mo' : '—'} ${creer()}</dd></div>
+        <div><dt>Écoute sur</dt><dd>${s[6].length ? s[6].map(p => `<span class="pc">${E(p)}</span>`).join(' ') + ` <small><a onclick="versModule('Sécurité › Exposition')">qui peut les joindre →</a></small>` : 'aucun port'}</dd></div></dl></div>
+      <div class="bloc"><h3>Si on l'arrête ${creer()}</h3><p class="dit">${E(s[7])}</p>${s[9] ? `<p class="dit" style="color:var(--warn)">${E(s[9])}</p>` : ''}
+        <h3 style="margin-top:10px">Dernières lignes du journal ${existe ? deja('déjà là') : creer()}</h3><pre class="jl">${jl.map(E).join('\n')}</pre></div>
+      <div class="gestes" style="grid-column:1/-1;align-items:center">${gestes}<button class="btn s" onclick="journal('${u}')">Journal complet</button><span style="flex:1"></span>
+        ${cass([['À quoi sert-il ?', 'À quoi sert le service ' + u + ' sur argos, et que se passe-t-il si je l’arrête ?'], ['Va-t-il bien ?', 'Le service ' + u + ' va-t-il bien sur argos ? Lis son journal et dis-moi ce qui cloche.'], ['Le régler', 'Comment le service ' + u + ' est-il réglé sur argos, et que me conseilles-tu d’ajuster ?']])}
+        <span style="flex:1 1 100%;font-size:12.5px;color:var(--muted)">${existe ? `« ${existe} » et le journal existent déjà pour ce service. ${deja('déjà là')} Les autres gestes sont à créer. ${creer()}` : `Les gestes de ce service sont à créer : des commandes nommées du courtier, chacune avec sa preuve et son retour. ${creer()}`}</span></div></div>`;
+}
+const GESTES_SV = {
+  demarrer: ['Démarrer', 'Le service démarre.', 'état « actif » relu', 'Arrêter', 'arreter'], arreter: ['Arrêter', 'Le service s’arrête.', 'état « arrêté » relu', 'Redémarrer', 'demarrer'],
+  redemarrer: ['Redémarrer', 'Coupure de quelques secondes, puis il repart.', 'état « actif », heure de départ neuve', '', ''], recharger: ['Recharger', 'Sa configuration est testée, puis relue, sans coupure. Si elle est fausse, rien ne change.', 'configuration valide, service toujours actif', '', ''],
+  debrancher: ['Ne plus lancer au démarrage', 'Il continue de tourner maintenant, mais ne repartira pas au prochain démarrage de la machine.', 'réglage relu', 'Le relancer au démarrage', 'brancher'],
+  brancher: ['Lancer au démarrage', 'Il se lancera à chaque démarrage de la machine.', 'réglage relu', 'Ne plus le lancer', 'debrancher'],
+};
+function svAppliquer(u, g){ if (g === 'arreter') S.svE[u] = 'arret'; else if (g === 'demarrer' || g === 'redemarrer'){ S.svE[u] = 'actif'; M.echecs = M.echecs.filter(x => x[0].replace('.service', '') !== u); } else if (g === 'debrancher') S.svB[u] = false; else if (g === 'brancher') S.svB[u] = true; }
+function svGeste(u, g, sans, par){
+  const G = GESTES_SV[g], s = SV.find(x => x[0] === u), faire = () => { svAppliquer(u, g); noter(u, G[0], G[2], G[3], G[4] ? () => svAppliquer(u, G[4]) : null, par); rendre(); if (!sans) toast(G[0] + ' ' + u + ' : fait, preuve relue (' + G[2] + ').'); };
+  if (sans) return faire();
+  confirmer(G[0] + ' ' + u + ' ?', G[1] + (['arreter', 'redemarrer'].includes(g) ? ' ' + s[7] : '') + (G[3] ? ' Retour possible : « ' + G[3] + ' ».' : ''), G[0], faire);
+  if (g === 'arreter') $('oui').className = 'btn d';
+}
+function reparer(u){
+  const l = u ? [u] : SV.filter(s => svEtat(s[0]).cle === 'echec').map(s => s[0]);
+  const etapes = l.flatMap(x => x === 'php8.3-fpm' ? ['Lire le journal de php8.3-fpm : le fichier /run/php/php8.3-fpm.sock est déjà pris.', 'Retirer le fichier resté d’un arrêt brutal.', 'Redémarrer php8.3-fpm, puis vérifier que boutique.exemple.test répond.']
+    : x === 'certbot' ? ['Lire le journal de certbot : la vérification de blog.exemple.test a échoué.', 'Vérifier que blog.exemple.test pointe bien vers cette machine.', 'Relancer le renouvellement, puis relire la date du certificat.'] : ['Lire le journal de ' + x + '.', 'Redémarrer ' + x + ', puis relire son état.']);
+  plan('Réparer ' + l.join(' et '), 'Voici ce que Cassandra propose de faire, dans l’ordre :', etapes, () => { l.forEach(x => svGeste(x, 'redemarrer', true, 'Cassandra, avec votre accord')); rendre(); toast('Plan approuvé : ' + l.join(', ') + ' réparé' + (l.length > 1 ? 's' : '') + ', preuves au journal.'); });
+}
+// LES PROCESSUS : trois gestes, refusés aux processus protégés.
+function prGeste(i, g){
+  const p = M.proc[i], d = PR[p[2]] || [], court = p[2].split(' ')[0].split('/').pop() || p[2], suite = d[3] && d[3][0] === 'service' ? ' Il appartient au service ' + d[3][1] + ', qui le relancera sans doute aussitôt : pour l’arrêter vraiment, arrête le service.' : '';
+  const G = {terminer: ['Terminer', 'On lui demande de s’arrêter proprement : il finit ce qu’il fait, puis s’en va.' + suite, 'processus disparu'], forcer: ['Forcer l’arrêt', 'Il est arrêté net, sans rien pouvoir ranger : ce qu’il écrivait peut être perdu.' + suite, 'processus disparu'],
+    calmer: ['Baisser la priorité', 'Il passe après les autres : il continue, mais ne ralentit plus la machine.', 'priorité relue']}[g];
+  confirmer(G[0] + ' « ' + court + ' » (n° ' + d[0] + ') ?', G[1], G[0], () => { if (g === 'calmer') p[1] = Math.round(p[1] * 3) / 10; else { M.proc.splice(i, 1); S.pr = ''; } noter(court + ' n° ' + d[0], G[0], G[2], '', null); rendre(); toast(G[0] + ' : fait, preuve relue (' + G[2] + ').'); });
+  if (g === 'forcer') $('oui').className = 'btn d';
+}
+function copierFiche(){ const x = $('fiche-texte').value; try { navigator.clipboard.writeText(x); } catch (e) {} $('feuille').innerHTML = `<h3>La fiche, en texte</h3><p>Copiée dans le presse-papiers : à coller dans un ticket, un courriel, une note.</p><pre>${E(x)}</pre><div class="gestes"><button class="btn p" onclick="fermer()">Fermer</button></div>`; $('voile').classList.add('on'); }
+// REDÉMARRER LA MACHINE (décidé : à intégrer). Le geste le plus lourd de la page : il dit ce qui s'arrête, vérifie avant de partir, se programme, et demande le nom de la machine.
+function redemarrerMachine(){
+  const sess = (M.sessions || []).length, ct = M.conteneurs.filter(c => c[6]).length;
+  const v = (ok, texte) => `<div class="row" style="grid-template-columns:auto minmax(0,1fr);padding:7px 11px">${pill(ok ? 'bon' : 'à savoir', ok ? 'ok' : 'w')}<div class="nm"><small style="white-space:normal;color:var(--txt);font-size:13.5px">${texte}</small></div></div>`;
+  $('feuille').innerHTML = `<h3>Redémarrer la machine ${E(M.nom)}</h3>
+    <p>Tout s'arrête une à deux minutes (le dernier redémarrage a pris 1 min 40) : les sites, le courrier, les ${ct} conteneurs, et Cassandra elle-même. Tu seras déconnecté ; elle te prévient à son retour.${M.redemarrage ? ' Un redémarrage est requis : il met en service le noyau mis à jour.' : ''}</p>
+    <h4>Avant de partir, Cassandra vérifie</h4>
+    <div class="rows">${v(true, 'aucune sauvegarde ni mise à jour en cours')}${v(true, 'les services se lancent tous avec la machine : rien ne restera éteint au retour')}${v(sess === 0, sess ? sess + ' session' + (sess > 1 ? 's' : '') + ' ouverte' + (sess > 1 ? 's' : '') + ' : elle' + (sess > 1 ? 's seront coupées' : ' sera coupée') : 'aucune session ouverte')}${v(!M.echecs.length, M.echecs.length ? M.echecs.length + ' service' + (M.echecs.length > 1 ? 's' : '') + ' déjà en échec : le redémarrage ne les réparera pas forcément' : 'aucun service en échec')}</div>
+    <h4>Quand</h4>
+    <div class="chips" id="rd-quand">${[['maintenant', 'Maintenant'], ['cette nuit à 03:00', 'Cette nuit à 03:00'], ['dimanche à 04:00', 'Dimanche à 04:00']].map((x, i) => `<button class="chip" aria-pressed="${i === 0}" data-q="${x[0]}" onclick="document.querySelectorAll('#rd-quand .chip').forEach(c => c.setAttribute('aria-pressed', c === this))">${x[1]}</button>`).join('')}</div>
+    <label class="coche"><input type="checkbox" checked> Poser une fenêtre de maintenance de 10 minutes : les alertes de coupure se taisent ${deja('Sensorium')}</label>
+    <label class="coche"><input type="checkbox" checked> Me prévenir sur Telegram quand la machine est revenue ${deja('Canaux')}</label>
+    <label class="coche"><input type="checkbox" checked> Vérifier au retour que les sites et les conteneurs répondent, et me dire ce qui manque</label>
+    <h4>Pour confirmer, tape le nom de la machine</h4>
+    <input type="search" id="rd-nom" placeholder="${E(M.nom)}" autocomplete="off" style="width:100%" oninput="$('oui').disabled = this.value.trim() !== '${E(M.nom)}'">
+    <p class="note">Une commande nommée du courtier, différée de quelques secondes comme la relance du noyau, avec sa preuve au retour (durée de marche repartie de zéro). ${creer()}</p>
+    <div class="gestes"><button class="btn" onclick="fermer()">Annuler</button><button class="btn d" id="oui" disabled>Redémarrer la machine</button></div>`;
+  $('voile').classList.add('on'); $('rd-nom').focus();
+  $('oui').onclick = () => { const q = document.querySelector('#rd-quand .chip[aria-pressed="true"]').dataset.q; fermer();
+    if (q === 'maintenant'){ M.redemarrage = false; M.allumee = 'quelques secondes'; S.prevu = ''; noter(M.nom, 'Redémarrer la machine', 'durée de marche repartie de zéro, sites et conteneurs revenus', '', null); rendre(); toast('La machine redémarre. Retour annoncé sur Telegram dans une à deux minutes.'); }
+    else { S.prevu = q; noter(M.nom, 'Programmer un redémarrage ' + q, 'tâche planifiée relue', 'Annuler le redémarrage', () => { S.prevu = ''; }); rendre(); toast('Redémarrage programmé ' + q + '.'); } };
+}
+function annulerRedemarrage(){ S.prevu = ''; const g = S.gestes.find(x => /Programmer un redémarrage/.test(x.quoi) && !x.defait); if (g) g.defait = true; rendre(); toast('Redémarrage annulé.'); }
+function limiter(u){ confirmer('Limiter la mémoire du service ' + u + ' ?', 'Proposé : 1,5 Go au plus. Au-delà, c’est lui qui est arrêté et relancé, pas ses voisins. Le service est redémarré pour prendre le réglage.', 'Poser la limite', () => { noter(u, 'Limiter la mémoire à 1,5 Go', 'limite relue dans systemd', 'Retirer la limite', () => {}); rendre(); toast('Limite posée sur ' + u + ' (à créer).'); }); }
+function bannir(i){ const s = M.sessions[i]; confirmer('Bannir l’adresse ' + s[1] + ' ?', 'Sa session est fermée et l’adresse ne peut plus se connecter à la machine. Elle se débannit dans Sécurité › Défenses.', 'Bannir', () => { const ad = s[1]; M.sessions.splice(i, 1); S.se = ''; const x = M.refus.adresses.find(a => a[0] === ad); if (x) x[2] = true; noter(ad, 'Bannir l’adresse', 'règle fail2ban relue', 'Débannir', () => { if (x) x[2] = false; }); rendre(); toast('Adresse bannie (à créer).'); }); $('oui').className = 'btn d'; }
+// LES GESTES SUR UN CONTENEUR. Chacun : une confirmation qui dit ce qui va se passer, une preuve relue après coup, un retour possible. Dans la maquette, rien n'est exécuté.
+const GESTES_CT = {
+  demarrer:   ['Démarrer', 'Démarrer', 'Le conteneur repart avec les mêmes réglages.', 'état « tourne » relu', 'Arrêter', 'arreter', ''],
+  arreter:    ['Arrêter', 'Arrêter', 'Le service qu’il rend s’arrête. Il ne repartira pas tout seul, même au redémarrage de la machine.', 'état « arrêté » relu', 'Redémarrer', 'demarrer', 'd'],
+  redemarrer: ['Redémarrer', 'Redémarrer', 'Coupure de quelques secondes. Les réglages et les volumes sont gardés.', 'état « tourne », heure de départ neuve', '', '', ''],
+  pause:      ['Mettre en pause', 'Mettre en pause', 'Ses processus sont gelés : il garde sa mémoire mais ne répond plus. Rien n’est perdu.', 'état « en pause » relu', 'Reprendre', 'reprendre', ''],
+  reprendre:  ['Reprendre', 'Reprendre', 'Ses processus repartent là où ils s’étaient arrêtés.', 'état « tourne » relu', 'Remettre en pause', 'pause', ''],
+  maj:        ['Mettre à jour', 'Mettre à jour', 'La nouvelle image est téléchargée, puis le conteneur est recréé avec les mêmes ports, volumes et réglages. Coupure de quelques secondes. L’ancienne image est gardée 7 jours pour revenir en arrière.', 'image neuve en place, état « tourne »', 'Revenir à l’image d’avant', 'retour', ''],
+  retour:     ['Revenir à l’image d’avant', 'Revenir en arrière', 'Le conteneur est recréé avec l’image gardée avant la mise à jour. Coupure de quelques secondes.', 'ancienne image en place, état « tourne »', '', '', ''],
+};
+const ctDe = n => M.conteneurs.find(c => c[0] === n);
+function gestesCt(c){
+  const n = c[0], b = (g, cls = '') => `<button class="btn s ${cls}" onclick="ctGeste('${n}', '${g}')">${GESTES_CT[g][0]}</button>`;
+  const etat = c[7] === 'pause' ? b('reprendre', 'p') + b('arreter', 'd') : c[6] ? b('redemarrer') + b('pause') + b('arreter', 'd') : b('demarrer', 'p');
+  return `<div class="gestes" style="grid-column:1/-1;align-items:center">${etat}${S.maj[n] ? b('maj', c[6] ? 'p' : '') : ''}<span style="flex:1"></span>
+    <button class="btn s" onclick="journalCt('${n}')">Journal</button><button class="btn s" onclick="demander('Fais-moi le point sur le conteneur ${E(n)} d’argos : ce qu’il fait, ses ports, son image, ce qui cloche.')">${ico('bulle')}Demander à Cassandra</button>
+    <span style="flex:1 1 100%;font-size:12.5px;color:var(--muted)">Démarrer, arrêter, redémarrer, pause, mettre à jour, journal : aucun de ces gestes n'existe aujourd'hui. ${creer()}</span></div>`;
+}
+function ctAppliquer(n, g){
+  const c = ctDe(n), base = (BASE.conteneurs.find(x => x[0] === n) || c);
+  if (g === 'arreter'){ c[2] = 'arrêté à l’instant'; c[6] = false; c[7] = ''; }
+  else if (g === 'pause'){ c[2] = 'en pause'; c[7] = 'pause'; }
+  else { c[2] = g === 'reprendre' ? 'tourne (repris à l’instant)' : 'tourne depuis quelques secondes'; c[6] = true; c[7] = ''; c[4] = base[4]; c[5] = base[5]; }
+  if (g === 'maj'){ c[8] = c[3]; c[3] = S.maj[n] && /hier/.test(S.maj[n]) ? 1 : 3; c[9] = S.maj[n]; delete S.maj[n]; }
+  if (g === 'retour'){ c[3] = c[8] ?? c[3]; S.maj[n] = c[9] || MAJ0[n] || 'image plus récente'; }
+}
+function ctGeste(n, g, sans){
+  const G = GESTES_CT[g], d = CT[n], faire = () => { ctAppliquer(n, g);
+    noter(n, G[0], G[3], G[4], G[5] ? () => ctAppliquer(n, G[5]) : null); rendre(); toast(G[0] + ' ' + n + ' : fait, preuve relue (' + G[3] + ').'); };
+  if (sans) return faire();
+  const touche = d.proxy.length && ['arreter', 'pause', 'redemarrer', 'maj', 'retour'].includes(g) ? ' Pendant ce temps, ' + [...new Set(d.proxy.map(x => x[0]))].join(', ') + ' ne répond pas.' : '';
+  confirmer(G[0] + ' le conteneur ' + n + ' ?', G[2] + touche + (G[4] ? ' Retour possible : « ' + G[4] + ' ».' : ''), G[1], faire);
+  if (G[6] === 'd') $('oui').className = 'btn d';
+}
+function ctToutMaj(){ const l = Object.keys(S.maj); confirmer('Mettre à jour ' + l.length + ' conteneurs ?', l.join(', ') + ' : l’un après l’autre, chacun recréé avec ses réglages. L’ancienne image de chacun est gardée 7 jours.', 'Tout mettre à jour', () => { l.forEach(n => ctGeste(n, 'maj', true)); toast(l.length + ' conteneurs mis à jour.'); }); }
+function journalCt(n){ $('feuille').innerHTML = `<h3>Journal de ${E(n)}</h3><p>Les 200 dernières lignes du conteneur, en lecture seule. ${creer()}</p><pre>${['démarrage', 'configuration lue', 'écoute sur le port interne', 'prêt', 'requête servie en 12 ms', 'requête servie en 9 ms'].map((x, i) => '11-11 00:1' + i + ':0' + i + ' ' + E(n) + ' · ' + x).join('\n')}</pre><div class="gestes"><button class="btn p" onclick="fermer()">Fermer</button></div>`; $('voile').classList.add('on'); }
+function fermer(){ $('voile').classList.remove('on'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ fermer(); document.querySelectorAll('.sec.plein').forEach(x => x.classList.remove('plein')); } });
+// ───────────────────────────── navigation
+function etat(e){ S.etat = e; S.prevu = ''; S.maj = Object.assign({}, MAJ0); S.gestes = []; S.svE = {}; S.svB = {}; M = Object.assign(JSON.parse(JSON.stringify(BASE)), JSON.parse(JSON.stringify(ETATS[e]))); S.hist = {cpu: [], ram: []}; ['argos', 'chaud', 'calme', 'muet'].forEach(x => $('e-' + x).setAttribute('aria-pressed', x === e)); for (let i = 0; i < 24; i++) battre(); rendre(); }
+function aller(p){ S.page = p; rendre(); scrollTo({top: 0}); try { history.replaceState(null, '', '#' + p + (S.etat !== 'argos' ? '/' + S.etat : '')); } catch (e) {} }
+function theme(){ const r = document.documentElement, sombre = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches; r.dataset.theme = sombre ? 'light' : 'dark'; }
+function rendre(garde){ menu(); $('page').innerHTML = PAGES[S.page](); courbe(); if (garde === 'q'){ const q = $('q'); if (q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } } }
+const depart = location.hash.slice(1).split('/');
+if (depart[2] === 'sombre') document.documentElement.dataset.theme = 'dark';
+if (PAGES[depart[0]]) S.page = depart[0];
+etat(ETATS[depart[1]] ? depart[1] : 'argos');
+// L'adresse peut aussi dire la découverte à montrer : #vue/argos/clair/wireguard=detecte,heberg=absent/decouverte
+(depart[3] || '').split(',').forEach(x => { const [k, v] = x.split('='); if (k in S.dec && ['module', 'detecte', 'absent'].includes(v)) S.dec[k] = v; });
+if (depart[3]) rendre();
+if (depart[4] === 'decouverte') decouverte();
+if (depart[4] === 'redemarrer') redemarrerMachine();
+if (depart[4] === 'prevu') { S.prevu = 'cette nuit à 03:00'; rendre(); }
+if (CT[depart[5]]) { S.ct = depart[5]; rendre(); }
+if (SV.some(s => s[0] === depart[5])) { S.sv = depart[5]; rendre(); }                // #services/chaud/clair///php8.3-fpm : ouvre la fiche d'un service
+if (/^p\d$/.test(depart[5] || '') && M.proc[+depart[5][1]]) { S.pr = M.proc[+depart[5][1]][2]; rendre(); }     // …///p0 : la fiche du premier processus
+if (/^s\d$/.test(depart[5] || '') && M.sessions[+depart[5][1]]) { S.se = M.sessions[+depart[5][1]][0] + '@' + M.sessions[+depart[5][1]][1]; rendre(); }
+(depart[6] || '').split(',').forEach(x => { const [n, g] = x.split(':'); if (CT[n] && GESTES_CT[g]) ctGeste(n, g, true); });      // …/coffre/coffre:maj,recherche:pause : des gestes déjà faits               // #conteneurs/argos/clair///coffre : ouvre la fiche d'un conteneur
+setInterval(battre, 2000);
+</script>
+</body>
+</html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->
