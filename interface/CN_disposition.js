@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #18b8c7
+// VERSION CN : 0.1.0  #833850
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=18b8c7 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=833850 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -91,7 +91,6 @@
     pv_cass: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     pv_fil: '<path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/>',
     pv_machine: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
-    pv_systeme: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
   };
   // les icônes des vues de l'accueil : celles que portait l'ancienne pastille « Mon bureau », reportées au menu de gauche
   const VUE_IC = { calendrier: "calendar", taches: "tasks", rappels: "bell", messages: "mail", reglage: "fam_systeme",
@@ -195,11 +194,7 @@
     const seg = vue ? SEG_VUE[vue] : SEG_ENTREE[entreeId];
     if (seg) setTimeout(function () { if (typeof window.buSeg === "function") window.buSeg(seg); }, 80);
     if (entreeId === "panorama") {
-      if (vue === "systeme") {
-        if (typeof window.ouvrirSysteme === "function") window.ouvrirSysteme();
-      } else if (typeof window.vuAller === "function") {
-        setTimeout(function() { window.vuAller(vue || "verdict"); }, 80);         // l'entrée seule ouvre l'accueil de la rubrique
-      }
+      if (typeof window.vuAller === "function") setTimeout(function () { window.vuAller(vue === "systeme" ? "machine" : vue || "verdict"); }, 80);         // l'entrée seule ouvre l'accueil de la rubrique ; « Détails système » est devenu « La machine »
     }
     if (entreeId === "securite") suivreSecurite();
     if (entreeId === "evolution") { window.__evVue = vue || "aujourdhui"; if (typeof window.evAller === "function") setTimeout(function () { window.evAller(window.__evVue); }, 80); }
@@ -252,9 +247,9 @@
   const glEnt = (eid) => (GL_ENT[eid] ? '<i class="d19-gl" aria-hidden="true">' + GL_ENT[eid] + "</i>" : "");
   const GL_EVO = { aujourdhui: "☼", amelio: "↗", "amelio.toutes": "≡", "amelio.essai": "◔", "amelio.service": "●", "amelio.retiree": "⊘", reglages: "◈", consignes: "✎", capot: "⚙", "capot.chercheurs": "☉", "capot.points": "ƒ", "capot.comparer": "⇄", "capot.install": "⤓", "capot.securite": "⛨", "capot.carnet": "▤", "capot.ecartees": "⊘", "capot.vision": "✦", "capot.vocab": "Aa" };
   const glVue = (eid, vid) => (eid === "evolution" ? (GL_EVO[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_EVO[vid] + "</i>" : "") : eid !== "agents-ia" ? "" : GL_VUE[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_VUE[vid] + "</i>" : GL_AGENT[vid] ? '<i class="d19-gl" aria-hidden="true" style="color:' + GL_AGENT[vid] + '">●</i>' : "");
-  const EMO_PANORAMA = { verdict: "pv_verdict", gestes: "pv_gestes", cass: "pv_cass", fil: "pv_fil", machine: "pv_machine", systeme: "pv_systeme" };
+  const EMO_PANORAMA = { verdict: "pv_verdict", gestes: "pv_gestes", cass: "pv_cass", fil: "pv_fil", machine: "pv_machine" };
   const INFO_PANORAMA = { verdict: "Le verdict global de l'instance", gestes: "Les gestes que Cassandra attend de vous", cass: "L'état de Cassandra et son palier d'autonomie",
-    fil: "Ce qui a changé récemment", machine: "La machine qui héberge Cassandra", systeme: "Les détails techniques du système" };
+    fil: "Ce qui a changé récemment", machine: "La machine qui héberge Cassandra : ressources, processus, services, conteneurs, sessions, et ce que les modules voisins en disent" };
   function motsEtat(id, brut) {
     const t = String(brut || "").trim(), n = parseInt(t, 10);
     if (!t || t === "—") return "";
@@ -311,6 +306,15 @@
   };
   // Un écran dit au menu où il en est : la sous-entrée à allumer quand on navigue DANS l'écran, et les compteurs de ses sous-menus (« Incidents 2 », « Alertes 6 »).
   // La disposition les garde et les repose à chaque relecture du menu. Sites s'en sert ; tout écran à sous-menus le peut.
+  // Aller à une entrée du menu depuis un écran (une tuile de « La machine » qui mène à Sécurité, à Tailscale…). Rend faux si l'entrée n'est pas au menu de ce compte.
+  window.d19Aller = function (entreeId, vue) {
+    if (!E.d) return false;
+    for (const g of E.d.groupes) {
+      const e = g.entrees.find((x) => x.id === entreeId) || g.entrees.find((x) => String(x.id).split(":").pop() === entreeId);
+      if (e) { aller(g.id, e.id, vue || ""); return true; }
+    }
+    return false;
+  };
   window.d19Suivre = function (entreeId, vue, compteurs) {
     if (compteurs) { E.compteurs = E.compteurs || {}; E.compteurs[entreeId] = compteurs; }
     if (!E.d) return;

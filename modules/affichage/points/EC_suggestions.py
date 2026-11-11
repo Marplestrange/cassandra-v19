@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.4)  #0c5588
+# VERSION EC : EC0 (référence 0.7.5)  #0c5588
 # HÔTE CN    : CN_module.py · suggestions_plan @1.0
 # RÔLE       : propose, pour les tâches encore à placer, une heure dans les temps libres de la journée : les plus pressantes d'abord, sans jamais empiéter ni sur un rendez-vous, ni sur un bloc déjà posé, ni sur une autre suggestion.
 # MÉTHODE    : fonction pure en minutes depuis minuit du jour (la fenêtre peut passer minuit : la fin dépasse alors 1 440) ; les temps libres sont la fenêtre moins ce qui est occupé, à partir de maintenant ; chaque tâche reçoit un score (retard, échéance du jour, priorité, projet) puis, dans l'ordre du score, le premier temps libre assez long ; chaque suggestion consomme son créneau plus une marge.

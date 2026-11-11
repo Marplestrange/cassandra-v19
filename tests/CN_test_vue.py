@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #642cce
+# VERSION CN : 0.1.0  #42156b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=642cce ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=42156b ▼▼▼
 """Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille »."""
 import sys
 import unittest
@@ -213,6 +213,49 @@ class Machine(unittest.TestCase):
     def test_des_releves_figes_sont_dits(self):
         r = _machine(etat={"rows": [_l("system.hostname", "atlas")], "muet": False, "age_s": 50000, "fige": True})
         self.assertEqual((r["source"]["fige"], r["source"]["age_s"], r["source"]["muet"]), (True, 50000, False))
+
+
+class EcranMachine(unittest.TestCase):
+    """L'écran de la page (interface/CN_machine-ecran.js) : il est servi, il lit vue.machine, et « Détails système » n'a plus d'entrée au menu."""
+    @staticmethod
+    def lire(*chemin):
+        return RACINE.joinpath(*chemin).read_text(encoding="utf-8")
+
+    def test_l_ecran_est_servi_et_l_assembleur_le_sait(self):
+        self.assertIn('<script src="/machine-ecran.js"></script>', self.lire("interface", "CN_index.html"))
+        self.assertIn('<script src="/machine-ecran.js"></script>', self.lire("outils", "ui", "CN_assembler.py"))
+        self.assertTrue((RACINE / "interface" / "CN_machine-ecran.js").is_file())
+
+    def test_l_ecran_ne_lit_que_des_capacites_declarees(self):
+        ecran = self.lire("interface", "CN_machine-ecran.js")
+        import re
+        appelees = set(re.findall(r'agir\("([a-z_]+\.[a-z_]+)"', ecran))
+        self.assertIn("vue.machine", appelees)
+        for cap in sorted(appelees):
+            module, nom = cap.split(".")
+            manifeste = self.lire("modules", module, "CN_manifeste.toml")
+            self.assertRegex(manifeste, r'\[\[capacites\]\]\s*\nid = "%s"' % nom, cap)             # jamais une capacité inventée
+
+    def test_details_systeme_n_a_plus_d_entree_et_la_machine_en_a_une(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("ec_disposition_machine", RACINE / "modules" / "affichage" / "points" / "EC_disposition.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        vues = dict(next(e for e in mod.PONT if e["id"] == "panorama")["vues"])
+        self.assertEqual(vues.get("machine"), "La machine")
+        self.assertNotIn("systeme", vues)
+        menu = self.lire("interface", "CN_disposition.js")
+        self.assertIn("window.d19Aller = function", menu)                                         # une tuile mène au module voisin par le menu
+        self.assertNotIn("ouvrirSysteme === \"function\") window.ouvrirSysteme()", menu)
+
+    def test_la_feuille_de_l_ecran_est_rangee_sous_sa_racine(self):
+        """Tirée de la maquette (docs/CN_maquette-systeme.html) : chaque règle vit sous .mc, pour ne rien changer au reste de l'application."""
+        import json
+        import re
+        ecran = self.lire("interface", "CN_machine-ecran.js")
+        css = json.loads(re.search(r'const CSS = ("(?:[^"\\]|\\.)*");', ecran).group(1))
+        hors = [s for s in re.findall(r"(?:^|\})([^{}@]+)\{", css) if not all(x.strip().startswith((".mc", ':root[data-theme="dark"] .mc', "#tab-overview")) for x in s.split(","))]
+        self.assertEqual(hors, [])
 
 
 class PointDEvolution(unittest.TestCase):

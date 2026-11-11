@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.3.0  #782845
+# VERSION CN : 0.3.1  #e5a84e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=782845 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=e5a84e ▼▼▼
 """La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 
 Une fonction PURE (`composer`) : en entrée, la réponse de chaque source (ou son silence) ; en sortie, des données prêtes à dessiner. Rien n'est
@@ -125,6 +125,19 @@ def etat_conteneur(statut: str):
     return (nu or "état inconnu"), False, False
 
 
+def _phrase(ligne) -> str:
+    """Une mesure en alerte, dite en une phrase qu'on lit : « Le disque / : plein dans ~2 jours », pas « Prévision disque./ »."""
+    cle, val, lib = str(ligne.get("wkey") or ""), str(ligne.get("value") or ""), str(ligne.get("libelle") or ligne.get("wkey") or "")
+    if cle.startswith("prevision.disque."):
+        return "Le disque %s : %s" % (cle[17:], val)
+    if cle.startswith("exposition."):
+        programme = val.split(" · ")[0]
+        return ("Le port %s (%s) est joignable d’Internet" % (cle[11:], programme)) if "PUBLIC" in val else "Le port %s : %s" % (cle[11:], val)
+    if cle == "sauvegarde.hors_machine":
+        return val.replace("AUCUNE", "Aucune", 1)
+    return "%s : %s" % (lib, val) if val else lib
+
+
 def _reseau_de(adresse: str, pairs: dict) -> tuple:
     """D'où vient une adresse : une machine du réseau Tailscale (son nom), le réseau local, ou Internet."""
     a = str(adresse or "").strip()
@@ -195,7 +208,7 @@ def composer(s: dict, maintenant: str = "") -> dict:
     # ── ce qui cloche : les mesures en alerte, la plus grave d'abord (la note de santé n'en est pas une : elle les compte)
     rang = {"critique": 0, "avoir": 1, "info": 2}
     poids = {"ressources": 0, "prevision": 0, "service": 0, "system": 0, "docker": 1, "sauvegarde": 1, "noyau": 2}       # à gravité égale : ce qui menace la machine avant ce qui l'expose
-    cloche = sorted(({"cle": r["wkey"], "titre": str(r.get("libelle") or r["wkey"]), "texte": str(r.get("value") or ""), "famille": str(r.get("famille") or ""),
+    cloche = sorted(({"cle": r["wkey"], "titre": str(r.get("libelle") or r["wkey"]), "texte": str(r.get("value") or ""), "phrase": _phrase(r), "famille": str(r.get("famille") or ""),
                       "gravite": str(r.get("gravite") or "info")} for r in rows if r.get("severity") == "warning" and r.get("wkey") != "health.score"),
                     key=lambda x: (rang.get(x["gravite"], 3), poids.get(x["famille"], 3), x["cle"]))
 
