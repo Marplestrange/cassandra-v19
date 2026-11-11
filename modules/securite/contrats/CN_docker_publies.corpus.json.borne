@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.5.4  #626d23
+# VERSION CN : 0.6.0  #626d23
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : docker_publies.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

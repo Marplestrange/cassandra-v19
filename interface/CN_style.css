@@ -12,7 +12,7 @@
 /* RÔLE       : tous les styles de l'interface extraits de la V18, versionnés. */
 /* MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=687883 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=d653fc ▼▼▼ */
 
 /* ═══════════════════════════════════════════════════════════════════════
    CASSANDRA — SYSTÈME DE COULEURS
@@ -1083,11 +1083,6 @@ button, .s-btn, .fp-btn {
 .ln-nd:hover circle{stroke:var(--accent);stroke-width:2}
 
 /* Metrics drawer (slide-up) */
-.mmd-overlay{display:none;position:fixed;inset:0;bottom:58px;background:var(--voile);z-index:198;backdrop-filter:blur(2px)}
-.mmd-overlay.open{display:block}
-.mobile-metrics-drawer{display:none;position:fixed;bottom:58px;left:0;right:0;max-height:72dvh;background:var(--surface);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border-top:1px solid var(--line-strong);border-radius:16px 16px 0 0;box-shadow:var(--shadow-lift);z-index:199;overflow-y:auto;padding:0 12px 12px}
-.mobile-metrics-drawer.open{display:block}
-.mmd-handle{width:38px;height:4px;background:var(--line-strong);border-radius:2px;margin:10px auto 14px;cursor:pointer}
 
 /* ═══════════════════════════════════════════════════
    RESPONSIVE BREAKPOINTS
@@ -1167,8 +1162,6 @@ button, .s-btn, .fp-btn {
   .audit-card{width:96%;max-height:90dvh}
 
   /* Drawer */
-  .mobile-metrics-drawer .card{margin-bottom:8px;padding:10px}
-  .mobile-metrics-drawer .stat-grid{gap:5px}
   /* LOT 7 : Mon Bureau sur téléphone — une colonne ; le rail devient une barre horizontale
      qui défile, sous la légende (la barre basse est déjà celle des onglets) ; les fiches et
      les voiles prennent tout l'écran ; le bandeau de vérité sur deux colonnes (déjà). */
@@ -1221,14 +1214,6 @@ button, .s-btn, .fp-btn {
 /* Pulse au refresh des données */
 @keyframes dataFlash{from{background:var(--acc-10)}to{background:transparent}}
 .stat-card.updated{animation:dataFlash .5s ease}
-
-/* Health ring plus grande + glow */
-@media(min-width:769px){
-  .health-ring{width:90px;height:90px}
-  .health-ring-inner{width:68px;height:68px}
-  .health-ring-score{font-size:23px}
-  .health-ring{filter:drop-shadow(0 0 8px currentColor)}
-}
 
 /* Status dot neon */
 
@@ -1601,32 +1586,7 @@ body{font-family:'Inter',sans-serif;color:var(--txt);height:100vh;overflow:hidde
   transition:width .4s ease}
 .spark{display:block;width:100%;height:22px}
 
-/* Le panneau des relevés : hors du flux, ouvert à la demande. */
-.sys-scrim{position:fixed;inset:0;background:rgba(16,24,40,.28);z-index:44;opacity:0;
-  pointer-events:none;transition:opacity .24s}
-.sys-scrim.on{opacity:1;pointer-events:auto}
-/* Un panneau glissé hors de l'écran garde son ombre portée : elle déborde du
-   bord droit et dessine une bande sombre permanente, sans rien pour
-   l'expliquer. Tant qu'il est fermé, il n'a ni ombre ni existence — d'où le
-   `visibility:hidden`, qui le retire aussi du parcours au clavier. */
-.sys-drawer{position:fixed;top:0;right:0;bottom:0;width:min(760px,94vw);z-index:45;
-  background:var(--surface);backdrop-filter:blur(24px) saturate(160%);
-  -webkit-backdrop-filter:blur(24px) saturate(160%);
-  border-left:1px solid var(--line);box-shadow:none;visibility:hidden;
-  transform:translateX(100%);
-  transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s linear .26s,box-shadow .2s;
-  display:flex;flex-direction:column}
-.sys-drawer.on{transform:none;visibility:visible;box-shadow:var(--shadow-lift);
-  transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s,box-shadow .2s}
-.sys-drawer>header{display:flex;align-items:center;gap:12px;padding:14px 18px;
-  border-bottom:1px solid var(--line);flex:none}
-.sys-drawer>header h3{margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;
-  letter-spacing:.16em;text-transform:uppercase;color:var(--txt-soft);font-weight:600}
-.sys-drawer>header .hdr-btn{margin-left:auto}
-.sys-drawer-body{flex:1;overflow-y:auto;padding:16px;display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 16px;align-content:start}
-.sys-col{display:contents}
-@media (prefers-reduced-motion: reduce){.sys-drawer,.sys-scrim,.vital .vbar i{transition:none}}
+@media (prefers-reduced-motion: reduce){.vital .vbar i{transition:none}}
 
 .panel{background:transparent;overflow-y:auto;padding:18px 16px}
 /* LE FOND OPAQUE ÉTAIT ICI. Le chat porte class="panel panel-center" : il héritait
@@ -6501,15 +6461,6 @@ details.ev-plie summary,.ev-rares summary{cursor:pointer;font-size:12px;color:va
 /* ============================================================
    FASTPANEL2 UI — onglet + cards dashboard
    ============================================================ */
-/* Cartes de synthèse — désormais dans le tiroir « Détails système » */
-.fp-summary-cards{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0}
-.fp-sc{background:rgba(10,10,20,.5);border:1px solid var(--acc-10);border-radius:8px;padding:8px 10px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
-.fp-sc:hover{border-color:var(--acc-30);background:var(--acc-10)}
-.fp-sc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:3px 0 0 3px}
-.fp-sc.ok::before{background:var(--ok)}.fp-sc.warn::before{background:var(--warn)}.fp-sc.crit::before{background:var(--danger)}
-.fp-sc-label{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--txt-faint);margin-bottom:4px}
-.fp-sc-value{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--txt-strong);line-height:1}
-.fp-sc-sub{font-size:9px;color:var(--txt-faint);margin-top:2px}
 
 /* Tab FastPanel */
 /* ── FLOTTE au dessin de l'Historique (maquette du 16-09) : l'onglet porte mx-app ; ceci n'ajoute que
@@ -6645,17 +6596,6 @@ table.fp2-liste{width:100%;border-collapse:collapse;font-size:12.5px} .fp2-liste
    OPTION A — Monitoring Pro: health ring, stat-cards, badges
 ═══════════════════════════════════════════════════════════ */
 
-/* ── Health Ring ── */
-.health-ring-wrap{display:flex;align-items:center;gap:14px;padding:4px 0 8px}
-.health-ring{position:relative;width:74px;height:74px;border-radius:50%;flex-shrink:0;
-  background:conic-gradient(var(--accent) 0deg,var(--ov-06) 0deg);
-  transition:background .6s ease;display:flex;align-items:center;justify-content:center}
-.health-ring-inner{position:relative;z-index:2;width:54px;height:54px;
-  background:var(--surface-solid);border-radius:50%;
-  display:flex;flex-direction:column;align-items:center;justify-content:center}
-.health-ring-score{font-size:19px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1}
-.health-ring-lbl{font-size:8px;color:var(--txt-ghost)}
-.health-ring-meta{flex:1;min-width:0}
 
 /* ── Le salon ─────────────────────────────────────────────── */
 /* Une signature de voix par agent. Les jetons -v-* n'existent qu'ici : ils
@@ -6965,9 +6905,9 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--accent);width:14px
 /* le sélecteur compact, quel que soit son nom */
 select,select.bu-inp,select.s-select,.s-select,select.mx-select{padding:6px 28px 6px 10px!important;font-size:11.5px!important;cursor:pointer}
 /* LE TITRE d'une carte ou d'une section */
-.bu-ct,.card-title,.sec-title,.settings-section-title,.sys-drawer>header h3,.pj-h2,.cs-phase,.mx-eyebrow,#bu-pleinecran .bu-pbar .ti,.tk-col>h3,.bu-sec>h3,.gd-sec>h3,.mx-scenes-lab{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-strong)}
+.bu-ct,.card-title,.sec-title,.settings-section-title,.pj-h2,.cs-phase,.mx-eyebrow,#bu-pleinecran .bu-pbar .ti,.tk-col>h3,.bu-sec>h3,.gd-sec>h3,.mx-scenes-lab{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-strong)}
 /* L'ÉTIQUETTE : toute légende, tout en-tête de colonne, tout libellé */
-.mx-fam,.um-h,.sl-lbl,.sl-fam,.sl-jour,.jr-day,.ev-jour,.pl-n,.s-label,.sinfo-lbl,.stat-lbl,.bu-scenes .lab,.cr-lbl,.cr-sec .h,.nt-prismes .lab,.ca-sect,.ca-mes dt,.cv-sect,.cv-reg label,.cv-cadre .t,.cv-carte .h,.cv-et,.pal-g,.cn-g,.bu-dow span,.cr-dosl-h,.cr-dosl-s,.cr-rg-r .k,.cr-prop-h,.tk-grp,.gd-grp,.gd-hd,.gd-tbl th,.pf-e .src,.nt-i .sr,.nt-prov b,.nt-pol th,.nt-srcs th,.rd-fld > label,.rd-sel .l,.rd-as .h .q,.rd-grp,.md-non .h,.md-blk .lg .k,.md-ac .r .q,.md-tbl th,.sv-tbl th,.mms-lbl,.gu-t .gu-o,.cva-r b,.cn-sep,.rep-sep,.rep-it-q,.rep-fl .k,.rep-ch .k,.rep-s,.rep-tg .t,.rp-c label,.bj-t,.bj-bt,.usermenu dt,.ov-ev .tg,.vital h5,.cf-st h5,.ac-kv dt,.nte-pk-g,.it-qui .nm,.it-duel .q,.sl-voix .et,.sl-resume b,.sl-aide-b b,.sl-tip-b b,.jr-env span,.mv-liste th,.fl-env span,.fleet-field label,.fp2-lbl,.fp2-liste th,.fp-table th,.fp2-vide b,.fp2-hs b,.fp2-repli b,.fp-sc-label,.fleet-agg-label,.att-tip-title,.ses-kv dt,.sl-fil .m .st,.sl-m .qui .dest{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--txt-faint)}
+.mx-fam,.um-h,.sl-lbl,.sl-fam,.sl-jour,.jr-day,.ev-jour,.pl-n,.s-label,.sinfo-lbl,.stat-lbl,.bu-scenes .lab,.cr-lbl,.cr-sec .h,.nt-prismes .lab,.ca-sect,.ca-mes dt,.cv-sect,.cv-reg label,.cv-cadre .t,.cv-carte .h,.cv-et,.pal-g,.cn-g,.bu-dow span,.cr-dosl-h,.cr-dosl-s,.cr-rg-r .k,.cr-prop-h,.tk-grp,.gd-grp,.gd-hd,.gd-tbl th,.pf-e .src,.nt-i .sr,.nt-prov b,.nt-pol th,.nt-srcs th,.rd-fld > label,.rd-sel .l,.rd-as .h .q,.rd-grp,.md-non .h,.md-blk .lg .k,.md-ac .r .q,.md-tbl th,.sv-tbl th,.mms-lbl,.gu-t .gu-o,.cva-r b,.cn-sep,.rep-sep,.rep-it-q,.rep-fl .k,.rep-ch .k,.rep-s,.rep-tg .t,.rp-c label,.bj-t,.bj-bt,.usermenu dt,.ov-ev .tg,.vital h5,.cf-st h5,.ac-kv dt,.nte-pk-g,.it-qui .nm,.it-duel .q,.sl-voix .et,.sl-resume b,.sl-aide-b b,.sl-tip-b b,.jr-env span,.mv-liste th,.fl-env span,.fleet-field label,.fp2-lbl,.fp2-liste th,.fp-table th,.fp2-vide b,.fp2-hs b,.fp2-repli b,.fleet-agg-label,.att-tip-title,.ses-kv dt,.sl-fil .m .st,.sl-m .qui .dest{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--txt-faint)}
 /* LA MARQUE : une pilule d'état ; ses couleurs restent les siennes */
 .cn-n,.rep-niv,.ov-chip,.ac-tag,.bu-tag,.nte-e,.ca-pl,.cr-tag,.bu-lnk .st,.tk-tag,.tk-subn,.gd-tag,.gd-dry,.status-pill,.ses-p,.sl-statut,.sl-mode,.logo-badge,.bu-fiche header .top .src,.badge,.s-current .s-tag,.rep-ln .ro,.bj-r,.fp2-panneau,.sl-pulse,.bu-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border-width:1px;border-style:solid;
   font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;line-height:1.4;white-space:nowrap}

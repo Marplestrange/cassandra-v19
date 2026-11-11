@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #fa9745
+// VERSION CN : 0.1.0  #b2e947
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=fa9745 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=b2e947 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -52,7 +52,6 @@ ETAT.rediger._rdSug      = ETAT.rediger._rdSug      || [];   /* redaction : sugg
 let sessionId = sessionStorage.getItem('cassandra_session') || '';
 let expertMode = localStorage.getItem('cassandra_expert_mode') === 'true';
 let planMode   = false;
-let cpuChart = null, cpuHistory = [], ramHistory = [];
 let isStreaming = false, sessionStart = Date.now();
 let _csTimer = null, _csStart = 0, _csIter = 0, _csStepCount = 0;
 
@@ -1964,27 +1963,12 @@ function mnavGo(tab){
     closeMetricsDrawer();
     switchTab(tab);
 }
+// La bande des mesures (téléphone) ouvre la page « La machine » : l'ancien tiroir qu'elle ouvrait n'existe plus.
 function toggleMetricsDrawer(){
-    const d=document.getElementById('mobile-metrics-drawer');
-    const o=document.getElementById('mmd-overlay');
-    const s=document.getElementById('mnav-server');
-    const isOpen=d&&d.classList.contains('open');
-    if(isOpen){ closeMetricsDrawer(); }
-    else {
-        if(d) d.classList.add('open');
-        if(o) o.classList.add('open');
-        if(s) s.classList.add('active');
-        const _st=document.getElementById('mobile-metric-strip'); if(_st) _st.classList.add('on');
-        // Refresh drawer data
-        loadMetrics(); loadSSLCerts(); loadProcesses(); loadFailedUnits(); loadDashboard();
-    }
+    if(typeof window.d19Aller==='function' && window.d19Aller('panorama','machine')) return;
+    switchTab('overview'); if(typeof window.vuAller==='function') window.vuAller('machine');
 }
-function closeMetricsDrawer(){
-    document.getElementById('mobile-metrics-drawer')?.classList.remove('open');
-    document.getElementById('mmd-overlay')?.classList.remove('open');
-    document.getElementById('mnav-server')?.classList.remove('active');
-    document.getElementById('mobile-metric-strip')?.classList.remove('on');
-}
+function closeMetricsDrawer(){}
 
 // Le libellé de la bulle ne change plus avec l'état — « Mode expert » nomme la
 // commande, le point et la teinte disent si elle est active. Un bouton qui se
@@ -7135,7 +7119,7 @@ function _setMmsVal(id, txt, pct){
 //  machine. L'écran n'arbitre rien : il pose ce qu'il reçoit, relit toutes les
 //  60 s quand il est devant, et laisse la trame WebSocket nourrir les jauges.
 // ═══════════════════════════════════════════════════════════════════════════
-const VU = {d:null, t:0, timer:null, wsTs:0, sysCharge:false, sysTimers:[]};
+const VU = {d:null, t:0, timer:null, wsTs:0};
 const vuE = v => (typeof escapeHtml === 'function' ? escapeHtml(String(v ?? '')) : String(v ?? ''));
 const vuA = v => (typeof escapeAttr === 'function' ? escapeAttr(String(v ?? '')) : String(v ?? '').replace(/"/g, '&quot;'));
 function vuHeure(ts){ const t=String(ts||''); return t.length>=16 ? t.slice(11,16) : (t||'—'); }
@@ -7169,7 +7153,7 @@ function vuGeste(g){
 // (un seul appel /api/vue) ; ce qui change, c'est la page affichée (attribut data-vue, que le CSS lit) et son titre.
 const VU_PAGES={ verdict:'Vue d’ensemble', gestes:'Ce qui demande un geste', cass:'Cassandra, maintenant', fil:'Ce qui a changé', machine:'La machine' };
 function vuAller(sec){
-    if(sec==='systeme'){ if(typeof ouvrirSysteme==='function') ouvrirSysteme(); return; }
+    if(sec==='systeme') sec='machine';                    // l'ancien tiroir « Détails système » : c'est la page « La machine »
     if(!VU_PAGES[sec]) sec='verdict';
     const t=document.getElementById('tab-overview'); if(!t) return;
     t.dataset.vue=sec;
@@ -7410,80 +7394,25 @@ function majVitals(cpu, ram, disk, load){
 // `majVitalsInfos` (recopie DOM → DOM toutes les 4 s, « relevé il y a moins d'une minute » écrit en dur) est parti :
 // la vue porte ses âges, la trame WebSocket porte les jauges.
 
-function ouvrirSysteme(){
-    const d=document.getElementById('sys-drawer'), s=document.getElementById('sys-scrim');
-    if(d) d.classList.add('on');
-    if(s) s.classList.add('on');
-    _sysCharger();
-}
-function fermerSysteme(){
-    const d=document.getElementById('sys-drawer'), s=document.getElementById('sys-scrim');
-    if(d) d.classList.remove('on');
-    if(s) s.classList.remove('on');
-    VU.sysTimers.forEach(t=>clearInterval(t)); VU.sysTimers=[];
-}
-// LES TREIZE CARTES SE CHARGENT ICI, à l'ouverture du tiroir — plus au démarrage de l'application, plus par
-// huit minuteurs qui tournaient tiroir fermé (21-09). Tant qu'il est ouvert, trois relectures courtes.
-function _sysCharger(){
-    const f=[loadDashboard, loadRemotes, loadSSLCerts, loadTailscale, loadFail2ban, loadProcesses, loadSessions, loadPorts, loadOOM, loadFailedUnits, loadDocker, fpLoadSummary, loadMetrics];
-    f.forEach(fn=>{ try{ if(typeof fn==='function') fn(); }catch(e){} });
-    VU.sysTimers.forEach(t=>clearInterval(t)); VU.sysTimers=[];
-    VU.sysTimers.push(setInterval(()=>{ try{ loadMetrics(); loadProcesses(); }catch(e){} }, 5000));
-    VU.sysTimers.push(setInterval(()=>{ try{ loadFailedUnits(); loadTailscale(); loadFail2ban(); loadDocker(); }catch(e){} }, 30000));
-    VU.sysTimers.push(setInterval(()=>{ try{ loadRemotes(); loadSSLCerts(); loadPorts(); loadOOM(); loadSessions(); }catch(e){} }, 60000));
-}
-document.addEventListener('keydown', function(e){ if(e.key==='Escape') fermerSysteme(); });
-
 // Source muette (collecteur absent ou muet) : un tiret, jamais un « 0% » posé comme mesure.
 function _metriquesMuettes(){
-    ['cpu-val','ram-val','disk-val','load-val','mmd-cpu','mmd-ram','mmd-disk','mmd-load'].forEach(function(id){
-        const el=document.getElementById(id); if(el) el.textContent='—';
-    });
     ['mms-cpu','mms-ram','mms-disk'].forEach(function(id){
         const el=document.getElementById(id); if(el){ el.textContent='—'; el.className='mms-val'; }
     });
-    ['cpu-bar','ram-bar','disk-bar','mmd-cpu-bar','mmd-ram-bar','mmd-disk-bar'].forEach(function(id){ _setStatBar(id,0); });
 }
+// Les mesures, quand le flux push ne les porte pas : la bande du téléphone et les constantes de la vue d'ensemble.
+// (L'ancien tiroir « Détails système », ses treize cartes et leurs minuteurs sont partis : la page « La machine » les remplace.)
 async function loadMetrics(){
     try{
         const d=await apiGet('/api/metrics');
         if(d&&d.muet){ _metriquesMuettes(); return; }
         const cpu=Math.round(d.cpu||0), ram=Math.round(d.ram||0), disk=Math.round(d.disk||0);
-        const load=(d.load_1m||0)+' '+(d.load_5m||0)+' '+(d.load_15m||0);
-        // Desktop panels
-        document.getElementById('cpu-val').textContent=cpu+'%';  _colorStatVal('cpu-val',cpu);
-        document.getElementById('ram-val').textContent=ram+'%';  _colorStatVal('ram-val',ram);
-        document.getElementById('disk-val').textContent=disk+'%';_colorStatVal('disk-val',disk);
-        _setStatBar('cpu-bar',cpu);_setStatBar('ram-bar',ram);_setStatBar('disk-bar',disk);
-        document.getElementById('load-val').textContent=load;
-        // Mobile strip
         _setMmsVal('mms-cpu',cpu+'%',cpu);
         _setMmsVal('mms-ram',ram+'%',ram);
         _setMmsVal('mms-disk',disk+'%',disk);
-        // Drawer
-        const mmdCpu=document.getElementById('mmd-cpu');
-        if(mmdCpu){mmdCpu.textContent=cpu+'%';_colorStatVal('mmd-cpu',cpu)}
-        const mmdRam=document.getElementById('mmd-ram');
-        if(mmdRam){mmdRam.textContent=ram+'%';_colorStatVal('mmd-ram',ram)}
-        const mmdDisk=document.getElementById('mmd-disk');
-        if(mmdDisk){mmdDisk.textContent=disk+'%';_colorStatVal('mmd-disk',disk)}
-        _setStatBar('mmd-cpu-bar',cpu);_setStatBar('mmd-ram-bar',ram);_setStatBar('mmd-disk-bar',disk);
-        const mmdLoad=document.getElementById('mmd-load');
-        if(mmdLoad) mmdLoad.textContent=load;
-        // Bandeau de constantes du tableau de bord
-        majVitals(cpu, ram, disk);
-        // Charts
-        cpuHistory.push(cpu); ramHistory.push(ram);
-        if(cpuHistory.length>60)cpuHistory.shift();
-        if(ramHistory.length>60)ramHistory.shift();
-        updateCharts();
+        majVitals(cpu, ram, disk, d.load_1m);
     }catch(e){}
 }
-function initCharts(){
-    const ctx=document.getElementById('cpu-chart').getContext('2d');
-    cpuChart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label:'CPU %',data:[],borderColor:'var(--accent)',backgroundColor:'rgba(0,255,204,.06)',fill:true,tension:0.4,pointRadius:0,borderWidth:2},{label:'RAM %',data:[],borderColor:'var(--violet)',backgroundColor:'rgba(124,92,252,.06)',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{beginAtZero:true,max:100,grid:{color:'var(--ov-04)'},ticks:{color:'var(--txt-faint)',font:{size:9}}}}}});
-}
-function updateCharts(){ if(!cpuChart)return; cpuChart.data.labels=cpuHistory.map((_,i)=>i); cpuChart.data.datasets[0].data=cpuHistory; cpuChart.data.datasets[1].data=ramHistory; cpuChart.update('none'); }
 
 async function loadDashboard(){
     try{
@@ -7493,73 +7422,6 @@ async function loadDashboard(){
             breakdown:{failed_units:d.failed_units}});
     }catch(e){}
 }
-async function loadRemotes(){ try{ const d=await apiGet('/api/remotes'); document.getElementById('remotes-list').innerHTML=d.length?d.map(r=>`<div class="remote-item"><span class="remote-name">${escapeHtml(r.name)}</span><span class="remote-type">${escapeHtml(r.type||'?')}</span></div>`).join(''):'<div class="empty-state">Aucun remote</div>'; }catch(e){} }
-async function loadSSLCerts(){ try{ const d=await apiGet('/api/ssl'); const html=d.length?d.slice(0,10).map(c=>{const bc=c.days_left<=7?'badge-crit':c.days_left<=30?'badge-warn':'badge-ok'; return `<div class="info-row"><span class="info-name">${escapeHtml(c.domain)}</span><span class="badge ${bc}">${c.days_left}j</span></div>`;}).join(''):'<div class="empty-state">Aucun certificat</div>'; document.getElementById('ssl-list').innerHTML=html; const ms=document.getElementById('mmd-ssl');if(ms)ms.innerHTML=html; }catch(e){} }
-async function loadTailscale(){ try{ const d=await apiGet('/api/tailscale'); document.getElementById('tailscale-list').innerHTML=d.length?d.map(p=>`<div class="remote-item"><span class="remote-name">${escapeHtml(p.name||'?')}</span><span class="remote-type">${p.online?'🟢':'🔴'}&nbsp;<span style="color:var(--txt-faint);font-size:11px;font-family:'JetBrains Mono',monospace">${escapeHtml(p.tailscale_ip||p.ip||'')}</span></span></div>`).join(''):'<div class="empty-state">Aucun peer</div>'; }catch(e){} }
-async function loadFail2ban(){ try{ const d=await apiGet('/api/fail2ban'); document.getElementById('fail2ban-count').textContent=d.length+' IP bannie'+(d.length>1?'s':''); }catch(e){} }
-async function loadProcesses(){ try{ const d=await apiGet('/api/processes'); if(d.length){ _applyProcesses(d.map(p=>({name:p.command||'?',cpu_pct:p.cpu||0}))); } else { document.getElementById('processes-list').innerHTML='<div class="empty-state">Aucun processus</div>'; } }catch(e){} }
-async function loadSessions(){
-    try{
-        const d=await apiGet('/api/sessions');
-        document.getElementById('sessions-list').innerHTML=d.length
-            ? d.map(s=>`
-                <div class="remote-item session-item">
-                    <span class="remote-name">
-                        ${s.type==='ftp'?'📁':'🔒'} ${escapeHtml(s.user||'?')}
-                    </span>
-                    <span class="remote-type" style="flex:1;font-size:10px;font-family:'JetBrains Mono',monospace">
-                        ${escapeHtml(s.ip||'local')}
-                        ${s.login_time?`<span style="color:var(--txt-ghost);margin-left:4px">${escapeHtml(String(s.login_time).substring(0,16))}</span>`:''}
-                    </span>
-                    <button class="kill-session-btn" title="Déconnecter cette session"
-                        onclick="killSession('${escapeHtml(s.user||'')}','${escapeHtml(s.ip||'')}',this)"
-                        >✕</button>
-                </div>`).join('')
-            : '<div class="empty-state">Aucune session active</div>';
-    }catch(e){}
-}
-
-async function killSession(user, ip, btn){
-    if(!await buConfirmer(`Déconnecter la session de ${user} (${ip}) ?`)) return;
-    btn.disabled=true; btn.textContent='…';
-    try{
-        const r=await fetch('/api/session/kill',{
-            method:'POST',
-            headers:{'Content-Type':'application/json','X-Session-Token':sessionId},
-            body:JSON.stringify({user,ip,session:sessionId})
-        });
-        const d=await r.json();
-        if(d.success){ btn.closest('.session-item').remove(); addSystemMessage(`Session de <strong>${escapeHtml(user)}</strong> (${escapeHtml(ip)}) déconnectée.`); }
-        else{ btn.disabled=false; btn.textContent='✕'; buDire('Erreur : '+(d.error||'inconnue')); }
-    }catch(e){ btn.disabled=false; btn.textContent='✕'; }
-}
-async function loadPorts(){ try{ const d=await apiGet('/api/ports'); document.getElementById('ports-list').innerHTML=d.length?d.slice(0,15).map(p=>`<div class="remote-item"><span class="remote-name">${p.port}/${escapeHtml(p.protocol||'?')}</span><span class="remote-type">${escapeHtml(p.process||'?')}</span></div>`).join(''):'<div class="empty-state">Aucun port</div>'; }catch(e){} }
-async function loadOOM(){ try{ const d=await apiGet('/api/oom'); document.getElementById('oom-list').innerHTML=d.length?d.slice(0,5).map(o=>`<div class="remote-item"><span class="remote-name">${escapeHtml(o.killed_process||'?')}</span><span class="remote-type critical">${o.memory_used_mb||0}MB</span></div>`).join(''):'<div class="empty-state">Aucun OOM</div>'; }catch(e){} }
-async function clearOOM(){
-    try{ await fetch('/api/oom/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session:sessionId})}); }catch(e){}
-    loadOOM();
-    if(typeof showToast==='function') showToast('💀 OOM acquittés','success',2500);
-}
-async function resetFailedUnits(){
-    try{ await fetch('/api/failed/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session:sessionId})}); }catch(e){}
-    setTimeout(loadFailedUnits, 1200);
-    if(typeof showToast==='function') showToast('⚠️ Unités failed réinitialisées','success',2500);
-}
-async function loadFailedUnits(){
-    try{
-        const d=await apiGet('/api/failed');
-        const html=d.length
-            ? d.slice(0,8).map(f=>`<div class="info-row">
-                <span class="info-name" style="color:#ff4466">${escapeHtml(f.unit||'?')}</span>
-                <span class="badge badge-crit">FAILED</span>
-              </div>`).join('')
-            : '<div class="empty-state">Aucune unité failed ✓</div>';
-        document.getElementById('failed-list').innerHTML=html;
-        const mmdF=document.getElementById('mmd-failed');
-        if(mmdF) mmdF.innerHTML=html;
-    }catch(e){}
-}
-async function loadDocker(){ try{ const d=await apiGet('/api/docker'); document.getElementById('docker-list').innerHTML=d.length?d.slice(0,8).map(c=>`<div class="remote-item"><span class="remote-name">${escapeHtml(c.name||'?')}</span><span class="remote-type">${c.status && c.status.toLowerCase().includes('run')?'🟢':'🔴'}</span></div>`).join(''):'<div class="empty-state">Aucun container</div>'; }catch(e){} }
 
 /* ── UI helpers ── */
 let _userScrolledUp = false;
@@ -35028,7 +34890,7 @@ async function startApp(){
         // Le chat est déjà câblé globalement (listeners + onclick) — rien à initialiser de plus.
         return;
     }
-    initCharts(); initParticles();
+    initParticles();
     // ON ARRIVE DANS MON BUREAU. La classe `active` posée dans le balisage
     // montre l'écran mais n'appelle pas son chargeur : sans cette ligne, la
     // page d'arrivée s'ouvrait vide. « Vue d'ensemble » reste à un clic, et
@@ -35047,9 +34909,8 @@ async function startApp(){
     chatEl.innerHTML='';
     addMessage('<strong>CASSANDRA</strong> — Agent IA souveraine<br><span style="color:var(--txt-faint);font-size:12px">Je suis fraîche, dispo, et sous-caféinée. Commande-moi une mission.</span>', false);
     // [EVO5] Chargement initial HTTP (données déjà dispo) puis bascule WebSocket
-    // AU DÉMARRAGE, UNE SEULE LECTURE : la cloche (21-09, fil 30). Les treize cartes du tiroir système et
-    // leurs huit minuteurs se chargent à l'ouverture du tiroir (`_sysCharger`) ; la Vue d'ensemble se lit
-    // par /api/vue quand on l'ouvre ; le résumé du panneau se relit dans son onglet.
+    // AU DÉMARRAGE, UNE SEULE LECTURE : la cloche (21-09, fil 30). La Vue d'ensemble se lit par /api/vue
+    // quand on l'ouvre, la page « La machine » par vue.machine ; le résumé du panneau se relit dans son onglet.
     await Promise.allSettled([loadAlerts()]);
     setInterval(function(){ if (document.getElementById('tab-fastpanel') && document.getElementById('tab-fastpanel').classList.contains('active')) fpLoadSummary(); }, 120000);
     // `checkServicesStatus`, `restartService` et `loadServerInfo` étaient appelées ici sans
@@ -35127,9 +34988,9 @@ function _initWebSocket(){
                 // sans flux push, on interroge — mais seulement si l'onglet est devant et si les chiffres sont à l'écran (30 s) : chaque lecture occupe le serveur
                 _wsFallbackTimer = setInterval(()=>{
                     if(document.hidden) return;
-                    const c=document.getElementById('cpu-val'); if(c && c.offsetParent===null) return;
+                    const v=document.getElementById('vu-cpu'), b=document.getElementById('mobile-metric-strip');
+                    if(!(v && v.offsetParent!==null) && !(b && b.offsetParent!==null)) return;      // aucune mesure à l'écran : rien à relire
                     loadMetrics();
-                    const p=document.getElementById('processes-list'); if(p && p.offsetParent!==null) loadProcesses();
                 }, _abandon ? 30000 : 3000);
             }
             if(_abandon) return;
@@ -35139,7 +35000,6 @@ function _initWebSocket(){
     } catch(e){
         // Browser ne supporte pas WS → polling classique
         setInterval(loadMetrics,   1000);
-        setInterval(loadProcesses, 2000);
         setInterval(loadDashboard, 10000);
         setInterval(loadAlerts,    60000);
     }
@@ -35157,14 +35017,7 @@ function _applyMetrics(m){
         const disk = Math.round(m.disk ?? m.disk_pct ?? 0);
         VU.wsTs = Date.now();
         majVitals(cpu, ram, disk, m.load_1m);
-        // les cartes du tiroir, si elles sont posées
-        const cv=document.getElementById('cpu-val'); if(cv){ cv.textContent=cpu+'%'; _colorStatVal('cpu-val',cpu); }
-        const rv=document.getElementById('ram-val'); if(rv){ rv.textContent=ram+'%'; _colorStatVal('ram-val',ram); }
-        const dv=document.getElementById('disk-val'); if(dv){ dv.textContent=disk+'%'; _colorStatVal('disk-val',disk); }
-        _setStatBar('cpu-bar',cpu); _setStatBar('ram-bar',ram); _setStatBar('disk-bar',disk);
-        const lv=document.getElementById('load-val'); if(lv && m.load_1m!==undefined) lv.textContent=(m.load_1m||0)+' '+(m.load_5m||0)+' '+(m.load_15m||0);
         _setMmsVal('mms-cpu',cpu+'%',cpu); _setMmsVal('mms-ram',ram+'%',ram); _setMmsVal('mms-disk',disk+'%',disk);
-        if(m.top_processes) _applyProcesses(typeof m.top_processes==='string' ? JSON.parse(m.top_processes) : m.top_processes);
     } catch(e){}
 }
 
@@ -35191,74 +35044,10 @@ function _applyAutoEvolution(msg){
 function _applyHealth(h){
     if(!h) return;
     const s = h.score ?? 0;
-    const cls = s>=90?'excellent':s>=75?'good':s>=50?'warning':'critical';
-    const color = s>=90?'var(--ok)':s>=75?'var(--accent)':s>=50?'var(--orange)':'var(--red)';
-    // Score text inside ring
-    const el = document.getElementById('health-score');
-    if(el){ el.textContent = s; el.style.color = color; }
     // la Vue d'ensemble : le compteur « Santé » suit la trame (21-09)
     try{ const vk=[...document.querySelectorAll('#vu-kpis .mx-kpi')].find(k=>(k.querySelector('span')||{}).textContent==='Santé'); if(vk){ const b=vk.querySelector('b'); if(b){ b.textContent=s; b.className = s<50?'bad':(s<75?'avert':''); } } const sa=document.getElementById('vu-sante-age'); if(sa) sa.textContent='santé · WebSocket'; }catch(e){}
-    // Animate conic ring
-    const ring = document.getElementById('health-ring');
-    if(ring){
-        const deg = Math.round((Math.min(s,100)/100)*360);
-        ring.style.background = `conic-gradient(${color} ${deg}deg, var(--ov-06) ${deg}deg)`;
-    }
-    // Status pill
-    const st = document.getElementById('health-status');
-    if(st){
-        const label = h.status || (s>=90?'Excellent':s>=75?'Bon':s>=50?'Warning':'Critique');
-        st.innerHTML = `<span class="status-pill ${cls}">${label}</span>`;
-    }
-    // Details
-    const dt = document.getElementById('health-details');
-    if(dt){
-        const parts=[];
-        if(h.breakdown?.ssl)          parts.push(`SSL ${h.breakdown.ssl}pts`);
-        if(h.breakdown?.oom)          parts.push(`OOM ${h.breakdown.oom}pts`);
-        if(h.breakdown?.failed_units) parts.push(`Failed ${h.breakdown.failed_units}pts`);
-        // la flotte, toujours dite : un 100 sans détail ne prouvait rien
-        const fl = h.breakdown?.flotte;
-        if(fl){ const p=[]; if((fl.en_ligne||[]).length) p.push(`${fl.en_ligne.length} en ligne`);
-            if((fl.hors_ligne||[]).length) p.push(`${fl.hors_ligne.length} HORS LIGNE (${fl.hors_ligne.join(', ')}) ${fl.malus||0}pts`);
-            if((fl.intermittentes_hors_ligne||[]).length) p.push(`${fl.intermittentes_hors_ligne.length} intermittente(s) absente(s)`);
-            if((fl.retirees||[]).length) p.push(`${fl.retirees.length} retirée(s)`);
-            if(p.length) parts.push('Flotte : '+p.join(', ')); }
-        if(h.breakdown && parts.length) dt.textContent = parts.join(' · ');
-        else if(h.sites !== undefined) dt.textContent = `${h.sites||0} sites · ${h.ssl_expiring||0} SSL`;
-    }
-    // Mobile strip
+    // la bande du téléphone (l'anneau et le détail vivaient dans l'ancien tiroir « Détails système », parti)
     _setMmsVal('mms-health', s+'', s);
-    // Drawer ring clone
-    const mmdRing=document.getElementById('mmd-health-ring');
-    if(mmdRing){
-        const deg=Math.round((Math.min(s,100)/100)*360);
-        mmdRing.style.background=`conic-gradient(${color} ${deg}deg,var(--ov-06) ${deg}deg)`;
-        const sc=document.getElementById('mmd-health-score');
-        if(sc){sc.textContent=s;sc.style.color=color;}
-    }
-    const mmdSt=document.getElementById('mmd-health-status');
-    if(mmdSt){
-        const label=h.status||(s>=90?'Excellent':s>=75?'Bon':s>=50?'Warning':'Critique');
-        mmdSt.innerHTML=`<span class="status-pill ${cls}">${label}</span>`;
-    }
-    const mmdDt=document.getElementById('mmd-health-details');
-    if(mmdDt&&dt) mmdDt.textContent=dt.textContent;
-}
-
-function _applyProcesses(procs){
-    if(!Array.isArray(procs)) return;
-    const html = procs.slice(0,8).map(p=>{
-        const cpu = parseFloat(p.cpu_pct||p.cpu||0);
-        const color = cpu>50?'var(--red)':cpu>20?'var(--orange)':'var(--accent)';
-        return `<div class="proc-row">
-            <span class="proc-name">${escapeHtml(p.name||p.comm||'?')}</span>
-            <div class="proc-bar-wrap"><div class="proc-bar-fill" style="width:${Math.min(cpu,100)}%;background:${color}"></div></div>
-            <span class="proc-pct" style="color:${color}">${cpu.toFixed(1)}%</span>
-        </div>`;
-    }).join('');
-    const el=document.getElementById('processes-list'); if(el) el.innerHTML=html;
-    const mmd=document.getElementById('mmd-procs');    if(mmd) mmd.innerHTML=html;
 }
 
 // Auto-scroll intelligent
@@ -35737,37 +35526,9 @@ async function fpLoadSummary() {
     _fpEtatSommaire((d.source_erreur && !(_fp2Panneau && _fp2Panneau.nom === 'nu')) ? 'Source partielle : ' + d.source_erreur : '', 'warn');
     _fp2Lu.summary = Date.now(); fp2Bandeau(d);
     { const _pp = document.getElementById('fp2-panneau'); if (_pp) { _pp.className = 'fp2-panneau ' + (d.source_erreur ? 'hs' : 'ok'); _pp.title = d.source_erreur || 'résumé lu, base du panneau joignable'; } }
-    // Cartes de synthèse du tiroir « Détails système »
-    const card = document.getElementById('fp-summary-card');
-    if (card) card.style.display = '';
+    // (Les cartes de synthèse vivaient dans l'ancien tiroir « Détails système », parti : l'onglet reste.)
     const fpTabBtn = document.getElementById('tab-fp-btn');
     if (fpTabBtn) fpTabBtn.style.display = '';
-    document.getElementById('fps-domains').textContent  = d.domains_count  || 0;
-    document.getElementById('fps-dbs').textContent      = d.databases_count || 0;
-    document.getElementById('fps-mail').textContent     = d.mail_count      || 0;
-    document.getElementById('fps-users').textContent    = d.users_count     || 0;
-    const svcs = d.services_down || 0;
-    const svcEl = document.getElementById('fps-services');
-    svcEl.textContent = svcs === 0 ? '✓ OK' : svcs + ' ↓';
-    svcEl.parentElement.className = 'fp-sc ' + (svcs > 0 ? 'crit' : 'ok');
-    document.getElementById('fps-services-sub').textContent = svcs > 0 ? svcs + ' service(s) down' : 'Tous actifs';
-    const bkFail  = d.backups_failed || 0;
-    const bkTotal = d.backups_count  ?? -1;   // -1 = ancienne version sans ce champ
-    const bkEl    = document.getElementById('fps-backups');
-    const bkSub   = document.getElementById('fps-backups-sub');
-    if (bkTotal === 0) {
-        bkEl.textContent = '–';
-        bkEl.parentElement.className = 'fp-sc';
-        bkSub.textContent = 'Aucun configuré';
-    } else if (bkFail === 0) {
-        bkEl.textContent = '✓ OK';
-        bkEl.parentElement.className = 'fp-sc ok';
-        bkSub.textContent = '';
-    } else {
-        bkEl.textContent = bkFail + ' ✗';
-        bkEl.parentElement.className = 'fp-sc crit';
-        bkSub.textContent = bkFail + ' backup(s) en erreur';
-    }
     // Badges sidebar
     document.getElementById('fpbadge-domains').textContent   = d.domains_count  || 0;
     document.getElementById('fpbadge-users').textContent     = d.users_count    || 0;

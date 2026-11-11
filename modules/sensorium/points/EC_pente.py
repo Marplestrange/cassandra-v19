@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.2)  #8f94b3
+# VERSION EC : EC0 (référence 0.4.0)  #8f94b3
 # HÔTE CN    : CN_module.py · pente @1.0
 # RÔLE       : calcule la tendance d'une mesure sur quelques jours : de combien elle monte ou descend par jour, et si la droite colle aux points.
 # MÉTHODE    : fonction pure : régression linéaire par les moindres carrés ; moins de six points ou des abscisses toutes égales ne donnent aucune pente.

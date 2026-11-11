@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b46b9d
+# VERSION CN : 0.1.0  #cdc5ac
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b46b9d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cdc5ac ▼▼▼
 """Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille »."""
 import sys
 import unittest
@@ -344,6 +344,16 @@ class EcranMachine(unittest.TestCase):
         self.assertIn("noterFrais(genre, cible, action, res)", ecran)                             # le geste note ce qu'il a changé
         self.assertIn("noterMesure(); appliquerFrais(); }", ecran)                               # et chaque relecture de la page le garde, le temps du relevé suivant
         self.assertIn("fin: Date.now() + (genre === \"conteneur\" ? 330000 : 45000)", ecran)
+
+    def test_l_ancien_tiroir_details_systeme_est_parti(self):
+        """La page « La machine » remplace le tiroir « Détails système » et son pendant mobile : ni balisage, ni fonctions, ni règles ne restent (11-2026)."""
+        index, app, css = self.lire("interface", "CN_index.html"), self.lire("interface", "CN_app.js"), self.lire("interface", "CN_style.css")
+        for mot in ("sys-drawer", "sys-scrim", "ouvrirSysteme", "fermerSysteme", "mobile-metrics-drawer", "mmd-overlay", "fp-summary-card"):
+            self.assertNotIn(mot, index + app + css, mot)
+        for fonction in ("_sysCharger", "loadProcesses", "loadSSLCerts", "loadFailedUnits", "loadDocker", "loadPorts", "loadOOM", "loadSessions", "killSession", "initCharts", "_applyProcesses"):
+            self.assertNotIn("function %s(" % fonction, app, fonction)
+        self.assertIn("if(sec==='systeme') sec='machine';", app)                                  # un ancien lien vers la rubrique « systeme » mène à la page
+        self.assertIn("window.d19Aller('panorama','machine')", app)                              # la bande des mesures du téléphone aussi
 
     def test_la_page_defile_dans_son_propre_cadre(self):
         """Le cadre de la vue coupe ce qui dépasse (overflow:hidden) : sans défilement à elle, la page ne se parcourt pas (11-2026)."""

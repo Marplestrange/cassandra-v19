@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a40711
+# VERSION CN : 0.1.0  #d05ffd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : test_sensorium_releves.py
 # MÉTHODE    : charge CN_releves_machine.py seul et lui donne des sorties de commandes fictives (exemple.test) ; aucune machine, aucun réseau
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a40711 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d05ffd ▼▼▼
 import importlib.util
 import unittest
 from pathlib import Path
@@ -122,6 +122,29 @@ class Conteneurs(unittest.TestCase):
     def test_la_distribution(self):
         self.assertEqual(R.distribution('NAME="Alpine Linux"\nPRETTY_NAME="Alpine Linux v3.24"\n'), "Alpine Linux v3.24")
         self.assertEqual(R.distribution("OCI runtime exec failed: exec: \"cat\": executable file not found"), "")
+
+
+class MisesAJour(unittest.TestCase):
+    def test_la_reference_d_une_image(self):
+        self.assertEqual(R.reference_image("searxng/searxng"), {"registre": "registry-1.docker.io", "depot": "searxng/searxng", "etiquette": "latest"})
+        self.assertEqual(R.reference_image("nginx:1.27"), {"registre": "registry-1.docker.io", "depot": "library/nginx", "etiquette": "1.27"})
+        self.assertEqual(R.reference_image("ghcr.io/exemple/outil:v2"), {"registre": "ghcr.io", "depot": "exemple/outil", "etiquette": "v2"})
+        self.assertEqual(R.reference_image("registre.exemple.test:5000/a/b"), {"registre": "registre.exemple.test:5000", "depot": "a/b", "etiquette": "latest"})
+        for epinglee in ("exemple/coffre@sha256:" + "c" * 64, "sha256:" + "c" * 64, "c" * 12, "", "Exemple/Majuscules", "a/b:étiquette illisible"):
+            self.assertIsNone(R.reference_image(epinglee), epinglee)
+
+    def test_le_defi_d_un_registre_et_le_verdict(self):
+        self.assertEqual(R.defi_bearer('Bearer realm="https://auth.exemple.test/token",service="registre.exemple.test",scope="repository:a/b:pull"'),
+                         {"realm": "https://auth.exemple.test/token", "service": "registre.exemple.test", "scope": "repository:a/b:pull"})
+        self.assertEqual(R.defi_bearer('Basic realm="x"'), {})
+        self.assertEqual([R.etat_maj(d, l) for d, l in (("sha256:a", ["sha256:a"]), ("sha256:b", ["sha256:a"]), ("", ["sha256:a"]), ("sha256:b", []))], ["a_jour", "disponible", "", ""])
+        im = R.images([{"Id": "sha256:aaa", "Size": 1048576, "RepoDigests": ["exemple/coffre@sha256:un", "miroir.exemple.test/coffre@sha256:deux"]}])
+        self.assertEqual(im["sha256:aaa"]["empreintes"], ["sha256:deux", "sha256:un"])
+
+    def test_le_service_d_un_processus_tue_faute_de_memoire(self):
+        lignes = ["[Wed Nov 11 03:12:44 2026] oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/system.slice/php8.3-fpm.service,task=php-fpm,pid=52110,uid=33",
+                  "[Wed Nov 11 03:15:02 2026] oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=x,mems_allowed=0,oom_memcg=/docker/abc,task_memcg=/docker/abc,task=node,pid=777,uid=0"]
+        self.assertEqual(R.oom_services(lignes), {"52110": "php8.3-fpm", "777": ""})
 
 
 class Proxys(unittest.TestCase):

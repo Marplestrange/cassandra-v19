@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f66958
+// VERSION CN : 0.1.0  #8a799a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f66958 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8a799a ▼▼▼
 // La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // Une seule page où tout se voit d'un coup d'œil, une tuile par sujet ; le détail d'un sujet s'ouvre au clic, « ‹ La machine » y ramène.
 // Tout vient d'UNE lecture, vue.machine, qui compose ce que les modules relèvent déjà ; les ressources et les processus se relisent seuls
@@ -204,7 +204,8 @@
           (r.swap_go && r.swap_go[1] ? "<span>échange " + fr(r.swap_go[0]) + " sur " + fr(r.swap_go[1]) + " Go</span>" : "") + "</div>", questions);
       }
       h += sec("Tués faute de mémoire", "OOM · les dernières 24 h", oom == null ? '<p class="vide">Inconnu : le collecteur n’a pas répondu.</p>' : oom.length ? '<div class="rows">' + oom.map((o, i) => '<div class="row"><div class="nm"><b class="mono">' + esc(o.processus) + "</b><small>" + esc(String(o.quand).replace("T", " ").slice(0, 16)) +
-        '</small></div><div class="mil">occupait <b class="num" style="color:var(--danger)">' + fr(o.mo / 1024) + ' Go</b></div><div class="cote">' + pill("tué par le noyau", "d") + demande("Pourquoi ?", "Pourquoi " + o.processus + " a-t-il été tué faute de mémoire sur la machine, et comment éviter que cela recommence ?") +
+        (o.service ? " · service " + esc(o.service) : "") + '</small></div><div class="mil">occupait <b class="num" style="color:var(--danger)">' + fr(o.mo / 1024) + ' Go</b></div><div class="cote">' + pill("tué par le noyau", "d") +
+        (limitable(o.service) ? '<button class="btn s" data-a="limiter" data-n="' + esc(o.service) + '">Limiter sa mémoire</button>' : "") + demande("Pourquoi ?", "Pourquoi " + o.processus + " a-t-il été tué faute de mémoire sur la machine, et comment éviter que cela recommence ?") +
         '<button class="btn s" data-a="acquitter" data-i="' + i + '">Acquitter</button></div></div>').join("") + "</div>" : '<p class="vide">Aucun processus tué faute de mémoire.</p>',
         (oom && oom.length ? '<button class="btn s" data-a="acquitter" data-i="tous">Tout acquitter</button>' : "") + demande("Demander", "Y a-t-il eu des processus tués faute de mémoire récemment sur la machine, et pourquoi ?"));
       return h + blocGestes();
@@ -254,6 +255,8 @@
         const ports = c.ports || [], px = c.proxys || [], vol = c.volumes || [], cert = px.find((x) => x.cert_j != null);
         const image = '<div class="bloc"><h3>Image</h3><dl class="paires un">' + p2("Image", '<span class="mono">' + esc(c.image) + "</span>") + (c.releve ? p2("Distribution", esc(c.distribution || "non lue : l’image n’a pas de fichier de version lisible")) : "") +
           p2("Construite", (c.image_age_j != null ? "il y a " + c.image_age_j + " jour" + (c.image_age_j > 1 ? "s" : "") : "—") + (c.taille_mo ? " · " + mo(c.taille_mo) : "")) +
+          (c.releve ? p2("Mise à jour", (c.maj === "disponible" ? '<span style="color:var(--info,var(--accent))">une image plus récente est publiée</span>' : c.maj === "a_jour" ? "à jour" : "pas encore vérifiée") +
+            (c.maj && c.maj_vue ? " <small>vérifié le " + jour(c.maj_vue) + "</small>" : "")) : "") +
           p2("Failles connues", '<a data-a="module" data-e="securite" data-v="outils" data-ou="Sécurité › Outils (Trivy)">Sécurité › Outils →</a>') + "</dl></div>";
         const marche = '<div class="bloc"><h3>Marche</h3><dl class="paires un">' + p2("État", esc(c.etat)) + p2("Ressources", c.tourne && c.cpu != null ? "processeur " + fr(c.cpu, 2) + " % · mémoire " + esc(c.memoire) : "—") +
           (c.releve ? p2("Santé", esc(c.sante)) + p2("Redémarrage", "politique « " + esc(c.politique || "no") + " » · " + c.redemarrages + " redémarrage" + (c.redemarrages > 1 ? "s" : "")) : "") + "</dl></div>";
@@ -274,11 +277,13 @@
         const ouvert = S.ct === c.nom, coul = c.pause ? "w" : c.tourne ? "ok" : "d", charge = c.tourne && !c.pause && c.cpu != null ? fr(c.cpu, 2) + " % · " + c.memoire : "—", ports = c.ports || [], px = c.proxys || [];
         return '<div class="ct ' + (ouvert ? "ouvert" : "") + '"><button class="ctl" aria-expanded="' + ouvert + '" data-a="ouvrir" data-k="ct" data-n="' + esc(c.nom) + '"><span class="nm"><b class="mono">' + esc(c.nom) + "</b><small>" + esc(c.role || "conteneur Docker") + '</small></span><span class="c2"><span class="mono">' + esc(c.image) +
           "</span><small>" + esc(c.distribution || (c.image_age_j != null ? "image construite il y a " + c.image_age_j + " j" : "")) + '</small></span><span class="c3">' + (ports.length ? ports.map(port).join("") : c.releve ? "<small>aucun port publié</small>" : "") +
-          (px.length ? "<small>↳ " + esc(px.map((x) => x.nom).filter((n, i, t) => t.indexOf(n) === i).join(", ")) + "</small>" : "") + '</span><span class="c4">' + pill(c.etat, coul) + '<small class="num">' + esc(charge) + '</small></span><span class="chev">›</span></button>' +
+          (px.length ? "<small>↳ " + esc(px.map((x) => x.nom).filter((n, i, t) => t.indexOf(n) === i).join(", ")) + "</small>" : "") + '</span><span class="c4">' + pill(c.etat, coul) + '<small class="num">' + esc(charge) + "</small>" + (c.maj === "disponible" ? pill("mise à jour disponible", "i") : "") + '</span><span class="chev">›</span></button>' +
           (ouvert ? fiche(c) + '<div class="gestes" style="grid-column:1/-1;align-items:center">' + gestesConteneur(c) + '<span style="flex:1"></span>' +
             cass([["Que fait-il ?", "Que fait le conteneur " + c.nom + " sur la machine ?"], ["Faire le point", "Fais-moi le point sur le conteneur " + c.nom + " de la machine : ce qu’il fait, ses ports, son image, ce qui cloche."]]) + "</div></div>" : "") + "</div>";
       };
-      return tete("Conteneurs", (ct.length - ko) + " sur " + ct.length + " tournent" + (releve ? " · " + pub + " avec un port ouvert au-delà de la machine · " + noms + " derrière un nom public" : ""), age()) +
+      const majs = ct.filter((c) => c.maj === "disponible").length;
+      return tete("Conteneurs", (ct.length - ko) + " sur " + ct.length + " tournent" + (releve ? " · " + pub + " avec un port ouvert au-delà de la machine · " + noms + " derrière un nom public" : "") +
+        (majs ? " · " + majs + " mise" + (majs > 1 ? "s" : "") + " à jour disponible" + (majs > 1 ? "s" : "") : ""), age()) +
         sec("Les conteneurs", "Docker · un clic ouvre la fiche", ct.length ? '<div class="cts">' + ct.map(ligne).join("") + "</div>" + (releve ? '<p class="note">Sur chaque ligne : le nom et son rôle, l’image et sa distribution, les ports publiés (en orange : ouverts au-delà de la machine) et le nom public qui y mène, l’état et la charge.</p>' : "") :
           '<p class="vide">Aucun conteneur sur cette machine.</p>', '<button class="btn s" data-a="module" data-e="securite" data-v="outils" data-ou="Sécurité › Outils (Trivy)" title="Les failles connues dans les images">Failles des images</button>') + blocGestes();
     },
@@ -458,7 +463,9 @@
   const boutonDemarrage = (s) => (s.geste === "noyau" || s.geste === "collecteur" || s.unite === "cassandra-courtier" || (s.protege && s.au_demarrage) ? "" :
     ' <button class="btn s" style="margin-left:6px" data-a="geste" data-c="service" data-x="' + (s.au_demarrage ? "desactiver" : "activer") + '" data-n="' + esc(s.unite) + '">' + (s.au_demarrage ? "Ne plus le lancer" : "Le lancer") + "</button>");
   const gestesConteneur = (c) => (c.pause ? bg("conteneur", "reprendre", c.nom, "", "p") + bg("conteneur", "arreter", c.nom, "", "d") : c.tourne ? bg("conteneur", "redemarrer", c.nom) + bg("conteneur", "pause", c.nom) + bg("conteneur", "arreter", c.nom, "", "d") :
-    bg("conteneur", "demarrer", c.nom, "", "p")) + jl("conteneur", c.nom);
+    bg("conteneur", "demarrer", c.nom, "", "p")) + (c.releve && !c.pause ? '<button class="btn s ' + (c.maj === "disponible" ? "p" : "") + '" data-a="majConteneur" data-n="' + esc(c.nom) + '">Mettre à jour</button>' : "") + jl("conteneur", c.nom);
+  // Un service suivi par la page, que le courtier accepte de limiter (ni le noyau, ni le collecteur, ni le courtier : ils ont leurs propres gestes).
+  const limitable = (service) => !!service && ((D().services || {}).suivis || []).some((s) => s.unite === service && s.geste !== "noyau" && s.geste !== "collecteur" && s.unite !== "cassandra-courtier");
   const gestesProcessus = (p) => (p.pid == null || p.protege ? "" : bg("processus", "terminer", p.pid) + bg("processus", "forcer", p.pid, "", "d") + bg("processus", "calmer", p.pid));
   function blocGestes() {
     const g = S.gestes; if (!g) return "";
@@ -475,7 +482,8 @@
     const d = S.d, maintenant = Date.now(); if (!d) return;
     (d.conteneurs || []).forEach((c) => { const f = FRAIS.conteneur[c.nom]; if (!f) return; if (f.fin < maintenant) { delete FRAIS.conteneur[c.nom]; return; }
       const e = f.apres || { arreter: "exited", pause: "paused" }[f.action] || "running";
-      c.pause = e === "paused"; c.tourne = e === "running" || e === "paused"; c.etat = e === "paused" ? "en pause" : e === "running" ? (f.action === "reprendre" ? "reparti à l’instant" : "relancé à l’instant") : "arrêté à l’instant"; });
+      c.pause = e === "paused"; c.tourne = e === "running" || e === "paused"; c.etat = e === "paused" ? "en pause" : e === "running" ? (f.action === "reprendre" ? "reparti à l’instant" : f.action === "maj" ? "mis à jour à l’instant" : "relancé à l’instant") : "arrêté à l’instant";
+      if (f.action === "maj") { c.maj = "a_jour"; c.maj_vue = ""; c.image_age_j = null; } });
     ((d.services || {}).suivis || []).forEach((s) => { const f = FRAIS.service[s.unite]; if (!f) return; if (f.fin < maintenant) { delete FRAIS.service[s.unite]; return; }
       if (f.action === "arreter") { s.etat = "arret"; s.sous_etat = "arrêté à l’instant"; s.pid = null; s.memoire_mo = null; } else if (f.action === "demarrer" || f.action === "redemarrer") { s.etat = "actif"; s.sous_etat = "relancé à l’instant"; }
       else if (f.action === "activer") s.au_demarrage = true; else if (f.action === "desactiver") s.au_demarrage = false; });
@@ -512,6 +520,16 @@
       if (genre === "processus" && action !== "calmer") S.pr = ""; else noterFrais(genre, cible, action, res);
       return apresGeste(nom + " : fait, vérifié par le courtier.");
     },
+    majConteneur: async (b) => {
+      const nom = b.dataset.n, c = (D().conteneurs || []).find((x) => x.nom === nom) || {};
+      if (!await K.confirmer("Mettre à jour " + nom + " ?", "<p>La nouvelle image est téléchargée, puis le conteneur est recréé avec les mêmes ports, volumes et réglages. Coupure de quelques secondes" +
+        ((c.proxys || []).length ? " pour " + esc(c.proxys[0].nom) : "") + ".</p><p>Si le nouveau conteneur ne tient pas debout, l’ancien reprend sa place tout seul. Sinon l’ancien est gardé, arrêté, pour revenir en arrière depuis « Derniers gestes », jusqu’à la mise à jour suivante.</p>" +
+        (c.maj === "a_jour" ? "<p>Le registre ne publie rien de plus récent : le geste dira que l’image est déjà la bonne, sans rien toucher.</p>" : ""), "Mettre à jour")) return;
+      dire("Téléchargement de l’image de " + nom + "… cela peut prendre quelques minutes.");
+      const res = await agir("securite.conteneur_maj", { nom: nom });
+      noterFrais("conteneur", nom, "maj", res);
+      return apresGeste(nom + " est à jour : le nouveau conteneur tient debout, l’ancien est gardé pour revenir en arrière.");
+    },
     journalDe: async (b) => { const service = b.dataset.c === "service", r = await agir(service ? "securite.service_journal" : "securite.conteneur_journal", service ? { service: b.dataset.n } : { nom: b.dataset.n });
       feuille("Journal de " + b.dataset.n, '<p class="note">Les 200 dernières lignes, en lecture seule.</p><pre style="margin:0;max-height:52vh;overflow:auto;font:11.5px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word">' + esc((r && r.texte) || "Le journal est vide.") + "</pre>"); },
     limiter: async (b) => {
@@ -534,6 +552,7 @@
       if (!await K.confirmer("Annuler ce geste ?", "<p>" + esc(g.detail) + (g.cible ? " · " + esc(g.cible) : "") + "</p><p>Le courtier rejoue le retour que le geste avait rendu, une seule fois.</p>", "Annuler le geste")) return;
       await agir("securite.machine_geste_defaire", { id: g.id }); if (g.geste === "redemarrer") await chargerRd();
       if (INVERSE_DIT[g.detail]) noterFrais(g.geste, g.cible, INVERSE_DIT[g.detail], null);
+      if (g.geste === "conteneur_maj") noterFrais("conteneur", g.cible, "redemarrer", null);
       return apresGeste("Le geste est annulé."); },
     retourLu: async () => { await agir("securite.redemarrage_lu", {}); if (S.rd) S.rd.retour = null; rendre(); },
     annulerRedemarrage: async () => { await chargerGestes(); const g = (S.gestes || []).find((x) => x.geste === "redemarrer" && x.defaisable); if (!g) return dire("Ce redémarrage n’a pas été prévu depuis cette page : il s’annule sur la machine (shutdown -c).", "err");
@@ -623,10 +642,8 @@
   function crocheter() {
     const origine = window.vuAller;
     if (typeof origine !== "function" || origine.__mc) return false;
-    const neuf = function (sec) { const r = origine.apply(this, arguments); if (sec === "machine") ouvrir("vue"); return r; };
+    const neuf = function (sec) { const r = origine.apply(this, arguments); if (sec === "machine" || sec === "systeme") ouvrir("vue"); return r; };
     neuf.__mc = true; window.vuAller = neuf;
-    // L'ancien tiroir « Détails système » n'a plus d'entrée : tout ce qui l'ouvrait encore mène à la page.
-    window.ouvrirSysteme = function () { if (typeof window.d19Aller === "function" && window.d19Aller("panorama", "machine")) return; if (typeof window.switchTab === "function") window.switchTab("overview"); window.vuAller("machine"); };
     return true;
   }
   if (!crocheter()) document.addEventListener("DOMContentLoaded", crocheter);

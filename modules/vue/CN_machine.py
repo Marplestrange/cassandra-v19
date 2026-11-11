@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.4.1  #0069a2
+# VERSION CN : 0.5.0  #a5b4c4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=0069a2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=a5b4c4 ▼▼▼
 """La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 
 Une fonction PURE (`composer`) : en entrée, la réponse de chaque source (ou son silence) ; en sortie, des données prêtes à dessiner. Rien n'est
@@ -298,7 +298,7 @@ def composer(s: dict, maintenant: str = "") -> dict:
             sig = "%s_%s" % (e.get("ts"), nom)
             if (nom.lower() in ("", "?", "unknown") and not e.get("memory_used_mb")) or sig in acquittes:
                 continue
-            oom.append({"processus": nom or "?", "mo": e.get("memory_used_mb") or 0, "quand": str(e.get("ts") or ""), "signature": sig})
+            oom.append({"processus": nom or "?", "mo": e.get("memory_used_mb") or 0, "quand": str(e.get("ts") or ""), "signature": sig, "service": str(e.get("service") or "")})
 
     # ── les renvois de nginx (par quel nom public un service ou un conteneur se joint) et les jours restants des certificats, par nom
     proxys = _liste(_ok(s, "proxys"))
@@ -368,7 +368,7 @@ def composer(s: dict, maintenant: str = "") -> dict:
                                "taille_mo": c.get("taille_mo") if isinstance(c.get("taille_mo"), (int, float)) and c.get("taille_mo") else None,
                                "reseau": "host (celui de la machine)" if reseau_c == "host" else reseau_c, "ip": str(c.get("ip") or ""), "politique": str(c.get("politique") or ""),
                                "sante": SANTES.get(str(c.get("sante") or ""), str(c.get("sante") or "")), "redemarrages": _entier(c.get("redemarrages"), 0),
-                               "compose": str(c.get("compose") or ""), "ports": ports_c,
+                               "compose": str(c.get("compose") or ""), "ports": ports_c, "maj": str(c.get("maj") or ""), "maj_vue": str(c.get("maj_vue") or "").replace("T", " ")[:16],
                                "volumes": [{"genre": str(x[0]), "source": str(x[1]), "cible": str(x[2])} for x in _json(c.get("volumes"), []) if isinstance(x, list) and len(x) >= 3],
                                "proxys": [{"nom": str(p.get("nom") or ""), "chemin": str(p.get("chemin") or "/"), "vers": str(p.get("vers") or ""), "genre": str(p.get("genre") or ""),
                                            "tls": bool(p.get("tls")), "cert_j": jours_cert.get(str(p.get("nom") or ""))} for p in proxys if p.get("port") in publies]})

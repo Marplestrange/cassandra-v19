@@ -11,8 +11,14 @@ Ce qui ne se fait pas d'ici, et pourquoi :
   - ssh et nginx ne s'arrêtent pas : l'un est la porte de la machine, l'autre celle de cette interface. Ils se redémarrent et se rechargent, configuration testée d'abord ;
   - un processus du noyau Linux, le n° 1, et ceux de ssh, du noyau de Cassandra, du courtier et du collecteur ne se tuent pas ;
   - une adresse privée, du réseau privé (Tailscale, NetBird), de la machine elle-même, ou qui s'est connectée avec succès depuis trente jours ne se bannit pas ;
-  - la machine ne redémarre pas pendant un déploiement ou une installation de paquets, ni sans son nom.
+  - la machine ne redémarre pas pendant un déploiement ou une installation de paquets, ni sans son nom ;
+  - un conteneur dont l'image est épinglée par son empreinte ne se met pas à jour (c'est le but de l'épingle).
+
+Mettre à jour un conteneur, c'est le RECRÉER sur une image plus récente. Ce programme ne devine pas ses réglages : il demande à Docker la configuration du conteneur
+(ports, volumes, variables, réseaux, politique de redémarrage) et la lui rend telle quelle. L'ancien conteneur est gardé, arrêté, sous le nom « <nom>.avant-maj » :
+si le nouveau ne tient pas debout, l'ancien reprend sa place tout seul ; sinon il attend là qu'on veuille revenir en arrière, jusqu'à la mise à jour suivante.
 """
+import http.client
 import ipaddress
 import json
 import os
@@ -22,6 +28,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.parse
 
 SUIVIS = ("ollama", "nginx", "apache2", "mysql", "mariadb", "postgresql", "redis-server", "dovecot", "exim4", "postfix", "proftpd", "fastpanel2", "docker", "containerd",
           "cron", "fail2ban", "ssh", "certbot", "crowdsec", "tailscaled", "netbird", "unattended-upgrades")
@@ -233,6 +240,201 @@ def conteneur_journal(args):
     nom = conteneur_de(m, args.get("nom"))
     ok, t = run([m, "logs", "--tail", "200", "--timestamps", nom], 25)
     echo({"ok": ok, "nom": nom, "texte": t[-60000:], "erreur": "" if ok else t[-200:]})
+
+
+# ── mettre à jour un conteneur : par l'API de Docker, qui rend la configuration du conteneur telle qu'il faut la lui redonner ─────────────────────────
+SOCKET_DOCKER = "/var/run/docker.sock"
+SUFFIXE_AVANT = ".avant-maj"
+
+
+class _Docker(http.client.HTTPConnection):
+    def __init__(self, delai):
+        super().__init__("docker", timeout=delai)
+
+    def connect(self):
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.settimeout(self.timeout)
+        s.connect(SOCKET_DOCKER)
+        self.sock = s
+
+
+def docker_api(methode, chemin, corps=None, delai=60):
+    """(code HTTP, réponse) de l'API de Docker sur son socket ; (0, raison) quand elle ne répond pas. La réponse est décodée quand c'est du JSON."""
+    try:
+        c = _Docker(delai)
+        donnees = json.dumps(corps).encode("utf-8") if corps is not None else None
+        c.request(methode, chemin, body=donnees, headers={"Content-Type": "application/json"} if donnees is not None else {})
+        rep = c.getresponse()
+        texte = rep.read().decode("utf-8", "replace")
+        c.close()
+    except Exception as e:
+        return 0, "%s : %s" % (type(e).__name__, e)
+    try:
+        return rep.status, (json.loads(texte) if texte.strip() else {})
+    except ValueError:
+        return rep.status, texte
+
+
+def q(texte):
+    return urllib.parse.quote(str(texte), safe="")
+
+
+def depot_et_etiquette(ref):
+    """(dépôt, étiquette) d'une référence d'image ; None quand elle est épinglée par son empreinte ou n'a pas de nom (une image désignée par son identifiant)."""
+    ref = str(ref or "")
+    if not ref or "@" in ref or ref.startswith("sha256:"):
+        return None
+    dernier = ref.rsplit("/", 1)[-1]
+    if ":" in dernier:
+        depot, _, etiquette = ref.rpartition(":")
+        return depot, etiquette
+    return ref, "latest"
+
+
+def tirer(ref):
+    """Télécharge l'image `ref`. Rend (réussi, raison)."""
+    d = depot_et_etiquette(ref)
+    if not d:
+        return False, "image sans nom ou épinglée"
+    code, rep = docker_api("POST", "/images/create?fromImage=%s&tag=%s" % (q(d[0]), q(d[1])), delai=240)
+    texte = rep if isinstance(rep, str) else json.dumps(rep)
+    erreurs = re.findall(r'"error"\s*:\s*"([^"]*)"', texte)
+    if code != 200 or erreurs:
+        return False, (erreurs[-1] if erreurs else "code %s : %s" % (code, texte[-200:]))
+    return True, ""
+
+
+def corps_de_creation(insp, ref):
+    """Ce qu'il faut rendre à Docker pour recréer le conteneur à l'identique sur l'image `ref` : (corps de la création, [(réseau, point d'attache)] à brancher ensuite).
+    Tout vient de ce que Docker a dit du conteneur ; seuls partent le nom d'hôte que Docker avait donné lui-même (l'identifiant de l'ancien) et l'alias qui le portait."""
+    court = str(insp.get("Id") or "")[:12]
+    cfg = dict(insp.get("Config") or {})
+    hote = dict(insp.get("HostConfig") or {})
+    cfg["Image"] = ref
+    mode = str(hote.get("NetworkMode") or "default")
+    sans_reseau_propre = mode in ("host", "none") or mode.startswith("container:")
+    if cfg.get("Hostname") == court or sans_reseau_propre:
+        cfg.pop("Hostname", None)
+    if not cfg.get("MacAddress"):
+        cfg.pop("MacAddress", None)
+    reseaux = (insp.get("NetworkSettings") or {}).get("Networks") or {}
+
+    def point(v):
+        p = {k: v[k] for k in ("IPAMConfig", "Links", "DriverOpts") if v.get(k)}
+        alias = [a for a in (v.get("Aliases") or []) if a != court]
+        if alias:
+            p["Aliases"] = alias
+        return p
+
+    principal = ("bridge" if mode == "default" else mode) if not sans_reseau_propre else ""
+    if principal and principal not in reseaux:
+        principal = next(iter(reseaux), "")
+    cfg["HostConfig"] = hote
+    cfg["NetworkingConfig"] = {"EndpointsConfig": {principal: point(reseaux.get(principal) or {})}} if principal else {}
+    return cfg, [(n, point(v)) for n, v in reseaux.items() if n != principal and not sans_reseau_propre]
+
+
+def tient_debout(ident, secondes=20):
+    """Le conteneur démarre, ne retombe pas et ne se dit pas malade : (oui, ce qu'on a vu)."""
+    fin, vu = time.monotonic() + secondes, "état inconnu"
+    while time.monotonic() < fin:
+        code, c = docker_api("GET", "/containers/%s/json" % q(ident), delai=15)
+        e = (c.get("State") or {}) if code == 200 and isinstance(c, dict) else {}
+        sante = (e.get("Health") or {}).get("Status") or ""
+        vu = "état « %s »%s" % (e.get("Status"), ", santé « %s »" % sante if sante else "")
+        if not e.get("Running") or e.get("Restarting") or sante == "unhealthy" or (c.get("RestartCount") or 0) > 0:
+            if time.monotonic() > fin - secondes + 6:                                            # six secondes pour démarrer, puis tout faux pas compte
+                return False, vu
+        elif time.monotonic() > fin - secondes + 8:
+            return True, vu
+        time.sleep(1)
+    return False, vu
+
+
+def conteneur_maj_faire(args):
+    if moteur() != "docker":
+        refus("la mise à jour passe par l’API de Docker : elle n’est pas offerte avec Podman")
+    nom = conteneur_de("docker", args.get("nom"))
+    if nom.endswith(SUFFIXE_AVANT):
+        refus("c’est un ancien conteneur gardé pour revenir en arrière : il ne se met pas à jour")
+    code, insp = docker_api("GET", "/containers/%s/json" % q(nom))
+    if code != 200 or not isinstance(insp, dict):
+        refus("Docker ne dit rien de ce conteneur (%s)" % code)
+    ref = str((insp.get("Config") or {}).get("Image") or "")
+    if not depot_et_etiquette(ref):
+        refus("l’image de ce conteneur est épinglée par son empreinte, ou n’a pas de nom : elle ne se met pas à jour")
+    ancienne = str(insp.get("Image") or "")
+    ok, raison = tirer(ref)
+    if not ok:
+        echo({"ok": False, "erreur": "l’image n’a pas pu être téléchargée, rien n’est touché : %s" % raison[-200:]})
+    code, im = docker_api("GET", "/images/%s/json" % q(ref))
+    nouvelle = str(im.get("Id") or "") if code == 200 and isinstance(im, dict) else ""
+    if not nouvelle:
+        echo({"ok": False, "erreur": "l’image téléchargée est introuvable, rien n’est touché"})
+    if nouvelle == ancienne:
+        echo({"ok": False, "erreur": "l’image est déjà la plus récente : rien à mettre à jour", "a_jour": True})
+    tournait, garde = bool((insp.get("State") or {}).get("Running")), nom + SUFFIXE_AVANT
+    creation, autres = corps_de_creation(insp, ref)
+    docker_api("DELETE", "/containers/%s?force=true" % q(garde))                                  # l'ancien de la mise à jour d'avant laisse sa place
+    if tournait:
+        docker_api("POST", "/containers/%s/stop?t=30" % q(nom), delai=60)
+    code, rep = docker_api("POST", "/containers/%s/rename?name=%s" % (q(nom), q(garde)))
+    if code != 204:
+        if tournait:
+            docker_api("POST", "/containers/%s/start" % q(nom))
+        echo({"ok": False, "erreur": "l’ancien conteneur n’a pas pu être mis de côté, il est reparti tel quel : %s" % str(rep)[-200:]})
+
+    def remettre(raison_):
+        """Le nouveau ne va pas : il part, l'ancien reprend son nom et repart."""
+        docker_api("DELETE", "/containers/%s?force=true" % q(nom))
+        docker_api("POST", "/containers/%s/rename?name=%s" % (q(garde), q(nom)))
+        if tournait:
+            docker_api("POST", "/containers/%s/start" % q(nom))
+        echo({"ok": False, "erreur": "mise à jour défaite, l’ancien conteneur a repris sa place : %s" % raison_[-300:]})
+
+    code, cree = docker_api("POST", "/containers/create?name=%s" % q(nom), creation)
+    if code != 201 or not isinstance(cree, dict) or not cree.get("Id"):
+        remettre("Docker refuse de créer le nouveau conteneur (%s : %s)" % (code, str(cree)[-200:]))
+    neuf = cree["Id"]
+    for reseau, attache in autres:
+        code, rep = docker_api("POST", "/networks/%s/connect" % q(reseau), {"Container": neuf, "EndpointConfig": attache})
+        if code != 200:
+            remettre("le réseau %s ne se rebranche pas (%s)" % (reseau, str(rep)[-160:]))
+    apres = "created"
+    if tournait:
+        code, rep = docker_api("POST", "/containers/%s/start" % q(neuf), delai=60)
+        if code not in (204, 304):
+            remettre("le nouveau conteneur ne démarre pas (%s)" % str(rep)[-200:])
+        ok, vu = tient_debout(neuf)
+        if not ok:
+            remettre("le nouveau conteneur ne tient pas debout (%s)" % vu)
+        apres = "running"
+    echo({"ok": True, "nom": nom, "image": ref, "nouvelle": nouvelle[:19], "apres": apres,
+          "avant": {"conteneur": str(insp.get("Id") or ""), "image": ancienne, "tournait": tournait}})
+
+
+def conteneur_maj_defaire(args):
+    """Revenir à l'image d'avant : le conteneur mis à jour part, l'ancien (gardé arrêté) reprend son nom et repart."""
+    nom, avant = str(args.get("nom") or ""), args.get("avant") if isinstance(args.get("avant"), dict) else {}
+    if not RE_CONTENEUR.match(nom) or nom.endswith(SUFFIXE_AVANT):
+        refus("conteneur illisible")
+    garde = nom + SUFFIXE_AVANT
+    code, g = docker_api("GET", "/containers/%s/json" % q(garde))
+    if code != 200 or not isinstance(g, dict) or not avant.get("conteneur") or g.get("Id") != avant.get("conteneur"):
+        refus("l’ancien conteneur n’est plus gardé (une mise à jour plus récente l’a remplacé) : plus rien à remettre")
+    docker_api("POST", "/containers/%s/stop?t=30" % q(nom), delai=60)
+    docker_api("DELETE", "/containers/%s?force=true" % q(nom))
+    code, rep = docker_api("POST", "/containers/%s/rename?name=%s" % (q(garde), q(nom)))
+    if code != 204:
+        echo({"ok": False, "erreur": "l’ancien conteneur ne reprend pas son nom : %s" % str(rep)[-200:]})
+    apres = "exited"
+    if avant.get("tournait", True):
+        docker_api("POST", "/containers/%s/start" % q(nom), delai=60)
+        ok, vu = tient_debout(nom, 14)
+        if not ok:
+            echo({"ok": False, "erreur": "l’ancien conteneur est revenu mais ne tient pas debout (%s)" % vu})
+        apres = "running"
+    echo({"ok": True, "nom": nom, "apres": apres, "detail": "revenu à l’image d’avant"})
 
 
 # ── processus ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -484,9 +686,9 @@ def retour_lu(args):
     echo({"ok": True})
 
 
-FAIRE = {"service": service_faire, "memoire": memoire_faire, "conteneur": conteneur_faire, "processus": processus_faire, "sessions_fermer": sessions_fermer,
+FAIRE = {"service": service_faire, "memoire": memoire_faire, "conteneur": conteneur_faire, "conteneur_maj": conteneur_maj_faire, "processus": processus_faire, "sessions_fermer": sessions_fermer,
          "redemarrer": redemarrer_faire, "retour_lu": retour_lu}
-DEFAIRE = {"service": service_defaire, "memoire": memoire_defaire, "conteneur": conteneur_defaire, "processus": processus_defaire, "redemarrer": redemarrer_defaire}
+DEFAIRE = {"service": service_defaire, "memoire": memoire_defaire, "conteneur": conteneur_defaire, "conteneur_maj": conteneur_maj_defaire, "processus": processus_defaire, "redemarrer": redemarrer_defaire}
 LIRE = {"service_journal": service_journal, "conteneur_journal": conteneur_journal, "redemarrage": lambda args: echo(redemarrage_verifier())}
 
 

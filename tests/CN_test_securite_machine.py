@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dbc535
+# VERSION CN : 0.1.0  #8a1259
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : test_securite_machine.py
 # MÉTHODE    : charge la commande root « machine » comme un module et remplace son lanceur par une fausse machine tenue en mémoire (aucune commande réelle) ; puis éprouve les capacités du module sur un faux courtier
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dbc535 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8a1259 ▼▼▼
 import importlib.machinery
 import importlib.util
 import io
@@ -343,6 +343,126 @@ class Commande(unittest.TestCase):
         self.assertEqual(self.systemctl(), [])
 
 
+class FauxDocker:
+    """L'API de Docker, tenue en mémoire : ce que le programme lui demande pour mettre à jour un conteneur, et ce qu'elle répondrait."""
+    def __init__(self):
+        self.conteneurs = {"coffre": {
+            "Id": "a" * 64, "Image": "sha256:vieille", "RestartCount": 0, "State": {"Running": True, "Status": "running"},
+            "Config": {"Image": "exemple/coffre:latest", "Hostname": "a" * 12, "Env": ["JETON=secret"], "Labels": {"com.docker.compose.project": "coffre"}},
+            "HostConfig": {"NetworkMode": "coffre_defaut", "Binds": ["/opt/coffre:/data"], "RestartPolicy": {"Name": "unless-stopped"}, "PortBindings": {"80/tcp": [{"HostIp": "127.0.0.1", "HostPort": "8087"}]}},
+            "NetworkSettings": {"Networks": {"coffre_defaut": {"Aliases": ["coffre", "a" * 12], "IPAMConfig": None}, "partage": {"Aliases": ["coffre"]}}}}}
+        self.images, self.publiee, self.malade, self.tirage_ko, self.appels, self.crees = {"exemple/coffre:latest": "sha256:vieille"}, "sha256:neuve", False, "", [], []
+
+    def trouver(self, cle):
+        return next((n for n, c in self.conteneurs.items() if n == cle or c["Id"] == cle), None)
+
+    def api(self, methode, chemin, corps=None, delai=60):
+        from urllib.parse import unquote, urlsplit, parse_qs
+        u = urlsplit(chemin)
+        morceaux, q = [unquote(x) for x in u.path.strip("/").split("/")], {k: v[0] for k, v in parse_qs(u.query).items()}
+        self.appels.append((methode, u.path, q))
+        if morceaux[0] == "images":
+            if morceaux[1] == "create":
+                if self.tirage_ko:
+                    return 200, '{"status":"Pulling"}\n{"error":"%s"}' % self.tirage_ko
+                self.images["%s:%s" % (q["fromImage"], q["tag"])] = self.publiee
+                return 200, '{"status":"Pulling"}\n{"status":"Downloaded newer image"}'
+            ref = "/".join(morceaux[1:-1])
+            return (200, {"Id": self.images[ref]}) if ref in self.images else (404, {"message": "No such image"})
+        if morceaux[0] == "networks":
+            return 200, {}
+        if morceaux[1] == "create":
+            ident = "b" * 64
+            self.crees.append(corps)
+            self.conteneurs[q["name"]] = dict({"Id": ident, "Image": self.images[corps["Image"]], "RestartCount": 0, "State": {"Running": False, "Status": "created"}},
+                                              Config={k: v for k, v in corps.items() if k not in ("HostConfig", "NetworkingConfig")}, HostConfig=corps["HostConfig"])
+            return 201, {"Id": ident}
+        nom = self.trouver(morceaux[1])
+        if nom is None:
+            return 404, {"message": "No such container"}
+        c = self.conteneurs[nom]
+        if methode == "GET":
+            return 200, c
+        if methode == "DELETE":
+            del self.conteneurs[nom]
+            return 204, {}
+        if morceaux[2] == "stop":
+            c["State"] = {"Running": False, "Status": "exited"}
+        elif morceaux[2] == "start":
+            c["State"] = {"Running": False, "Status": "exited"} if (self.malade and c["Id"] == "b" * 64) else {"Running": True, "Status": "running"}
+        elif morceaux[2] == "rename":
+            self.conteneurs[q["name"]] = self.conteneurs.pop(nom)
+        return 204, {}
+
+
+class MiseAJour(unittest.TestCase):
+    """Mettre à jour un conteneur : il est recréé avec la configuration que Docker en donne ; s'il ne tient pas, l'ancien revient seul."""
+    def setUp(self):
+        self.m, self.f, self.d = charger_commande(), FausseMachine(), FauxDocker()
+
+        def tient(ident, secondes=20):
+            c = self.d.conteneurs.get(self.d.trouver(ident) or "") or {}
+            return bool((c.get("State") or {}).get("Running")), "état « %s »" % (c.get("State") or {}).get("Status")
+        for p in (mock.patch.object(os, "geteuid", create=True, return_value=0), mock.patch.object(self.m, "run", self.f.run), mock.patch.object(self.m.time, "sleep", lambda s: None),
+                  mock.patch.object(self.m, "docker_api", self.d.api), mock.patch.object(self.m, "tient_debout", tient)):
+            p.start()
+            self.addCleanup(p.stop)
+
+    def lancer(self, verbe, geste, **args):
+        sortie = io.StringIO()
+        with redirect_stdout(sortie), self.assertRaises(SystemExit):
+            self.m.main(["machine", verbe, geste, json.dumps(args)])
+        return json.loads(sortie.getvalue().strip().splitlines()[-1])
+
+    def test_le_conteneur_est_recree_a_l_identique_sur_l_image_neuve(self):
+        r = self.lancer("faire", "conteneur_maj", nom="coffre")
+        self.assertEqual((r["ok"], r["image"], r["apres"], r["avant"]["image"], r["avant"]["tournait"]), (True, "exemple/coffre:latest", "running", "sha256:vieille", True))
+        corps = self.d.crees[0]
+        self.assertEqual((corps["Image"], corps["Env"], corps["HostConfig"]["Binds"], corps["HostConfig"]["PortBindings"]["80/tcp"][0]["HostPort"], corps["Labels"]),
+                         ("exemple/coffre:latest", ["JETON=secret"], ["/opt/coffre:/data"], "8087", {"com.docker.compose.project": "coffre"}))
+        self.assertNotIn("Hostname", corps)                                                                 # le nom d'hôte que Docker avait donné (l'identifiant de l'ancien) ne se recopie pas
+        self.assertEqual(corps["NetworkingConfig"], {"EndpointsConfig": {"coffre_defaut": {"Aliases": ["coffre"]}}})
+        self.assertIn(("POST", "/networks/partage/connect", {}), self.d.appels)                             # le second réseau est rebranché ensuite
+        self.assertEqual((self.d.conteneurs["coffre"]["Image"], self.d.conteneurs["coffre"]["State"]["Running"]), ("sha256:neuve", True))
+        self.assertEqual((self.d.conteneurs["coffre.avant-maj"]["Id"], self.d.conteneurs["coffre.avant-maj"]["State"]["Running"]), ("a" * 64, False))   # l'ancien est gardé, arrêté
+        self.assertNotIn("secret", json.dumps(r))                                                           # la réponse ne rend aucune variable du conteneur
+
+    def test_revenir_a_l_image_d_avant(self):
+        r = self.lancer("faire", "conteneur_maj", nom="coffre")
+        d = self.lancer("defaire", "conteneur_maj", nom="coffre", avant=r["avant"])
+        self.assertEqual((d["ok"], d["apres"]), (True, "running"))
+        self.assertEqual((self.d.conteneurs["coffre"]["Id"], self.d.conteneurs["coffre"]["Image"], sorted(self.d.conteneurs)), ("a" * 64, "sha256:vieille", ["coffre"]))
+        self.assertIn("plus gardé", self.lancer("defaire", "conteneur_maj", nom="coffre", avant=r["avant"])["erreur"])      # une seule fois : il n'y a plus d'ancien à remettre
+
+    def test_un_nouveau_conteneur_qui_ne_tient_pas_rend_sa_place_a_l_ancien(self):
+        self.d.malade = True
+        r = self.lancer("faire", "conteneur_maj", nom="coffre")
+        self.assertFalse(r["ok"])
+        self.assertIn("l’ancien conteneur a repris sa place", r["erreur"])
+        self.assertEqual((sorted(self.d.conteneurs), self.d.conteneurs["coffre"]["Id"], self.d.conteneurs["coffre"]["State"]["Running"]), (["coffre"], "a" * 64, True))
+
+    def test_rien_n_est_touche_si_l_image_est_deja_la_bonne_ou_ne_se_telecharge_pas(self):
+        self.d.publiee = "sha256:vieille"
+        r = self.lancer("faire", "conteneur_maj", nom="coffre")
+        self.assertEqual((r["ok"], r.get("a_jour")), (False, True))
+        self.d.publiee, self.d.tirage_ko = "sha256:neuve", "pull access denied"
+        self.assertIn("rien n’est touché", self.lancer("faire", "conteneur_maj", nom="coffre")["erreur"])
+        self.assertEqual((sorted(self.d.conteneurs), self.d.conteneurs["coffre"]["State"]["Running"], self.d.crees), (["coffre"], True, []))
+        self.assertFalse([a for a in self.d.appels if a[1].endswith(("/stop", "/rename"))])
+
+    def test_une_image_epinglee_ou_un_conteneur_inconnu_ne_se_met_pas_a_jour(self):
+        self.d.conteneurs["coffre"]["Config"]["Image"] = "exemple/coffre@sha256:" + "c" * 64
+        self.assertIn("épinglée", self.lancer("faire", "conteneur_maj", nom="coffre")["erreur"])
+        self.assertFalse(self.lancer("faire", "conteneur_maj", nom="inconnu")["ok"])
+        self.assertEqual([self.m.depot_et_etiquette(x) for x in ("exemple/coffre", "registre.exemple.test:5000/a/b:1.2", "sha256:" + "c" * 64, "a@sha256:x")],
+                         [("exemple/coffre", "latest"), ("registre.exemple.test:5000/a/b", "1.2"), None, None])
+
+    def test_le_reseau_de_la_machine_ne_se_rebranche_pas(self):
+        insp = {"Id": "d" * 64, "Config": {"Image": "x", "Hostname": "atlas"}, "HostConfig": {"NetworkMode": "host"}, "NetworkSettings": {"Networks": {"host": {}}}}
+        corps, autres = self.m.corps_de_creation(insp, "exemple/reseau:latest")
+        self.assertEqual((corps["NetworkingConfig"], autres, "Hostname" in corps), ({}, [], False))
+
+
 class FauxCourtier:
     def __init__(self):
         self.reponse, self.appels = {"ok": True}, []
@@ -427,6 +547,54 @@ class Capacites(unittest.TestCase):
         self.ex("service_geste", service="nginx", action="redemarrer")
         self.assertFalse(self.ex("machine_gestes")["resultat"]["gestes"][0]["defaisable"])                 # un redémarrage n'a rien à défaire : pas de bouton
         self.assertEqual(len(self.c.appels), n + 1)
+
+    def test_seul_le_dernier_geste_sur_une_cible_s_annule(self):
+        """Pause puis reprise : annuler la pause remettrait le conteneur en pause alors que tout est revenu à la normale (argos, 11-2026)."""
+        self.c.reponse = {"ok": True, "nom": "recherche", "action": "pause", "avant": "running", "apres": "paused"}
+        self.ex("conteneur_geste", nom="recherche", action="pause")
+        self.c.reponse = {"ok": True, "nom": "recherche", "action": "reprendre", "avant": "paused", "apres": "running"}
+        self.ex("conteneur_geste", nom="recherche", action="reprendre")
+        self.c.reponse = {"ok": True, "nom": "coffre", "action": "pause", "avant": "running", "apres": "paused"}
+        self.ex("conteneur_geste", nom="coffre", action="pause")
+        g = self.ex("machine_gestes")["resultat"]["gestes"]
+        self.assertEqual([(x["cible"], x["detail"], x["defaisable"]) for x in g], [("coffre", "mettre en pause", True), ("recherche", "reprendre", True), ("recherche", "mettre en pause", False)])
+        r = self.ex("machine_geste_defaire", id=g[2]["id"])
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("plus récent", r["erreur"])
+        self.c.reponse = {"ok": True, "nom": "recherche", "image": "exemple/recherche:latest", "nouvelle": "sha256:neuve", "apres": "running", "avant": {"conteneur": "x", "image": "y", "tournait": True}}
+        self.assertEqual(self.ex("conteneur_maj", nom="recherche")["statut"], "faite")
+        g = self.ex("machine_gestes")["resultat"]["gestes"]                                                 # la mise à jour touche le même conteneur : la reprise ne s'annule plus
+        self.assertEqual([(x["geste"], x["detail"], x["defaisable"]) for x in g[:1]], [("conteneur_maj", "mettre à jour (image exemple/recherche:latest)", True)])
+        self.assertFalse(next(x for x in g if x["detail"] == "reprendre")["defaisable"])
+
+    def test_le_retour_de_la_machine_est_un_constat_qui_se_referme_quand_il_est_lu(self):
+        ctx = self.n.executeur.contextes["securite"]
+        revenue = next(fn for (_m, d, fn) in ctx._detecteurs if d.id == "machine_revenue") if hasattr(ctx, "_detecteurs") else None
+        self.assertIsNotNone(revenue)
+        self.assertEqual(revenue(ctx), [])                                                                  # aucun redémarrage demandé : rien à dire, et le courtier n'est pas dérangé
+        self.assertEqual(self.c.appels, [])
+        self.c.reponse = {"ok": True, "prevu": "2026-01-01 03:00", "quand": "03:00"}
+        self.ex("machine_redemarrer", quand="03:00", nom="atlas")
+        self.c.reponse = {"ok": True, "machine": "atlas", "retour": {"revenue": "2026-01-01 03:01", "coupure_s": 21, "pas_revenus": {"services": [], "conteneurs": []}}}
+        c = revenue(ctx)
+        self.assertEqual((len(c), c[0]["niveau"], c[0]["titre"]), (1, "avoir", "atlas est revenue de son redémarrage"))
+        self.assertIn("coupure d'environ 21 s", c[0]["detail"])
+        n = len(self.c.appels)
+        revenue(ctx)
+        self.assertEqual(len(self.c.appels), n)                                                             # le courtier n'est relu que toutes les deux minutes
+        self.c.reponse = {"ok": True}
+        self.assertEqual(self.ex("redemarrage_lu")["statut"], "faite")
+        self.assertEqual(revenue(ctx), [])                                                                  # lu : le constat se referme
+
+    def test_ce_qui_n_est_pas_revenu_rend_le_constat_critique(self):
+        ctx = self.n.executeur.contextes["securite"]
+        revenue = next(fn for (_m, d, fn) in ctx._detecteurs if d.id == "machine_revenue")
+        self.c.reponse = {"ok": True, "prevu": "2026-01-01 03:00", "quand": "03:00"}
+        self.ex("machine_redemarrer", quand="03:00", nom="atlas")
+        self.c.reponse = {"ok": True, "machine": "atlas", "retour": {"revenue": "2026-01-01 03:01", "coupure_s": 21, "pas_revenus": {"services": ["exim4"], "conteneurs": ["coffre"]}}}
+        c = revenue(ctx)[0]
+        self.assertEqual((c["niveau"], c["titre"]), ("critique", "atlas est revenue, mais 2 éléments ne sont pas repartis"))
+        self.assertIn("service exim4, conteneur coffre", c["detail"])
 
     def test_un_redemarrage_qui_a_eu_lieu_ne_s_annule_plus(self):
         self.c.reponse = {"ok": True, "prevu": "2026-01-01 03:00", "quand": "03:00"}                       # une heure passée : la machine est partie depuis

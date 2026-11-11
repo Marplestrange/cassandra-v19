@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.3.2  #db458a
+# VERSION CN : 0.4.0  #a93ba8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=db458a ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=a93ba8 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1712,10 +1712,11 @@ def collect_tailscale_peers():
 
 
 def collect_oom_events():
-    out = run_cmd("dmesg -T 2>/dev/null | grep -iE 'Out of memory|Kill process|oom_kill' | tail -20")
+    out = run_cmd("dmesg -T 2>/dev/null | grep -iE 'Out of memory|Kill process|oom_kill|oom-kill:' | tail -40")
     events = []
     now = datetime.now().isoformat()
-    for line in out.splitlines():
+    services = _releves.oom_services([l for l in out.splitlines() if "oom-kill:" in l])        # « oom-kill:… task_memcg=… pid=… » : le service du processus, dit par le noyau
+    for line in [l for l in out.splitlines() if "oom-kill:" not in l][-20:]:
         ts_match = re.search(r'\[([A-Za-z]+\s+[A-Za-z]+\s+\d+\s+[\d:]+\s+\d+)\]', line)
         ts = ts_match.group(1) if ts_match else now
         proc_match = re.search(r'Kill(?:ing)?\s+process\s+\d+\s+\(([^)]+)\)', line, re.IGNORECASE)
@@ -1735,8 +1736,9 @@ def collect_oom_events():
             recent = 1 if datetime.now() - quand < timedelta(hours=24) else 0
         except Exception:
             recent = 0 if ts_match else 1
+        pid = re.search(r"Kill(?:ed|ing)?\s+process\s+(\d+)", line, re.IGNORECASE)
         events.append({"ts": ts, "killed_process": process[:80],
-                       "memory_used_mb": mem_mb, "recent": recent, "last_check": now})
+                       "memory_used_mb": mem_mb, "recent": recent, "service": services.get(pid.group(1), "") if pid else "", "last_check": now})
     return events
 
 
@@ -1749,7 +1751,7 @@ def collect_docker_containers():
     containers = []
     for line in out.splitlines():
         parts = line.split("|")
-        if len(parts) >= 3:
+        if len(parts) >= 3 and not parts[0].endswith(".avant-maj"):                 # l'ancien conteneur qu'une mise à jour garde, arrêté, pour revenir en arrière
             containers.append({"name": parts[0], "status": parts[1], "image": parts[2],
                                "last_check": datetime.now().isoformat()})
     try:
@@ -1762,11 +1764,15 @@ def collect_docker_containers():
         for cle, vide in _CONTENEUR_VIDE.items():
             v = f.get(cle, vide)
             c[cle] = json.dumps(v, ensure_ascii=False) if isinstance(v, list) else v
+        m = _MAJ_IMAGES.get(f.get("ref") or "") or {}
+        connue = bool(m) and m.get("image") == f.get("image_id")                    # une vérification faite sur une autre image (celle d'avant la mise à jour) ne dit plus rien
+        c["maj"], c["maj_vue"] = (m.get("etat", ""), m.get("vu", "")) if connue else ("", "")
     return containers
 
 
 _CONTENEUR_VIDE = {"ident": "", "state": "", "sante": "", "demarre": "", "redemarrages": 0, "politique": "", "reseau": "", "ip": "", "ports": "[]", "volumes": "[]",
-                   "compose": "", "taille_mo": 0, "created": "", "distribution": ""}
+                   "compose": "", "taille_mo": 0, "created": "", "distribution": "", "ref": "", "image_id": ""}
+_MAJ_IMAGES = {}                 # référence d'image -> {etat, vu, image} : ce que dit son registre, relu une fois par jour par _verifier_maj_images
 _DISTRIBUTIONS = {}              # par identifiant d'image : une image ne change pas de système, on ne le lui redemande pas
 
 
@@ -1793,6 +1799,65 @@ def _fiches_conteneurs(moteur: str) -> dict:
     _CONTENEURS_PAR_ID.clear()
     _CONTENEURS_PAR_ID.update(par_id)
     return _releves.conteneurs(inspects, images, _DISTRIBUTIONS)
+
+
+def _empreinte_distante(ref: str, delai: int = 8) -> str:
+    """L'empreinte que le registre publie AUJOURD'HUI pour cette référence (dépôt:étiquette), lue sans rien télécharger : une requête HEAD sur le manifeste, avec le jeton
+    anonyme que le registre demande pour une lecture. '' quand on ne sait pas (registre privé, muet, référence épinglée). Seul le nom de l'image sort de la machine."""
+    import urllib.error
+    import urllib.request
+    r = _releves.reference_image(ref)
+    if not r:
+        return ""
+    url = "https://%s/v2/%s/manifests/%s" % (r["registre"], r["depot"], r["etiquette"])
+    accepte = ("application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, "
+               "application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json")
+
+    def demander(jeton=""):
+        entetes = {"Accept": accepte, "User-Agent": "sensorium"}
+        if jeton:
+            entetes["Authorization"] = "Bearer " + jeton
+        return urllib.request.urlopen(urllib.request.Request(url, method="HEAD", headers=entetes), timeout=delai)
+
+    try:
+        try:
+            rep = demander()
+        except urllib.error.HTTPError as e:
+            defi = _releves.defi_bearer(e.headers.get("WWW-Authenticate", "")) if e.code == 401 else {}
+            if not defi.get("realm", "").startswith("https://"):
+                return ""
+            question = defi["realm"] + "?" + "&".join("%s=%s" % (k, urllib.request.quote(v, safe="")) for k, v in (("service", defi.get("service", "")), ("scope", defi.get("scope") or "repository:%s:pull" % r["depot"])) if v)
+            jeton = json.loads(urllib.request.urlopen(urllib.request.Request(question, headers={"User-Agent": "sensorium"}), timeout=delai).read().decode("utf-8", "replace"))
+            rep = demander(str(jeton.get("token") or jeton.get("access_token") or ""))
+        empreinte = rep.headers.get("Docker-Content-Digest", "")
+        return empreinte if re.fullmatch(r"sha256:[0-9a-f]{64}", empreinte or "") else ""
+    except Exception:
+        return ""
+
+
+def _verifier_maj_images(age_max_s: int = 72000) -> int:
+    """Pour l'image de chaque conteneur, demande à son registre si une plus récente est publiée ; une fois par jour au plus par image. Rend le nombre d'images interrogées."""
+    moteur = "docker" if _qui("docker") else ("podman" if _qui("podman") else "")
+    if not moteur:
+        return 0
+    faits = 0
+    for ligne in sorted(set((run_cmd([moteur, "ps", "-a", "--no-trunc", "--format", "{{.Image}}|{{.Names}}"], timeout=15) or "").splitlines())):
+        ref, _, nom = ligne.partition("|")
+        if not ref or nom.endswith(".avant-maj") or not _releves.reference_image(ref):
+            continue
+        infos = run_json([moteur, "image", "inspect", ref], [], timeout=15)
+        locale = _releves.images(infos if isinstance(infos, list) else [])
+        ident = next(iter(locale), "")
+        avant = _MAJ_IMAGES.get(ref) or {}
+        if avant.get("image") == ident and time.time() - avant.get("t", 0) < age_max_s:
+            continue
+        etat = _releves.etat_maj(_empreinte_distante(ref), (locale.get(ident) or {}).get("empreintes"))
+        faits += 1
+        if etat or not avant.get("etat") or avant.get("image") != ident:           # un registre muet aujourd'hui n'efface pas ce qu'il a dit hier de la même image
+            _MAJ_IMAGES[ref] = {"etat": etat, "vu": datetime.now().isoformat()[:16], "image": ident, "t": time.time()}
+        else:
+            avant["t"] = time.time()
+    return faits
 
 
 def collect_reverse_proxies() -> list:
@@ -7106,6 +7171,7 @@ class KnowledgeCollector:
                     if now - self.last_hourly >= 3600:
                         threading.Thread(target=lambda: releve("apt_updates", collect_apt_updates, 3600), daemon=True).start()
                         threading.Thread(target=lambda: releve("logiciels", collect_installed_software, 3600), daemon=True).start()
+                        threading.Thread(target=_verifier_maj_images, daemon=True).start()        # une fois par jour au plus par image : la passe horaire ne fait que le rappeler
                         self.last_hourly = now
 
                 except Exception as _ce:

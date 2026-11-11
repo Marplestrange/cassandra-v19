@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.5.4  #53433e
+# VERSION CN : 0.6.0  #888cb5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes, le journal, les audits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.4 empreinte=53433e ▼▼▼
+# ▼▼▼ BORNE CN version=0.6.0 empreinte=888cb5 ▼▼▼
 """La sécurité : les gestes, le journal, les audits.
 
 Porté de la V18 (`securite_*`, `_sec_gestes`), avec ses leçons :
@@ -293,18 +293,18 @@ def brancher(ctx):
             cache["m"] = None                                           # l'état de la machine a changé : la prochaine lecture est fraîche
         return sortie
 
-    def geste_machine(geste, *cles):
+    def geste_machine(geste, *cles, delai=180):
         """Un geste de la table : `faire` passe les arguments nommés au courtier et garde ce qu'il rend (dont « avant ») ; `defaire` le lui rend tel quel."""
         def faire(c, **a):
             envoi = {k: a.get(k) for k in cles if a.get(k) is not None}
             res = {k: v for k, v in envoi.items() if not (geste == "redemarrer" and k == "nom")}     # ce qui a été demandé, pour pouvoir le défaire
-            res.update(machine("faire", geste, envoi))                                                # ce que le courtier a vérifié l'emporte
+            res.update(machine("faire", geste, envoi, delai=delai))                                   # ce que le courtier a vérifié l'emporte
             res["geste"] = geste
             res["journal"] = inscrire(geste, res)
             return res
 
         def defaire(c, res):
-            machine("defaire", geste, pour_defaire(res))
+            machine("defaire", geste, pour_defaire(res), delai=delai)
             marquer_defait((res or {}).get("journal"))
         return faire, defaire
 
@@ -321,7 +321,8 @@ def brancher(ctx):
         cible = str(res.get("service") or res.get("nom") or res.get("ip") or res.get("pid") or res.get("prevu") or "")
         detail = {"service": ACTIONS_DITES.get(action, action), "conteneur": ACTIONS_DITES.get(action, action), "processus": "%s · %s" % (ACTIONS_DITES.get(action, action), str(res.get("commande") or "")[:80]),
                   "memoire": "limiter la mémoire à %s Mo" % res.get("mo"), "bannir": "bannir (prison %s)" % (res.get("jail") or "sshd"),
-                  "sessions_fermer": "tout le monde dehors : %d session(s) fermée(s)" % len(res.get("fermees") or []), "redemarrer": "redémarrage prévu"}.get(geste, geste)
+                  "sessions_fermer": "tout le monde dehors : %d session(s) fermée(s)" % len(res.get("fermees") or []), "redemarrer": "redémarrage prévu",
+                  "conteneur_maj": "mettre à jour (image %s)" % res.get("image")}.get(geste, geste)
         retour = "" if (geste, action if geste != "sessions_fermer" else "") in SANS_RETOUR else json.dumps(dict(pour_defaire(res), geste=geste), ensure_ascii=False)
         return db.ecrire("INSERT INTO securite_journal (qui, geste, cible, detail, ok, resultat, defaire) VALUES (?,?,?,?,?,?,?)",
                          ((ctx.compte or "").strip()[:80], "machine." + geste, cible[:120], detail[:400], 1, "fait, vérifié par le courtier", retour[:2000]))
@@ -337,7 +338,16 @@ def brancher(ctx):
 
         def defaisable(l):                                                 # un redémarrage dont l'heure est passée a eu lieu : il n'y a plus rien à annuler
             return bool(l["defaire"]) and not (l["geste"] == "machine.redemarrer" and l["cible"] and l["cible"] <= maintenant)
-        return {"gestes": [dict({k: l[k] for k in ("id", "ts", "qui", "cible", "detail", "resultat")}, geste=l["geste"][8:], ok=bool(l["ok"]), defaisable=defaisable(l)) for l in lignes]}
+        vus, sortie = set(), []
+        for l in lignes:                                                   # du plus récent au plus ancien : seul le DERNIER geste sur une cible se défait encore
+            cle = (famille(l["geste"]), l["cible"])
+            sortie.append(dict({k: l[k] for k in ("id", "ts", "qui", "cible", "detail", "resultat")}, geste=l["geste"][8:], ok=bool(l["ok"]), defaisable=cle not in vus and defaisable(l)))
+            vus.add(cle)
+        return {"gestes": sortie}
+
+    def famille(geste):
+        """Les gestes qui touchent la même chose : mettre à jour un conteneur ou le mettre en pause, c'est le même conteneur."""
+        return {"machine.conteneur_maj": "machine.conteneur"}.get(geste, geste)
 
     def machine_geste_defaire(c, id=0):
         l = db.lire("SELECT * FROM securite_journal WHERE id=? AND geste LIKE 'machine.%'", (int(id or 0),))
@@ -345,6 +355,9 @@ def brancher(ctx):
             raise ValueError("geste introuvable")
         if not l[0]["defaire"]:
             raise ValueError("ce geste n'a pas de retour, ou il est déjà défait")
+        plus_recents = [x for x in db.lire("SELECT geste FROM securite_journal WHERE id>? AND cible=? AND geste LIKE 'machine.%'", (l[0]["id"], l[0]["cible"])) if famille(x["geste"]) == famille(l[0]["geste"])]
+        if plus_recents:
+            raise ValueError("un geste plus récent a touché « %s » : celui-ci ne s'annule plus" % l[0]["cible"])
         avec = json.loads(l[0]["defaire"])
         geste = str(avec.pop("geste", ""))
         machine("defaire", geste, avec)
@@ -361,6 +374,7 @@ def brancher(ctx):
     processus_faire, processus_defaire = geste_machine("processus", "pid", "action", "commande")
     bannir_faire, bannir_defaire = geste_machine("bannir", "ip", "jail")
     redemarrer_faire, redemarrer_defaire = geste_machine("redemarrer", "quand", "nom")
+    maj_faire, maj_defaire = geste_machine("conteneur_maj", "nom", delai=300)
 
     def fait(cle):
         """Le courtier a relu la machine avant de répondre ok : la preuve est qu'il rend ce qu'il a vérifié."""
@@ -388,7 +402,42 @@ def brancher(ctx):
         return machine("lire", "redemarrage", delai=90)
 
     def redemarrage_lu(c):
-        return dict(machine("faire", "retour_lu"), geste="retour_lu")
+        res = dict(machine("faire", "retour_lu"), geste="retour_lu")
+        db.ecrire("UPDATE securite_journal SET resultat=substr(resultat || ' · compte rendu lu', 1, 400) WHERE id=(SELECT MAX(id) FROM securite_journal WHERE geste='machine.redemarrer') "
+                  "AND resultat NOT LIKE '%compte rendu%'")
+        retour_c.update(t=0.0, v=None)
+        return res
+
+    retour_c = {"t": 0.0, "v": None}
+
+    def machine_revenue(c):
+        """Le dernier redémarrage demandé depuis la page a eu lieu et son compte rendu n'a pas été lu : un constat, que la cloche ouvre et que les canaux (Telegram, selon la
+        politique de chacun) portent. Il se referme quand le compte rendu est lu (« Vu »). Le courtier n'est interrogé que tant qu'un compte rendu est attendu, toutes les deux minutes."""
+        l = db.lire("SELECT id, cible, resultat, defaire FROM securite_journal WHERE geste='machine.redemarrer' ORDER BY id DESC LIMIT 1")
+        if not l or not l[0]["defaire"] or "compte rendu" in l[0]["resultat"] or not l[0]["cible"] or l[0]["cible"] > time.strftime("%Y-%m-%d %H:%M"):
+            return []
+        if time.time() - retour_c["t"] > 110:
+            try:
+                retour_c["v"] = machine("lire", "redemarrage", delai=60)
+            except Exception:
+                retour_c["v"] = None
+            retour_c["t"] = time.time()
+        etat_ = retour_c["v"] or {}
+        rt = etat_.get("retour")
+        if not rt:
+            try:
+                passe = time.time() - time.mktime(time.strptime(l[0]["cible"], "%Y-%m-%d %H:%M"))
+            except ValueError:
+                passe = 0
+            if passe > 1800:                                                # une demi-heure après l'heure dite, plus rien à attendre : on cesse de demander
+                db.ecrire("UPDATE securite_journal SET resultat=substr(resultat || ' · sans compte rendu du retour', 1, 400) WHERE id=?", (l[0]["id"],))
+            return []
+        manque = ["service %s" % x for x in (rt.get("pas_revenus") or {}).get("services") or []] + ["conteneur %s" % x for x in (rt.get("pas_revenus") or {}).get("conteneurs") or []]
+        nom = str(etat_.get("machine") or "la machine")
+        return [{"objet": ("geste_securite", "redemarrage-%d" % l[0]["id"]), "niveau": "critique" if manque else "avoir",
+                 "titre": ("%s est revenue, mais %d élément%s ne sont pas repartis" % (nom, len(manque), "s" if len(manque) > 1 else "")) if manque else "%s est revenue de son redémarrage" % nom,
+                 "detail": "Redémarrage demandé depuis la page « La machine ». Revenue le %s, coupure d'environ %s s. %s Le compte rendu se lit sur la fiche de la machine (« Vu » le referme)." % (
+                     rt.get("revenue"), rt.get("coupure_s"), ("Ne sont pas revenus : %s." % ", ".join(manque)) if manque else "Tout ce qui tournait avant est revenu.")}]
 
     def gestes(c):
         return {"gestes": GESTES}
@@ -454,6 +503,9 @@ def brancher(ctx):
     ctx.implementer("conteneur_geste", conteneur_faire, fait("apres"), conteneur_defaire,
                     simuler=lambda x, nom="", action="", **_: "ferait « %s » sur le conteneur %s" % (action, nom))
     ctx.implementer("conteneur_journal", conteneur_journal)
+    ctx.implementer("conteneur_maj", maj_faire, fait("nouvelle"), maj_defaire,
+                    simuler=lambda x, nom="", **_: "mettrait à jour le conteneur %s (image retéléchargée, conteneur recréé à l'identique)" % nom)
+    ctx.detecteur("machine_revenue", machine_revenue)
     ctx.implementer("processus_geste", processus_faire, fait("pid"), processus_defaire,
                     simuler=lambda x, pid=0, action="", **_: "ferait « %s » sur le processus n° %s" % (action, pid))
     ctx.implementer("adresse_bannir", bannir_faire, fait("ip"), bannir_defaire,

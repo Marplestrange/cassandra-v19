@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.5.4  #3ccb58
+# VERSION CN : 0.6.0  #ad4a72
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.4 empreinte=3ccb58 ▼▼▼
+# ▼▼▼ BORNE CN version=0.6.0 empreinte=ad4a72 ▼▼▼
 [module]
 id = "securite"
 nom = "Sécurité"
-version = "0.5.4"
+version = "0.6.0"
 noyau_min = "0.1.0"
 description = "La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel)."
 confiance = "interne"
@@ -62,6 +62,11 @@ libelle = "Exécuter UN geste de la page « La machine » en table fermée (serv
 [[racine]]
 id = "outils"
 libelle = "Installer, lancer ou arrêter UN des quatre outils de sécurité (Lynis, Trivy, ClamAV, CrowdSec) en arrière-plan, et lire leur état et leurs résultats"
+
+[[detecteurs]]
+id = "machine_revenue"
+libelle = "La machine est revenue d'un redémarrage demandé depuis la page « La machine », et son compte rendu n'a pas encore été lu"
+frequence_s = 60
 
 [installation]
 script = "CN_installer.sh"
@@ -317,6 +322,17 @@ droit = "agir"
 perimetre = ["l'état de marche du conteneur désigné — ni son image, ni ses volumes, ni ses réglages"]
 preuve = "le courtier relit l'état du conteneur (tourne, arrêté, en pause) avant de répondre"
 retour = "le geste inverse (arrêter après démarrer, reprendre après pause) ; rien à défaire après un redémarrage"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "conteneur_maj"
+libelle = "Mettre à jour UN conteneur : son image est retéléchargée et le conteneur recréé avec la configuration que Docker en donne (ports, volumes, variables, réseaux) ; l'ancien est gardé arrêté"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le conteneur désigné : il est recréé sur l'image plus récente du même nom, coupure de quelques secondes", "ni ses volumes ni ses données : ils sont rebranchés tels quels", "jamais une image épinglée par son empreinte"]
+preuve = "le courtier vérifie que le nouveau conteneur démarre et tient debout ; sinon il le retire et remet l'ancien, de lui-même"
+retour = "revenir à l'image d'avant : l'ancien conteneur, gardé arrêté, reprend sa place (jusqu'à la mise à jour suivante du même conteneur)"
 paliers = ["raconter"]
 qui = ["humain"]
 

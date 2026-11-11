@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=bfd919 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=421b30 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -430,7 +430,6 @@
         <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('cass'), 10)"><span class="mx-dot" id="vudot-cass"></span>Cassandra, maintenant<span class="mx-st" id="vust-cass">—</span></div>
         <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('fil'), 10)"><span class="mx-dot" id="vudot-fil"></span>Ce qui a changé<span class="mx-st" id="vust-fil">—</span></div>
         <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('machine'), 10)"><span class="mx-dot" id="vudot-machine"></span>La machine<span class="mx-st" id="vust-machine">—</span></div>
-        <div class="sb-item" onclick="ouvrirSysteme()"><span class="mx-dot"></span>Détails système<span class="mx-st">13 cartes</span></div>
         <!-- L'entrée d'origine du chat : cachée pour tout le monde (applyRoleGating), le chat vit dans Le Salon. -->
         <div class="sb-item" data-tab="dashboard" onclick="switchTab('dashboard')"><span class="sb-dot"></span>Cassandra</div>
         <div class="sb-item" data-tab="history" onclick="switchTab('history')"><span class="sb-dot"></span>Historique</div>
@@ -472,7 +471,7 @@
   <div class="app-main">
 
   <!-- ═══ MOBILE METRIC STRIP (visible seulement <768px) ═══ -->
-  <div class="mobile-metric-strip" id="mobile-metric-strip" role="button" tabindex="0" title="Le serveur en détail : santé, ressources, certificats, processus"
+  <div class="mobile-metric-strip" id="mobile-metric-strip" role="button" tabindex="0" title="La machine : santé, ressources, services, conteneurs, sessions"
        onclick="toggleMetricsDrawer()" onkeydown="if(event.key==='Enter'||event.key===' ')toggleMetricsDrawer()">
     <div class="mms-item"><div class="mms-lbl">CPU</div><div class="mms-val" id="mms-cpu">–</div></div>
     <div class="mms-item"><div class="mms-lbl">RAM</div><div class="mms-val" id="mms-ram">–</div></div>
@@ -1314,7 +1313,6 @@
           <span class="mx-pill" id="vu-portee">administrateur</span>
           <span class="mx-meta">vue relue à <b id="vu-releve">—</b> · <span id="vu-cadence">toutes les 60 s</span></span>
           <button class="mx-btn" onclick="vuCharger(true)">Relever</button>
-          <button class="mx-btn" onclick="ouvrirSysteme()">Détails système</button>
         </div>
       </div>
       <div class="cmdbar vu-cmd" onclick="document.getElementById('cmd-input').focus()">
@@ -1334,105 +1332,6 @@
         <section class="mx-sec" id="vu-machine" hidden></section>
       </main>
     </div>
-    <!-- Les treize cartes système ne disparaissent pas : elles cessent
-         d'occuper deux tiers de l'écran en permanence. On les ouvre quand
-         on les cherche, ce qui est rare, au lieu de les subir en continu. -->
-    <div class="sys-scrim" id="sys-scrim" onclick="fermerSysteme()"></div>
-    <aside class="sys-drawer" id="sys-drawer" aria-label="Détails système">
-      <header>
-        <h3>Détails système</h3>
-        <button class="hdr-btn" onclick="fermerSysteme()" aria-label="Fermer">✕</button>
-      </header>
-      <div class="sys-drawer-body">
-<div class="sys-col">
-        <!-- SANTÉ — ring visuel avec gradient conic -->
-        <div class="card">
-          <div class="card-title">SANTÉ SYSTÈME</div>
-          <div class="health-ring-wrap">
-            <div class="health-ring" id="health-ring">
-              <div class="health-ring-inner">
-                <div class="health-ring-score" id="health-score">–</div>
-                <div class="health-ring-lbl">/100</div>
-              </div>
-            </div>
-            <div class="health-ring-meta">
-              <div id="health-status"></div>
-              <div id="health-details" style="font-size:10px;color:var(--txt-faint);margin-top:3px;line-height:1.5"></div>
-            </div>
-          </div>
-          <!-- Infos serveur -->
-          <div class="sinfo-grid">
-            <div class="sinfo-row"><span class="sinfo-lbl">OS</span><span class="sinfo-val" id="si-os">–</span></div>
-            <div class="sinfo-row"><span class="sinfo-lbl">Kernel</span><span class="sinfo-val" id="si-kernel">–</span></div>
-            <div class="sinfo-row"><span class="sinfo-lbl">IP</span><span class="sinfo-val" id="si-ip">–</span></div>
-            <div class="sinfo-row"><span class="sinfo-lbl">CPU Cores</span><span class="sinfo-val" id="si-cores">–</span></div>
-            <div class="sinfo-row"><span class="sinfo-lbl">Uptime</span><span class="sinfo-val" id="si-uptime">–</span></div>
-            <div class="sinfo-row"><span class="sinfo-lbl">Disques</span><span class="sinfo-val" id="si-disks">–</span></div>
-          </div>
-        </div>
-        <!-- RESSOURCES — stat-cards compactes -->
-        <div class="card">
-          <div class="card-title">RESSOURCES</div>
-          <div class="stat-grid">
-            <div class="stat-card">
-              <div class="stat-top"><span class="stat-lbl">CPU</span><span class="stat-val" id="cpu-val">–</span></div>
-              <div class="stat-bar-mini"><div class="stat-bar-fill cpu" id="cpu-bar" style="width:0%"></div></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-top"><span class="stat-lbl">RAM</span><span class="stat-val" id="ram-val">–</span></div>
-              <div class="stat-bar-mini"><div class="stat-bar-fill ram" id="ram-bar" style="width:0%"></div></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-top"><span class="stat-lbl">DISQUE</span><span class="stat-val" id="disk-val">–</span></div>
-              <div class="stat-bar-mini"><div class="stat-bar-fill disk" id="disk-bar" style="width:0%"></div></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-top"><span class="stat-lbl">LOAD</span><span class="stat-val" id="load-val" style="font-size:11px">–</span></div>
-            </div>
-          </div>
-          <div class="chart-container"><canvas id="cpu-chart"></canvas></div>
-        </div>
-        <div class="card"><div class="card-title">Tiroir cloud</div><div id="remotes-list"><div class="empty-state">Chargement...</div></div></div>
-        <div class="card"><div class="card-title">SSL <button class="fix-btn" onclick="sendQuickFix('Certificats SSL expirants ?')">🔧</button></div><div id="ssl-list"><div class="empty-state">Chargement...</div></div></div>
-        <div class="card"><div class="card-title">Tailscale</div><div id="tailscale-list"><div class="empty-state">Chargement...</div></div></div>
-        <div class="card"><div class="card-title">Fail2ban</div><div id="fail2ban-count">–</div></div>
-        <div class="card" id="fp-summary-card" style="display:none">
-          <div class="card-title">FastPanel <button class="fix-btn" onclick="switchTab('fastpanel')">→ Détails</button></div>
-          <div class="fp-sc-sub" id="fp-summary-etat" style="display:none;margin:0 0 6px"></div>
-          <div class="fp-summary-cards" id="fp-summary-grid">
-            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('domains')" title="Domaines hébergés">
-              <div class="fp-sc-label">Domaines</div><div class="fp-sc-value" id="fps-domains">–</div>
-            </div>
-            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('services')" title="Services actifs">
-              <div class="fp-sc-label">Services</div><div class="fp-sc-value" id="fps-services">–</div>
-              <div class="fp-sc-sub" id="fps-services-sub"></div>
-            </div>
-            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('databases')" title="Bases de données">
-              <div class="fp-sc-label">Bases DB</div><div class="fp-sc-value" id="fps-dbs">–</div>
-            </div>
-            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('mail')" title="Comptes mail">
-              <div class="fp-sc-label">Comptes mail</div><div class="fp-sc-value" id="fps-mail">–</div>
-            </div>
-            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('backups')" title="Backups">
-              <div class="fp-sc-label">Backups</div><div class="fp-sc-value" id="fps-backups">–</div>
-              <div class="fp-sc-sub" id="fps-backups-sub"></div>
-            </div>
-            <div class="fp-sc" onclick="switchTab('fastpanel');fpNav('users')" title="Utilisateurs">
-              <div class="fp-sc-label">Users</div><div class="fp-sc-value" id="fps-users">–</div>
-            </div>
-          </div>
-        </div>
-      </div>
-<div class="sys-col">
-        <div class="card"><div class="card-title">Top processus</div><div id="processes-list"><div class="empty-state">Chargement...</div></div></div>
-        <div class="card"><div class="card-title">Panne <button class="fix-btn" onclick="resetFailedUnits()" title="Réinitialiser les unités failed (reset-failed)">🧹</button><button class="fix-btn" onclick="sendQuickFix('Unités failed ?')">🔧</button></div><div id="failed-list"><div class="empty-state">Chargement...</div></div></div>
-        <div class="card"><div class="card-title">Sessions</div><div id="sessions-list"><div class="empty-state">Chargement...</div></div></div>
-        <div class="card"><div class="card-title">Ports</div><div id="ports-list"><div class="empty-state">Chargement...</div></div></div>
-        <div class="card"><div class="card-title">OOM <button class="fix-btn" onclick="clearOOM()" title="Acquitter / effacer les OOM affichés">🧹</button><button class="fix-btn" onclick="sendQuickFix('OOM récents ?')">🔧</button></div><div id="oom-list"><div class="empty-state">Chargement...</div></div></div>
-        <div class="card"><div class="card-title">Docker</div><div id="docker-list"><div class="empty-state">Chargement...</div></div></div>
-      </div>
-      </div>
-    </aside>
 </div>
 
 <div id="tab-sensorium" class="tab-content mx-app">
@@ -4636,39 +4535,6 @@
       <div class="mnav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></div><div class="mnav-lbl">Menu</div>
     </div>
   </nav>
-
-  <!-- ═══ METRICS DRAWER (slide-up mobile) ═══ -->
-  <div class="mmd-overlay" id="mmd-overlay" onclick="toggleMetricsDrawer()"></div>
-  <div class="mobile-metrics-drawer" id="mobile-metrics-drawer">
-    <div class="mmd-handle" onclick="toggleMetricsDrawer()"></div>
-    <div class="card">
-      <div class="card-title">SANTÉ</div>
-      <div class="health-ring-wrap">
-        <div class="health-ring" id="mmd-health-ring">
-          <div class="health-ring-inner">
-            <div class="health-ring-score" id="mmd-health-score">–</div>
-            <div class="health-ring-lbl">/100</div>
-          </div>
-        </div>
-        <div class="health-ring-meta">
-          <div id="mmd-health-status"></div>
-          <div id="mmd-health-details" style="font-size:10px;color:var(--txt-faint);margin-top:3px"></div>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">RESSOURCES</div>
-      <div class="stat-grid">
-        <div class="stat-card"><div class="stat-top"><span class="stat-lbl">CPU</span><span class="stat-val" id="mmd-cpu">–</span></div><div class="stat-bar-mini"><div class="stat-bar-fill cpu" id="mmd-cpu-bar" style="width:0%"></div></div></div>
-        <div class="stat-card"><div class="stat-top"><span class="stat-lbl">RAM</span><span class="stat-val" id="mmd-ram">–</span></div><div class="stat-bar-mini"><div class="stat-bar-fill ram" id="mmd-ram-bar" style="width:0%"></div></div></div>
-        <div class="stat-card"><div class="stat-top"><span class="stat-lbl">DISK</span><span class="stat-val" id="mmd-disk">–</span></div><div class="stat-bar-mini"><div class="stat-bar-fill disk" id="mmd-disk-bar" style="width:0%"></div></div></div>
-        <div class="stat-card"><div class="stat-top"><span class="stat-lbl">LOAD</span><span class="stat-val" id="mmd-load" style="font-size:11px">–</span></div></div>
-      </div>
-    </div>
-    <div class="card"><div class="card-title">SSL</div><div id="mmd-ssl"><div class="empty-state">Chargement…</div></div></div>
-    <div class="card"><div class="card-title">Processus</div><div id="mmd-procs"><div class="empty-state">Chargement…</div></div></div>
-    <div class="card"><div class="card-title">Pannes</div><div id="mmd-failed"><div class="empty-state">Chargement…</div></div></div>
-  </div>
 
   </div><!-- /app-main -->
   </div><!-- /app-body -->

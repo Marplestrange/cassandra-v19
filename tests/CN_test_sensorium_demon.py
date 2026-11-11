@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e067f7
+# VERSION CN : 0.1.0  #386932
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve les garanties du démon du Sensorium que l'audit de novembre 2026 a corrigées : un échec de commande n'est pas « rien à signaler », un socket muet est lâché ou fait arrêter le collecteur, un jeton FastPanel expiré est renouvelé, un certificat expiré se compte, un journal d'accès se lit par blocs, une redirection rouverte alerte.
 # MÉTHODE    : charge CN_sensorium.py comme module sur une base et un socket temporaires, simule les commandes et l'API HTTP (aucun réseau, aucune commande système), puis appelle les fonctions du démon.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e067f7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=386932 ▼▼▼
 import gzip
 import importlib.util
 import json
@@ -599,6 +599,39 @@ class RelevesDeLaMachine(Base):
         self.assertEqual((un["name"], un["pid"], un["memoire_mo"], un["cpu_pct"], un["depuis"]), ("web", 1629, 50.0, None, "2026-11-03T18:32:06"))
         self.assertEqual(deux["cpu_pct"], 10.0)                                                      # 3 s de processeur en 30 s
         self.assertNotIn("cpu_ns", deux)
+
+    def test_un_processus_tue_faute_de_memoire_dit_son_service(self):
+        dmesg = ("[Wed Nov 11 03:12:44 2026] oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/system.slice/php8.3-fpm.service,task=php-fpm,pid=52110,uid=33\n"
+                 "[Wed Nov 11 03:12:44 2026] Out of memory: Killed process 52110 (php-fpm) total-vm:1884160kB, anon-rss:900000kB\n")
+        with mock.patch.object(self.m, "run_cmd", return_value=dmesg):
+            e = self.m.collect_oom_events()
+        self.assertEqual([(x["killed_process"], x["service"], x["memory_used_mb"]) for x in e], [("php-fpm", "php8.3-fpm", 1840)])      # la ligne « oom-kill: » ne fait pas un événement de plus
+
+    def test_une_image_plus_recente_se_dit_sur_la_ligne_du_conteneur(self):
+        ident = "8d8b6094815a" + "0" * 52
+        inspect = [{"Id": ident, "Name": "/recherche", "Image": "sha256:aaa", "State": {"Status": "running", "Running": False}, "HostConfig": {}, "Config": {"Image": "exemple/recherche:latest"}, "NetworkSettings": {}}]
+        self.m._MAJ_IMAGES.clear()
+        self.m._MAJ_IMAGES["exemple/recherche:latest"] = {"etat": "disponible", "vu": "2026-11-11T09:00", "image": "sha256:aaa", "t": 1.0}
+        with mock.patch.object(self.m, "_qui", side_effect=lambda n: "/usr/bin/docker" if n == "docker" else ""), \
+                mock.patch.object(self.m, "run_cmd", return_value="recherche|Up 2 hours|exemple/recherche:latest\nrecherche.avant-maj|Exited (0) 2 hours ago|exemple/recherche:latest"), \
+                mock.patch.object(self.m, "run_cmd_strict", return_value=ident), mock.patch.object(self.m, "run_json", side_effect=lambda cmd, d, timeout=10: [] if cmd[1] == "image" else inspect):
+            lignes = self.m.collect_docker_containers()
+            self.assertEqual([(l["name"], l["maj"], l["maj_vue"]) for l in lignes], [("recherche", "disponible", "2026-11-11T09:00")])       # l'ancien conteneur gardé n'est pas une ligne
+            self.m._MAJ_IMAGES["exemple/recherche:latest"]["image"] = "sha256:autre"                       # vérifié sur l'image d'avant la mise à jour : cela ne dit plus rien
+            self.assertEqual(self.m.collect_docker_containers()[0]["maj"], "")
+        self.m._MAJ_IMAGES.clear()
+
+    def test_la_verification_des_images_ne_demande_qu_une_fois_par_jour(self):
+        demandes = []
+        self.m._MAJ_IMAGES.clear()
+        with mock.patch.object(self.m, "_qui", side_effect=lambda n: "/usr/bin/docker" if n == "docker" else ""), \
+                mock.patch.object(self.m, "run_cmd", return_value="exemple/recherche:latest|recherche\nsha256:abcdef012345|sans-nom\nexemple/recherche:latest|recherche.avant-maj"), \
+                mock.patch.object(self.m, "run_json", return_value=[{"Id": "sha256:aaa", "RepoDigests": ["exemple/recherche@sha256:locale"]}]), \
+                mock.patch.object(self.m, "_empreinte_distante", side_effect=lambda ref: demandes.append(ref) or "sha256:distante"):
+            self.assertEqual(self.m._verifier_maj_images(), 1)
+            self.assertEqual(self.m._verifier_maj_images(), 0)
+        self.assertEqual((demandes, self.m._MAJ_IMAGES["exemple/recherche:latest"]["etat"]), (["exemple/recherche:latest"], "disponible"))
+        self.m._MAJ_IMAGES.clear()
 
     def test_un_service_a_l_ancienne_lance_au_demarrage_est_dit_tel(self):
         """Une unité « generated » (script SysV enveloppé par systemd, comme exim4) n'est jamais « enabled » : c'est son lien de démarrage qui dit si elle se lance (11-2026)."""

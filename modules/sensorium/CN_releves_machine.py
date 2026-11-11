@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.3.2  #8ac3b7
+# VERSION CN : 0.4.0  #5464a9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les formes des relevés de « La machine » : ce que le collecteur lit (docker inspect, nginx -T, ps, /proc, systemctl, w, le journal de sshd, /proc/cpuinfo, lsblk) devient ici des lignes prêtes à écrire. Aucune commande, aucun fichier : du te
 # MÉTHODE    : fonctions pures, du texte des commandes aux lignes prêtes à écrire ; aucune commande ni fichier, les lectures restent dans CN_sensorium.py
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=8ac3b7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=5464a9 ▼▼▼
 """Les formes des relevés de « La machine » : ce que le collecteur lit (docker inspect, nginx -T, ps, /proc, systemctl, w, le journal de sshd,
 /proc/cpuinfo, lsblk) devient ici des lignes prêtes à écrire. Aucune commande, aucun fichier : du texte en entrée, des dictionnaires en sortie,
 pour que chaque forme se vérifie sans machine. Les lectures, elles, restent dans CN_sensorium.py.
@@ -59,7 +59,51 @@ def images(inspects: list) -> dict:
                 taille = round(int(im.get("Size") or 0) / 1048576.0)
             except (TypeError, ValueError):
                 taille = 0
-            out[im["Id"]] = {"taille_mo": taille, "cree": str(im.get("Created") or "")[:19]}
+            out[im["Id"]] = {"taille_mo": taille, "cree": str(im.get("Created") or "")[:19],
+                             "empreintes": sorted({d.rsplit("@", 1)[1] for d in im.get("RepoDigests") or [] if isinstance(d, str) and "@" in d})}
+    return out
+
+
+def reference_image(ref: str):
+    """{registre, depot, etiquette} d'une référence d'image, ou None quand elle est épinglée par son empreinte ou désignée par son identifiant (rien à comparer).
+    « searxng/searxng » -> le registre de Docker, dépôt searxng/searxng, étiquette latest ; « nginx » -> library/nginx ; « ghcr.io/x/y:1.2 » -> ghcr.io."""
+    ref = str(ref or "").strip()
+    if not ref or "@" in ref or ref.startswith("sha256:") or re.fullmatch(r"[0-9a-f]{12,64}", ref):
+        return None
+    tete, _, reste = ref.partition("/")
+    if reste and ("." in tete or ":" in tete or tete == "localhost"):
+        registre, chemin = tete, reste
+    else:
+        registre, chemin = "registry-1.docker.io", (ref if "/" in ref else "library/" + ref)
+    depot, _, etiquette = chemin.rpartition(":") if ":" in chemin.rsplit("/", 1)[-1] else (chemin, "", "latest")
+    if not re.fullmatch(r"[a-z0-9]+(?:[._/-][a-z0-9]+)*", depot) or not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}", etiquette):
+        return None
+    return {"registre": "registry-1.docker.io" if registre in ("docker.io", "index.docker.io") else registre, "depot": depot, "etiquette": etiquette}
+
+
+def defi_bearer(entete: str) -> dict:
+    """{realm, service, scope} du défi « WWW-Authenticate: Bearer … » qu'un registre rend à une lecture anonyme ; {} quand ce n'en est pas un."""
+    if not str(entete or "").strip().lower().startswith("bearer "):
+        return {}
+    return dict(re.findall(r'(\w+)="([^"]*)"', entete))
+
+
+def etat_maj(empreinte_distante: str, empreintes_locales) -> str:
+    """« a_jour », « disponible », ou '' quand on ne sait pas (registre muet, image sans empreinte locale : construite ici, ou jamais tirée d'un registre)."""
+    locales = set(empreintes_locales or [])
+    if not empreinte_distante or not locales:
+        return ""
+    return "a_jour" if empreinte_distante in locales else "disponible"
+
+
+def oom_services(lignes) -> dict:
+    """{pid: service} depuis les lignes « oom-kill:… task_memcg=/system.slice/<service>.service … pid=<n> » du noyau : à quel service appartenait le processus tué."""
+    out = {}
+    for ligne in lignes or []:
+        m = re.search(r"task_memcg=(\S*?),.*?\bpid=(\d+)", ligne)
+        if m:
+            s = re.search(r"/([^/,]+)\.service(?:/|$)", m.group(1))
+            out[m.group(2)] = s.group(1) if s else ""
     return out
 
 
@@ -110,7 +154,7 @@ def conteneurs(inspects: list, images_: dict = None, distributions: dict = None)
             redemarrages = 0
         out[nom] = {"ident": str(c.get("Id") or "")[:12], "state": str(etat.get("Status") or ""), "sante": str(sante.get("Status") or "") if isinstance(sante, dict) else "",
                     "demarre": str(etat.get("StartedAt") or "")[:19], "redemarrages": redemarrages, "politique": str((hote.get("RestartPolicy") or {}).get("Name") or "no"),
-                    "reseau": mode, "ip": ip, "ports": ports, "volumes": volumes, "compose": compose[:200],
+                    "reseau": mode, "ip": ip, "ports": ports, "volumes": volumes, "compose": compose[:200], "ref": str((c.get("Config") or {}).get("Image") or "")[:200], "image_id": image_id,
                     "taille_mo": im.get("taille_mo") or 0, "created": im.get("cree") or "", "distribution": distributions.get(image_id) or ""}
     return out
 

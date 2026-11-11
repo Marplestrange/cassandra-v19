@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.4.1  #83320c
+# VERSION CN : 0.5.0  #83320c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La vue d'ensemble : lit les modules de supervision (chacun pour LE compte qui regarde) et compose le verdict (composer.py).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=83320c ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=83320c ▼▼▼
 """La vue d'ensemble : lit les modules de supervision (chacun pour LE compte qui regarde) et compose le verdict (composer.py)."""
 import time
 

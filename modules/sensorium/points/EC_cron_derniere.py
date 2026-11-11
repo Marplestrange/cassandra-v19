@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.2)  #3a0315
+# VERSION EC : EC0 (référence 0.4.0)  #3a0315
 # HÔTE CN    : CN_module.py · cron_derniere @1.0
 # RÔLE       : rattache une ligne de crontab à sa dernière exécution, même quand cron a retouché la commande (échappement, redirection).
 # MÉTHODE    : fonction pure : égalité stricte d'abord, puis inclusion sur les cent vingt premiers caractères, la plus récente gagne ; vide plutôt qu'un faux rattachement.
