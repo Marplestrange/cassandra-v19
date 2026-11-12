@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f26849
+# VERSION CN : 0.1.0  #4c8bd7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f26849 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4c8bd7 ▼▼▼
 """Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau."""
 import importlib.util
 import shutil
@@ -44,7 +44,8 @@ class Monde(unittest.TestCase):
         self.assertTrue(self.n.activer("certificats")["ok"])
         self.ctx = self.n.executeur.contextes["certificats"]
         self.panneau = [{"domaine": "a.exemple.fr"}, {"domaine": "www.b.exemple.org"}, {"domaine": "c.exemple.fr"}]
-        self.ctx.executer_lecture = lambda cap, **a: self.panneau
+        # Panel Detect : la route de « sites » mène au panneau simulé du banc ; toute autre lecture rend ce même panneau
+        self.ctx.executer_lecture = lambda cap, **a: {"capacite": "fastpanel.sites"} if cap == "paneldetect.route" else self.panneau
         self.certs = {}
         g = self.n.catalogue.get("certificats.etat").faire.__globals__
         g["lire_certificat"] = lambda h, d: self.certs.get(h, {"erreur": "connexion refusée"})
@@ -69,7 +70,7 @@ class Monde(unittest.TestCase):
 
 class Sonde(Monde):
     def test_la_sonde_suit_aussi_les_sites_declares_hors_du_panneau(self):
-        self.ctx.executer_lecture = lambda cap, **a: {"sites": [{"domaine": "declare.exemple.fr"}]} if cap == "sites.vue" else self.panneau
+        self.ctx.executer_lecture = lambda cap, **a: {"capacite": "fastpanel.sites"} if cap == "paneldetect.route" else {"sites": [{"domaine": "declare.exemple.fr"}]} if cap == "sites.vue" else self.panneau
         self.certs["declare.exemple.fr"] = self.cert(40)
         self.sonde()
         self.assertEqual(self.etat("declare.exemple.fr"), "valide")      # Sites ne lit plus les certificats : c'est ici qu'un site déclaré trouve son échéance

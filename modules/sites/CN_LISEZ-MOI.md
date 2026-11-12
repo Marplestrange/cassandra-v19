@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : sites -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.6.1  #000000 -->
+<!-- VERSION CN : 0.6.2  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : sites — les sites web suivis par Cassandra -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.6.1 empreinte=d79b20 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.6.2 empreinte=d79b20 ▼▼▼ -->
 # sites — les sites web suivis par Cassandra
 
 Porté de la V18 (`sites_vue`, `site_fiche`, `site_pass`, `site_history`, `site_availability`, demandes/accords, liens, journal), lu en entier.

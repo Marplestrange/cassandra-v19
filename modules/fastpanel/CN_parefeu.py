@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.3.0  #53c89f
+# VERSION CN : 0.3.1  #53c89f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pare-feu du panneau : la validation d'une règle, le calcul du risque de s'enfermer dehors, et la mise en forme. Fonctions pures, testées sans panneau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=53c89f ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=53c89f ▼▼▼
 """Le pare-feu du panneau : la validation d'une règle, le calcul du risque de s'enfermer dehors, et la mise en forme. Fonctions pures, testées sans panneau.
 
 Leçons de la V18 gardées :

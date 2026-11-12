@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.3.1  #f3983d
+# VERSION CN : 0.3.2  #95ec23
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Surveille l'expiration des certificats TLS réellement servis (port 443), garde le registre des émissions Let's Encrypt (cinq par semaine et par domaine) et signale les certificats échus ou proches de l'échéance, avec le quota restant. Le renouvellement lui-même se fait par le panneau (module fastpanel, ssl_renouveler) ; ce module en tient le compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=f3983d ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=95ec23 ▼▼▼
 [module]
 id = "certificats"
 nom = "Certificats"
-version = "0.3.1"
+version = "0.3.2"
 noyau_min = "0.1.0"
 description = "Surveille l'expiration des certificats TLS réellement servis (port 443), garde le registre des émissions Let's Encrypt (cinq par semaine et par domaine) et signale les certificats échus ou proches de l'échéance, avec le quota restant. Le renouvellement lui-même se fait par le panneau (module fastpanel, ssl_renouveler) ; ce module en tient le compte."
 confiance = "interne"

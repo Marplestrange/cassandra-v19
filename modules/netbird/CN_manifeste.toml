@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #470ecb
+# VERSION CN : 0.1.1  #237fec
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (l'installer dans Docker, le connecter, le couper) ET, au besoin, un serveur NetBird auto-hébergé (l'installer, le tenir à jour, administrer ses machines, clés, groupes et politiques).
 # MÉTHODE    : le client `netbird` (natif ou dans son conteneur Docker) ; ce que le noyau ne peut pas faire sans root (Docker, installation) passe par le courtier et la commande `piloter`, jamais par un shell.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=470ecb ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=237fec ▼▼▼
 [module]
 id = "netbird"
 nom = "NetBird"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Le réseau privé NetBird, piloté depuis l'interface : le client de la machine (état, connexion, coupure, installation dans Docker) et, pour qui veut son propre réseau, un serveur NetBird auto-hébergé que Cassandra sait installer, tenir à jour et administrer (machines, clés d'installation, groupes, politiques d'accès)."
 confiance = "interne"

@@ -6,18 +6,25 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #4f4fec
+// VERSION CN : 0.1.0  #4141a2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les huit pages du module certificats (vue d'ensemble, liste et fiche, demandes, autorités, modèles, clés, rapports, réglages).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.certificats) ; la page vient de l'écran ouvert (ctx.ecran = « certificats:c_… ») ; toutes les données par certificats.* ; le renouvellement est celui du panneau (fastpanel.ssl_renouveler), jamais un appel direct à l'autorité.
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=4f4fec ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4141a2 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
   const K = CASS.kit;
   const esc = K.esc, agir = K.agir, dire = K.dire;
+  // Le panneau détecté (Panel Detect) sert l'émission : l'écran ne nomme aucun panneau.
+  async function viaRoute(agir, fonction, args) {
+    const r = await agir("paneldetect.route", { fonction: fonction });
+    if (!r || !r.capacite) throw new Error("aucun panneau d'hébergement ne sert « " + fonction + " »");
+    return agir(r.capacite, args || {});
+  }
+
   const PILL = { valide: ["Valide", "ok"], proche: ["À renouveler", "al"], echu: ["Échu", "dg"], inconnu: ["Inconnu", ""], revoque: ["Révoqué", "dg"], archive: ["Archivé", ""] };
   const SRC = { fastpanel: "FastPanel", importe: "Importé", sonde: "Sondé seulement" };
   const DEM = { brouillon: ["Brouillon", ""], a_valider: ["À valider", "al"], validee: ["Validée", "ac"], emise: ["Émise", "ok"], refusee: ["Refusée", "dg"], echec: ["Échec d’émission", "dg"] };
@@ -225,7 +232,7 @@
       const fait = [], rate = [];
       for (const c of ok) {
         S.travail = '<div class="bandeau in" role="status"><div class="sp">Renouvellement de <b>' + esc(c.hote) + "</b> par le panneau… (preuve : la date d’émission doit changer, jusqu’à 60 s)</div></div>"; S.rendre(true);
-        try { await agir("fastpanel.ssl_renouveler", { domaine: c.hote }); fait.push(c.hote); }
+        try { await viaRoute(agir, "ssl_renouveler", { domaine: c.hote }); fait.push(c.hote); }
         catch (e) { rate.push(c.hote + " : " + msg(e)); await geste("certificats.noter_echec", { hote: c.hote, motif: msg(e).slice(0, 180) }); }
       }
       S.travail = null; S.sels.clear();
@@ -296,7 +303,7 @@
         const i = Number(b.dataset.i), hh = b.dataset.h;
         const r = await fenetre("Émettre le certificat de " + hh, '<p class="note">Le panneau doit déjà porter un certificat pour cet hôte : l’émission initiale n’est pas encore branchée, seul le renouvellement l’est. Un échec est inscrit au registre du quota.</p>', [{ id: "non", t: "Annuler" }, { id: "oui", t: "Émettre par le panneau", cl: "pri" }]);
         if (!r || r.id !== "oui") return;
-        try { await agir("fastpanel.ssl_renouveler", { domaine: hh }); await geste("certificats.cloturer_demande", { id: i, ok: true }, "Certificat de " + hh + " émis."); }
+        try { await viaRoute(agir, "ssl_renouveler", { domaine: hh }); await geste("certificats.cloturer_demande", { id: i, ok: true }, "Certificat de " + hh + " émis."); }
         catch (e) { await geste("certificats.cloturer_demande", { id: i, ok: false, motif: msg(e).slice(0, 200) }); dire("Échec de l’émission : " + msg(e), "err"); }
         return S.rendre();
       }

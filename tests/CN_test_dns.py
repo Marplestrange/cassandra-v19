@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3e70ad
+# VERSION CN : 0.1.0  #befeeb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module dns : le client DNS (vrai UDP et TCP local), puis le module dans un vrai noyau avec un DNS, un panneau et un Cloudflare simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3e70ad ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=befeeb ▼▼▼
 """Bancs du module dns : le client DNS (vrai UDP et TCP local), puis le module dans un vrai noyau avec un DNS, un panneau et un Cloudflare simulés."""
 import json
 import shutil
@@ -274,7 +274,8 @@ class Module(unittest.TestCase):
         g["resolveurs_systeme"] = lambda: ["203.0.113.1"]
         g["ATTENTE_PREUVE_S"], g["PAS_PREUVE_S"] = 1, 0.1
         self.panneau = [{"domaine": "app.exemple.fr"}, {"domaine": "www.exemple.fr"}]
-        self.ctx.executer_lecture = lambda cap, **a: self.panneau
+        # Panel Detect : la route de « sites » mène au panneau simulé du banc ; toute autre lecture rend ce même panneau
+        self.ctx.executer_lecture = lambda cap, **a: {"capacite": "fastpanel.sites"} if cap == "paneldetect.route" else self.panneau
         self.cf = FauxCloudflare(self.table)
         self.addCleanup(self.cf.arreter)
         self.n.reglages.poser("dns.api_cloudflare", self.cf.url)

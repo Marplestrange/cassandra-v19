@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #56c56a
+# VERSION CN : 0.1.0  #81809c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Panel Detect : la machine est fictive (les signatures trouvées sont posées par le banc), le reste — manifestes, routes, relais des lectures, constats — tourne dans un vrai noyau avec le vrai module FastPanel.
 # MÉTHODE    : un vrai noyau avec les vrais modules FastPanel et Panel Detect ; la machine est fictive (les signatures trouvées sont posées par le banc), les lectures du panneau simulées sauf « fastpanel.routes ».
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=56c56a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=81809c ▼▼▼
 """Bancs du module Panel Detect : la machine est fictive (les signatures trouvées sont posées par le banc), le reste — manifestes, routes, relais des lectures, constats — tourne dans un vrai noyau avec le vrai module FastPanel."""
 import re
 import shutil
@@ -146,6 +146,22 @@ class Routes(Monde):
     def test_lire_sans_panneau_rend_rien(self):
         self.machine([])
         self.assertIsNone(self.ex("lire", fonction="sites"))
+
+    def test_route_donne_la_capacite_a_appeler_soi_meme(self):
+        self.assertEqual(self.ex("route", fonction="sites"), {"capacite": "fastpanel.sites", "nature": "lecture"})
+        self.assertEqual(self.ex("route", fonction="base_creer"), {"capacite": "fastpanel.base_creer", "nature": "geste"})      # un geste se nomme : il ne se relaie jamais
+        for f in ("copies_du_plan", "parefeu_regle_poser", "parefeu_regle_retirer", "parefeu_politique", "parefeu_trancher"):
+            self.assertTrue(self.ex("route", fonction=f)["capacite"], f)
+
+    def test_route_sans_droit_et_sans_panneau_rend_vide(self):
+        r = self.n.executeur.executer("paneldetect.route", "humain", {"fonction": "sites"}, compte="")
+        self.assertEqual(r["statut"], "faite")
+        self.machine([])
+        self.assertEqual(self.ex("route", fonction="sites"), {"capacite": "", "nature": ""})        # rien n'est servi : l'appelant fait comme si le module était absent
+
+    def test_route_refuse_une_fonction_inconnue(self):
+        r = self.n.executeur.executer("paneldetect.route", "humain", {"fonction": "crons"}, compte="")
+        self.assertNotEqual(r["statut"], "faite")
 
 
 class Ecran(unittest.TestCase):

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.5.0  #83320c
+# VERSION CN : 0.5.1  #a2cf20
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La vue d'ensemble : lit les modules de supervision (chacun pour LE compte qui regarde) et compose le verdict (composer.py).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=83320c ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=a2cf20 ▼▼▼
 """La vue d'ensemble : lit les modules de supervision (chacun pour LE compte qui regarde) et compose le verdict (composer.py)."""
 import time
 
@@ -29,10 +29,19 @@ MACHINE = (("etat", "sensorium.etat", {}), ("metriques", "sensorium.metriques", 
            ("conteneurs", "sensorium.entite", {"nom": "docker_containers"}), ("sessions", "sensorium.entite", {"nom": "active_sessions"}),
            ("oom", "sensorium.entite", {"nom": "oom_events"}), ("acquits", "securite.oom_acquits", {}), ("certs_disque", "sensorium.entite", {"nom": "ssl_certificates"}),
            ("certificats", "certificats.etat", {}), ("tailscale", "tailscale.etat", {}), ("netbird", "netbird.etat", {}), ("depots", "sauvegardes.destinations", {}),
-           ("panneau_sites", "fastpanel.sites", {}), ("panneau_services", "fastpanel.services", {}), ("panneau_bases", "fastpanel.bases", {}), ("panneau_mail", "fastpanel.mail", {}),
-           ("panneau_copies", "fastpanel.sauvegardes", {}), ("panneau_comptes", "fastpanel.utilisateurs", {}),
+           ("panneau_sites", "panneau:sites", {}), ("panneau_services", "panneau:services", {}), ("panneau_bases", "panneau:bases", {}), ("panneau_mail", "panneau:courrier", {}),
+           ("panneau_copies", "panneau:copies", {}), ("panneau_comptes", "panneau:comptes", {}),
            ("proxys", "sensorium.entite", {"nom": "reverse_proxies"}), ("materiel", "sensorium.entite", {"nom": "hardware_state"}),
            ("logiciels", "sensorium.entite", {"nom": "logiciels"}), ("connexions", "sensorium.entite", {"nom": "ssh_logins"}))
+
+
+def lire_route(ctx, fonction: str, **args):
+    """Une fonction de l'hébergement lue par le panneau détecté (Panel Detect), sans nommer le panneau. Aucune route : PermissionError, comme un module absent."""
+    r = ctx.executer_lecture("paneldetect.route", fonction=fonction)
+    cap = r.get("capacite") if isinstance(r, dict) else ""
+    if not cap:
+        raise PermissionError("aucun panneau d'hébergement ne sert « %s »" % fonction)
+    return ctx.executer_lecture(cap, **args)
 
 
 def brancher(ctx):
@@ -57,7 +66,7 @@ def brancher(ctx):
         s = {}
         for cle, cap, args in MACHINE:
             try:
-                v = ctx.executer_lecture(cap, **args)
+                v = lire_route(ctx, cap[8:], **args) if cap.startswith("panneau:") else ctx.executer_lecture(cap, **args)
                 s[cle] = ("ok", v) if v is not None else ("muet", None)
             except PermissionError:
                 s[cle] = ("absent", None)

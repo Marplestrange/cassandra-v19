@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : certificats -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.3.1  #000000 -->
+<!-- VERSION CN : 0.3.2  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : certificats — veille des certificats TLS -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.3.1 empreinte=ea5adc ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.3.2 empreinte=ea5adc ▼▼▼ -->
 # certificats — veille des certificats TLS
 
 Porté de la V18 (`_ssl_probe`, `ssl_quota_state`, `_cert_days`). Le module pilote d'origine n'était qu'un manifeste ; il est maintenant réel.

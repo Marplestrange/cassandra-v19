@@ -6,19 +6,25 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #33541f
+// VERSION CN : 0.1.0  #49f6a9
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages « NetBird » du module netbird : où en est la machine, sa connexion (par un lien à ouvrir ou par une clé), les machines du réseau, l’installation du client dans Docker, l’historique des gestes.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.netbird) ; la page vient de l’écran ouvert (ctx.ecran = « netbird:n_machines ») ; tout vient de netbird.etat ; l’état se relit seul (20 s, 2,5 s pendant une identification), jamais sous les doigts de quelqu’un qui tape.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=33541f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=49f6a9 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const MONO = "ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace";
   const agir = (cap, args) => CASS.agir(cap, args || {});
+  async function viaRoute(agir, fonction, args) {
+    const r = await agir("paneldetect.route", { fonction: fonction });
+    if (!r || !r.capacite) throw new Error("aucun panneau d'hébergement ne sert « " + fonction + " »");
+    return agir(r.capacite, args || {});
+  }
+
   const dire = (t, k) => { if (typeof window.toast === "function") window.toast(t, k); };
   const LIEN_SUR = /^https:\/\/[A-Za-z0-9.-]+(:\d+)?\//i;
 
@@ -565,7 +571,7 @@
         if (!ip || !dom) { dire("Il faut un domaine et l’adresse de la machine.", "err"); return; }
         if (!(await demander("Créer dans la zone FASTPANEL l’enregistrement " + dom + " A " + ip + " ? Un nom qui a déjà un enregistrement n’est jamais remplacé. Le geste peut être défait."))) return;
         S.ipSaisie = ip;
-        return faire(() => agir("fastpanel.dns_enregistrer", { domaine: dom, adresse: ip }), "Enregistrement DNS créé : la propagation peut prendre quelques minutes.");
+        return faire(() => viaRoute(agir, "dns_enregistrer", { domaine: dom, adresse: ip }), "Enregistrement DNS créé : la propagation peut prendre quelques minutes.");
       }
       if (a === "dns-verifier") { S.ipSaisie = val("#nb-d-ip"); return charger(); }
       if (a === "echec-fermer") { S.echec = ""; dessiner(); return; }

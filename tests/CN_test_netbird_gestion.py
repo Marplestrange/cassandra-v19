@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #49882a
+# VERSION CN : 0.1.0  #fce02b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de ce que le module netbird sait faire d'un serveur NetBird auto-hébergé : l'installer (par la commande root, simulée) et l'administrer par son API (simulée : un faux serveur qui répond comme lui). Rien n'est installé, aucun réseau n'est touché.
 # MÉTHODE    : un vrai noyau, une fausse commande root `serveur`, une fausse API NetBird ; on vérifie les garde-fous, le secret qui ne traîne nulle part et le retour de chaque geste.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=49882a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fce02b ▼▼▼
 """Bancs de la gestion d'un serveur NetBird : commande root et API NetBird SIMULÉES, noyau réel."""
 import copy
 import json
@@ -109,6 +109,8 @@ class Gestion(Monde):
         self.panneau = {"fastpanel.sites": [{"domaine": "netbird.exemple.fr"}, {"domaine": "Boutique.exemple.fr"}], "fastpanel.dns": [{"zone": "exemple.fr", "nom": "@", "type": "A", "valeur": "1.2.3.4"}, {"zone": "autre.org", "nom": "@", "type": "A", "valeur": "1.2.3.4"}]}
 
         def lecture(cap, **a):
+            if cap == "paneldetect.route":                           # Panel Detect : la route de chaque fonction, vers le panneau simulé du banc
+                return {"capacite": {"sites": "fastpanel.sites", "zones": "fastpanel.dns"}.get(a.get("fonction"), "")}
             if self.panneau is None:
                 raise RuntimeError("le panneau ne répond pas")
             return self.panneau.get(cap)

@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d51bd6
+# VERSION CN : 0.1.1  #d51bd6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Pose les commandes root `piloter` (le client NetBird, natif ou Docker) et `serveur` (un serveur NetBird auto-hébergé) que le courtier lance. N'installe ni NetBird ni Docker ni serveur : ce sont des gestes du module, à la demande.
 # MÉTHODE    : `install` en root dans /usr/libexec/cassandra/netbird ; Cassandra ne peut ni la modifier ni en lancer une autre.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d51bd6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=d51bd6 ▼▼▼
 set -euo pipefail
 : "${CASSANDRA_MODULE_DIR:?}"
 command -v python3 >/dev/null 2>&1 || { echo "netbird : python3 est absent" >&2; exit 3; }

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.1  #ff8b5f
+# VERSION CN : 0.2.2  #0c486c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Domaines et DNS.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.1 empreinte=ff8b5f ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.2 empreinte=0c486c ▼▼▼
 """Domaines et DNS.
 
 Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration`), avec ses leçons :
@@ -170,6 +170,15 @@ def expiration_rdap(domaine):
     return None
 
 
+def lire_route(ctx, fonction: str, **args):
+    """Une fonction de l'hébergement lue par le panneau détecté (Panel Detect), sans nommer le panneau. Aucune route : PermissionError, comme un module absent."""
+    r = ctx.executer_lecture("paneldetect.route", fonction=fonction)
+    cap = r.get("capacite") if isinstance(r, dict) else ""
+    if not cap:
+        raise PermissionError("aucun panneau d'hébergement ne sert « %s »" % fonction)
+    return ctx.executer_lecture(cap, **args)
+
+
 def brancher(ctx):
     global _point
     _point = ctx.point
@@ -181,7 +190,7 @@ def brancher(ctx):
 
     # ------------------------------------------------------------------ les zones suivies
     def hotes_panneau():
-        r = ctx.executer_lecture("fastpanel.sites")
+        r = lire_route(ctx, "sites")
         return [str(s.get("domaine") or "").lower() for s in (r or [])]
 
     def domaines():

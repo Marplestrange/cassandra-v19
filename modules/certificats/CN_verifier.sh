@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.3.1  #fcf3a8
+# VERSION CN : 0.3.2  #fcf3a8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La preuve que le module peut travailler : Python sait ouvrir une connexion TLS vérifiée.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=fcf3a8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=fcf3a8 ▼▼▼
 # La preuve que le module peut travailler : Python sait ouvrir une connexion TLS vérifiée.
 python3 -c "import ssl; ssl.create_default_context()" || { echo "certificats : pas de contexte TLS" >&2; exit 3; }
 echo "certificats : TLS disponible"

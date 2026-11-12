@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8f3754
+# VERSION CN : 0.1.1  #9de1bb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé NetBird de la machine, piloté depuis l'interface : le client posé sur la machine, ou son conteneur Docker, que le module peut aussi installer.
 # MÉTHODE    : `netbird status --json` pour l'état (jamais déduit) ; le client natif se parle sans root, tout le reste (Docker, installation) passe par le courtier, qui lance la commande root `piloter`.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8f3754 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=9de1bb ▼▼▼
 """NetBird : voir où en est le réseau privé de la machine, le connecter, l'installer au besoin dans Docker.
 
 Deux façons d'avoir le client : NATIF (le paquet `netbird`, un service sur la machine) ou DOCKER (le conteneur officiel netbirdio/netbird). Le module trouve seul laquelle existe
@@ -142,6 +142,15 @@ def _json(sortie):
     if not isinstance(obj, dict):
         raise ValueError("pas d'objet JSON")
     return obj
+
+
+def lire_route(ctx, fonction: str, **args):
+    """Une fonction de l'hébergement lue par le panneau détecté (Panel Detect), sans nommer le panneau. Aucune route : PermissionError, comme un module absent."""
+    r = ctx.executer_lecture("paneldetect.route", fonction=fonction)
+    cap = r.get("capacite") if isinstance(r, dict) else ""
+    if not cap:
+        raise PermissionError("aucun panneau d'hébergement ne sert « %s »" % fonction)
+    return ctx.executer_lecture(cap, **args)
 
 
 def brancher(ctx):
@@ -548,13 +557,13 @@ def brancher(ctx):
     # Le domaine du serveur NetBird doit être un nom que Cassandra ADMINISTRE : un site du panneau d'hébergement, ou un nom de la zone DNS qu'il héberge.
     def lire_panneau(cap):
         try:
-            r = ctx.executer_lecture(cap)
+            r = lire_route(ctx, cap)
         except Exception:
             return None
         return r if isinstance(r, list) else None                     # None : le panneau ne répond pas (≠ aucun site)
 
     def domaines_administres():
-        sites, dns = lire_panneau("fastpanel.sites"), lire_panneau("fastpanel.dns")
+        sites, dns = lire_panneau("sites"), lire_panneau("zones")
         nets = lambda xs, cle: sorted({str(x.get(cle) or "").strip().lower().rstrip(".") for x in (xs or []) if isinstance(x, dict)} - {""})
         return {"disponible": sites is not None, "sites": nets(sites, "domaine"), "zones": nets(dns, "zone")}
 

@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #1a1ce5
+# VERSION EC : EC0 (référence 0.3.1)  #1a1ce5
 # HÔTE CN    : CN_module.py · lecture @1.0
 # RÔLE       : s'adapte à la version de FastPanel : choisit les requêtes selon les colonnes que le schéma porte, puis met en forme ce qui a été lu, sans jamais toucher la base.
 # MÉTHODE    : fonctions pures : le plan lit un schéma (tables et colonnes) et rend des requêtes SELECT ; la forme lit des lignes et rend des dictionnaires ; le nexus exécute les requêtes (lecture seule), jamais l'EC.

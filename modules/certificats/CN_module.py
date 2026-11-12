@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.3.1  #b747c9
+# VERSION CN : 0.3.2  #79f320
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Certificats TLS : la veille (ce que voient les visiteurs, le quota) et le cycle de vie (demande, validation, révocation, archivage, audit).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=b747c9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=79f320 ▼▼▼
 """Certificats TLS : ce que les visiteurs voient, combien d'émissions il reste, et le cycle de vie d'un certificat.
 
 Porté de la V18 (`_ssl_probe`, `ssl_quota_state`, `_ssl_quota_note`, `_cert_sonde_jours`), avec ses leçons :
@@ -160,6 +160,15 @@ def lire_certificat(hote, delai):
     return r
 
 
+def lire_route(ctx, fonction: str, **args):
+    """Une fonction de l'hébergement lue par le panneau détecté (Panel Detect), sans nommer le panneau. Aucune route : PermissionError, comme un module absent."""
+    r = ctx.executer_lecture("paneldetect.route", fonction=fonction)
+    cap = r.get("capacite") if isinstance(r, dict) else ""
+    if not cap:
+        raise PermissionError("aucun panneau d'hébergement ne sert « %s »" % fonction)
+    return ctx.executer_lecture(cap, **args)
+
+
 def brancher(ctx):
     db = ctx.stockage
 
@@ -183,7 +192,7 @@ def brancher(ctx):
     def panneau():
         """Les domaines du panneau, ou None si le panneau ne répond pas (« injoignable » n'est pas « aucun site »)."""
         try:
-            r = ctx.executer_lecture("fastpanel.sites")
+            r = lire_route(ctx, "sites")
         except Exception:
             return None
         return r if isinstance(r, list) else None

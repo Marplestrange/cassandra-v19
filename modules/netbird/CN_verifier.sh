@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e477ed
+# VERSION CN : 0.1.1  #e477ed
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Vérifie que les commandes root `piloter` et `serveur` sont posées, à root, et que le courtier les atteint ; dit ce qui existe sur la machine (client natif, Docker, conteneur, serveur).
 # MÉTHODE    : stat de la commande, `piloter etat` lancée comme le courtier la lance ; le courtier lui-même (cassandra-courtier.path) doit être armé.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e477ed ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=e477ed ▼▼▼
 set -u
 p="/usr/libexec/cassandra/netbird/piloter"
 [ -x "$p" ] && [ "$(stat -c %U "$p")" = "root" ] || { echo "netbird : $p absent ou pas à root (CN_install.sh --module netbird)" >&2; exit 3; }

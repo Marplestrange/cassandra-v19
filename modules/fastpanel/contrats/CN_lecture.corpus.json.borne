@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.3.0  #4ef891
+# VERSION CN : 0.3.1  #4ef891
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : lecture.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

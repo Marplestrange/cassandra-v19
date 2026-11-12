@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.6.0  #888cb5
+# VERSION CN : 0.6.1  #cd8175
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes, le journal, les audits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.6.0 empreinte=888cb5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.6.1 empreinte=cd8175 ▼▼▼
 """La sécurité : les gestes, le journal, les audits.
 
 Porté de la V18 (`securite_*`, `_sec_gestes`), avec ses leçons :
@@ -50,6 +50,15 @@ GESTES = [
 ]
 
 
+def lire_route(ctx, fonction: str, **args):
+    """Une fonction de l'hébergement lue par le panneau détecté (Panel Detect), sans nommer le panneau. Aucune route : PermissionError, comme un module absent."""
+    r = ctx.executer_lecture("paneldetect.route", fonction=fonction)
+    cap = r.get("capacite") if isinstance(r, dict) else ""
+    if not cap:
+        raise PermissionError("aucun panneau d'hébergement ne sert « %s »" % fonction)
+    return ctx.executer_lecture(cap, **args)
+
+
 def brancher(ctx):
     im._point = ctx.point
     analyse._point = ctx.point
@@ -83,7 +92,7 @@ def brancher(ctx):
         except Exception:
             pass
         try:                                                           # le pare-feu du panneau d'hébergement, s'il y en a un d'actif : confronté à ce que le noyau applique
-            panneau = ctx.executer_lecture("fastpanel.parefeu")
+            panneau = lire_route(ctx, "parefeu")
         except Exception:
             panneau = None
         try:                                                           # le confinement en cours (module des gestes d'urgence) : « Cassandra confinée » dans les défenses

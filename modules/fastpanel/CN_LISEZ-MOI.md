@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : fastpanel -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.3.0  #000000 -->
+<!-- VERSION CN : 0.3.1  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : fastpanel — le pont vers FastPanel -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.3.0 empreinte=229b98 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.3.1 empreinte=229b98 ▼▼▼ -->
 # fastpanel — le pont vers FastPanel
 
 Porté de la V18 (`hebergement` : `get_fp_*`, `fp_api_*`, `fp_*_watch`/`_audit`), lu en entier, avec ses leçons.

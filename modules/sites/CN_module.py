@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.6.1  #011628
+# VERSION CN : 0.6.2  #0e2b25
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sites.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.6.1 empreinte=011628 ▼▼▼
+# ▼▼▼ BORNE CN version=0.6.2 empreinte=0e2b25 ▼▼▼
 """Le module Sites.
 
 Ce qu'il tient de la V18 (sites, site_pass, site_fiche, site_history/availability, demandes, accords, liens) et les leçons qu'il garde :
@@ -447,6 +447,11 @@ def brancher(ctx):
     def lecture(cap, **args):
         """(valeur, état) : « ok », « muet » (la capacité existe mais ne répond pas, ou la refuse à ce compte) ou « absent » (son module n'est pas là)."""
         try:
+            if cap.startswith("panneau:"):
+                r = ctx.executer_lecture("paneldetect.route", fonction=cap[8:])
+                cap = r.get("capacite") if isinstance(r, dict) else ""
+                if not cap:
+                    return None, "absent"                       # aucun panneau piloté ne sert cette fonction : comme un module absent
             r = ctx.executer_lecture(cap, **args)
         except PermissionError:
             return None, "absent"
@@ -460,7 +465,7 @@ def brancher(ctx):
                 for c in (r.get("comptes") or []) if c.get("compte")], e
 
     def lire_panneau():
-        r, e = lecture("fastpanel.sites")
+        r, e = lecture("panneau:sites")
         if e != "ok":
             return ([] if e == "absent" else None), e
         if isinstance(r, dict):
@@ -733,11 +738,11 @@ def brancher(ctx):
             for x in r.get("sites") or []:
                 if isinstance(x, dict) and x.get("site"):
                     v["trafic"][nom_hote(x["site"])] = {"requetes": x.get("n"), "robots": x.get("b"), "jours": 9, "premiers_robots": [str(y.get("robot")) for y in (robots.get(x["site"]) or [])[:3] if isinstance(y, dict)]}
-        r = source("bases", "fastpanel.bases")
+        r = source("bases", "panneau:bases")
         for x in r if isinstance(r, list) else []:
             if isinstance(x, dict) and x.get("site"):
                 v["bases"].setdefault(nom_hote(x["site"]), []).append({"nom": str(x.get("nom") or ""), "moteur": str(x.get("moteur") or ""), "taille_mo": x.get("taille_mo"), "derniere_copie": x.get("derniere_copie")})
-        r = source("courrier", "fastpanel.mail")
+        r = source("courrier", "panneau:courrier")
         for x in r if isinstance(r, list) else []:
             if isinstance(x, dict) and x.get("domaine"):
                 c = v["courrier"].setdefault(nom_hote(x["domaine"]), {"boites": 0, "utilise_mo": 0, "quota_mo": 0})
@@ -745,18 +750,18 @@ def brancher(ctx):
                 for k in ("utilise_mo", "quota_mo"):
                     if isinstance(x.get(k), (int, float)):
                         c[k] += x[k]
-        r = source("sauvegardes", "fastpanel.audit")
+        r = source("sauvegardes", "panneau:audit")
         s = r.get("sauvegardes") if isinstance(r, dict) else None
         if isinstance(s, dict):
             v["sauvegardes"] = {"seuil_j": s.get("seuil_j"), "sans": [nom_hote(d) for d in s.get("sans") or []],
                                 "perimees": {nom_hote(x["domaine"]): x.get("derniere") for x in s.get("perimees") or [] if isinstance(x, dict) and x.get("domaine")}}
-        r = source("php", "fastpanel.php")
+        r = source("php", "panneau:php")
         if isinstance(r, dict):
             for etat_, cle in (("depassee", "fin_de_support"), ("bientot", "bientot")):
                 for x in r.get(cle) or []:
                     if isinstance(x, dict) and x.get("domaine"):
                         v["php"].setdefault(nom_hote(x["domaine"]), {"etat": etat_, "version": str(x.get("php") or ""), "fin": str(x.get("fin") or "")})
-        r = source("analyses", "fastpanel.scans_cibles")
+        r = source("analyses", "panneau:analyses")
         for x in (r.get("sites") or []) if isinstance(r, dict) else []:
             if isinstance(x, dict) and x.get("domaine"):
                 v["analyses"][nom_hote(x["domaine"])] = {"actif": bool(x.get("actif")), "planning": str(x.get("planning") or ""), "dernier": x.get("dernier"), "rapports": x.get("rapports")}

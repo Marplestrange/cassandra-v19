@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #f2851c
+# VERSION CN : 0.5.1  #9bc13b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=f2851c ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=9bc13b ▼▼▼
 """Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 
 Règle de la V18 gardée : le compte d'une action de session n'est JAMAIS un paramètre libre. C'est `ctx.compte`, le compte au nom duquel
@@ -27,6 +27,15 @@ import time
 def _b64(octets):
     """Une image défaite part dans le résultat (donc au journal) en texte, jamais en octets bruts."""
     return __import__("base64").b64encode(octets).decode("ascii") if octets else None
+
+
+def lire_route(ctx, fonction: str, **args):
+    """Une fonction de l'hébergement lue par le panneau détecté (Panel Detect), sans nommer le panneau. Aucune route : PermissionError, comme un module absent."""
+    r = ctx.executer_lecture("paneldetect.route", fonction=fonction)
+    cap = r.get("capacite") if isinstance(r, dict) else ""
+    if not cap:
+        raise PermissionError("aucun panneau d'hébergement ne sert « %s »" % fonction)
+    return ctx.executer_lecture(cap, **args)
 
 
 def brancher(ctx):
@@ -309,7 +318,7 @@ def brancher(ctx):
 
     # ---- le portrait : UN résolveur. La source choisie d'abord, puis le repli ; une image téléversée par le compte n'est jamais écrasée par une source externe ----
     SOURCES = ("propre", "dolibarr", "fastpanel", "telegram")
-    CAPACITE_SOURCE = {"dolibarr": "dolibarr.portrait", "fastpanel": "fastpanel.avatar", "telegram": "telegram.portrait"}
+    CAPACITE_SOURCE = {"dolibarr": "dolibarr.portrait", "fastpanel": "panneau:avatar", "telegram": "telegram.portrait"}
     CACHE = {}                                                                                 # (compte, source) -> (instant, image) : clé PAR COMPTE, jamais un global sans compte
     DUREE_CACHE = 300
 
@@ -329,7 +338,7 @@ def brancher(ctx):
         if vu and time.time() - vu[0] < DUREE_CACHE:
             return vu[1]
         try:
-            r = ctx.executer_lecture(cap)
+            r = lire_route(ctx, cap[8:]) if cap.startswith("panneau:") else ctx.executer_lecture(cap)
         except Exception:
             r = None                                     # le module est absent ou en panne : cette source n'a pas d'image, la suivante prend le relais
         r = r if (r and r.get("present")) else None

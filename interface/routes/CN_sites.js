@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #5c8980
+// VERSION CN : 0.1.0  #266826
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=5c8980 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=266826 ▼▼▼
 /* Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
    la lecture passe telle quelle ; les gestes rendent {ok, reason} comme l'écran les lit.
    /api/sites/act : vérifier (la dernière mesure de la sonde) et renouveler le certificat (par le panneau, confirmation exigée) ; redémarrer et journaux demandent la racine du panneau : dits tels quels.
@@ -90,13 +90,18 @@
   const confirmer = (req, raison, plus) => (req.body.confirm ? null : new Response(JSON.stringify(Object.assign({ ok: false, needs_confirm: true, reason: raison }, plus || {})), { status: 409, headers: { "Content-Type": "application/json" } }));
   const RACINE = "demande la racine du panneau (sa commande mogwai) : le courtier de la V19 n'a pas cette commande. La sauvegarde d'un site se fait par un plan (Sauvegardes), l'analyse d'un serveur par Sécurité › ClamAV.";
   // La fiche dit si le site est au panneau, à qui, et si le propriétaire a donné son accord (la même règle que la V18 : propriétaire, ou administrateur avec accord).
+  async function viaRoute(agir, fonction, args) {
+    const r = await agir("paneldetect.route", { fonction: fonction });
+    if (!r || !r.capacite) throw new Error("aucun panneau d'hébergement ne sert « " + fonction + " »");
+    return agir(r.capacite, args || {});
+  }
   async function sitePanneau(agir, d) {
     const f = await agir("sites.fiche", { domaine: d });
     if (f.hors_panneau) throw new Error("site hors panneau : aucune copie");
     return f;
   }
   async function planDuCompte(agir, compte) {
-    const plans = ((await agir("fastpanel.plans", {})) || []);
+    const plans = ((await viaRoute(agir, "plans", {})) || []);
     if (!plans.length) throw new Error("aucun plan de sauvegarde dans le panneau");
     const c = String(compte || "").toLowerCase();
     const sien = plans.find((p) => String(p.user_name || p.username || "").toLowerCase() === c);
@@ -108,7 +113,7 @@
     const c = String(compte || "").toLowerCase();
     if (!c) throw new Error("propriétaire du panneau inconnu pour ce site : aucune copie ne peut lui être rattachée");
     const { plan, sien } = await planDuCompte(agir, c);
-    const r = await agir("fastpanel.copies_du_plan", { plan_id: +plan.id });
+    const r = await viaRoute(agir, "copies_du_plan", { plan_id: +plan.id });
     const copies = (r.copies || []).filter((x) => (x.compte ? String(x.compte).toLowerCase() === c : sien));
     return { plan, copies };
   }
@@ -134,7 +139,7 @@
       if (!copies.some((x) => String(x.id) === copie)) return new Response(JSON.stringify({ ok: false, reason: "cette copie n'est pas l'une de celles de ce compte du panneau" }), { status: 403, headers: { "Content-Type": "application/json" } });
       const c = confirmer(req, "Restaure la copie " + copie + " sur le compte " + (compte || "?") + " du panneau : les fichiers et bases actuels de CE COMPTE (tous ses sites) sont remplacés par ceux de la copie.");
       if (c) return c;
-      const r = await agir("fastpanel.copie_restaurer", { copie_id: copie, compte, forcer: !!b.force_clear });
+      const r = await viaRoute(agir, "copie_restaurer", { copie_id: copie, compte, forcer: !!b.force_clear });
       return ok({ copie: r.copie, compte: r.compte });
     } catch (e) { return echec(e); }
   } });
@@ -159,7 +164,7 @@
       let sauvegardes = [];
       try {
         const f = await agir("sites.fiche", { domaine: d }), compte = String((f.site && f.site.proprietaire_panneau) || "").toLowerCase();
-        if (compte) sauvegardes = ((await agir("fastpanel.sauvegardes", {})) || []).filter((s) => String(s.compte || "").toLowerCase() === compte && String(s.debut || "").slice(0, 7) === mois).map((s) => ({ at: s.debut, status: s.etat === "reussie" ? "success" : s.etat, size_mb: s.envoye_mo }));
+        if (compte) sauvegardes = ((await viaRoute(agir, "copies", {})) || []).filter((s) => String(s.compte || "").toLowerCase() === compte && String(s.debut || "").slice(0, 7) === mois).map((s) => ({ at: s.debut, status: s.etat === "reussie" ? "success" : s.etat, size_mb: s.envoye_mo }));
       } catch (e) {}
       const pannes = ev.filter((e) => e.genre === "panne").length, retours = ev.filter((e) => e.genre === "retour");
       const dispo = h.disponibilite;
@@ -185,7 +190,7 @@
       if (a === "ssl_renew") {
         const c = confirmer(req, "Réémet le certificat SSL. L'autorité n'autorise qu'un nombre limité d'émissions par domaine et par semaine.");
         if (c) return c;
-        const r = await agir("fastpanel.ssl_renouveler", { domaine: d });
+        const r = await viaRoute(agir, "ssl_renouveler", { domaine: d });
         return { ok: true, message: "Certificat renouvelé pour " + (r.domaine || d) + "." };
       }
       if (a === "restart") return { ok: false, error: "redémarrer le backend d'un site demande la racine du panneau : le courtier de la V19 n'a pas cette commande (le service concerné se relance depuis Hébergement › Services)" };

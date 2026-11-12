@@ -6,17 +6,23 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ddfb5b
+// VERSION CN : 0.1.0  #39365d
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La sécurité : /api/securite/* (V18) -> capacités securite.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ddfb5b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=39365d ▼▼▼
 /* La sécurité : /api/securite/* (V18) -> capacités securite.* du noyau.
    Les gestes directs rares de la V18 (bannir, fermer un chemin d'un site, robots) ne sont pas encore portés : dits tels quels. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
+  async function viaRoute(agir, fonction, args) {
+    const r = await agir("paneldetect.route", { fonction: fonction });
+    if (!r || !r.capacite) throw new Error("aucun panneau d'hébergement ne sert « " + fonction + " »");
+    return agir(r.capacite, args || {});
+  }
+
   const ok = (x) => Object.assign({ ok: true }, x);
 
   // L'état de la machine : composé par le module sur les relevés bruts du courtier (services à l'écoute, pare-feu du noyau, SSH, fail2ban, mises à jour).
@@ -102,15 +108,15 @@
         }
         if (g.indexOf("arret:") === 0) return ok(await agir("securite.arret", { service: g.slice(6) }));
         // Le pare-feu du panneau : validé avant tout envoi, posé à l'essai quand il peut fermer (deux minutes pour le garder), jamais SSH fermé à tous sans Tailscale.
-        if (g === "regle_poser") return ok(await agir("fastpanel.parefeu_regle_poser", { id: +(b.id || 0), nom: b.nom || "", ports: b.ports || "", proto: b.proto || "TCP", sens: b.sens || "INPUT", politique: b.politique || "", sources: b.sources || "" }));
-        if (g === "regle_retirer") return ok(await agir("fastpanel.parefeu_regle_retirer", { id: +(b.id || 0) }));
-        if (g === "politique") return ok(await agir("fastpanel.parefeu_politique", { politique: b.politique || "" }));
+        if (g === "regle_poser") return ok(await viaRoute(agir, "parefeu_regle_poser", { id: +(b.id || 0), nom: b.nom || "", ports: b.ports || "", proto: b.proto || "TCP", sens: b.sens || "INPUT", politique: b.politique || "", sources: b.sources || "" }));
+        if (g === "regle_retirer") return ok(await viaRoute(agir, "parefeu_regle_retirer", { id: +(b.id || 0) }));
+        if (g === "politique") return ok(await viaRoute(agir, "parefeu_politique", { politique: b.politique || "" }));
         if (GESTES[g]) return ok(await agir(GESTES[g], g === "debannir" ? { jail: String(b.jail || ""), ip: String(b.ip || "") } : {}));
       } catch (e) { return { ok: false, error: e.message }; }
       return { ok: false, error: "ce geste n'est pas encore porté (outils de sécurité)" };
     },
   });
-  P("/api/securite/parefeu/trancher", "fastpanel.parefeu_trancher", { args: (r) => ({ jeton: String(r.body.jeton || ""), garder: !!r.body.garder }), sortie: ok });
+  CASS.route("POST", "/api/securite/parefeu/trancher", null, { faire: async (r, agir) => ok(await viaRoute(agir, "parefeu_trancher", { jeton: String(r.body.jeton || ""), garder: !!r.body.garder })) });
   P("/api/securite/noter", "securite.noter", {
     args: (r) => ({ geste: r.body.geste || "", cible: r.body.cible || "", detail: r.body.detail || "", ok: r.body.ok !== false, resultat: r.body.resultat || "", defaire: r.body.defaire || "" }),
     sortie: (x) => ok(x),

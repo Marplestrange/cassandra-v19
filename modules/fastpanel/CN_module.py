@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.3.0  #cf4655
+# VERSION CN : 0.3.1  #3a3767
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=cf4655 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=3a3767 ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -1307,7 +1307,9 @@ def brancher(ctx):
     ROUTES = {"sites": "sites", "php": "php", "bases": "bases", "base_creer": "base_creer", "base_supprimer": "base_supprimer", "courrier": "mail", "ftp": "ftp",
               "comptes": "utilisateurs", "comptes_cles": "utilisateur_cles", "avatar": "avatar", "certificats": "certificats", "ssl_renouveler": "ssl_renouveler",
               "zones": "dns", "dns_enregistrer": "dns_enregistrer", "copies": "sauvegardes", "plans": "plans", "copie_restaurer": "copie_restaurer",
-              "analyses": "scans_cibles", "parefeu": "parefeu", "services": "services", "audit": "audit"}
+              "analyses": "scans_cibles", "parefeu": "parefeu", "services": "services", "audit": "audit",
+              "copies_du_plan": "copies_du_plan", "parefeu_regle_poser": "parefeu_regle_poser", "parefeu_regle_retirer": "parefeu_regle_retirer",
+              "parefeu_politique": "parefeu_politique", "parefeu_trancher": "parefeu_trancher"}
 
     def routes(c):
         return {"panneau": "fastpanel", "nom": "FastPanel", "routes": {f: "fastpanel." + cap for f, cap in ROUTES.items()}}

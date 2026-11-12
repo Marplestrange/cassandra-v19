@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : paneldetect
 # ZONE       : CN
-# VERSION CN : 0.1.0  #437686
+# VERSION CN : 0.2.0  #7e0a46
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Panel Detect : quel panneau d'hébergement pilote cette machine, et par quel module de Cassandra.
 # MÉTHODE    : des signatures de fichiers, sans rien lancer ; le module d'un panneau porte son identifiant et déclare ses routes par « <module>.routes », chacune vérifiée contre son manifeste ; les lectures sont relayées pour le compte qui demande, les gestes jamais.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=437686 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=7e0a46 ▼▼▼
 """Panel Detect : quel panneau d'hébergement pilote cette machine, et par quel module de Cassandra.
 
 Le panneau s'installe AVANT Cassandra ; Cassandra n'en installe jamais. Ce module :
@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import time
 
 # Les signatures cherchées : un panneau est présent si l'un de ses chemins existe ou si l'une de ses commandes est dans le PATH.
 # Elles viennent des dossiers de recherche du 12-11-2026 (docs/CN_maquette-hebergement.html) ; un panneau sans module y est quand même reconnu.
@@ -63,13 +64,19 @@ FONCTIONS = (
     ("dns_enregistrer", "Ajouter un enregistrement DNS", "Zones DNS"),
     ("copies", "Les copies de sauvegarde", "Sauvegardes"),
     ("plans", "Les plans de sauvegarde", "Sauvegardes"),
+    ("copies_du_plan", "Les copies d'un plan de sauvegarde", "Sauvegardes, Sites"),
     ("copie_restaurer", "Restaurer une copie", "Sauvegardes"),
     ("analyses", "Les analyses antivirus", "Sécurité › Outils, Sites"),
     ("parefeu", "Le pare-feu du panneau", "Sécurité"),
+    ("parefeu_regle_poser", "Poser une règle du pare-feu du panneau", "Sécurité"),
+    ("parefeu_regle_retirer", "Retirer une règle du pare-feu du panneau", "Sécurité"),
+    ("parefeu_politique", "Changer la politique du pare-feu du panneau", "Sécurité"),
+    ("parefeu_trancher", "Garder ou annuler une règle posée à l'essai", "Sécurité"),
     ("services", "Les services de l'hébergement", "Panorama, La machine"),
     ("audit", "L'audit : certificats, PHP, copies", "Sites, Panorama"),
 )
 FONCTIONS_IDS = tuple(f[0] for f in FONCTIONS)
+DUREE_ROUTES_S = 30
 
 
 def presents(racine: str = "/", qui=shutil.which) -> list:
@@ -139,6 +146,21 @@ def brancher(ctx):
             raise ValueError("« %s » est un geste : il s'appelle directement (%s), au nom de la personne, jamais relayé" % (fonction, r["capacite"]))
         return c.executer_lecture(r["capacite"], **args)
 
+    cache = {"ts": 0.0, "routes": None}
+
+    def route(c, fonction: str = "", **args):
+        """La capacité qui sert une fonction de l'hébergement, pour que l'appelant l'appelle LUI-MÊME : {capacite, nature} (capacite vide : aucun panneau piloté ne la sert).
+        Aucun droit ici : ce sont des noms, pas des données ; la lecture qui suit garde le droit du panneau, pour le même compte qu'avant. Les routes se gardent 30 s :
+        la sonde de Sites en lit six par tour."""
+        if fonction not in FONCTIONS_IDS:
+            raise ValueError("fonction inconnue : « %s » (connues : %s)" % (fonction, ", ".join(FONCTIONS_IDS)))
+        signature = tuple(sorted(p["id"] for p in presents()))                      # un panneau qui apparaît ou disparaît vide le cache tout de suite
+        if cache["routes"] is None or cache.get("signature") != signature or time.time() - cache["ts"] > DUREE_ROUTES_S:
+            vues = etat(c)["routes"]
+            cache["routes"], cache["ts"], cache["signature"] = ({x["fonction"]: x for x in vues if x["capacite"]} or None), time.time(), signature
+        r = (cache["routes"] or {}).get(fonction)
+        return {"capacite": r["capacite"], "nature": r["nature"]} if r else {"capacite": "", "nature": ""}
+
     def det_deux(c):
         p = presents()
         if len(p) < 2:
@@ -159,6 +181,7 @@ def brancher(ctx):
 
     ctx.implementer("etat", etat)
     ctx.implementer("lire", lire)
+    ctx.implementer("route", route)
     ctx.detecteur("deux_panneaux", det_deux)
     ctx.detecteur("panneau_sans_module", det_sans_module)
 # ▲▲▲ FIN BORNE CN ▲▲▲

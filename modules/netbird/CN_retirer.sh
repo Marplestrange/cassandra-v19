@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : netbird
 # ZONE       : CN
-# VERSION CN : 0.1.0  #53b3d7
+# VERSION CN : 0.1.1  #53b3d7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Retire les commandes root `piloter` et `serveur`. Ne coupe PAS NetBird, ne retire NI le conteneur NI le serveur (/opt/netbird-serveur reste tel quel) et ne désinstalle rien : le réseau privé est à l'administrateur.
 # MÉTHODE    : suppression de /usr/libexec/cassandra/netbird/piloter (et du dossier s'il est vide).
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=53b3d7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=53b3d7 ▼▼▼
 set -u
 rm -f /usr/libexec/cassandra/netbird/piloter /usr/libexec/cassandra/netbird/serveur
 rmdir /usr/libexec/cassandra/netbird 2>/dev/null || true

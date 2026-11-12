@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bfcc0e
+# VERSION CN : 0.1.0  #410537
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bfcc0e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=410537 ▼▼▼
 """Bancs du module Sites : un vrai noyau, des comptes simulés, un panneau et une sonde simulés."""
 import json
 import shutil
@@ -78,6 +78,9 @@ class Monde(unittest.TestCase):
     def lecture(self, cap, **a):
         """Les lectures des autres modules, simulées. Comme le noyau : pour le compte au nom duquel on agit (aucun pour un moteur), et None quand le droit manque."""
         compte = self.ctx.compte
+        if cap == "paneldetect.route":                                                    # Panel Detect : la route de chaque fonction, vers le panneau simulé du banc
+            return {"capacite": {"sites": "fastpanel.sites", "bases": "fastpanel.bases", "courrier": "fastpanel.mail", "audit": "fastpanel.audit", "php": "fastpanel.php",
+                                 "analyses": "fastpanel.scans_cibles"}.get(a.get("fonction"), "")}
         if cap == "comptes.moi":
             return next((dict(c) for c in self.comptes if c["compte"] == compte), None)
         voisin = getattr(self, "voisins", {}).get(cap)
