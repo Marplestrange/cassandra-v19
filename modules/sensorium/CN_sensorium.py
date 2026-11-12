@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.4.0  #a93ba8
+# VERSION CN : 0.4.1  #c6aa79
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=a93ba8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=c6aa79 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1702,7 +1702,7 @@ def collect_tailscale_peers():
                     # « 0001-01-01 » : Tailscale ne date pas un appareil en ligne. L'étiquette serveur dit
                     # qu'une absence est une panne ; sans elle, un téléphone éteint n'en est pas une.
                     "last_seen": "" if vu.startswith("0001") else vu[:19],
-                    "dns_name": dns_name + ("|serveur" if "tag:server" in (v.get("Tags") or []) else ""),
+                    "dns_name": dns_name + ("|serveur" if "tag:server" in (v.get("Tags") or []) else "") + ("|mobile" if str(v.get("OS") or "").lower() in ("ios", "android") else ""),
                     "last_check": datetime.now().isoformat(),
                 })
             return peers
@@ -6045,12 +6045,25 @@ def _construire_world_model():
                 nm = (r["name"] or "").strip()
                 if not nm:
                     continue
+                mobile = "|mobile" in (r["dns_name"] or "")
+                if mobile and not r["online"]:
+                    # Un téléphone coupe sa liaison Tailscale à chaque veille : il bascule des dizaines de fois par jour. Tant qu'il a été vu dans les six dernières heures,
+                    # sa ligne ne change pas (ni en ligne, ni hors ligne) : sinon chaque veille ferait une notification.
+                    try:
+                        vu_s = (datetime.now(timezone.utc) - datetime.strptime(r["last_seen"][:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)).total_seconds() if r["last_seen"] else None
+                    except Exception:
+                        vu_s = None
+                    if vu_s is None or vu_s < 6 * 3600:
+                        U("fleet.%s" % nm, "fleet", "mobile, vu dans les 6 dernières heures", vus)
+                    else:
+                        U("fleet.%s" % nm, "fleet", "mobile, pas vu depuis plus de 6 heures", vus)
+                    continue
                 if r["online"]:
-                    U("fleet.%s" % nm, "fleet", "en ligne", vus)
+                    U("fleet.%s" % nm, "fleet", "mobile, vu dans les 6 dernières heures" if mobile else "en ligne", vus)
                     continue
                 # UNE ABSENCE N'EST PAS UNE PANNE (09-10) : « claude-cloud », parti le 08-10, serait resté en
                 # alerte pour toujours. Un serveur absent alerte ; un autre appareil, seulement le premier jour.
-                serveur = (r["dns_name"] or "").endswith("|serveur")
+                serveur = "|serveur" in (r["dns_name"] or "")
                 age = None
                 try:
                     age = (datetime.now(timezone.utc) - datetime.strptime(r["last_seen"][:19], "%Y-%m-%dT%H:%M:%S")

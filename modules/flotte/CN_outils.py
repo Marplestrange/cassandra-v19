@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.4  #e9dc6f
+# VERSION CN : 0.1.5  #fc4400
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.4 empreinte=e9dc6f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.5 empreinte=fc4400 ▼▼▼
 """La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 
 Tout ce qui touche le réseau ou un binaire passe par la classe `Acces` : un banc la remplace, rien d'autre ne sort du module.
@@ -33,6 +33,12 @@ from datetime import datetime, timedelta, timezone
 
 NIVEAUX = ("signal", "observation", "ssh", "agent")
 STATUTS = ("attendue", "intermittente", "retiree")
+
+
+def mobile(systeme) -> bool:
+    """Un téléphone ou une tablette (iOS, Android) : Tailscale y coupe la liaison à chaque veille, il apparaît et disparaît des dizaines de fois par jour."""
+    s = str(systeme or "").lower()
+    return "ios" in s or "android" in s
 TYPES = ("ssh", "ping", "cassandra")
 OUBLI_JOURS = 30
 LIENS = ("project", "contact", "domain", "note")

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #386932
+# VERSION CN : 0.1.0  #8ef857
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve les garanties du démon du Sensorium que l'audit de novembre 2026 a corrigées : un échec de commande n'est pas « rien à signaler », un socket muet est lâché ou fait arrêter le collecteur, un jeton FastPanel expiré est renouvelé, un certificat expiré se compte, un journal d'accès se lit par blocs, une redirection rouverte alerte.
 # MÉTHODE    : charge CN_sensorium.py comme module sur une base et un socket temporaires, simule les commandes et l'API HTTP (aucun réseau, aucune commande système), puis appelle les fonctions du démon.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=386932 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ef857 ▼▼▼
 import gzip
 import importlib.util
 import json
@@ -337,6 +337,24 @@ class Certificats(Base):
         conn.close()
         self.assertIn("5 j", monde["web.www.exemple.fr"])     # couvert par le joker *.exemple.fr
         self.assertIn("5 j", monde["web.autre.fr"])           # couvert par un autre nom du même certificat
+
+    def test_un_telephone_qui_s_endort_ne_change_pas_de_ligne_un_serveur_oui(self):
+        """Tailscale coupe la liaison d'un téléphone à chaque veille : sa ligne reste la même (pas de notification), un serveur absent alerte toujours."""
+        import datetime as dt
+        recent = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=12)).strftime("%Y-%m-%dT%H:%M:%S")
+        conn = self.m.get_conn()
+        for nom, dns, en, vu in (("tel", "tel.ts.net.|mobile", 1, ""), ("tel2", "tel2.ts.net.|mobile", 0, recent), ("srv", "srv.ts.net.|serveur", 0, recent)):
+            conn.execute("INSERT INTO tailscale_peers (name, dns_name, online, last_seen) VALUES (?,?,?,?)", (nom, dns, en, vu))
+        conn.commit()
+        conn.close()
+        self.m._construire_world_model()
+        conn = self.m.get_conn()
+        monde = {x["wkey"]: (x["value"], x["severity"]) for x in conn.execute("SELECT wkey, value, severity FROM world_model")}
+        conn.close()
+        self.assertEqual(monde["fleet.tel"], monde["fleet.tel2"])                     # en ligne ou endormi : la même ligne
+        self.assertEqual(monde["fleet.tel2"][1], "info")
+        self.assertIn("hors ligne", monde["fleet.srv"][0])
+        self.assertEqual(monde["fleet.srv"][1], "warning")
 
 
 class JournauxDAttaques(Base):

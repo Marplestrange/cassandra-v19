@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #e21bcd
+# VERSION EC : EC0 (référence 0.4.1)  #e21bcd
 # HÔTE CN    : CN_module.py · fp_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit de FastPanel (par sa ligne de commande, son API ou les fichiers des serveurs) en comptes mail et FTP, source par source.
 # MÉTHODE    : fonctions pures, une par source ; le nexus essaie les sources dans l'ordre (la plus fiable d'abord) et s'arrête à la première qui donne des comptes ; l'EC ne lit jamais de fichier.

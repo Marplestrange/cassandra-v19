@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #c42edb
+# VERSION EC : EC0 (référence 0.4.1)  #c42edb
 # HÔTE CN    : CN_module.py · duree_txt @1.0
 # RÔLE       : dit en mots l'uptime d'une machine ou l'âge d'une mesure.
 # MÉTHODE    : fonction pure : jours et heures à partir d'un jour, heures et minutes en deçà ; « ? » quand la valeur n'est pas un nombre.

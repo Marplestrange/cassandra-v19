@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.4  #cdae4a
+# VERSION CN : 0.1.5  #7dab1d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.4 empreinte=cdae4a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.5 empreinte=7dab1d ▼▼▼
 """La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 
 Porté de la V18 (`flotte_*`, `fleet_*`, `ms_*`), avec ses leçons :
@@ -167,7 +167,7 @@ def brancher(ctx):
         recente = o.horodate(o.utc() - timedelta(days=1))
         out = []
         for n, x in M.items():
-            statut, niv_decl = eng.get(n, ("attendue", ""))
+            statut, niv_decl = eng.get(n, ("intermittente" if o.mobile(x["os"]) else "attendue", ""))      # un mobile sans engagement posé s'absente de lui-même : pas une panne
             sd = sonde.get(n)
             if n == h:
                 niveau = "agent"
@@ -679,7 +679,7 @@ def brancher(ctx):
             sondes = passe_sonde_ssh(live, eng, ssh)
         t2 = passe_registre() or []
         for n, en, dm in t1 + t2:
-            if eng.get(n, ("", ""))[0] == "intermittente":
+            if (eng.get(n, ("", ""))[0] or ("intermittente" if o.mobile((live.get(n) or {}).get("os")) else "")) == "intermittente":
                 continue
             ctx.emettre("serveur.retour" if en else "serveur.perte", objet=("serveur", n), donnees={"nom": n, "duree_min": dm})
         for n in disparues:

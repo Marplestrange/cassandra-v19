@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b6effa
+# VERSION CN : 0.1.0  #1e5f0d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la flotte : le parc fusionné, la présence, la disponibilité, le contrôle SSH, les commandes nommées. Aucun réseau : l'accès au monde est simulé.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b6effa ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1e5f0d ▼▼▼
 """Bancs de la flotte : le parc fusionné, la présence, la disponibilité, le contrôle SSH, les commandes nommées. Aucun réseau : l'accès au monde est simulé."""
 import shutil
 import sys
@@ -129,6 +129,20 @@ class Parc(Monde):
         retour = [e for e in self.evts("retour") if e["nom"] == "athena"]
         self.assertEqual(len(retour), 1)
         self.assertIn("Revenue", retour[0]["detail"])
+
+    def test_un_telephone_sans_engagement_est_intermittent_de_lui_meme(self):
+        """Un téléphone iOS dont la liaison Tailscale s'endort bascule des dizaines de fois par jour : ni alerte critique, ni « perte » émise ; l'absence reste datée."""
+        self.moteur("presence")
+        self.ts["tel"] = pair(online=False, os="iOS", ip="100.64.0.9")
+        self.moteur("presence")
+        tel = self.machine(self.ok("parc"), "tel")
+        self.assertEqual((tel["statut"], tel["etat"], tel["libelle"]), ("intermittente", "avert", "hors ligne · volontaire"))
+        self.assertEqual([e["nom"] for e in self.evts("perte")], ["tel"])
+        self.assertEqual([x for x in self.n.bus.recents(portee="*", limite=300) if x["type"] == "serveur.perte"], [])
+        det = next(x[2] for x in self.n.detecteurs if x[0] == "flotte" and x[1].id == "machine_muette")
+        self.assertEqual([c for c in det(self.ctx) if "tel" in c["titre"]], [])
+        self.ok("engagement", nom="tel", statut="attendue")                                    # un engagement posé à la main l'emporte
+        self.assertEqual(self.machine(self.ok("parc"), "tel")["etat"], "erreur")
 
     def test_une_machine_du_registre_que_tailscale_voit_n_est_pas_hors_ligne_si_sa_sonde_echoue(self):
         self.ok("machine_ajouter", nom="athena", type="ssh", hote="100.64.0.2", auth="cle", cle="K")

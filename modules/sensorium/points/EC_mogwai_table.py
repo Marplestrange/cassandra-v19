@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #afd6eb
+# VERSION EC : EC0 (référence 0.4.1)  #afd6eb
 # HÔTE CN    : CN_module.py · mogwai_table @1.0
 # RÔLE       : lit la sortie tabulaire de mogwai, dont les colonnes sont séparées par des tabulations ou par des espaces multiples.
 # MÉTHODE    : fonction pure : s'il y a des tabulations dans l'en-tête, on ne coupe que sur elles (sinon une cellule vide fait glisser les colonnes) ; sinon sur deux espaces ou plus ; les lignes courtes sont complétées.
