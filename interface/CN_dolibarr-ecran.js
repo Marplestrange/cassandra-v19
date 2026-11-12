@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #5623c0
+// VERSION CN : 0.1.0  #e695b6
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_ecran (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=5623c0 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e695b6 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -180,7 +180,6 @@
       projets: ["Projets", "<p>Les projets de Dolibarr. Valider un projet lui donne sa référence ; le clore le termine.</p>"],
       cprojets: ["Projets de Cassandra", "<p>Les projets que tu tiens dans Cassandra. Ils restent chez Cassandra tant que tu ne les envoies pas ; envoyé, Dolibarr fait foi pour son titre, ses dates et sa description.</p>"],
       ccontacts: ["Contacts de Cassandra", "<p>Les contacts de ton carnet. Un contact envoyé à Dolibarr y est rattaché à un tiers que tu choisis : il ne devient jamais un tiers tout seul.</p>"],
-      itare: ["Itare", "<p>Itare répond sur Dolibarr avec <b>ta clé</b> : il agit sous ton nom, avec tes droits, dans les limites que tu as réglées (« Mon accès »).</p>"],
       acces: ["Mon accès", "<p>La clé d'API de ton utilisateur Dolibarr, rangée dans ton coffre. Avec elle, ce que tu fais et ce que fait ton Itare passe sous ton nom. Sans elle, tu peux lire mais pas écrire (sauf réglage de l'administrateur).</p>"],
       capacites: ["Capacités", "<p>Ce que Cassandra sait faire dans Dolibarr, geste par geste, et le <b>palier</b> de chacun : « raconter » (on prépare, tu approuves) ou « auto ». C'est le choix de l'administrateur.</p>"],
       comptes: ["Comptes", "<p>Qui a une clé personnelle Dolibarr. Réservé aux administrateurs.</p>"],
@@ -243,7 +242,6 @@
     d_projets: "projets",
     d_cprojets: "cprojets",
     d_ccontacts: "ccontacts",
-    d_itare: "itare",
     d_acces: "acces",
     d_capacites: "capacites",
     d_comptes: "comptes",
@@ -445,9 +443,6 @@
         const C = S.d.cpts || [];
         return '<div class="carte"><h3>Comptes de Cassandra</h3><div class="note">L’administrateur voit qui a branché sa clé. Il ne voit jamais les clés.</div>' + table(["Compte", "Clé Dolibarr"], C.map((c) => "<tr><td><b>" + esc(c.nom) + '</b></td><td>' + (c.cle === null ? pill("illisible (réservé à l’administrateur)") : c.cle ? pill("clé renseignée", "ok") : pill("aucune clé : il lit, il n’écrit pas", "al")) + "</td></tr>")) + '<div class="note">Un compte sans clé lit mais n’écrit pas. Le réglage « mandat pour tous » (société) change cela, au choix de l’administrateur.</div></div>';
       },
-      itare() {
-        return '<div class="carte"><h3>Demander à Itare</h3><div class="note">Itare agit avec <b>ta clé</b> et dans la limite de tes réglages : chaque geste passe par les mêmes capacités, avec leur palier, leur preuve et leur retour. Exemples : « Qui me doit de l’argent ? », « Prépare les relances des factures récentes », « Facture 2 jours de son à MONARCH, 260 € la journée ».</div><div class="liste" id="dlb-conv">' + (S.itare || []).map((m) => '<div class="li"><div class="sp"><b>' + (m[0] === "u" ? "Toi" : "Itare") + "</b><div>" + esc(m[1]) + "</div></div></div>").join("") + '</div><div class="barre2"><input class="in" id="dlb-msg" style="flex:1 1 320px" placeholder="Dis-lui quoi faire dans Dolibarr…" autocomplete="off"><button class="btn pri" data-a="itareenvoi">Envoyer</button></div></div>';
-      },
       acces() {
         const a = S.acces || {}, o = { compte: "ta clé propre", mandat: "la clé de mandat", fichier: "le fichier de clé" }[a.cle] || "";
         return '<div class="g2"><div class="carte"><h3>Ma clé d’API Dolibarr</h3><div class="note">Mon Itare et moi agissons dans Dolibarr sous le nom de son utilisateur, avec ses droits. La clé est chiffrée, jamais réaffichée ; personne d’autre ne la lit.</div>' +
@@ -459,7 +454,7 @@
         return '<div class="carte"><h3>Requête libre</h3><div class="note">Tout le catalogue de Dolibarr : par exemple <span class="mono">GET /thirdparties/12</span> ou <span class="mono">PUT /products/3 {"price": 12}</span>. Les secrets sont masqués ; une suppression passe par la corbeille du module.</div><div class="barre2"><input class="in mono" id="dlb-req" style="flex:1 1 320px" value="' + esc(S.libre || "GET /thirdparties?limit=5") + '"><button class="btn pri" data-a="libre">Lancer</button></div>' + (S.libreRep ? '<pre class="code">' + esc(typeof S.libreRep === "string" ? S.libreRep : JSON.stringify(S.libreRep, null, 1)) + "</pre>" : "") + "</div>";
       },
     };
-    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["commandes", "Commandes"], ["tiers", "Tiers"], ["contacts", "Contacts"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["produits", "Produits"], ["fournisseurs", "Fournisseurs"], ["frais", "Notes de frais"], ["itare", "Itare"], ["capacites", "Capacités"], ["comptes", "Comptes"], ["instance", "Instance"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
+    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["commandes", "Commandes"], ["tiers", "Tiers"], ["contacts", "Contacts"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["produits", "Produits"], ["fournisseurs", "Fournisseurs"], ["frais", "Notes de frais"], ["capacites", "Capacités"], ["comptes", "Comptes"], ["instance", "Instance"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
     function dessiner() {
       const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.q : null, pos = foc ? document.activeElement.selectionStart : 0;
       racine.innerHTML = K.titre((ONGLETS.find((o) => o[0] === S.onglet) || ["", "Dolibarr"])[1], "Dolibarr · chaque geste est relu, journalisé et défaisable.") + (AIDE.pages[S.onglet] ? '<div class="ib-page">' + ib("À quoi sert cette page ?", "<p><b>" + AIDE.pages[S.onglet][0] + "</b></p>" + AIDE.pages[S.onglet][1]) + "</div>" : "") +
@@ -818,13 +813,6 @@
       savegarde: async () => {
         const off = document.getElementById("g-off").checked, seuil = Number(document.getElementById("g-seuil").value) || 0;
         try { await agir("reglages.regler", { cle: "dolibarr.itare_ecrire", valeur: off ? "desactive" : "libre" }); await agir("reglages.regler", { cle: "dolibarr.itare_seuil", valeur: seuil }); await agir("reglages.regler", { cle: "dolibarr.prudence", valeur: document.getElementById("g-prud").value }); K.dire("Réglages enregistrés"); S.d.rgl = null; await charger(true); } catch (e) { K.dire(e.message || String(e), "err"); }
-      },
-      itareenvoi: async () => {
-        const e = document.getElementById("dlb-msg"), m = (e && e.value || "").trim(); if (!m) return;
-        S.itare = (S.itare || []).concat([["u", m]]); dessiner();
-        try { const r = await agir("agents.converser", { conversation_id: S.conv || 0, message: "[Dolibarr, avec ma clé] " + m, agent: "itare" }); S.conv = r.conversation_id || S.conv; const pannes = (r.actions || []).filter((a) => a && a.erreur).map((a) => a.erreur); S.itare.push(["i", String(r.reponse || r.message || r.texte || r.resume || (pannes.length ? "Je ne peux pas répondre : " + pannes.join(" ; ") : "(Itare a répondu sans texte)"))]); }
-        catch (x) { S.itare.push(["i", "Je n’ai pas pu : " + (x.message || String(x))]); }
-        dessiner();
       },
       rib: async (p) => {
         let r; try { r = await agir("dolibarr.rib_lister", { tiers: Number(p) }); } catch (e) { return K.dire(e.message || String(e), "err"); }

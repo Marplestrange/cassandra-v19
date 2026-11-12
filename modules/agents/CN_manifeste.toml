@@ -650,3 +650,11 @@ contrat = "1.0"
 reference = "points/EC_coherents"
 fonction = "point_coherents"
 runtime = "python"
+
+[[points_evolution]]
+id = "entier"
+libelle = "Un nombre entier demandé par un appelant (l'écran, un agent) : vide → le défaut, hors bornes → ramené aux bornes, illisible → une erreur qui le dit (pas le « invalid literal » de Python) (extrait automatiquement de CN_equipe.py)"
+contrat = "1.0"
+reference = "points/EC_entier"
+fonction = "point_entier"
+runtime = "python"

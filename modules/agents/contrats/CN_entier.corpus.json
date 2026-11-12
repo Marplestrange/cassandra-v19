@@ -1,0 +1,475 @@
+{
+ "point": "agents.entier",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de agents, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "valeur": true,
+    "defaut": 1760000000,
+    "mini": 1000000.0,
+    "maxi": 24,
+    "nom": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "sortie": {
+    "valeur": 1000000.0
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "valeur": 1.5,
+    "defaut": 4,
+    "mini": 2,
+    "maxi": 86400,
+    "nom": "Échec : une note a besoin d'un titre"
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "valeur": 1,
+    "defaut": 500,
+    "mini": 100,
+    "maxi": 2,
+    "nom": "agents.conversation_supprimer"
+   },
+   "sortie": {
+    "valeur": 100
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "valeur": true,
+    "defaut": 86400,
+    "mini": 500,
+    "maxi": 7,
+    "nom": "modeles.usage"
+   },
+   "sortie": {
+    "valeur": 500
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "valeur": 3,
+    "defaut": 0.0,
+    "mini": -1,
+    "maxi": 2000,
+    "nom": 0.0
+   },
+   "sortie": {
+    "valeur": 3
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "valeur": 0.5,
+    "defaut": 100.0,
+    "mini": 1.5,
+    "maxi": 987654,
+    "nom": "true"
+   },
+   "sortie": {
+    "valeur": 1.5
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "valeur": true,
+    "defaut": " valeur ",
+    "mini": 100.0,
+    "maxi": 700,
+    "nom": "agents.conversation_supprimer"
+   },
+   "sortie": {
+    "valeur": 100.0
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "valeur": 1,
+    "defaut": 3600,
+    "mini": 987654,
+    "maxi": 24,
+    "nom": "notes.partage_creer"
+   },
+   "sortie": {
+    "valeur": 987654
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "valeur": true,
+    "defaut": 3,
+    "mini": 24,
+    "maxi": 8,
+    "nom": "outils"
+   },
+   "sortie": {
+    "valeur": 24
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "valeur": 2,
+    "defaut": 1760000000,
+    "mini": 4,
+    "maxi": 8,
+    "nom": "Tu es CASSANDRA"
+   },
+   "sortie": {
+    "valeur": 4
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "valeur": -1,
+    "defaut": 0.5,
+    "mini": 2000,
+    "maxi": 4,
+    "nom": "modeles"
+   },
+   "sortie": {
+    "valeur": 2000
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "valeur": 3,
+    "defaut": 20,
+    "mini": 60,
+    "maxi": 1000000.0,
+    "nom": "__main__"
+   },
+   "sortie": {
+    "valeur": 60
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "valeur": true,
+    "defaut": 0,
+    "mini": -1,
+    "maxi": -2.25,
+    "nom": "bea@x.fr"
+   },
+   "sortie": {
+    "valeur": -1
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "valeur": 3,
+    "defaut": 3600,
+    "mini": 0.0,
+    "maxi": 0.6666666666666666,
+    "nom": "modeles.usage"
+   },
+   "sortie": {
+    "valeur": 0.6666666666666666
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "valeur": 1,
+    "defaut": 5,
+    "mini": 3600,
+    "maxi": 1.5,
+    "nom": "memoire.rappeler"
+   },
+   "sortie": {
+    "valeur": 3600
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "valeur": 3,
+    "defaut": 1000000.0,
+    "mini": 700,
+    "maxi": 0.5,
+    "nom": "a/b/c"
+   },
+   "sortie": {
+    "valeur": 700
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "valeur": 3,
+    "defaut": 3,
+    "mini": 10,
+    "maxi": 20,
+    "nom": "externe"
+   },
+   "sortie": {
+    "valeur": 10
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "valeur": 1.5,
+    "defaut": 7,
+    "mini": 0.6666666666666666,
+    "maxi": 9,
+    "nom": "sortant"
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "valeur": 3,
+    "defaut": 1000000.0,
+    "mini": 1760000000,
+    "maxi": 4,
+    "nom": "C:\\x"
+   },
+   "sortie": {
+    "valeur": 1760000000
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "valeur": 3,
+    "defaut": 1024,
+    "mini": 20001,
+    "maxi": 200,
+    "nom": "Itare parle par son propre rôle (itare_citadelle) : les bancs qui le font agir sur le bureau lui lient le même faux serveur de modèle."
+   },
+   "sortie": {
+    "valeur": 20001
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "valeur": 1,
+    "defaut": 2,
+    "mini": 0,
+    "maxi": 0,
+    "nom": "Partage ma note"
+   },
+   "sortie": {
+    "valeur": 0
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "valeur": 0.5,
+    "defaut": 60,
+    "mini": 7,
+    "maxi": 1.5,
+    "nom": "3.14"
+   },
+   "sortie": {
+    "valeur": 7
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "valeur": true,
+    "defaut": 500,
+    "mini": 5,
+    "maxi": 24,
+    "nom": "cassandra"
+   },
+   "sortie": {
+    "valeur": 5
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "valeur": 2,
+    "defaut": 20,
+    "mini": 1024,
+    "maxi": 9,
+    "nom": "raconter"
+   },
+   "sortie": {
+    "valeur": 1024
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "valeur": 0.5,
+    "defaut": 7,
+    "mini": 0.0,
+    "maxi": -2.25,
+    "nom": "agents.conversation_renommer"
+   },
+   "sortie": {
+    "valeur": 0.0
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "valeur": 1.5,
+    "defaut": 0.6666666666666666,
+    "mini": 86400,
+    "maxi": 2,
+    "nom": "Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle qui appelle des outils."
+   },
+   "sortie": {
+    "valeur": 86400
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "valeur": 3,
+    "defaut": 0,
+    "mini": 8,
+    "maxi": 9,
+    "nom": "completion_tokens"
+   },
+   "sortie": {
+    "valeur": 8
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "valeur": 3,
+    "defaut": 2,
+    "mini": 9,
+    "maxi": 1760000000,
+    "nom": "modeles.choisir"
+   },
+   "sortie": {
+    "valeur": 9
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "valeur": 3,
+    "defaut": 1000000.0,
+    "mini": 200,
+    "maxi": 2000,
+    "nom": "a/b/c"
+   },
+   "sortie": {
+    "valeur": 200
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "valeur": 2,
+    "defaut": 1024,
+    "mini": 0.0,
+    "maxi": 0.5,
+    "nom": "# titre\ntexte"
+   },
+   "sortie": {
+    "valeur": 0.5
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "valeur": 2,
+    "defaut": 60,
+    "mini": 20,
+    "maxi": 60,
+    "nom": "Conclus maintenant en clair"
+   },
+   "sortie": {
+    "valeur": 20
+   }
+  },
+  {
+   "cas": "cas 32",
+   "entree": {
+    "valeur": true,
+    "defaut": 3600,
+    "mini": true,
+    "maxi": 3600,
+    "nom": "d"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 33",
+   "entree": {
+    "valeur": 0.5,
+    "defaut": 100.0,
+    "mini": false,
+    "maxi": 1000000.0,
+    "nom": "racontee"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 34",
+   "entree": {
+    "valeur": false,
+    "defaut": 3600,
+    "mini": 86400,
+    "maxi": 10,
+    "nom": "Reprenons"
+   },
+   "sortie": {
+    "valeur": 3600
+   }
+  },
+  {
+   "cas": "cas 35",
+   "entree": {
+    "valeur": false,
+    "defaut": "Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle qui appelle des outils.",
+    "mini": 0.5,
+    "maxi": 20,
+    "nom": " "
+   },
+   "sortie": {
+    "valeur": "Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle qui appelle des outils."
+   }
+  },
+  {
+   "cas": "cas 36",
+   "entree": {
+    "valeur": 0,
+    "defaut": -2.25,
+    "mini": 987654,
+    "maxi": " valeur ",
+    "nom": "usage"
+   },
+   "sortie": {
+    "valeur": -2.25
+   }
+  }
+ ]
+}
