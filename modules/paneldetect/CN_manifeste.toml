@@ -1,0 +1,82 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Panel Detect
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : paneldetect
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ef9b05
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Reconnaît le panneau d'hébergement installé sur la machine (FastPanel, HestiaCP, CloudPanel, CyberPanel, aaPanel, Virtualmin, ISPConfig, Froxlor, Plesk, cPanel) et relie chaque module de Cassandra au module qui le pilote : les lectures passent par lui, les gestes y trouvent leur capacité. Changer de panneau ne touche alors qu'un module. Il n'installe jamais de panneau : le panneau vient avant Cassandra.
+# MÉTHODE    : deux capacités de lecture (etat, lire), deux détecteurs, une page dans Paramètres ; l'introspection pour trouver les modules de la famille « hebergement », les lectures pour relayer.
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ef9b05 ▼▼▼
+[module]
+id = "paneldetect"
+nom = "Panel Detect"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Reconnaît le panneau d'hébergement installé sur la machine (FastPanel, HestiaCP, CloudPanel, CyberPanel, aaPanel, Virtualmin, ISPConfig, Froxlor, Plesk, cPanel) et relie chaque module de Cassandra au module qui le pilote : les lectures passent par lui, les gestes y trouvent leur capacité. Changer de panneau ne touche alors qu'un module. Il n'installe jamais de panneau : le panneau vient avant Cassandra."
+confiance = "interne"
+famille = "hebergement"
+groupe = "parametres"
+proprietaire = "cassandra"
+importance = "important"
+sans = "Les modules ne savent plus quel panneau pilote la machine : ce qui passe par le panneau (sites, bases, courrier, certificats) n'a plus de chemin commun."
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "voir"
+libelle = "Voir le panneau détecté, ses preuves et les routes de l'hébergement"
+
+[[detecteurs]]
+id = "deux_panneaux"
+libelle = "Deux panneaux d'hébergement sur la même machine : l'un peut réécrire la configuration de l'autre"
+frequence_s = 3600
+
+[[detecteurs]]
+id = "panneau_sans_module"
+libelle = "Un panneau d'hébergement est installé, mais aucun module de Cassandra ne le pilote"
+frequence_s = 3600
+
+[[capacites]]
+id = "etat"
+libelle = "Le panneau détecté : ses preuves, le module qui le pilote, et la route de chaque fonction de l'hébergement (lecture ou geste)"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "lire"
+libelle = "Lire une fonction de l'hébergement (sites, bases, courrier…) par le module du panneau détecté : la même réponse que sa capacité de lecture"
+risque = "lecture"
+droit = "voir"
+
+[[ecrans]]
+id = "pd_vue"
+libelle = "Panel Detect"
+domaine = "socle"
+gabarit = "libre"
+
+[[menus]]
+id = "paneldetect"
+libelle = "Panel Detect"
+ecran = "pd_vue"
+groupe = "parametres"
+ordre = 60
+role = "admin"
+icone = "db"
+badge = "constats"
+droit = "voir"
+
+[permissions]
+lectures = true
+introspection = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : modules/paneldetect/CN_module.py ; modules/fastpanel (sa capacité « routes ») ; interface/CN_paneldetect-ecran.js ; docs/CN_maquette-panel-detect.html (la maquette validée)

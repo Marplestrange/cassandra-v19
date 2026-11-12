@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #b12462
+# VERSION CN : 0.3.0  #b12462
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Pose, pour le service de Cassandra, une copie en lecture de la base SQLite de FastPanel (qui n'est lisible que par root).
 # MÉTHODE    : lancé par une minuterie systemd en root ; l'API de sauvegarde de SQLite donne une copie cohérente même si la base est en WAL.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=b12462 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=b12462 ▼▼▼
 """python CN_copie_panneau.py SOURCE DESTINATION UTILISATEUR : copie SOURCE vers DESTINATION (0640, root:UTILISATEUR), remplacée d'un coup."""
 import grp
 import os

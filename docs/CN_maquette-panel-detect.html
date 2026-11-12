@@ -1,0 +1,462 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Maquette : l'onglet Hébergement éclaté, Panel Detect -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : l'onglet Hébergement disparaît : Panel Detect, Bases de données, Gestion e-mail, le PHP dans Sites, comptes du panneau et FTP dans Sécurité › Accès ; à valider avant tout code. -->
+<!-- MÉTHODE    : un seul fichier autonome, la feuille de style de CN_maquette-systeme.html ; l'état réel d'Argos lu le 12-11-2026, ou un exemple avec des sites clients. -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=a9fbef ▼▼▼ -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Hébergement éclaté, Panel Detect</title>
+<!--
+  L'ONGLET « HÉBERGEMENT » DISPARAÎT (décision d'Atek, 12-11-2026). Son contenu est éclaté, sans doublon :
+  - Panel Detect (nouveau, Paramètres) : reconnaît le panneau, relie chaque module à lui, garde les opérations que personne d'autre ne tient ;
+  - Bases de données (nouveau module, Parc) ; Gestion e-mail (nouveau module, Parc) ;
+  - PHP → la fiche du site, dans Sites ; comptes du panneau et FTP → Sécurité › Accès ;
+  - le reste était déjà ailleurs : Sites, Certificats, Zones DNS, Sauvegardes, Automatismes, Sécurité, La machine.
+  Données : l'état réel d'Argos lu le 12-11-2026 (2 sites en proxy, aucune base, aucune boîte, aucun FTP, un compte du panneau),
+  ou, avec le bouton du haut, un exemple de serveur avec des sites clients. Aucun geste n'écrit.
+-->
+<style>
+/* ── commune avec la maquette « La machine » (CN_maquette-systeme.html) ── */
+:root{
+  --bg:#eef1f5; --bg2:#e9edf3; --surface:rgba(255,255,255,.72); --surface2:rgba(255,255,255,.5); --solid:#fff;
+  --line:rgba(16,24,40,.09); --line2:rgba(16,24,40,.16);
+  --strong:#101828; --txt:#2b3646; --soft:#5a6675; --muted:#667080;
+  --accent:#0a726b; --accent2:#0f9b90; --acc10:rgba(11,124,116,.10); --acc20:rgba(11,124,116,.20); --violet:#6d3fd1;
+  --ok:#047857; --warn:#b45309; --danger:#be123c; --info:#0369a1;
+  --ok10:rgba(4,120,87,.10); --warn10:rgba(180,83,9,.11); --dan10:rgba(190,18,60,.09); --inf10:rgba(3,105,161,.10);
+  --shadow:0 6px 24px rgba(16,24,40,.07),0 1px 2px rgba(16,24,40,.05); --lift:0 14px 40px rgba(16,24,40,.14),0 2px 6px rgba(16,24,40,.06);
+  --r:16px; --barre:linear-gradient(135deg,#0a726b,#0f9b90);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0e1417; --bg2:#111a1e; --surface:rgba(28,38,44,.78); --surface2:rgba(28,38,44,.5); --solid:#182228;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.17);
+  --strong:#f1f5f7; --txt:#d3dbe0; --soft:#a6b2ba; --muted:#93a0a9;
+  --accent:#3fc7ba; --accent2:#2aa99d; --acc10:rgba(63,199,186,.12); --acc20:rgba(63,199,186,.22); --violet:#a78bfa;
+  --ok:#34d399; --warn:#f0a94a; --danger:#fb7185; --info:#5cb8e6;
+  --ok10:rgba(52,211,153,.12); --warn10:rgba(240,169,74,.13); --dan10:rgba(251,113,133,.13); --inf10:rgba(92,184,230,.12);
+  --shadow:0 6px 24px rgba(0,0,0,.3); --lift:0 14px 40px rgba(0,0,0,.5); --barre:linear-gradient(135deg,#0b4f4a,#0d6b63);
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1417; --bg2:#111a1e; --surface:rgba(28,38,44,.78); --surface2:rgba(28,38,44,.5); --solid:#182228;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.17);
+  --strong:#f1f5f7; --txt:#d3dbe0; --soft:#a6b2ba; --muted:#93a0a9;
+  --accent:#3fc7ba; --accent2:#2aa99d; --acc10:rgba(63,199,186,.12); --acc20:rgba(63,199,186,.22); --violet:#a78bfa;
+  --ok:#34d399; --warn:#f0a94a; --danger:#fb7185; --info:#5cb8e6;
+  --ok10:rgba(52,211,153,.12); --warn10:rgba(240,169,74,.13); --dan10:rgba(251,113,133,.13); --inf10:rgba(92,184,230,.12);
+  --shadow:0 6px 24px rgba(0,0,0,.3); --lift:0 14px 40px rgba(0,0,0,.5); --barre:linear-gradient(135deg,#0b4f4a,#0d6b63);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:linear-gradient(160deg,var(--bg2),var(--bg) 40%,var(--bg2));background-attachment:fixed;color:var(--txt);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+.mono,code,.num{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+code{font-size:.92em;color:var(--strong)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+svg.i{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* barre de la maquette */
+.haut{background:var(--barre);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px;position:sticky;top:0;z-index:30;flex-wrap:wrap}
+.haut b{font-weight:650}
+.haut .note{font-size:12.5px;opacity:.9;margin:0 auto 0 0;color:#fff}
+.haut button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:10px;padding:6px 11px;font-size:13px}
+.haut button[aria-pressed="true"]{background:#fff;color:#0a726b}
+.seg{display:inline-flex;gap:2px;background:rgba(255,255,255,.12);padding:3px;border-radius:12px}
+.seg button{border:0;background:transparent}
+/* disposition */
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);gap:18px;max-width:1380px;margin:0 auto;padding:18px 16px 60px}
+@media (max-width:900px){.app{grid-template-columns:1fr}.menu{position:static!important;max-height:none!important}}
+.carte{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+/* menu de gauche */
+.menu{position:sticky;top:66px;align-self:start;padding:8px;max-height:calc(100vh - 84px);overflow:auto}
+.menu h2{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin:10px 12px 6px;font-weight:650}
+.mi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;border-radius:12px;padding:8px 12px;color:var(--txt);position:relative}
+.mi:hover{background:var(--acc10)}
+.mi svg.i{opacity:.75}
+.mi .chev{margin-left:auto;color:var(--muted);transition:transform .2s;font-size:12px}
+.mi[aria-expanded="true"]{font-weight:650;color:var(--strong)}
+.mi[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.mi.inerte{color:var(--muted)}
+.sous{margin:2px 0 6px 21px;padding-left:8px;border-left:2px solid var(--acc20);display:grid;gap:1px}
+.sous .mi{padding:6px 10px;font-size:14px}
+.sous .sous{margin-left:14px}
+.sous .sous .mi{font-size:13.5px}
+.mi[aria-current="page"]{background:var(--solid);box-shadow:var(--shadow);color:var(--accent);font-weight:650}
+.bad{margin-left:auto;white-space:nowrap;font-size:11.5px;border-radius:999px;padding:1px 8px;background:var(--line);color:var(--soft);font-weight:600}
+.bad.w{background:var(--warn10);color:var(--warn)}.bad.d{background:var(--dan10);color:var(--danger)}.bad.ok{background:var(--ok10);color:var(--ok)}
+.legende{margin:12px 6px 4px;padding:10px 6px 6px;border-top:1px solid var(--line);font-size:12px;color:var(--soft);display:grid;gap:6px}
+.de,.neuf,.ac{font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-radius:6px;padding:1px 5px;margin-left:6px;font-weight:650;white-space:nowrap;vertical-align:1px}
+.de{background:var(--inf10);color:var(--info)}.neuf{background:var(--acc10);color:var(--accent)}.ac{background:var(--warn10);color:var(--warn)}
+.legende .de,.legende .neuf,.legende .ac{margin-left:0;margin-right:6px}
+/* page */
+.fil{font-size:13px;color:var(--muted);margin:2px 0 6px}
+h1{font-size:26px;margin:0 0 4px;color:var(--strong);letter-spacing:-.2px}
+.tete{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.tete .meta{font-size:13px;color:var(--muted);margin-right:auto;flex:1 1 320px}
+.btn{background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:7px 13px;font-size:14px;color:var(--strong);display:inline-flex;align-items:center;gap:7px}
+.btn:hover{border-color:var(--accent)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.p{color:#06231f}
+.btn.d{color:var(--danger);border-color:var(--dan10)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.s{padding:4px 10px;font-size:13px}
+.sec{padding:16px 18px;margin-bottom:16px}
+.sec h2{font-size:16px;margin:0;color:var(--strong)}
+.sh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sh .meta{font-size:12.5px;color:var(--muted)}
+.sh .dr{margin-left:auto;display:flex;gap:6px;align-items:center}
+.cmd{background:transparent;border:0;color:var(--muted);border-radius:8px;padding:2px 7px;font-size:14px}
+.cmd:hover{background:var(--acc10);color:var(--strong)}
+.sec.plie>:not(.sh){display:none}.sec.plie .sh{margin-bottom:0}
+.sec.plein{position:fixed;inset:14px;z-index:50;overflow:auto;margin:0;background:var(--solid)}
+.age{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.age::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.age.mu::before{background:var(--danger)}.age.mu{color:var(--danger)}
+/* verdict */
+.verdict{display:flex;gap:14px;align-items:stretch}
+.vm{width:5px;border-radius:4px;background:var(--ok);flex:none}.vm.w{background:var(--warn)}.vm.d{background:var(--danger)}.vm.n{background:var(--line2)}
+.verdict p{margin:0}.vt{font-size:19px;font-weight:700;color:var(--strong)}.vs{color:var(--soft);font-size:14px;margin-top:2px!important}
+.gestes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+/* jauges */
+.jauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.jg{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:11px 13px}
+.jg span{display:block;font-size:12.5px;color:var(--muted)}
+.jg b{display:block;font:650 24px/1.2 "JetBrains Mono",ui-monospace,monospace;color:var(--strong)}
+.jg b.w{color:var(--warn)}.jg b.d{color:var(--danger)}.jg b.mu{color:var(--muted)}
+.jg em{display:block;font-style:normal;font-size:12.5px;color:var(--soft)}
+.barre{height:5px;border-radius:3px;background:var(--line);margin:7px 0 4px;overflow:hidden}
+.barre i{display:block;height:100%;border-radius:3px;background:var(--accent);transition:width .6s}
+.barre i.w{background:var(--warn)}.barre i.d{background:var(--danger)}
+.courbe{width:100%;height:150px;display:block}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
+.leg i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}
+/* pastilles, lignes, paires */
+.pl{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:999px;padding:2px 9px;background:var(--line);color:var(--soft);white-space:nowrap}
+.pl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pl.ok{background:var(--ok10);color:var(--ok)}.pl.w{background:var(--warn10);color:var(--warn)}.pl.d{background:var(--dan10);color:var(--danger)}.pl.i{background:var(--inf10);color:var(--info)}
+.rows{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.2fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:9px 13px}
+.row .nm{min-width:0}.row .nm b{display:block;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}
+.row .nm small{color:var(--muted);font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .mil{font-size:13px;color:var(--soft);min-width:0;display:flex;align-items:center;gap:8px}
+.row .cote{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:760px){.row{grid-template-columns:1fr}.row .cote{justify-content:flex-start}}
+.paires{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2px 26px;margin:0}
+.paires div{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px;align-items:baseline}
+.paires dt{color:var(--muted);flex:0 0 118px;font-size:13px}.paires dd{margin:0;color:var(--strong);min-width:0}
+.paires dd small{display:block;color:var(--soft);font-size:12.5px}
+.vide{color:var(--muted);font-size:14px;padding:6px 0}
+.muet{background:var(--dan10);border:1px solid var(--line);border-radius:13px;padding:11px 14px;font-size:14px;color:var(--strong)}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px}
+input[type=search]{font:inherit;color:var(--strong);background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:6px 11px;min-width:0;width:220px}
+.pbar{flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden;min-width:60px}
+.pbar i{display:block;height:100%;background:var(--accent)}.pbar i.w{background:var(--warn)}.pbar i.d{background:var(--danger)}
+/* ce qui vit ailleurs */
+.tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px}
+.tuile{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:13px 14px;display:flex;flex-direction:column;gap:6px}
+.tuile .t{display:flex;align-items:center;gap:8px;color:var(--strong);font-weight:650}
+.tuile .t small{margin-left:auto;font-weight:500;color:var(--muted);font-size:12px}
+.tuile p{margin:0;font-size:14px;color:var(--soft)}
+.tuile .gestes{margin-top:auto;padding-top:6px}
+.puces{display:flex;gap:6px;flex-wrap:wrap}
+.puce{background:var(--solid);border:1px solid var(--line2);border-radius:10px;padding:3px 9px;font-size:12.5px;color:var(--strong)}
+.puce:hover{border-color:var(--accent)}
+/* la page d'ensemble : une tuile par sujet */
+.bandeau-v{padding:14px 18px;margin-bottom:6px}
+.bandeau-v .vt{font-size:18px}
+.note-sante{text-align:right;min-width:150px;cursor:help}
+.note-sante span,.note-sante em{display:block;font-size:12.5px;color:var(--muted);font-style:normal}
+.note-sante b{display:block;font-size:28px;line-height:1.1}.note-sante b small{font-size:13px;color:var(--muted)}
+.gt{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin:14px 4px 8px;font-weight:650;display:flex;align-items:center;gap:8px;min-height:26px}
+.gt .btn{margin-left:auto;text-transform:none;letter-spacing:0}
+.gt span{text-transform:none;letter-spacing:0;font-weight:500}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:10px}
+.tu{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 13px 10px;display:flex;flex-direction:column;gap:5px;cursor:pointer;box-shadow:var(--shadow);min-height:158px;min-width:0}
+.tu:hover{border-color:var(--accent);background:var(--solid)}
+.tu.ext{background:var(--surface2);box-shadow:none}
+.tu.mu>:not(.tt):not(.tp){opacity:.42;filter:grayscale(1)}
+.tu .tt{display:flex;align-items:center;gap:8px;color:var(--strong);font-size:14px;margin-bottom:2px}
+.tu .tt b{font-weight:650}.tu .tt .pl{margin-left:auto}
+.tu .gr{font:650 25px/1.1 "JetBrains Mono",ui-monospace,monospace;color:var(--strong)}
+.tu .gr.w{color:var(--warn)}.tu .gr.d{color:var(--danger)}.tu .gr.mu{color:var(--muted)}
+.tu .cc{display:flex;flex-direction:column;gap:5px}
+.tu .li{font-size:12.5px;color:var(--soft);display:flex;gap:8px;align-items:center;min-width:0}
+.tu .li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tu .li small{color:var(--muted)}
+.tu .li b{color:var(--strong);font-weight:600;font-size:12px;white-space:nowrap}
+.tu .mb{display:grid;grid-template-columns:74px 1fr 42px;gap:8px;align-items:center;font-size:12.5px;color:var(--soft)}
+.tu .mb b{text-align:right;font-size:12px}
+.tu .tp{margin-top:auto;padding-top:5px;font-size:12px;font-weight:600;color:var(--accent)}
+.tu.ext .tp{color:var(--muted)}
+.tu .puces{margin-top:2px}.tu .puce{padding:2px 7px;font-size:12px}
+.tu .btn.s{padding:2px 8px;font-size:12px}
+.grille.v{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
+.grille.v .tu{min-height:124px;padding:10px 10px 8px}
+.grille.v .tu .gr{font-size:21px}
+.grille.v .tu .tt{font-size:13px;flex-wrap:wrap;gap:6px}
+.grille.v .tu .tt svg.i{width:15px;height:15px}
+.grille.v .tu .tt .pl{font-size:11px;padding:1px 7px}
+.grille.v .tu .li{flex-wrap:wrap}
+.grille.v .tu .li .n{white-space:normal}
+/* la fiche de la machine : des blocs deux par deux */
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:16px;margin-bottom:16px;align-items:start}
+@media (max-width:560px){.duo{grid-template-columns:1fr}}
+.duo .paires.un dt{flex-basis:118px}
+/* l'appel à Cassandra, les filtres, le plan, la mémoire */
+.cass{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--acc10);border:1px solid var(--acc20);border-radius:12px;padding:4px 8px 4px 10px;font-size:13px;color:var(--accent)}
+.cass b{font-weight:650;margin-right:2px}.cass .puce{font-size:12.5px;padding:3px 9px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{background:transparent;border:1px solid var(--line2);border-radius:999px;padding:3px 11px;font-size:13px;color:var(--soft)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#06231f}
+.feuille h4{margin:14px 0 6px;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:650}
+.coche{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--txt);padding:4px 0}
+.coche input{accent-color:var(--accent);width:16px;height:16px}
+.plan{margin:0 0 12px;padding-left:22px;font-size:14px;color:var(--strong);display:grid;gap:6px}
+.pile{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--line);gap:2px}
+.pile i{display:block;height:100%}
+.dit{margin:0 0 4px;font-size:14px;color:var(--txt)}
+pre.jl{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:11.5px/1.5 "JetBrains Mono",ui-monospace,monospace;color:var(--txt);white-space:pre-wrap;word-break:break-word}
+/* la page Conteneurs : une ligne par conteneur, sa fiche au clic */
+.cts{display:grid;gap:6px}
+.ct{background:var(--surface2);border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.ct.ouvert{border-color:var(--acc20);background:var(--solid)}
+.ctl{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.25fr) minmax(0,1.15fr) 200px 14px;gap:14px;align-items:center;width:100%;text-align:left;background:transparent;border:0;padding:10px 13px}
+.ctl:hover{background:var(--acc10)}
+.ctl>span{min-width:0;display:flex;flex-direction:column;gap:2px}
+.ctl b,.ctl .mono{color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
+.ctl b{font-weight:650;font-size:14.5px}
+.ctl small{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctl .c3{flex-direction:row;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.ctl .c3 small{flex:1 1 100%}
+.ctl .c4{align-items:flex-end}
+.ctl .chev{color:var(--muted);transition:transform .2s}
+.ct.ouvert .ctl .chev{transform:rotate(90deg)}
+.pc{font:600 12px "JetBrains Mono",ui-monospace,monospace;border:1px solid var(--line2);border-radius:7px;padding:1px 6px;color:var(--strong);background:var(--solid)}
+.pc.w{border-color:var(--warn);color:var(--warn);background:var(--warn10)}
+.ctf{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:4px 26px;padding:6px 16px 14px;border-top:1px solid var(--line)}
+.ctf .bloc{min-width:0;padding-top:8px}
+.ctf h3{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:0 0 4px;font-weight:650}
+.ctf h3 .ac{text-transform:uppercase}
+.ctf table.ptab{font-size:13px}.ctf table.ptab th{font-size:11px;padding:4px 6px}.ctf table.ptab td{padding:5px 6px;font-weight:500;color:var(--txt);white-space:nowrap}
+.ctf table.ptab td:first-child{font-weight:500}
+.paires.un{grid-template-columns:1fr}
+.paires.un div{padding:5px 0;font-size:13.5px}.paires.un dt{flex-basis:104px}
+.paires.un dd small{display:inline;margin-left:4px}
+.chemin{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:13px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.chemin .fl{color:var(--muted);font-size:12px}
+.ctf a,.note a{color:var(--accent);cursor:pointer}
+@media (max-width:860px){.ctl{grid-template-columns:1fr}.ctl .c4{align-items:flex-start}.ctl .chev{display:none}}
+.lk{cursor:pointer;background:none;border:0;padding:0;color:var(--soft);font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px}
+.lk:hover{color:var(--accent)}
+.tu.det{border-style:dashed}
+.tu.det .tp{color:var(--accent)}
+.pt{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:4px}.pt.d{background:var(--danger)}
+.pied{font-size:13px;color:var(--muted);margin:14px 4px 0}
+.pied a,.fil a{color:var(--accent);cursor:pointer}
+/* tableau de correspondance */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line2)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{color:var(--strong);font-weight:650;white-space:nowrap}
+/* feuille et toast */
+.voile{position:fixed;inset:0;background:rgba(16,24,40,.34);z-index:80;display:none;align-items:center;justify-content:center;padding:16px}
+.voile.on{display:flex}
+.feuille{background:var(--solid);border-radius:16px;box-shadow:var(--lift);max-width:620px;width:100%;padding:18px 20px;max-height:86vh;overflow:auto}
+.feuille h3{margin:0 0 4px;color:var(--strong);font-size:17px}
+.feuille p{margin:0 0 12px;color:var(--soft);font-size:14px}
+.feuille pre{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:10px 12px;font:12px/1.55 "JetBrains Mono",ui-monospace,monospace;overflow:auto;max-height:46vh;color:var(--txt)}
+.feuille .gestes{justify-content:flex-end}
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--strong);color:var(--bg);padding:9px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;z-index:90;max-width:min(680px,92vw)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+/* ── propre à cette maquette ── */
+.haut button[aria-pressed="true"]{background:#fff;color:#0a726b}
+.mi.neuf-mi span:first-of-type::after{content:" ●";color:var(--accent);font-size:10px;vertical-align:2px}
+.mi.parti{color:var(--muted);text-decoration:line-through}
+.dl{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 16px;margin:0;font-size:14px}
+.dl dt{color:var(--muted)}.dl dd{margin:0;color:var(--strong)}
+.dl dd .btn{margin-left:8px;vertical-align:1px}
+.onglets{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 14px}
+.onglets span{padding:7px 12px;font-size:14px;color:var(--muted);border-bottom:2px solid transparent}
+.onglets span.on{color:var(--accent);border-color:var(--accent);font-weight:650}
+.fiche-site{border:1px dashed var(--acc20);border-radius:14px;padding:14px 16px;background:var(--surface2)}
+.liens{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.deja-bloc{opacity:.62}
+.feuille pre{white-space:pre-wrap;word-break:break-all}
+</style>
+</head>
+<body>
+<div class="haut">
+  <b>Maquette</b><span class="note">Hébergement éclaté · Panel Detect · rien n'est écrit</span>
+  <span class="seg" role="group" aria-label="Données montrées">
+    <button id="d-argos" aria-pressed="true" onclick="donnees(false)">Argos aujourd'hui</button>
+    <button id="d-ex" aria-pressed="false" onclick="donnees(true)">Avec des sites clients (exemple)</button>
+  </span>
+  <button onclick="theme()">Thème</button>
+</div>
+<div class="app">
+  <nav class="menu carte" id="menu" aria-label="Menu de l'application"></nav>
+  <main id="page"></main>
+</div>
+<div class="voile" id="voile" onclick="if(event.target===this)fermer()"><div class="feuille" id="feuille" role="dialog" aria-modal="true"></div></div>
+<div id="toast" role="status"></div>
+<script>
+const $ = id => document.getElementById(id);
+const E = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const pill = (t, c) => `<span class="pl ${c || ''}">${E(t)}</span>`;
+const neuf = '<span class="neuf">nouveau</span>', creer = t => `<span class="ac">${t || 'à créer'}</span>`, deja = t => `<span class="de">${E(t || 'déjà là')}</span>`;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 3800); }
+const sec = (titre, meta, corps, droite = '') => `<section class="carte sec"><div class="sh"><h2>${titre}</h2><span class="meta">${meta}</span><span class="dr">${droite}</span></div>${corps}</section>`;
+const ligne = (nm, sous, mil, cote, js) => `<div class="row" ${js ? `style="cursor:pointer" onclick="${js}"` : ''}><div class="nm"><b>${nm}</b><small>${sous}</small></div><div class="mil" style="white-space:normal">${mil}</div><div class="cote">${cote}</div></div>`;
+const vide = (t, s) => `<div class="vide"><b>${E(t)}</b> ${E(s)}</div>`;
+const via = '<span class="age">via FastPanel · lu il y a 12 s</span>';
+
+// ───────────────────────────── les données : Argos tel qu'il est (lu le 12-11-2026), ou un exemple
+const ARGOS = {
+  sites: [{d: 'chat.cassandra.center', u: 'fastuser', php: '', proxy: 'proxy → l’interface de Cassandra', cert: 81, disque: '0,02 Mo', copie: ''},
+          {d: 'netbird.cassandra.center', u: 'fastuser', php: '', proxy: 'proxy → le serveur NetBird', cert: 87, disque: '0,02 Mo', copie: ''}],
+  bases: [], boites: [], renvois: [], ftp: [],
+  comptes: [{c: 'fastuser', role: 'super-administrateur', ssh: true, sites: 2, bases: 0, cree: '31-10-2026', lie: 'le premier compte de Cassandra'}],
+};
+const EXEMPLE = {
+  sites: [{d: 'boutique.exemple.test', u: 'client1', php: '8.3', cert: 54, disque: '2,1 Go', copie: 'cette nuit'},
+          {d: 'atelier.exemple.test', u: 'client2', php: '7.4', fin: 'n’est plus maintenu depuis le 28-11-2022', cert: 80, disque: '3,4 Go', copie: ''},
+          {d: 'chat.cassandra.center', u: 'fastuser', php: '', proxy: 'proxy → l’interface de Cassandra', cert: 81, disque: '0,02 Mo', copie: 'cette nuit'}],
+  bases: [{n: 'boutique_wp', u: 'client1', site: 'boutique.exemple.test', taille: '412 Mo', copie: 'cette nuit'},
+          {n: 'atelier_db', u: 'client2', site: 'atelier.exemple.test', taille: '1,3 Go', copie: ''},
+          {n: 'boutique_stats', u: 'client1', site: 'boutique.exemple.test', taille: '18 Mo', copie: 'cette nuit'}],
+  boites: [{b: 'contact@boutique.exemple.test', util: '1,84 Go', quota: '2 Go', pct: 92}, {b: 'commandes@boutique.exemple.test', util: '210 Mo', quota: '1 Go', pct: 21}, {b: 'bonjour@atelier.exemple.test', util: '230 Mo', quota: '1 Go', pct: 23}],
+  renvois: [{de: 'ventes@boutique.exemple.test', vers: 'contact@boutique.exemple.test'}],
+  ftp: [{f: 'client1_ftp', dossier: '/var/www/client1/data', dernier: 'il y a 3 jours'}, {f: 'client2_ftp', dossier: '/var/www/client2/data', dernier: 'jamais'}],
+  comptes: [{c: 'fastuser', role: 'super-administrateur', ssh: true, sites: 1, bases: 0, cree: '31-10-2026', lie: 'le premier compte de Cassandra'},
+            {c: 'client1', role: 'utilisateur', ssh: false, sites: 1, bases: 2, cree: '02-11-2026', lie: ''}, {c: 'client2', role: 'utilisateur', ssh: true, sites: 1, bases: 1, cree: '05-11-2026', lie: ''}],
+};
+const S = {ex: false, page: 'menu', site: 0};
+const D = () => S.ex ? EXEMPLE : ARGOS;
+
+// ───────────────────────────── le menu de l'application, tel qu'il serait
+function menu(){
+  const it = (p, t, cls, bad) => `<button class="mi ${cls || ''}" ${S.page === p ? 'aria-current="page"' : ''} onclick="aller('${p}')"><span>${t}</span>${bad ? `<span class="bad">${bad}</span>` : ''}</button>`;
+  const fixe = t => `<div class="mi inerte" style="cursor:default"><span>${t}</span></div>`;
+  $('menu').innerHTML = `<h2>La maquette</h2>${it('menu', 'Ce qui change dans le menu')}
+    <h2>Parc</h2>${fixe('Panorama')}${fixe('Flotte')}${it('site', 'Sites › la fiche d’un site', '', 'PHP')}${fixe('Zones DNS')}
+    ${it('bases', 'Bases de données', 'neuf-mi', String(D().bases.length))}${it('email', 'Gestion e-mail', 'neuf-mi', String(D().boites.length))}${fixe('Automatismes')}
+    <div class="mi parti" style="cursor:default"><span>Hébergement</span></div>
+    <h2>Sécurité</h2>${it('acces', 'Sécurité › Accès', '', '+2')}${fixe('Certificats')}${fixe('Sauvegardes')}
+    <h2>Paramètres</h2>${it('detect', 'Panel Detect', 'neuf-mi')}
+    <div class="legende"><div><span class="neuf">nouveau</span>n’existe pas aujourd’hui</div><div><span class="de">déjà là</span>existe déjà</div><div><span class="ac">à créer</span>demande du code</div><div><span class="ac">à trancher</span>ta décision</div></div>`;
+}
+const tete = (fil, titre, meta) => `<p class="fil">${fil}</p><div class="tete"><h1>${E(titre)}</h1><span class="meta">${meta || ''}</span></div>`;
+
+// ───────────────────────────── les pages
+const PAGES = {
+  menu(){
+    const R = [
+      ['Hébergement › Domaines', 'Sites', 'déjà là', 'la liste des sites, nourrie par le panneau'],
+      ['Hébergement › PHP', 'Sites › la fiche d’un site', 'à créer', 'la version du site, et le geste pour en changer'],
+      ['Hébergement › Bases', 'Bases de données', 'nouveau', 'un module à lui'],
+      ['Hébergement › Courrier', 'Gestion e-mail', 'nouveau', 'un module à lui'],
+      ['Hébergement › FTP · Comptes du panneau', 'Sécurité › Accès', 'à créer', 'qui peut entrer sur la machine'],
+      ['Hébergement › Certificats', 'Certificats', 'déjà là', ''], ['Hébergement › DNS', 'Zones DNS', 'déjà là', ''], ['Hébergement › Sauvegardes', 'Sauvegardes', 'déjà là', ''],
+      ['Hébergement › Crons', 'Automatismes', 'déjà là', ''], ['Hébergement › Analyses antivirus', 'Sécurité › Outils', 'déjà là', 'à côté de ClamAV, Lynis et Trivy'],
+      ['Hébergement › Services · Statistiques', 'Panorama › La machine', 'déjà là', ''],
+      ['Hébergement › Opérations', 'chacune dans son module ; le reste dans Panel Detect', 'à créer', ''],
+      ['Hébergement › Vue d’ensemble', 'Panorama', 'déjà là', 'le verdict de la machine compte déjà les sites, les certificats, les copies'],
+      ['—', 'Panel Detect', 'nouveau', 'reconnaît le panneau, relie chaque module à lui'],
+    ];
+    const tag = t => t === 'nouveau' ? neuf : t === 'déjà là' ? deja() : creer();
+    return tete('La maquette', 'Ce qui change dans le menu', 'l’onglet Hébergement disparaît ; rien de ce qu’il montrait ne se perd')
+      + sec('Où va chaque morceau', R.length + ' lignes', `<table><thead><tr><th>Aujourd’hui</th><th>Demain</th><th></th><th>Ce que c’est</th></tr></thead><tbody>${R.map(r => `<tr><td style="white-space:normal">${E(r[0])}</td><td><b>${E(r[1])}</b></td><td>${tag(r[2])}</td><td style="color:var(--soft)">${E(r[3])}</td></tr>`).join('')}</tbody></table>`)
+      + `<p class="note">Une entrée n’est dans le menu que si le panneau détecté sert la fonction : avec un panneau sans courrier, pas de « Gestion e-mail ». Sans panneau du tout, ni « Bases de données » ni « Gestion e-mail ». ${creer()}</p>`;
+  },
+  site(){
+    const L = D().sites, s = L[S.site] || L[0];
+    const php = s.php ? `${E(s.php)}${s.fin ? ` <b style="color:var(--danger)">${E(s.fin)}</b>` : ' <span class="note" style="margin:0">maintenu</span>'}<button class="btn s ${s.fin ? 'p' : ''}" onclick="changerPhp('${E(s.d)}','${E(s.php)}')">Changer de version</button> ${creer()}` : `<span style="color:var(--soft)">sans PHP · ${E(s.proxy)}</span>`;
+    const bs = D().bases.filter(b => b.site === s.d), bx = D().boites.filter(b => b.b.endsWith('@' + s.d));
+    return tete('Parc › Sites › ' + E(s.d), s.d, 'la fiche d’un site · onglet « Sur le serveur » (aujourd’hui « Hébergement ») ' + creer('à trancher'))
+      + `<div class="chips">${L.map((x, i) => `<button class="chip" aria-pressed="${i === S.site}" onclick="S.site=${i};rendre()">${E(x.d)}</button>`).join('')}</div>`
+      + `<section class="carte sec"><div class="onglets"><span>Aperçu</span><span>Disponibilité</span><span class="on">Sur le serveur</span><span>Sécurité</span><span>Liens</span><span>Journal</span></div>
+        <div class="fiche-site"><dl class="dl">
+          <dt>compte du panneau</dt><dd>${E(s.u)} ${deja()}</dd>
+          <dt>espace disque</dt><dd>${E(s.disque)} de fichiers ${deja()}</dd>
+          <dt>PHP</dt><dd>${php}</dd>
+          <dt>bases</dt><dd>${bs.length ? bs.map(b => `<span class="mono">${E(b.n)}</span> · ${E(b.taille)}`).join(' ; ') : '<span class="note" style="margin:0">aucune base</span>'} ${deja()}</dd>
+          <dt>e-mail</dt><dd>${bx.length ? bx.length + ' boîte' + (bx.length > 1 ? 's' : '') : '<span class="note" style="margin:0">aucune boîte sur ce nom</span>'} ${deja()}</dd>
+          <dt>sauvegarde</dt><dd>${s.copie ? 'dernière copie ' + E(s.copie) : '<span style="color:var(--danger)">aucune copie</span>'} ${deja()}</dd>
+        </dl>
+        <div class="liens"><button class="btn s" onclick="aller('bases')">Ses bases ↗ Bases de données</button><button class="btn s" onclick="aller('email')">Ses boîtes ↗ Gestion e-mail</button><button class="btn s" onclick="toast('Ouvre Sauvegardes (hors maquette).')">Ses copies ↗ Sauvegardes</button></div>
+        <p class="note">Aujourd’hui cet onglet finit par « Ouvrir Hébergement » ; demain, ces trois liens mènent chacun au module qui tient la chose. ${creer()}</p></div></section>`;
+  },
+  bases(){
+    const L = D().bases;
+    const corps = L.length ? `<div class="rows">${L.map(b => ligne(`<span class="mono">${E(b.n)}</span>`, `${E(b.u)} · liée à ${E(b.site)}`, `${E(b.taille)} · ${b.copie ? 'copiée ' + E(b.copie) : '<span style="color:var(--danger)">jamais copiée</span>'}`, `<button class="btn s" onclick="event.stopPropagation();toast('Ouvre phpMyAdmin sur ${E(b.n)} (hors maquette).')">phpMyAdmin</button><button class="btn s d" onclick="event.stopPropagation();supprimerBase('${E(b.n)}')">Supprimer</button>`)).join('')}</div>`
+      : vide('Aucune base sur le panneau · lecture réussie.', 'Les deux sites d’Argos sont des proxys : ils n’en ont pas besoin.');
+    return tete('Parc › Bases de données', 'Bases de données', 'nouveau module ' + neuf + ' · via le panneau détecté')
+      + sec('Les bases', L.length ? L.length + ' · ' + via : via, corps, `<button class="btn s p" onclick="creerBase()">Créer une base</button>`)
+      + `<p class="note">Les gestes viennent de l’onglet Hébergement d’aujourd’hui (créer, supprimer avec une copie avant, phpMyAdmin) ${deja()} ; le module passe par Panel Detect pour parler au panneau ${creer()}.</p>`;
+  },
+  email(){
+    const B = D().boites, R = D().renvois;
+    const corps = B.length ? `<div class="rows">${B.map(b => ligne(E(b.b), 'boîte', `<span class="pbar" style="display:inline-block;width:120px;vertical-align:middle"><i class="${b.pct >= 90 ? 'd' : b.pct >= 75 ? 'w' : ''}" style="width:${b.pct}%"></i></span> ${E(b.util)} sur ${E(b.quota)}`, b.pct >= 90 ? pill('presque pleine', 'd') : '')).join('')}</div>`
+      : vide('Aucune boîte e-mail sur le panneau · lecture réussie.', 'Argos n’héberge aucune boîte : le menu montre l’entrée parce que FastPanel sait le faire.');
+    return tete('Parc › Gestion e-mail', 'Gestion e-mail', 'nouveau module ' + neuf + ' · les boîtes hébergées sur le serveur (« Courrier » reste ta messagerie)')
+      + sec('Les boîtes', B.length ? B.length + ' · ' + via : via, corps)
+      + sec('Les renvois', R.length + '', R.length ? `<div class="rows">${R.map(r => ligne(E(r.de), 'renvoi', '→ ' + E(r.vers), '')).join('')}</div>` : vide('Aucun renvoi.', ''))
+      + `<p class="note">Plus tard, à côté de chaque domaine : SPF, DKIM et DMARC vérifiés avec Zones DNS. ${creer('à trancher')}</p>`;
+  },
+  acces(){
+    const C = D().comptes, F = D().ftp;
+    const comptes = `<div class="rows">${C.map(c => ligne(`<span class="mono">${E(c.c)}</span>`, `${E(c.role)} · créé le ${E(c.cree)}`, `${c.sites} site${c.sites > 1 ? 's' : ''} · ${c.bases} base${c.bases > 1 ? 's' : ''}${c.lie ? ' · lié à ' + E(c.lie) : ''}`, `${pill(c.ssh ? 'SSH ouvert' : 'sans SSH', c.ssh ? 'i' : '')}<button class="btn s" onclick="toast('Ses clés SSH : relues dans authorized_keys (hors maquette).')">Clés SSH</button>${c.lie ? '' : '<button class="btn s" onclick="toast(\'Lier à un compte Cassandra (module Comptes, hors maquette).\')">Lier</button>'}`)).join('')}</div>`;
+    const ftp = F.length ? `<div class="rows">${F.map(f => ligne(`<span class="mono">${E(f.f)}</span>`, E(f.dossier), 'dernière connexion ' + E(f.dernier), f.dernier === 'jamais' ? pill('jamais utilisé', 'w') : '')).join('')}</div>` : vide('Aucun compte FTP · lecture réussie.', 'Personne n’entre en FTP sur Argos.');
+    return tete('Sécurité › Accès', 'Accès', 'qui peut entrer sur la machine')
+      + `<div class="deja-bloc">${sec('SSH', 'mots de passe, root, X11, port ' + deja(), '<p class="note" style="margin:0">inchangé</p>')}${sec('Clés autorisées · comptes système · sessions', deja(), '<p class="note" style="margin:0">inchangé</p>')}</div>`
+      + sec('Comptes du panneau', C.length + ' · ' + via + ' ' + neuf, comptes)
+      + sec('Comptes FTP', (F.length || 'aucun') + ' · ' + via + ' ' + neuf, ftp)
+      + `<p class="note">Ces deux blocs viennent de l’onglet Hébergement d’aujourd’hui (comptes, clés SSH, liens Cassandra, FTP) ${deja()} : ils rejoignent SSH et les sessions, parce que ce sont tous des portes d’entrée. Le verrou de « fastuser » reste : tant que FastPanel est là, il n’est pas retiré.</p>`;
+  },
+  detect(){
+    const routes = [['Sites', 'la liste des sites, leur PHP, leurs bases et boîtes'], ['Certificats', 'émettre et renouveler'], ['Zones DNS', 'les zones servies par la machine'], ['Sauvegardes', 'copier un site ou une base'],
+      ['Bases de données', 'lister, créer, supprimer'], ['Gestion e-mail', 'boîtes et renvois'], ['Sécurité', 'pare-feu, comptes du panneau, FTP, antivirus'], ['Automatismes', 'les crons posés par le panneau'],
+      ['NetBird', 'publier ses routes web'], ['Panorama', 'les chiffres de l’hébergement'], ['Comptes', 'lier un compte, son portrait']];
+    return tete('Paramètres › Panel Detect', 'Panel Detect', 'nouveau module ' + neuf + ' · il se voit peu : il relie')
+      + `<section class="carte sec"><div class="verdict"><span class="vm"></span><div style="flex:1"><p class="vt">FastPanel détecté, piloté par son module</p><p class="vs">Preuves : /usr/local/fastpanel2 · service fastpanel2 actif · interface sur le port 8888. Vérifié à chaque passe du Sensorium. Si un jour la machine porte un autre panneau, son module prend la place, et les modules ci-dessous n’en savent rien.</p></div></div></section>`
+      + sec('Qui passe par lui', routes.length + ' modules ' + creer(), `<div class="rows">${routes.map(r => ligne(E(r[0]), E(r[1]), '', pill('par FastPanel', 'ok'))).join('')}</div><p class="note">Aujourd’hui, ces modules appellent FastPanel directement ; demain ils demandent à Panel Detect. Changer de panneau ne touchera qu’un module.</p>`)
+      + sec('Opérations du panneau', 'ce qu’aucun autre module ne fait · réservé à l’administrateur ' + deja('déjà là (catalogue mogwai)'), '<p class="note" style="margin:0">Le catalogue d’aujourd’hui, moins les opérations reprises par Bases de données, Gestion e-mail, Certificats et Sauvegardes.</p>')
+      + sec('Le catalogue des modules de panneau', 'il grandit avec le temps', `<div class="rows">${ligne('Module FastPanel', 'installé', 'celui d’Argos', deja())}${ligne('Module HestiaCP, CloudPanel…', 'à écrire au besoin', 'les dossiers de recherche sont prêts', creer('plus tard'))}</div>`)
+      + sec('Sans panneau', '', '<p class="note" style="margin:0">Le guide d’installation du dépôt le dit : d’abord le panneau, ensuite Cassandra. Sans panneau, Bases de données et Gestion e-mail ne sont pas dans le menu ; Sites, Certificats, Sauvegardes et Sécurité font avec ce que Cassandra sait faire seule.</p>');
+  },
+};
+function changerPhp(d, v){ $('feuille').innerHTML = `<h3>Changer la version PHP de ${E(d)}</h3><p>Aujourd’hui ${E(v)}. Proposé : 8.3, la plus récente que le panneau sert.</p><dl><dt>Ce qui sera lancé</dt><dd><pre>par Panel Detect → le module FastPanel → la version PHP du site (à vérifier dans mogwai)</pre></dd><dt>La preuve</dt><dd>la page de test du site répond avec la nouvelle version</dd><dt>Pour défaire</dt><dd>revenir à ${E(v)}, proposé dans les gestes de la session</dd></dl><div class="gestes"><button class="btn" onclick="fermer()">Annuler</button><button class="btn p" onclick="fermer();toast('Version changée (hors maquette).')">Passer en 8.3</button></div>`; $('voile').classList.add('on'); }
+function creerBase(){ $('feuille').innerHTML = `<h3>Créer une base</h3><p>Pour quel site, et sous quel compte du panneau ? Le geste existe déjà dans l’onglet Hébergement d’aujourd’hui.</p><div class="gestes"><button class="btn" onclick="fermer()">Annuler</button><button class="btn p" onclick="fermer();toast('Base créée (hors maquette).')">Créer</button></div>`; $('voile').classList.add('on'); }
+function supprimerBase(n){ $('feuille').innerHTML = `<h3>Supprimer la base ${E(n)} ?</h3><p>Une copie est faite et vérifiée d’abord ; sans elle, rien ne part. Pour défaire : restaurer cette copie.</p><div class="gestes"><button class="btn" onclick="fermer()">Annuler</button><button class="btn p d" onclick="fermer();toast('Base supprimée après copie (hors maquette).')">Supprimer</button></div>`; $('voile').classList.add('on'); }
+function fermer(){ $('voile').classList.remove('on'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fermer(); });
+function donnees(ex){ S.ex = ex; S.site = 0; $('d-argos').setAttribute('aria-pressed', !ex); $('d-ex').setAttribute('aria-pressed', ex); rendre(); }
+function aller(p){ S.page = p; rendre(); scrollTo({top: 0}); try { history.replaceState(null, '', '#' + p + (S.ex ? '/exemple' : '')); } catch (e) {} }
+function theme(){ const r = document.documentElement, sombre = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches; r.dataset.theme = sombre ? 'light' : 'dark'; }
+function rendre(){ menu(); $('page').innerHTML = PAGES[S.page](); }
+const depart = location.hash.slice(1).split('/');
+if (PAGES[depart[0]]) S.page = depart[0];
+if (depart.includes('exemple')) { S.ex = true; $('d-argos').setAttribute('aria-pressed', 'false'); $('d-ex').setAttribute('aria-pressed', 'true'); }
+const si = depart.find(x => /^s\d$/.test(x)); if (si) S.site = +si[1];
+rendre();
+</script>
+</body>
+</html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : une maquette, aucun code de Cassandra ne la charge -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : docs/CN_maquette-hebergement.html (les recherches sur les panneaux, les routes) ; interface/CN_sites-ecran.js (onglet heberg de la fiche) ; interface/CN_app.js (scAcces) -->

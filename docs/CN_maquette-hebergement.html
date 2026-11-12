@@ -1,0 +1,838 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Maquette : Hébergement, quel que soit le panneau (refonte de l'onglet) -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : la refonte proposée de l'onglet Hébergement : Panel Detect reconnaît le panneau installé, propose son module et nomme le menu « Hébergement (panneau) » ; un même écran pour chaque module de panneau ; à valider avant tout code. -->
+<!-- MÉTHODE    : un seul fichier autonome, la feuille de style de CN_maquette-systeme.html ; sept états de machine (sélecteur), le même écran sous chaque panneau avec ses seuls contrôles, chaque geste avec la commande exacte de chaque panneau, d'après quatre dossiers de recherche. -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=53e6f7 ▼▼▼ -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Hébergement (panneau détecté)</title>
+<!--
+  REFONTE DE L'ONGLET « HÉBERGEMENT », version 3 (12-11-2026, décision d'Atek) :
+  - le panneau s'installe AVANT Cassandra (conseil du guide d'installation du dépôt) ; Cassandra n'installe jamais de panneau, elle le pilote ;
+  - un petit module, PANEL DETECT, reconnaît le panneau installé, propose son module au catalogue (module Modules, famille « hebergement »)
+    et donne son nom au menu : « Hébergement (FastPanel) » — la parenthèse suit le panneau détecté ;
+  - chaque module de panneau a le MÊME écran Hébergement (celui de FastPanel aujourd'hui), et n'y offre que les contrôles que son panneau permet.
+  Données fictives (sélecteur en haut). Aucun geste n'écrit.
+-->
+<style>
+/* ── commune avec la maquette « La machine » (CN_maquette-systeme.html) ── */
+:root{
+  --bg:#eef1f5; --bg2:#e9edf3; --surface:rgba(255,255,255,.72); --surface2:rgba(255,255,255,.5); --solid:#fff;
+  --line:rgba(16,24,40,.09); --line2:rgba(16,24,40,.16);
+  --strong:#101828; --txt:#2b3646; --soft:#5a6675; --muted:#667080;
+  --accent:#0a726b; --accent2:#0f9b90; --acc10:rgba(11,124,116,.10); --acc20:rgba(11,124,116,.20); --violet:#6d3fd1;
+  --ok:#047857; --warn:#b45309; --danger:#be123c; --info:#0369a1;
+  --ok10:rgba(4,120,87,.10); --warn10:rgba(180,83,9,.11); --dan10:rgba(190,18,60,.09); --inf10:rgba(3,105,161,.10);
+  --shadow:0 6px 24px rgba(16,24,40,.07),0 1px 2px rgba(16,24,40,.05); --lift:0 14px 40px rgba(16,24,40,.14),0 2px 6px rgba(16,24,40,.06);
+  --r:16px; --barre:linear-gradient(135deg,#0a726b,#0f9b90);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0e1417; --bg2:#111a1e; --surface:rgba(28,38,44,.78); --surface2:rgba(28,38,44,.5); --solid:#182228;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.17);
+  --strong:#f1f5f7; --txt:#d3dbe0; --soft:#a6b2ba; --muted:#93a0a9;
+  --accent:#3fc7ba; --accent2:#2aa99d; --acc10:rgba(63,199,186,.12); --acc20:rgba(63,199,186,.22); --violet:#a78bfa;
+  --ok:#34d399; --warn:#f0a94a; --danger:#fb7185; --info:#5cb8e6;
+  --ok10:rgba(52,211,153,.12); --warn10:rgba(240,169,74,.13); --dan10:rgba(251,113,133,.13); --inf10:rgba(92,184,230,.12);
+  --shadow:0 6px 24px rgba(0,0,0,.3); --lift:0 14px 40px rgba(0,0,0,.5); --barre:linear-gradient(135deg,#0b4f4a,#0d6b63);
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1417; --bg2:#111a1e; --surface:rgba(28,38,44,.78); --surface2:rgba(28,38,44,.5); --solid:#182228;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.17);
+  --strong:#f1f5f7; --txt:#d3dbe0; --soft:#a6b2ba; --muted:#93a0a9;
+  --accent:#3fc7ba; --accent2:#2aa99d; --acc10:rgba(63,199,186,.12); --acc20:rgba(63,199,186,.22); --violet:#a78bfa;
+  --ok:#34d399; --warn:#f0a94a; --danger:#fb7185; --info:#5cb8e6;
+  --ok10:rgba(52,211,153,.12); --warn10:rgba(240,169,74,.13); --dan10:rgba(251,113,133,.13); --inf10:rgba(92,184,230,.12);
+  --shadow:0 6px 24px rgba(0,0,0,.3); --lift:0 14px 40px rgba(0,0,0,.5); --barre:linear-gradient(135deg,#0b4f4a,#0d6b63);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:linear-gradient(160deg,var(--bg2),var(--bg) 40%,var(--bg2));background-attachment:fixed;color:var(--txt);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+.mono,code,.num{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+code{font-size:.92em;color:var(--strong)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+svg.i{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* barre de la maquette */
+.haut{background:var(--barre);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px;position:sticky;top:0;z-index:30;flex-wrap:wrap}
+.haut b{font-weight:650}
+.haut .note{font-size:12.5px;opacity:.9;margin:0 auto 0 0;color:#fff}
+.haut button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:10px;padding:6px 11px;font-size:13px}
+.haut button[aria-pressed="true"]{background:#fff;color:#0a726b}
+.seg{display:inline-flex;gap:2px;background:rgba(255,255,255,.12);padding:3px;border-radius:12px}
+.seg button{border:0;background:transparent}
+/* disposition */
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);gap:18px;max-width:1380px;margin:0 auto;padding:18px 16px 60px}
+@media (max-width:900px){.app{grid-template-columns:1fr}.menu{position:static!important;max-height:none!important}}
+.carte{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+/* menu de gauche */
+.menu{position:sticky;top:66px;align-self:start;padding:8px;max-height:calc(100vh - 84px);overflow:auto}
+.menu h2{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin:10px 12px 6px;font-weight:650}
+.mi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;border-radius:12px;padding:8px 12px;color:var(--txt);position:relative}
+.mi:hover{background:var(--acc10)}
+.mi svg.i{opacity:.75}
+.mi .chev{margin-left:auto;color:var(--muted);transition:transform .2s;font-size:12px}
+.mi[aria-expanded="true"]{font-weight:650;color:var(--strong)}
+.mi[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.mi.inerte{color:var(--muted)}
+.sous{margin:2px 0 6px 21px;padding-left:8px;border-left:2px solid var(--acc20);display:grid;gap:1px}
+.sous .mi{padding:6px 10px;font-size:14px}
+.sous .sous{margin-left:14px}
+.sous .sous .mi{font-size:13.5px}
+.mi[aria-current="page"]{background:var(--solid);box-shadow:var(--shadow);color:var(--accent);font-weight:650}
+.bad{margin-left:auto;white-space:nowrap;font-size:11.5px;border-radius:999px;padding:1px 8px;background:var(--line);color:var(--soft);font-weight:600}
+.bad.w{background:var(--warn10);color:var(--warn)}.bad.d{background:var(--dan10);color:var(--danger)}.bad.ok{background:var(--ok10);color:var(--ok)}
+.legende{margin:12px 6px 4px;padding:10px 6px 6px;border-top:1px solid var(--line);font-size:12px;color:var(--soft);display:grid;gap:6px}
+.de,.neuf,.ac{font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-radius:6px;padding:1px 5px;margin-left:6px;font-weight:650;white-space:nowrap;vertical-align:1px}
+.de{background:var(--inf10);color:var(--info)}.neuf{background:var(--acc10);color:var(--accent)}.ac{background:var(--warn10);color:var(--warn)}
+.legende .de,.legende .neuf,.legende .ac{margin-left:0;margin-right:6px}
+/* page */
+.fil{font-size:13px;color:var(--muted);margin:2px 0 6px}
+h1{font-size:26px;margin:0 0 4px;color:var(--strong);letter-spacing:-.2px}
+.tete{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.tete .meta{font-size:13px;color:var(--muted);margin-right:auto;flex:1 1 320px}
+.btn{background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:7px 13px;font-size:14px;color:var(--strong);display:inline-flex;align-items:center;gap:7px}
+.btn:hover{border-color:var(--accent)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.p{color:#06231f}
+.btn.d{color:var(--danger);border-color:var(--dan10)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.s{padding:4px 10px;font-size:13px}
+.sec{padding:16px 18px;margin-bottom:16px}
+.sec h2{font-size:16px;margin:0;color:var(--strong)}
+.sh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sh .meta{font-size:12.5px;color:var(--muted)}
+.sh .dr{margin-left:auto;display:flex;gap:6px;align-items:center}
+.cmd{background:transparent;border:0;color:var(--muted);border-radius:8px;padding:2px 7px;font-size:14px}
+.cmd:hover{background:var(--acc10);color:var(--strong)}
+.sec.plie>:not(.sh){display:none}.sec.plie .sh{margin-bottom:0}
+.sec.plein{position:fixed;inset:14px;z-index:50;overflow:auto;margin:0;background:var(--solid)}
+.age{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.age::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.age.mu::before{background:var(--danger)}.age.mu{color:var(--danger)}
+/* verdict */
+.verdict{display:flex;gap:14px;align-items:stretch}
+.vm{width:5px;border-radius:4px;background:var(--ok);flex:none}.vm.w{background:var(--warn)}.vm.d{background:var(--danger)}.vm.n{background:var(--line2)}
+.verdict p{margin:0}.vt{font-size:19px;font-weight:700;color:var(--strong)}.vs{color:var(--soft);font-size:14px;margin-top:2px!important}
+.gestes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+/* jauges */
+.jauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.jg{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:11px 13px}
+.jg span{display:block;font-size:12.5px;color:var(--muted)}
+.jg b{display:block;font:650 24px/1.2 "JetBrains Mono",ui-monospace,monospace;color:var(--strong)}
+.jg b.w{color:var(--warn)}.jg b.d{color:var(--danger)}.jg b.mu{color:var(--muted)}
+.jg em{display:block;font-style:normal;font-size:12.5px;color:var(--soft)}
+.barre{height:5px;border-radius:3px;background:var(--line);margin:7px 0 4px;overflow:hidden}
+.barre i{display:block;height:100%;border-radius:3px;background:var(--accent);transition:width .6s}
+.barre i.w{background:var(--warn)}.barre i.d{background:var(--danger)}
+.courbe{width:100%;height:150px;display:block}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
+.leg i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}
+/* pastilles, lignes, paires */
+.pl{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:999px;padding:2px 9px;background:var(--line);color:var(--soft);white-space:nowrap}
+.pl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pl.ok{background:var(--ok10);color:var(--ok)}.pl.w{background:var(--warn10);color:var(--warn)}.pl.d{background:var(--dan10);color:var(--danger)}.pl.i{background:var(--inf10);color:var(--info)}
+.rows{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.2fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:9px 13px}
+.row .nm{min-width:0}.row .nm b{display:block;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}
+.row .nm small{color:var(--muted);font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .mil{font-size:13px;color:var(--soft);min-width:0;display:flex;align-items:center;gap:8px}
+.row .cote{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:760px){.row{grid-template-columns:1fr}.row .cote{justify-content:flex-start}}
+.paires{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2px 26px;margin:0}
+.paires div{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px;align-items:baseline}
+.paires dt{color:var(--muted);flex:0 0 118px;font-size:13px}.paires dd{margin:0;color:var(--strong);min-width:0}
+.paires dd small{display:block;color:var(--soft);font-size:12.5px}
+.vide{color:var(--muted);font-size:14px;padding:6px 0}
+.muet{background:var(--dan10);border:1px solid var(--line);border-radius:13px;padding:11px 14px;font-size:14px;color:var(--strong)}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px}
+input[type=search]{font:inherit;color:var(--strong);background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:6px 11px;min-width:0;width:220px}
+.pbar{flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden;min-width:60px}
+.pbar i{display:block;height:100%;background:var(--accent)}.pbar i.w{background:var(--warn)}.pbar i.d{background:var(--danger)}
+/* ce qui vit ailleurs */
+.tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px}
+.tuile{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:13px 14px;display:flex;flex-direction:column;gap:6px}
+.tuile .t{display:flex;align-items:center;gap:8px;color:var(--strong);font-weight:650}
+.tuile .t small{margin-left:auto;font-weight:500;color:var(--muted);font-size:12px}
+.tuile p{margin:0;font-size:14px;color:var(--soft)}
+.tuile .gestes{margin-top:auto;padding-top:6px}
+.puces{display:flex;gap:6px;flex-wrap:wrap}
+.puce{background:var(--solid);border:1px solid var(--line2);border-radius:10px;padding:3px 9px;font-size:12.5px;color:var(--strong)}
+.puce:hover{border-color:var(--accent)}
+/* la page d'ensemble : une tuile par sujet */
+.bandeau-v{padding:14px 18px;margin-bottom:6px}
+.bandeau-v .vt{font-size:18px}
+.note-sante{text-align:right;min-width:150px;cursor:help}
+.note-sante span,.note-sante em{display:block;font-size:12.5px;color:var(--muted);font-style:normal}
+.note-sante b{display:block;font-size:28px;line-height:1.1}.note-sante b small{font-size:13px;color:var(--muted)}
+.gt{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin:14px 4px 8px;font-weight:650;display:flex;align-items:center;gap:8px;min-height:26px}
+.gt .btn{margin-left:auto;text-transform:none;letter-spacing:0}
+.gt span{text-transform:none;letter-spacing:0;font-weight:500}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:10px}
+.tu{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 13px 10px;display:flex;flex-direction:column;gap:5px;cursor:pointer;box-shadow:var(--shadow);min-height:158px;min-width:0}
+.tu:hover{border-color:var(--accent);background:var(--solid)}
+.tu.ext{background:var(--surface2);box-shadow:none}
+.tu.mu>:not(.tt):not(.tp){opacity:.42;filter:grayscale(1)}
+.tu .tt{display:flex;align-items:center;gap:8px;color:var(--strong);font-size:14px;margin-bottom:2px}
+.tu .tt b{font-weight:650}.tu .tt .pl{margin-left:auto}
+.tu .gr{font:650 25px/1.1 "JetBrains Mono",ui-monospace,monospace;color:var(--strong)}
+.tu .gr.w{color:var(--warn)}.tu .gr.d{color:var(--danger)}.tu .gr.mu{color:var(--muted)}
+.tu .cc{display:flex;flex-direction:column;gap:5px}
+.tu .li{font-size:12.5px;color:var(--soft);display:flex;gap:8px;align-items:center;min-width:0}
+.tu .li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tu .li small{color:var(--muted)}
+.tu .li b{color:var(--strong);font-weight:600;font-size:12px;white-space:nowrap}
+.tu .mb{display:grid;grid-template-columns:74px 1fr 42px;gap:8px;align-items:center;font-size:12.5px;color:var(--soft)}
+.tu .mb b{text-align:right;font-size:12px}
+.tu .tp{margin-top:auto;padding-top:5px;font-size:12px;font-weight:600;color:var(--accent)}
+.tu.ext .tp{color:var(--muted)}
+.tu .puces{margin-top:2px}.tu .puce{padding:2px 7px;font-size:12px}
+.tu .btn.s{padding:2px 8px;font-size:12px}
+.grille.v{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
+.grille.v .tu{min-height:124px;padding:10px 10px 8px}
+.grille.v .tu .gr{font-size:21px}
+.grille.v .tu .tt{font-size:13px;flex-wrap:wrap;gap:6px}
+.grille.v .tu .tt svg.i{width:15px;height:15px}
+.grille.v .tu .tt .pl{font-size:11px;padding:1px 7px}
+.grille.v .tu .li{flex-wrap:wrap}
+.grille.v .tu .li .n{white-space:normal}
+/* la fiche de la machine : des blocs deux par deux */
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:16px;margin-bottom:16px;align-items:start}
+@media (max-width:560px){.duo{grid-template-columns:1fr}}
+.duo .paires.un dt{flex-basis:118px}
+/* l'appel à Cassandra, les filtres, le plan, la mémoire */
+.cass{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--acc10);border:1px solid var(--acc20);border-radius:12px;padding:4px 8px 4px 10px;font-size:13px;color:var(--accent)}
+.cass b{font-weight:650;margin-right:2px}.cass .puce{font-size:12.5px;padding:3px 9px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{background:transparent;border:1px solid var(--line2);border-radius:999px;padding:3px 11px;font-size:13px;color:var(--soft)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#06231f}
+.feuille h4{margin:14px 0 6px;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:650}
+.coche{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--txt);padding:4px 0}
+.coche input{accent-color:var(--accent);width:16px;height:16px}
+.plan{margin:0 0 12px;padding-left:22px;font-size:14px;color:var(--strong);display:grid;gap:6px}
+.pile{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--line);gap:2px}
+.pile i{display:block;height:100%}
+.dit{margin:0 0 4px;font-size:14px;color:var(--txt)}
+pre.jl{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:11.5px/1.5 "JetBrains Mono",ui-monospace,monospace;color:var(--txt);white-space:pre-wrap;word-break:break-word}
+/* la page Conteneurs : une ligne par conteneur, sa fiche au clic */
+.cts{display:grid;gap:6px}
+.ct{background:var(--surface2);border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.ct.ouvert{border-color:var(--acc20);background:var(--solid)}
+.ctl{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.25fr) minmax(0,1.15fr) 200px 14px;gap:14px;align-items:center;width:100%;text-align:left;background:transparent;border:0;padding:10px 13px}
+.ctl:hover{background:var(--acc10)}
+.ctl>span{min-width:0;display:flex;flex-direction:column;gap:2px}
+.ctl b,.ctl .mono{color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
+.ctl b{font-weight:650;font-size:14.5px}
+.ctl small{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctl .c3{flex-direction:row;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.ctl .c3 small{flex:1 1 100%}
+.ctl .c4{align-items:flex-end}
+.ctl .chev{color:var(--muted);transition:transform .2s}
+.ct.ouvert .ctl .chev{transform:rotate(90deg)}
+.pc{font:600 12px "JetBrains Mono",ui-monospace,monospace;border:1px solid var(--line2);border-radius:7px;padding:1px 6px;color:var(--strong);background:var(--solid)}
+.pc.w{border-color:var(--warn);color:var(--warn);background:var(--warn10)}
+.ctf{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:4px 26px;padding:6px 16px 14px;border-top:1px solid var(--line)}
+.ctf .bloc{min-width:0;padding-top:8px}
+.ctf h3{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:0 0 4px;font-weight:650}
+.ctf h3 .ac{text-transform:uppercase}
+.ctf table.ptab{font-size:13px}.ctf table.ptab th{font-size:11px;padding:4px 6px}.ctf table.ptab td{padding:5px 6px;font-weight:500;color:var(--txt);white-space:nowrap}
+.ctf table.ptab td:first-child{font-weight:500}
+.paires.un{grid-template-columns:1fr}
+.paires.un div{padding:5px 0;font-size:13.5px}.paires.un dt{flex-basis:104px}
+.paires.un dd small{display:inline;margin-left:4px}
+.chemin{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:13px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.chemin .fl{color:var(--muted);font-size:12px}
+.ctf a,.note a{color:var(--accent);cursor:pointer}
+@media (max-width:860px){.ctl{grid-template-columns:1fr}.ctl .c4{align-items:flex-start}.ctl .chev{display:none}}
+.lk{cursor:pointer;background:none;border:0;padding:0;color:var(--soft);font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px}
+.lk:hover{color:var(--accent)}
+.tu.det{border-style:dashed}
+.tu.det .tp{color:var(--accent)}
+.pt{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:4px}.pt.d{background:var(--danger)}
+.pied{font-size:13px;color:var(--muted);margin:14px 4px 0}
+.pied a,.fil a{color:var(--accent);cursor:pointer}
+/* tableau de correspondance */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line2)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{color:var(--strong);font-weight:650;white-space:nowrap}
+/* feuille et toast */
+.voile{position:fixed;inset:0;background:rgba(16,24,40,.34);z-index:80;display:none;align-items:center;justify-content:center;padding:16px}
+.voile.on{display:flex}
+.feuille{background:var(--solid);border-radius:16px;box-shadow:var(--lift);max-width:620px;width:100%;padding:18px 20px;max-height:86vh;overflow:auto}
+.feuille h3{margin:0 0 4px;color:var(--strong);font-size:17px}
+.feuille p{margin:0 0 12px;color:var(--soft);font-size:14px}
+.feuille pre{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:10px 12px;font:12px/1.55 "JetBrains Mono",ui-monospace,monospace;overflow:auto;max-height:46vh;color:var(--txt)}
+.feuille .gestes{justify-content:flex-end}
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--strong);color:var(--bg);padding:9px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;z-index:90;max-width:min(680px,92vw)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+/* ── propre à cette maquette ── */
+.haut select{font:inherit;font-size:13px;border-radius:10px;padding:5px 8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff}
+.haut select option{color:#101828}
+.pan{display:inline-flex;align-items:center;gap:8px;background:var(--solid);border:1px solid var(--line2);border-radius:12px;padding:6px 12px;font-size:13.5px;color:var(--strong);cursor:pointer}
+.pan:hover{border-color:var(--accent)}
+.pan i{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}.pan i.w{background:var(--warn)}.pan i.d{background:var(--danger)}.pan i.n{background:var(--line2)}
+.pan small{color:var(--muted);font-size:12px}
+.mi.off span:not(.bad){opacity:.55}
+.mi.off .bad{background:transparent;border:1px dashed var(--line2);color:var(--muted)}
+.cap{display:flex;gap:12px;align-items:flex-start;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:11px 14px;margin-bottom:14px;font-size:14px}
+.cap.w{background:var(--warn10)}.cap.n{border-style:dashed}.cap.d{background:var(--dan10)}
+.cap b{color:var(--strong)}
+.cap .gestes{margin:0 0 0 auto;flex:none}
+.cmdl{font:12px/1.45 "JetBrains Mono",ui-monospace,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:3px 8px;color:var(--strong);display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.cmdl.no{color:var(--muted);font-family:inherit;font-style:italic;background:transparent;border-style:dashed}
+.ge{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:9px 13px}
+.ge b{color:var(--strong);font-weight:650;display:block}.ge small{color:var(--muted);font-size:12.5px}
+@media (max-width:760px){.ge{grid-template-columns:1fr}}
+.mat-w{overflow-x:auto;margin:0 -4px;padding:0 4px}
+table.mat{min-width:900px;font-size:13px}
+table.mat td,table.mat th{padding:7px 6px;text-align:center}
+table.mat td:first-child,table.mat th:first-child{text-align:left}
+table.mat th.ici{color:var(--accent)}
+.cel{display:inline-block;min-width:26px;border-radius:7px;padding:2px 6px;font-weight:650;font-size:12px;cursor:help}
+.cel.g{background:var(--ok10);color:var(--ok)}.cel.l{background:var(--inf10);color:var(--info)}.cel.p{background:var(--warn10);color:var(--warn)}
+.cel.c{background:var(--acc10);color:var(--accent)}.cel.n{background:transparent;color:var(--muted);border:1px dashed var(--line2)}.cel.a{background:var(--line);color:var(--soft)}
+.fiches{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px}
+.pv{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.pv .ok{color:var(--ok);font-weight:700}.pv .ko{color:var(--muted)}
+.pv small{color:var(--muted);font-size:12.5px;display:block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.kp{background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:10px 12px}
+.kp span{display:block;font-size:12.5px;color:var(--muted)}
+.kp b{display:block;font:650 21px/1.25 "JetBrains Mono",ui-monospace,monospace;color:var(--strong)}
+.kp b.w{color:var(--warn)}.kp b.d{color:var(--danger)}.kp b.mu{color:var(--muted);font-size:14px;font-family:inherit;font-weight:500;padding:4px 0}
+.kp em{display:block;font-style:normal;font-size:12.5px;color:var(--soft)}
+.kp small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.al{display:grid;grid-template-columns:6px minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.al i{align-self:stretch;border-radius:3px;background:var(--warn)}.al i.d{background:var(--danger)}.al i.i{background:var(--info)}
+.al b{color:var(--strong);font-weight:600}.al small{display:block;color:var(--muted);font-size:12.5px}
+.duo2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;align-items:start}
+@media (max-width:560px){.duo2{grid-template-columns:1fr}}
+.feuille dl{margin:0 0 12px}
+.feuille dt{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:650;margin-top:10px}
+.feuille dd{margin:3px 0 0;font-size:14px;color:var(--strong)}
+.src a{color:var(--accent);word-break:break-all}
+.feuille pre{white-space:pre-wrap;word-break:break-all}
+.dyn{color:var(--accent);font-weight:650}
+</style>
+</head>
+<body>
+<div class="haut">
+  <b>Maquette</b><span class="note">Hébergement (le panneau détecté) : Panel Detect et les modules de panneau · données fictives, rien n'est écrit</span>
+  <label style="font-size:13px">Panneau sur la machine :
+    <select id="choix" onchange="panneau(this.value)" aria-label="Panneau montré"></select></label>
+  <button onclick="S.panne=!S.panne;this.setAttribute('aria-pressed',S.panne);rendre()" id="b-panne" aria-pressed="false" title="Montrer ce que voit l'écran quand le panneau ne répond plus">Panneau injoignable</button>
+  <button onclick="theme()">Thème</button>
+</div>
+<div class="app">
+  <nav class="menu carte" id="menu" aria-label="Menu de gauche"></nav>
+  <main id="page"></main>
+</div>
+<div class="voile" id="voile" onclick="if(event.target===this)fermer()"><div class="feuille" id="feuille" role="dialog" aria-modal="true"></div></div>
+<div id="toast" role="status"></div>
+
+<script>
+// ───────────────────────────── outils
+const $ = id => document.getElementById(id);
+const E = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const pill = (t, c) => `<span class="pl ${c || ''}">${E(t)}</span>`;
+const neuf = '<span class="neuf">nouveau</span>', creer = t => `<span class="ac">${t || 'à créer'}</span>`, deja = t => `<span class="de">${E(t || 'déjà là')}</span>`;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 3800); }
+const IC = {
+  panorama: '<rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/>',
+  machine: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>', geste: '<path d="M5 3l14 8-6 2-2 6z"/>',
+  direct: '<path d="M3 12h4l2-6 4 12 2-6h6"/>', globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  cadenas: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', code: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13 6l-2 12"/>',
+  bouclier: '<path d="M12 3l8 3v6c0 4.5-3.2 7.6-8 9-4.8-1.4-8-4.5-8-9V6z"/>', base: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  archive: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>', mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  dossier: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', personne: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+  services: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>', fil: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/>', bulle: '<path d="M4 5h16v11H9l-5 4z"/>', loupe: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+};
+const ico = k => '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">' + (IC[k] || '') + '</svg>';
+
+// ───────────────────────────── les sections : les mots de Cassandra, rangés comme aujourd'hui (cinq familles)
+const SECTIONS = [
+  ['vue', 'Le panneau', "Vue d'ensemble", 'panorama'], ['panneau', 'Le panneau', 'Le panneau détecté', 'machine'], ['ops', 'Le panneau', 'Opérations', 'geste'], ['stats', 'Le panneau', 'Statistiques', 'direct'],
+  ['sites', 'Les sites', 'Sites', 'globe'], ['certs', 'Les sites', 'Certificats', 'cadenas'], ['php', 'Les sites', 'PHP', 'code'], ['av', 'Les sites', 'Analyses antivirus', 'bouclier'],
+  ['bases', 'Les données', 'Bases', 'base'], ['sauv', 'Les données', 'Sauvegardes', 'archive'],
+  ['mail', 'Communication', 'Courrier', 'mail'], ['ftp', 'Communication', 'FTP', 'dossier'], ['dns', 'Communication', 'DNS', 'globe'],
+  ['comptes', 'La machine', 'Comptes du panneau', 'personne'], ['services', 'La machine', 'Services', 'services'], ['crons', 'La machine', 'Crons', 'fil'],
+];
+const SEC = Object.fromEntries(SECTIONS.map(s => [s[0], {id: s[0], fam: s[1], titre: s[2], ic: s[3]}]));
+// Ce qu'un panneau sait faire d'une section : g = lecture et gestes · l = lecture seule · p = en partie · c = Cassandra s'en charge elle-même · a = vit dans un autre module · n = ce panneau ne le fait pas
+const NIV = {g: ['lecture et gestes', 'ok', 'G'], l: ['lecture seule', 'i', 'L'], p: ['en partie', 'w', 'P'], c: ['Cassandra s’en charge', 'i', 'C'], a: ['vit ailleurs', '', '→'], n: ['ce panneau ne le fait pas', '', '—']};
+
+// ───────────────────────────── les panneaux : la détection, les voies d'accès, ce que chacun sait faire (d'après les quatre dossiers de recherche du 12-11-2026)
+const P = {
+  fastpanel: {nom: 'FastPanel', ver: '1.12', lic: 'propriétaire, gratuit', rang: 'hors classement (pas libre) · plus de 40 % des panneaux commandés chez HOSTKEY', os: 'Debian, Ubuntu, AlmaLinux', ui: 'https://argos:8888', svc: 'fastpanel2',
+    preuves: [['dossier', '/usr/local/fastpanel2'], ['service', 'fastpanel2.service, actif'], ['port', '8888, l’interface'], ['paquet', 'fastpanel2']],
+    acces: [['Base du panneau', 'SQLite, ouverte en lecture seule', 'lecture', 'ok'], ['mogwai', 'l’outil officiel du panneau, lancé par le courtier', 'gestes', 'ok'], ['API', 'jeton du compte administrateur, cache 120 s', 'sauvegardes, statistiques, services', 'ok']],
+    mots: {sites: 'Sites', comptes: 'Utilisateurs', ops: 'mogwai'},
+    cap: {vue: ['g', 'base + API'], ops: ['g', 'mogwai · catalogue nommé'], stats: ['l', 'API · statistiques du jour'], sites: ['g', 'base · site + site_stats'], certs: ['g', 'collecteur + sonde 443 · émission par le panneau'], php: ['l', 'panneau · website_backends + collecteur'], av: ['g', 'fichiers · ai-bolit'], bases: ['g', 'base · database'], sauv: ['g', 'API · plans et journal'], mail: ['l', 'base · mailbox'], ftp: ['l', 'base · ftp_user'], dns: ['g', 'base · domain'], comptes: ['g', 'base · panel_account'], services: ['g', 'API · cache 120 s'], crons: ['g', 'base · cron + crontab']},
+    pieges: ['API non documentée publiquement : chaque lecture est vérifiée contre la base.', 'Le module n’avait jamais vu un vrai FastPanel avant Argos.'], vig: []},
+  hestia: {nom: 'HestiaCP', ver: '1.9.4', lic: 'GPL-3', rang: '2e des panneaux libres', os: 'Debian, Ubuntu seulement', ui: 'https://argos:8083', svc: 'hestia',
+    preuves: [['dossier', '/usr/local/hestia'], ['fichier', '$HESTIA/conf/hestia.conf, VERSION=1.9.4'], ['service', 'hestia.service, actif'], ['paquet', 'hestia']],
+    acces: [['Commandes v-*', 'lancées par le courtier en root, sortie JSON', 'lecture et gestes', 'ok'], ['API Hestia', 'pas utilisée : la ligne de commande suffit, aucune clé à garder', '—', '']],
+    mots: {sites: 'Web', comptes: 'Users', ops: 'v-*'},
+    cap: {vue: ['g', 'commandes v-*'], ops: ['g', 'commandes v-* · catalogue filtré'], stats: ['p', 'v-list-sys-info · le détail dans La machine'], sites: ['g', 'v-list-web-domains · JSON'], certs: ['g', 'v-list-web-domain-ssl, clé privée retirée · sonde 443'], php: ['g', 'v-list-sys-php · modèle de backend du site'], av: ['c', 'ClamAV de la machine : Hestia ne passe au crible que le courrier'], bases: ['g', 'v-list-databases · JSON'], sauv: ['g', 'v-list-user-backups · v-backup-user'], mail: ['l', 'v-list-mail-domains · v-list-mail-accounts'], ftp: ['l', 'comptes FTP des domaines web'], dns: ['g', 'v-list-dns-domains · v-list-dns-records'], comptes: ['l', 'v-list-users'], services: ['g', 'v-list-sys-services'], crons: ['l', 'v-list-cron-jobs']},
+    pieges: ['v-list-web-domain-ssl sort aussi la clé privée : le courtier la retire avant que Cassandra ne lise.', 'Debian et Ubuntu seulement.'], vig: []},
+  cloudpanel: {nom: 'CloudPanel', ver: '2.5', lic: 'propriétaire, gratuit', rang: 'hors classement (pas libre)', os: 'Debian 11–13, Ubuntu', ui: 'https://argos:8443', svc: 'clp',
+    preuves: [['paquet', 'cloudpanel'], ['commande', '/usr/bin/clpctl'], ['port', '8443, l’interface']],
+    acces: [['clpctl', 'lancé par le courtier ; sortie en texte', 'gestes', 'ok'], ['Fichiers de la machine', 'vhosts nginx, pools PHP-FPM, MariaDB, en lecture', 'lecture', 'ok'], ['API', 'CloudPanel n’en a pas', '—', '']],
+    mots: {sites: 'Sites', comptes: 'Users', ops: 'clpctl'},
+    cap: {vue: ['p', 'clpctl + fichiers'], ops: ['g', 'clpctl · catalogue filtré'], stats: ['a', 'pas d’API : les ressources sont dans La machine', 'La machine'], sites: ['p', 'vhosts nginx lus par le Sensorium · clpctl ne liste pas les sites'], certs: ['g', 'collecteur + sonde 443 · clpctl lets-encrypt'], php: ['l', 'pools PHP-FPM des sites'], av: ['c', 'ClamAV de la machine'], bases: ['g', 'MariaDB en lecture · clpctl db:add'], sauv: ['p', 'rclone, réglé dans CloudPanel : copies lues, jamais lancées'], mail: ['n', 'CloudPanel ne gère pas le courrier'], ftp: ['p', 'utilisateurs FTP des sites, sans liste en ligne de commande'], dns: ['a', 'CloudPanel ne porte pas de zones', 'Zones DNS'], comptes: ['l', 'clpctl user:list'], services: ['a', 'systemd', 'La machine'], crons: ['l', 'crontab des utilisateurs de site']},
+    pieges: ['Ni API ni sortie JSON : Cassandra lit la machine elle-même et ne lance que des clpctl nommés.', 'Pas de courrier, pas de DNS : par construction.'], vig: [['w', 'Les sauvegardes se règlent dans CloudPanel : Cassandra voit les copies, ne les lance pas.', 'sauv', 'voir']]},
+  cyberpanel: {nom: 'CyberPanel', ver: '2.3.6', lic: 'GPL-3', rang: '3e des panneaux libres', os: 'Ubuntu, AlmaLinux (Debian non confirmé)', ui: 'https://argos:8090', svc: 'lscpd',
+    preuves: [['dossier', '/usr/local/CyberCP'], ['fichier', 'version.txt : 2.3, build 6'], ['service', 'lscpd.service, actif'], ['port', '8090, l’interface ; 7080, OpenLiteSpeed']],
+    acces: [['Commande cyberpanel', 'lancée par le courtier en root ; JSON pour les listes', 'lecture et gestes', 'ok'], ['Base cyberpanel', 'utilisateur MariaDB en lecture, sans les colonnes jeton et mot de passe', 'lecture', 'ok'], ['API :8090', 'pas utilisée : ses gestes demandent le mot de passe administrateur', '—', '']],
+    mots: {sites: 'Websites', comptes: 'Users', ops: 'cyberpanel'},
+    cap: {vue: ['g', 'commande cyberpanel + base'], ops: ['g', 'commande cyberpanel · catalogue filtré'], stats: ['a', 'les ressources sont dans La machine', 'La machine'], sites: ['g', 'cyberpanel listWebsitesJson'], certs: ['g', '/etc/letsencrypt/live + sonde 443 · cyberpanel issueSSL'], php: ['g', 'phpSelection · cyberpanel changePHP'], av: ['c', 'ClamAV de la machine'], bases: ['g', 'cyberpanel listDatabasesJson'], sauv: ['g', 'table Backups en lecture · createBackup, restoreBackup'], mail: ['l', 'cyberpanel listEmailsJson'], ftp: ['l', 'cyberpanel listFTPJson'], dns: ['g', 'cyberpanel listDNSJson · PowerDNS'], comptes: ['l', 'administrateurs, sans jeton ni mot de passe'], services: ['g', 'lscpd, OpenLiteSpeed, MariaDB'], crons: ['p', 'crontab des utilisateurs : le panneau ne les expose pas']},
+    pieges: ['Le format du jeton d’API a changé entre versions : Cassandra lit la version d’abord.', 'Une erreur d’accès revient en HTTP 200 : la réponse est lue, pas le code.', 'Pas de suspension d’un site en ligne de commande : seulement d’un compte.'],
+    vig: [['d', 'CyberPanel 2.3.6 porte une faille critique connue (CVE-2024-51567), exploitée en 2024. Mettre le panneau à jour.', 'panneau', 'voir'], ['w', 'L’interface du panneau (8090) répond depuis Internet.', 'ext:Sécurité › Exposition', 'voir']]},
+  aapanel: {nom: 'aaPanel', ver: '8.25.0', lic: 'source disponible (pas libre)', rang: 'hors classement (pas libre) · plus de 3 millions d’installations annoncées', os: 'Debian, Ubuntu, CentOS/Alma', ui: 'https://argos:23817/7f3a…', svc: 'btpanel',
+    preuves: [['dossier', '/www/server/panel'], ['service', 'btpanel.service, actif'], ['commande', '/usr/bin/bt'], ['fichier', 'data/port.pl : 23817 (port tiré au hasard)']],
+    acces: [['Base default.db', 'SQLite en lecture seule ; les mots de passe ne sont jamais lus', 'lecture', 'ok'], ['API locale', 'clé collée par toi, gardée par le courtier ; adresse autorisée : 127.0.0.1 seulement', 'gestes', 'ok'], ['Commande bt', 'un menu de maintenance, sans liste : pas utilisée', '—', '']],
+    mots: {sites: 'Website', comptes: 'Panel user', ops: 'API'},
+    cap: {vue: ['g', 'default.db + API'], ops: ['g', 'API locale · catalogue filtré'], stats: ['g', 'API · moniteur du panneau'], sites: ['g', 'default.db · table sites, en lecture'], certs: ['g', 'vhost/cert + sonde 443 · API acme'], php: ['g', 'API GetSitePHPVersion · SetPHPVersion'], av: ['c', 'ClamAV de la machine'], bases: ['g', 'default.db · table databases, mots de passe jamais lus'], sauv: ['g', 'default.db · table backup · API ToBackup'], mail: ['p', 'module « mail_sys », s’il est installé'], ftp: ['l', 'default.db · table ftps'], dns: ['n', 'pas de DNS dans le panneau (module à part)'], comptes: ['l', 'default.db · table users'], services: ['g', 'API ServiceAdmin'], crons: ['g', 'default.db · table crontab']},
+    pieges: ['La clé d’API peut tout, sans lecture seule ; une signature volée se rejoue sans limite : seule l’adresse 127.0.0.1 est autorisée.', 'Le port de l’interface est tiré au hasard : lu dans port.pl.', 'Cassandra ne lit jamais default.pl (le mot de passe initial en clair), api.json, ni les mots de passe des bases.'],
+    vig: [['w', 'La clé de l’API accepte toutes les adresses (*) : à restreindre à 127.0.0.1.', 'panneau', 'voir']]},
+  virtualmin: {nom: 'Virtualmin', ver: '8.0.0 GPL', lic: 'GPL (Webmin : BSD)', rang: '1er des panneaux libres', os: 'Debian, Ubuntu, Alma, Rocky', ui: 'https://argos:10000', svc: 'webmin',
+    preuves: [['dossier', '/etc/webmin/virtual-server'], ['commande', '/usr/bin/virtualmin'], ['service', 'webmin.service, actif'], ['port', '10000, l’interface']],
+    acces: [['Commande virtualmin', 'lancée par le courtier en root ; --json depuis la 7.30', 'lecture et gestes', 'ok'], ['API remote.cgi', 'pas utilisée : réservée au maître, sans lecture seule', '—', '']],
+    mots: {sites: 'Virtual servers', comptes: 'Owners', ops: 'virtualmin'},
+    cap: {vue: ['g', 'commande virtualmin'], ops: ['g', 'commande virtualmin · catalogue filtré'], stats: ['a', 'les ressources sont dans La machine', 'La machine'], sites: ['g', 'virtualmin list-domains --json'], certs: ['g', 'list-certs-expiry · generate-acme-cert'], php: ['g', 'list-php-directories · modify-web'], av: ['c', 'ClamAV de la machine'], bases: ['g', 'list-databases'], sauv: ['g', 'list-scheduled-backups · list-backup-logs · backup-domain'], mail: ['l', 'list-users · list-mailbox'], ftp: ['l', 'list-users : le drapeau FTP des utilisateurs'], dns: ['g', 'get-dns · modify-dns'], comptes: ['l', 'propriétaires des serveurs virtuels'], services: ['g', 'restart-server'], crons: ['p', 'crontabs des utilisateurs : Virtualmin n’a pas de commande']},
+    pieges: ['Des commandes changent de nom entre versions (generate-letsencrypt-cert → generate-acme-cert) : le pilote demande « virtualmin help » avant.', 'Revendeurs, chiffrement des copies, DNS distant : version Pro seulement.'],
+    vig: [['i', 'Virtualmin GPL : le chiffrement des copies est réservé à la version Pro.', 'sauv', 'voir']]},
+  ispconfig: {nom: 'ISPConfig', ver: '3.3.0', lic: 'BSD', rang: '4e des panneaux libres', os: 'Debian, Ubuntu', ui: 'https://argos:8080', svc: '(aucun : cron server.sh)',
+    preuves: [['dossier', '/usr/local/ispconfig'], ['fichier', 'config.inc.php : ISPC_APP_VERSION 3.3.0'], ['cron', 'server.sh chaque minute'], ['port', '8080, l’interface']],
+    acces: [['Base dbispconfig', 'utilisateur MariaDB en lecture seule, créé avec ton accord', 'lecture', 'ok'], ['API distante', 'utilisateur distant créé par toi dans ISPConfig ; identifiants collés par toi', 'gestes', 'ok'], ['Le cron du panneau', 'applique chaque geste en une minute environ : Cassandra attend avant de prouver', '—', 'i']],
+    mots: {sites: 'Websites', comptes: 'Clients', ops: 'remote API'},
+    cap: {vue: ['g', 'base + API'], ops: ['g', 'fonctions de l’API distante · catalogue filtré'], stats: ['p', 'monitor_data · le détail dans La machine'], sites: ['g', 'dbispconfig · web_domain, en lecture'], certs: ['g', 'ssl_cert + sonde 443 · API ssl_letsencrypt'], php: ['g', 'web_domain.server_php_id'], av: ['c', 'ClamAV de la machine'], bases: ['g', 'web_database'], sauv: ['p', 'web_backup : copies listées et restaurées ; pas de copie immédiate par l’API'], mail: ['l', 'mail_domain · mail_user'], ftp: ['l', 'ftp_user'], dns: ['g', 'dns_soa · dns_rr'], comptes: ['l', 'client · sys_user'], services: ['l', 'monitor_data'], crons: ['l', 'table cron']},
+    pieges: ['Les gestes s’appliquent en différé (cron server.sh) : un geste est « en attente » tant que le panneau ne l’a pas posé.', 'L’API n’a pas de droit en lecture seule : la lecture passe par la base.', 'Plusieurs serveurs : seul le maître est interrogé.'],
+    vig: [['i', '2 gestes en attente d’application par le panneau.', 'ops', 'voir']]},
+};
+// Sans panneau (ou avec un panneau sans pilote) : Cassandra lit ce que la machine sert, et renvoie le reste à ses modules.
+const NU = {nom: 'Aucun panneau', ver: '', lic: '', ui: '', svc: '', preuves: [], mots: {},
+  acces: [['Sensorium', 'vhosts nginx, certificats, pools PHP-FPM, MariaDB, lus sur la machine', 'lecture', 'ok']],
+  cap: {vue: ['l', 'Sensorium'], panneau: ['l', ''], ops: ['n', 'sans panneau, aucun catalogue'], stats: ['a', 'La machine', 'La machine'], sites: ['l', 'vhosts nginx lus par le Sensorium'], certs: ['c', 'collecteur + sonde 443'], php: ['l', 'pools PHP-FPM'], av: ['c', 'ClamAV de la machine'], bases: ['l', 'MariaDB : la liste des bases'], sauv: ['a', 'Sauvegardes', 'Sauvegardes'], mail: ['n', 'aucun panneau de courrier'], ftp: ['n', 'aucun serveur FTP géré'], dns: ['a', 'Zones DNS', 'Zones DNS'], comptes: ['n', 'aucun panneau'], services: ['a', 'La machine', 'La machine'], crons: ['a', 'Automatismes', 'Automatismes']},
+  pieges: [], vig: []};
+// Les signatures cherchées à chaque détection — y compris de panneaux qu'aucun pilote ne suit encore.
+const SIGNES = [['fastpanel', 'FastPanel', '/usr/local/fastpanel2 · service fastpanel2'], ['hestia', 'HestiaCP', '/usr/local/hestia · paquet hestia'], ['cloudpanel', 'CloudPanel', 'paquet cloudpanel · /usr/bin/clpctl'], ['cyberpanel', 'CyberPanel', '/usr/local/CyberCP · service lscpd'], ['aapanel', 'aaPanel', '/www/server/panel · service btpanel'], ['virtualmin', 'Virtualmin', '/etc/webmin/virtual-server · /usr/bin/virtualmin'], ['ispconfig', 'ISPConfig', '/usr/local/ispconfig · cron server.sh'], ['froxlor', 'Froxlor', 'lib/Froxlor/Froxlor.php · froxlor-cli'], ['plesk', 'Plesk', '/usr/local/psa'], ['cpanel', 'cPanel', '/usr/local/cpanel']];
+const SANS_PILOTE = {froxlor: 'Froxlor 2.3.17', plesk: 'Plesk', cpanel: 'cPanel'};
+// Les états montrés par la maquette : [libellé, panneaux présents, {module installé}].
+const ETATS = {
+  fastpanel: ['FastPanel et son module (Argos)', ['fastpanel'], {module: true}],
+  hestia: ['HestiaCP et son module', ['hestia'], {module: true}],
+  cloudpanel: ['CloudPanel et son module', ['cloudpanel'], {module: true}],
+  hestia_seul: ['HestiaCP, module pas encore installé', ['hestia'], {module: false}],
+  inconnu: ['Froxlor, aucun module au catalogue', ['froxlor'], {module: false}],
+  aucun: ['Aucun panneau', [], {}],
+  deux: ['Deux panneaux à la fois', ['fastpanel', 'hestia'], {module: true}],
+};
+// Le catalogue des modules de panneau (famille « hebergement » du module Modules) : version, et ce qui existe vraiment aujourd'hui.
+const CATALOGUE = {
+  fastpanel: {version: '0.3.0', existe: true}, hestia: {version: '0.1.0', existe: false}, cloudpanel: {version: '0.1.0', existe: false},
+  cyberpanel: {version: '', existe: false}, aapanel: {version: '', existe: false}, virtualmin: {version: '', existe: false}, ispconfig: {version: '', existe: false},
+};
+
+// ───────────────────────────── les gestes : un même geste, la commande exacte de chaque panneau (null = ce panneau ne le permet pas)
+const GESTES = [
+  {s: 'sites', id: 'suspendre', t: 'Suspendre le site', nat: 'modifie', preuve: 'le site répond « suspendu » à la sonde HTTP', def: 'Réactiver le site', ex: '{site}', neuf: 1,
+    c: {fastpanel: 'à vérifier dans mogwai', hestia: 'v-suspend-web-domain {compte} {site}', cloudpanel: null, cyberpanel: null, aapanel: 'API /site?action=SiteStop', virtualmin: 'virtualmin disable-domain --domain {site}', ispconfig: 'API sites_web_domain_set_status inactive'}},
+  {s: 'sites', id: 'rattacher', t: 'Suivre ce site dans Sites', nat: 'cassandra', preuve: 'le site paraît dans Parc › Sites', def: 'Ne plus le suivre', ex: '{site}', deja: 1, tous: 'Cassandra (module Sites)'},
+  {s: 'certs', id: 'sonder', t: 'Sonder le certificat servi', nat: 'lecture', preuve: 'émetteur et échéance relus sur le port 443', def: '', ex: '{site}', deja: 1, tous: 'sonde 443 de Cassandra'},
+  {s: 'certs', id: 'emettre', t: 'Émettre ou renouveler le certificat', nat: 'modifie', preuve: 'la sonde 443 relit le nouveau certificat', def: 'l’ancien certificat reste dans le panneau', ex: '{site}', deja: 1,
+    c: {fastpanel: 'mogwai · fastpanel.ssl_renouveler', hestia: 'v-add-letsencrypt-domain {compte} {site}', cloudpanel: 'clpctl lets-encrypt:install:certificate --domainName={site}', cyberpanel: 'cyberpanel issueSSL --domainName {site}', aapanel: 'API /acme?action=apply_cert_api', virtualmin: 'virtualmin generate-acme-cert --domain {site}', ispconfig: 'API sites_web_domain_update ssl_letsencrypt=y · en attente ≈ 1 min', nu: 'certbot renew --cert-name {site}'}},
+  {s: 'php', id: 'version', t: 'Changer la version PHP du site', nat: 'modifie', preuve: 'la page de test du site répond avec la nouvelle version', def: 'Revenir à l’ancienne version', ex: '{site} → 8.3', neuf: 1,
+    c: {fastpanel: 'à vérifier (API website_backends)', hestia: 'v-change-web-domain-backend-tpl {compte} {site} PHP-8_3', cloudpanel: null, cyberpanel: 'cyberpanel changePHP --domainName {site} --php 8.3', aapanel: 'API /site?action=SetPHPVersion', virtualmin: 'virtualmin modify-web --domain {site} --php-version 8.3', ispconfig: 'API sites_web_domain_update server_php_id'}},
+  {s: 'av', id: 'analyser', t: 'Lancer une analyse antivirus', nat: 'lourd', preuve: 'un rapport daté paraît dans la liste', def: '', ex: '{site}', deja: 1,
+    c: {fastpanel: 'ai-bolit, par le panneau', hestia: 'clamdscan {racine du site} — Cassandra', cloudpanel: 'clamdscan {racine du site} — Cassandra', cyberpanel: 'clamdscan {racine du site} — Cassandra', aapanel: 'clamdscan {racine du site} — Cassandra', virtualmin: 'clamdscan {racine du site} — Cassandra', ispconfig: 'clamdscan {racine du site} — Cassandra', nu: 'clamdscan {racine du site} — Cassandra'}},
+  {s: 'bases', id: 'creer', t: 'Créer une base', nat: 'modifie', preuve: 'la base paraît dans la liste et accepte une connexion', def: 'Supprimer la base vide créée', ex: 'boutique_stats', deja: 1,
+    c: {fastpanel: 'fastpanel.base_creer', hestia: 'v-add-database {compte} {base} {utilisateur} …', cloudpanel: 'clpctl db:add --domainName={site} --databaseName={base} …', cyberpanel: 'cyberpanel createDatabase --databaseWebsite {site} --dbName {base} …', aapanel: 'API /database?action=AddDatabase', virtualmin: 'virtualmin create-database --domain {site} --name {base} --type mysql', ispconfig: 'API sites_database_add + sites_database_user_add'}},
+  {s: 'bases', id: 'supprimer', t: 'Supprimer une base', nat: 'destructif', preuve: 'une copie est faite avant ; la base n’apparaît plus', def: 'Restaurer la copie faite avant', ex: 'atelier_db', deja: 1,
+    c: {fastpanel: 'fastpanel.base_supprimer', hestia: 'v-delete-database {compte} {base}', cloudpanel: 'à vérifier (clpctl)', cyberpanel: 'cyberpanel deleteDatabase --dbName {base}', aapanel: 'API /database?action=DeleteDatabase', virtualmin: 'virtualmin delete-database --domain {site} --name {base}', ispconfig: 'API sites_database_delete'}},
+  {s: 'sauv', id: 'lancer', t: 'Lancer une sauvegarde maintenant', nat: 'lourd', preuve: 'une copie datée de maintenant paraît, avec sa taille', def: '', ex: '{site}', deja: 1,
+    c: {fastpanel: 'API · lancer le plan', hestia: 'v-backup-user {compte}', cloudpanel: null, cyberpanel: 'cyberpanel createBackup --domainName {site}', aapanel: 'API /site?action=ToBackup', virtualmin: 'virtualmin backup-domain --domain {site} --dest /backup', ispconfig: null}},
+  {s: 'sauv', id: 'restaurer', t: 'Restaurer une copie', nat: 'destructif', preuve: 'une copie de l’état actuel est faite avant ; le site répond après', def: 'Restaurer la copie faite avant', ex: '{site} · copie de cette nuit', deja: 1,
+    c: {fastpanel: 'fastpanel.copie_restaurer', hestia: 'v-restore-user {compte} {archive}', cloudpanel: null, cyberpanel: 'cyberpanel restoreBackup --domainName {site} --fileName {archive}', aapanel: 'à vérifier', virtualmin: 'virtualmin restore-domain --source {archive} --domain {site}', ispconfig: 'API sites_web_domain_backup backup_restore'}},
+  {s: 'dns', id: 'ajouter', t: 'Ajouter un enregistrement', nat: 'modifie', preuve: 'l’enregistrement est relu dans la zone, puis par une requête DNS', def: 'Retirer l’enregistrement', ex: 'boutique.exemple.test TXT', deja: 1,
+    c: {fastpanel: 'fastpanel.dns_enregistrer', hestia: 'v-add-dns-record {compte} {zone} {nom} TXT "…"', cloudpanel: null, cyberpanel: 'cyberpanel createDNSRecord --domainName {zone} …', aapanel: null, virtualmin: 'virtualmin modify-dns --domain {zone} --add-record "…"', ispconfig: 'API dns_txt_add · en attente ≈ 1 min'}},
+  {s: 'comptes', id: 'lier', t: 'Lier à un compte Cassandra', nat: 'cassandra', preuve: 'le lien paraît sur la fiche du compte', def: 'Délier', ex: 'client1', deja: 1, tous: 'Cassandra (liens de comptes)'},
+  {s: 'comptes', id: 'cles', t: 'Voir et poser les clés SSH', nat: 'modifie', preuve: 'la clé est relue dans authorized_keys', def: 'Retirer la clé', ex: 'client1', deja: 1, tous: 'Cassandra, par le courtier (authorized_keys du compte)'},
+  {s: 'services', id: 'relancer', t: 'Relancer un service', nat: 'modifie', preuve: 'le service est relu actif', def: '', ex: 'php8.3-fpm', deja: 1, tous: 'securite.service_geste — le même geste que La machine'},
+  {s: 'crons', id: 'lancer', t: 'Lancer la tâche maintenant', nat: 'modifie', preuve: 'la sortie de la tâche est montrée', def: '', ex: 'wp-cron boutique', deja: 1,
+    c: {fastpanel: 'fastpanel · lancer le cron', hestia: 'sous le compte {compte}, par le courtier', cloudpanel: 'sous l’utilisateur du site, par le courtier', cyberpanel: 'sous l’utilisateur du site, par le courtier', aapanel: 'API /crontab?action=StartTask', virtualmin: 'sous le propriétaire, par le courtier', ispconfig: 'sous l’utilisateur du site, par le courtier'}},
+];
+const NATURES = {lecture: ['lecture', 'ok'], cassandra: ['Cassandra', 'i'], modifie: ['modifie', 'i'], lourd: ['lourd', 'w'], destructif: ['destructif', 'd']};
+
+// ───────────────────────────── la machine fictive (la même sous chaque panneau)
+const SITES = [
+  {d: 'boutique.exemple.test', u: 'client1', php: '8.3', cert: 54, taille: '2,1 Go', sauv: 'cette nuit'},
+  {d: 'blog.exemple.test', u: 'client1', php: '8.1', cert: 12, taille: '640 Mo', sauv: 'cette nuit'},
+  {d: 'atelier.exemple.test', u: 'client2', php: '7.4', cert: 80, taille: '3,4 Go', sauv: ''},
+  {d: 'chat.cassandra.center', u: 'cassandra', php: '', proxy: 'proxy → 127.0.0.1:8080', cert: 61, taille: '—', sauv: 'cette nuit'},
+  {d: 'coffre.exemple.test', u: 'admin', php: '', proxy: 'proxy → conteneur coffre', cert: 33, taille: '—', sauv: 'cette nuit'},
+];
+const DONNEES = {
+  certs: () => SITES.map(s => [s.d, 'Let’s Encrypt · R11', s.cert + ' j', pill(s.cert < 15 ? 'expire bientôt' : 'valide', s.cert < 15 ? 'w' : 'ok')]),
+  php: () => SITES.map(s => [s.d, s.u, s.php ? 'PHP ' + s.php + ' · FPM' : 'sans PHP · ' + s.proxy, s.php === '7.4' ? pill('fin de vie', 'd') : s.php ? pill('suivie', 'ok') : '']),
+  av: () => [['boutique.exemple.test', 'rapport du 07-08-2026', 'aucune menace', pill('il y a 97 j', 'w')], ['blog.exemple.test', 'rapport du 07-08-2026', '1 fichier suspect', pill('il y a 97 j', 'w')], ['atelier.exemple.test', 'jamais analysé', '', pill('jamais', 'w')]],
+  bases: () => [['boutique_wp', 'client1 · MariaDB', '412 Mo', pill('liée à boutique', '')], ['blog_wp', 'client1 · MariaDB', '96 Mo', pill('liée à blog', '')], ['atelier_db', 'client2 · MariaDB', '1,3 Go', pill('liée à atelier', '')]],
+  sauv: () => SITES.map(s => [s.d, s.sauv ? 'plan « Nuit » · 03:00 · locale /backup' : 'aucune copie', s.sauv ? 'dernière copie ' + s.sauv : '', pill(s.sauv ? 'copié' : 'sans copie', s.sauv ? 'ok' : 'd')]),
+  mail: () => [['contact@boutique.exemple.test', 'boîte', '1,2 Go', ''], ['commandes@boutique.exemple.test', 'renvoi → contact@', '', ''], ['bonjour@atelier.exemple.test', 'boîte', '230 Mo', '']],
+  ftp: () => [['client1_ftp', '/var/www/client1/data', 'boutique, blog', ''], ['client2_ftp', '/var/www/client2/data', 'atelier', pill('jamais utilisé', '')]],
+  dns: () => [['boutique.exemple.test', '12 enregistrements', 'servie par le panneau', ''], ['atelier.exemple.test', '9 enregistrements', 'servie par le panneau', '']],
+  comptes: () => [['admin', 'administrateur du panneau', '1 site', pill('lié à atek', 'ok')], ['client1', 'compte de site', '2 sites · 2 bases', pill('non lié', '')], ['client2', 'compte de site', '1 site · 1 base', pill('non lié', '')]],
+  services: () => [[svcPanneau(), 'le service du panneau', '', pill('actif', 'ok')], ['nginx', 'serveur web', '', pill('actif', 'ok')], ['php8.3-fpm', 'PHP 8.3', '', pill('actif', 'ok')], ['php7.4-fpm', 'PHP 7.4', '', pill('actif', 'ok')], ['mariadb', 'bases', '', pill('actif', 'ok')], ['exim4', 'courrier sortant', '', pill('actif', 'ok')], ['pure-ftpd', 'FTP', '', pill('arrêté', 'w')]],
+  crons: () => [['wp-cron boutique', 'client1', '*/5 * * * *', pill('réussi il y a 3 min', 'ok')], ['export.sh', 'client2', '0 4 * * *', pill('réussi cette nuit', 'ok')]],
+  stats: () => [['Visites, aujourd’hui', 'les 5 sites', '1 842', ''], ['Trafic sortant', 'les 5 sites', '4,6 Go', ''], ['Processeur, moyenne', 'machine', '18 %', ''], ['Mémoire, moyenne', 'machine', '61 %', '']],
+};
+// « Courrier » est déjà pris dans le menu (la messagerie des utilisateurs) : ici, ce sont les boîtes hébergées sur le serveur.
+SEC.mail.titre = 'Gestion e-mail'; SECTIONS.find(s => s[0] === 'mail')[2] = 'Gestion e-mail';
+// ───────────────────────────── l'état de la maquette
+const S = {page: 'vue', e: 'fastpanel', panne: false, gestes: [], suivi: 'fastpanel', choisi: false};
+const trouves = () => ETATS[S.e][1];
+const opt = () => ETATS[S.e][2];
+// L'onglet montre l'écran Hébergement du module dès qu'un panneau a son module ; sinon, la page de Panel Detect.
+const face = () => opt().module && (trouves().length === 1 || S.choisi) ? 'module' : 'detect';
+function cle(){ const t = trouves(); if (t.length > 1) return S.suivi; return t.length === 1 && P[t[0]] ? t[0] : 'nu'; }
+function PX(){ return face() === 'module' ? P[cle()] : NU; }
+const capDe = id => PX().cap[id] || ['n', ''];
+const RAIL = () => SECTIONS.filter(s => s[0] !== 'panneau');
+const titreDe = id => (SEC[id] || {titre: id}).titre;
+const svcPanneau = () => (PX().svc || 'panneau').replace(/^\(.*\)$/, 'server.sh (cron)');
+const donnees = id => (DONNEES[id] || (() => []))();
+// Le nom entre parenthèses : c'est Panel Detect qui le fournit au menu.
+function nomDetecte(){
+  const t = trouves();
+  if (face() === 'module') return PX().nom;
+  if (t.length > 1) return 'deux panneaux';
+  if (t.length) return P[t[0]] ? P[t[0]].nom : SANS_PILOTE[t[0]].split(' ')[0];
+  return '';
+}
+const libelle = () => 'Hébergement' + (nomDetecte() ? ' (' + nomDetecte() + ')' : '');
+// « Domaines » devient « Sites », qui existe déjà dans Parc : la section y renvoie, le module de panneau la nourrit.
+Object.values(P).forEach(p => { p.cap.sites = ['a', 'la liste des sites vit dans Parc › Sites, nourrie par ce module : rien n’est recopié ici', 'Parc › Sites'];
+  p.cap.crons = ['a', 'les crons vivent dans Automatismes, qui lit déjà toutes les crontabs ; ce module lui dit lesquels appartiennent au panneau', 'Automatismes'];
+  // Pas de doublon : ce qu'un autre module tient déjà, c'est lui qui le montre et le gère ; le module du panneau le nourrit par les routes.
+  p.cap.certs = ['a', 'les certificats vivent dans le module Certificats ; il les émet et renouvelle par ce panneau', 'Certificats'];
+  p.cap.dns = ['a', 'les zones vivent dans Zones DNS ; il lit et écrit celles du panneau par ce module', 'Zones DNS'];
+  p.cap.sauv = ['a', 'les copies vivent dans Sauvegardes ; il confie sites et bases au panneau quand celui-ci sait copier', 'Sauvegardes'];
+  p.cap.services = ['a', 'les services vivent dans La machine, avec leurs gestes', 'Panorama › La machine'];
+  p.cap.stats = ['a', 'processeur, charge, mémoire et disque vivent dans La machine', 'Panorama › La machine'];
+  p.cap.av = ['a', 'les balayages antivirus vivent dans Sécurité › Outils ; il y lance aussi celui du panneau quand il en a un', 'Sécurité › Outils']; });
+// LES ROUTES de Panel Detect : chaque fonction d'hébergement, qui la sert sur cette machine, et quels modules la demandent.
+// Aujourd'hui ces modules appellent « fastpanel.* » en dur ; demain ils demandent « paneldetect.<fonction> », qui passe au module du panneau détecté.
+const ROUTES = [
+  ['sites', 'La liste des sites', 'Sites, Zones DNS, Certificats, NetBird, Panorama', {fastpanel: 'fastpanel.sites', hestia: 'hestia.sites · v-list-web-domains', cloudpanel: 'cloudpanel.sites · vhosts nginx', nu: 'Sensorium · vhosts nginx'}],
+  ['bases', 'Les bases', 'Sites, Panorama', {fastpanel: 'fastpanel.bases', hestia: 'hestia.bases · v-list-databases', cloudpanel: 'cloudpanel.bases · MariaDB', nu: 'Sensorium · MariaDB'}],
+  ['courrier', 'Le courrier', 'Sites, Panorama', {fastpanel: 'fastpanel.mail', hestia: 'hestia.mail · v-list-mail-domains', cloudpanel: null, nu: null}],
+  ['php', 'Le PHP des sites', 'Sites', {fastpanel: 'fastpanel.php', hestia: 'hestia.php · v-list-sys-php', cloudpanel: 'cloudpanel.php · pools PHP-FPM', nu: 'Sensorium · pools PHP-FPM'}],
+  ['analyses', 'Les analyses antivirus', 'Sécurité › Outils, Sites', {fastpanel: 'fastpanel.scans_cibles · ai-bolit', hestia: 'ClamAV de la machine (Cassandra)', cloudpanel: 'ClamAV de la machine (Cassandra)', nu: 'ClamAV de la machine (Cassandra)'}],
+  ['ssl_renouveler', 'Émettre ou renouveler un certificat', 'Certificats', {fastpanel: 'fastpanel.ssl_renouveler', hestia: 'hestia.ssl_emettre · v-add-letsencrypt-domain', cloudpanel: 'cloudpanel.ssl_emettre · clpctl lets-encrypt', nu: 'certbot s’il est là, sinon sonde seule'}],
+  ['zones', 'Les zones DNS servies par la machine', 'Zones DNS, NetBird', {fastpanel: 'fastpanel.dns', hestia: 'hestia.dns · v-list-dns-domains', cloudpanel: null, nu: null}],
+  ['copies', 'Copier un site ou une base', 'Sauvegardes', {fastpanel: 'fastpanel · plans de copie', hestia: 'hestia.copier · v-backup-user', cloudpanel: 'rclone (Sauvegardes)', nu: 'rclone (Sauvegardes)'}],
+  ['parefeu', 'Le pare-feu', 'Sécurité', {fastpanel: 'fastpanel.parefeu', hestia: 'hestia.parefeu · v-list-firewall', cloudpanel: 'système · ufw', nu: 'système · ufw'}],
+  ['proxy', 'Publier une route web (nginx)', 'NetBird', {fastpanel: 'fastpanel · site nginx', hestia: 'à vérifier · modèle nginx de Hestia', cloudpanel: 'à vérifier · vhost CloudPanel', nu: 'nginx de la machine'}],
+  ['services', 'Les services de l’hébergement', 'La machine, Panorama', {fastpanel: 'fastpanel.services', hestia: 'hestia.services · v-list-sys-services', cloudpanel: 'systemd (La machine)', nu: 'systemd (La machine)'}],
+  ['comptes', 'Lier un compte, son portrait', 'Comptes', {fastpanel: 'fastpanel.utilisateurs · fastpanel.avatar', hestia: 'hestia.utilisateurs · v-list-users', cloudpanel: 'cloudpanel.utilisateurs · clpctl user:list', nu: null}],
+  ['crons', 'Les crons posés par le panneau', 'Automatismes', {fastpanel: 'fastpanel.crons · base du panneau', hestia: 'hestia.crons · v-list-cron-jobs', cloudpanel: 'cloudpanel.crons · crontab des utilisateurs de site', nu: null}],
+  ['superadmin', 'Le verrou du superadministrateur', 'le noyau (identité)', {fastpanel: '« fastuser » protégé tant que FastPanel est là', hestia: '« admin » de Hestia protégé (à vérifier)', cloudpanel: 'aucun compte système à protéger (à vérifier)', nu: null}],
+];
+
+// ───────────────────────────── le menu : l'entrée de l'application, puis Panel Detect, puis l'écran du module
+function menu(){
+  const m = face() === 'module', cur = p => S.page === p ? 'aria-current="page"' : '';
+  const item = (p, ic, t, bad) => `<button class="mi" ${cur(p)} onclick="aller('${p}')">${ico(ic)}<span>${t}</span>${bad ? `<span class="bad ${bad[1] || ''}">${bad[0]}</span>` : ''}</button>`;
+  const dyn = nomDetecte();
+  let h = `<h2>Le menu de l'application</h2>` + (dyn ? `<div class="mi" style="cursor:default">${ico('base')}<span>Hébergement <b class="dyn">(${E(dyn)})</b></span></div>
+    <p class="note" style="margin:0 12px 6px;font-size:12px">entre parenthèses : le panneau que Panel Detect a trouvé ${neuf}</p>`
+    : `<div class="mi inerte" style="cursor:default;text-decoration:line-through">${ico('base')}<span>Hébergement</span></div>
+    <p class="note" style="margin:0 12px 6px;font-size:12px">aucun panneau : l’entrée disparaît du menu. Panel Detect reste joignable par Modules et par la tuile Hébergement de La machine ${neuf}</p>`)
+    + `<h2>Panel Detect</h2>` + item('detect', 'loupe', 'Le panneau détecté', m ? null : [trouves().length ? 'à voir' : 'aucun', trouves().length ? 'w' : '']) + item('routes', 'boucle', 'Les routes', [String(ROUTES.length), '']);
+  if (m){
+    let fam = '';
+    const comptes = {sites: 5, certs: 5, php: 3, av: 3, bases: 3, sauv: '4/5', mail: 3, ftp: 2, dns: 2, comptes: 3, services: 7, crons: 2};
+    const alerte = {php: 'd', certs: 'w', sauv: 'd', av: 'w'};
+    RAIL().forEach(([id, f, titre, ic]) => {
+      if (f !== fam){ fam = f; h += `<h2>${E(f)}</h2>`; }
+      const c = capDe(id), off = c[0] === 'n' || c[0] === 'a';
+      const bad = off ? `<span class="bad" title="${E(c[1])}">${c[0] === 'a' ? '→ ' + E(c[2].replace('Panorama › ', '')) : 'absent'}</span>` : comptes[id] != null ? `<span class="bad ${S.panne ? '' : (alerte[id] || '')}">${S.panne ? '?' : comptes[id]}</span>` : '';
+      h += `<button class="mi ${off ? 'off' : ''}" ${cur(id)} onclick="aller('${id}')">${ico(ic)}<span>${E(titre)}</span>${bad}</button>`;
+    });
+  }
+  h += `<h2>La maquette</h2>${item('compat', 'table', 'Le catalogue, panneau par panneau')}${item('corr', 'table', 'Ancienne page → nouvelle')}
+    <div class="legende"><div><span class="neuf">nouveau</span>absent de l'onglet actuel</div><div><span class="de">déjà là</span>relevé ou geste qui existe déjà</div><div><span class="ac">à créer</span>demande du code côté serveur</div><div><span class="ac">à trancher</span>ta décision</div></div>`;
+  $('menu').innerHTML = h;
+}
+
+// ───────────────────────────── l'en-tête
+function puce(){
+  const t = trouves();
+  if (face() !== 'module'){
+    if (!t.length) return `<button class="pan" onclick="aller('detect')"><i class="n"></i>Aucun panneau <small>· Panel Detect</small></button>`;
+    if (t.length > 1) return `<button class="pan" onclick="aller('detect')"><i class="w"></i>Deux panneaux <small>· à départager</small></button>`;
+    return `<button class="pan" onclick="aller('detect')"><i class="w"></i>${E(nomDetecte())} <small>· sans module</small></button>`;
+  }
+  const px = PX();
+  return `<button class="pan" onclick="aller('detect')" title="Panel Detect : le panneau trouvé, ses preuves, son module"><i class="${S.panne ? 'd' : t.length > 1 ? 'w' : ''}"></i>${E(px.nom)} ${E(px.ver)} <small>· module ${E(CATALOGUE[cle()].version)} · ${S.panne ? 'injoignable' : 'détecté'}</small></button>`;
+}
+const tete = (id, meta, titre) => {
+  const t = titre || titreDe(id), mot = face() === 'module' ? PX().mots[id] : '';
+  const fil = nomDetecte() ? `Parc › <a onclick="aller('${face() === 'module' ? 'vue' : 'detect'}')">${E(libelle())}</a>` : `Modules › <a onclick="aller('detect')">Panel Detect</a>`;
+  return `<p class="fil">${fil} › ${E(t)}</p><div class="tete"><h1>${E(t)}</h1><span class="meta">${mot && mot !== t ? `« ${E(mot)} » dans ${E(PX().nom)} · ` : ''}${meta || ''}</span>${puce()}<button class="btn s" onclick="toast('Relu : détection, résumé, section ouverte.')">Relever</button></div>`;
+};
+const sec = (titre, meta, corps, droite = '') => `<section class="carte sec"><div class="sh"><h2>${titre}</h2><span class="meta">${meta}</span><span class="dr">${droite}</span></div>${corps}</section>`;
+const cass = q => `<button class="btn s" onclick="toast('Ouvre la conversation : « ${E(q).replace(/'/g, '’')} »')">${ico('bulle')}Analyser avec Cassandra</button>`;
+const age = () => S.panne ? '<span class="age mu">injoignable depuis 4 min</span>' : '<span class="age">lu il y a 12 s</span>';
+
+// ───────────────────────────── PANEL DETECT : le panneau trouvé, ses preuves, son module au catalogue
+function etatCatalogue(k){
+  const c = CATALOGUE[k], installe = opt().module && trouves().includes(k);
+  if (!c) return [pill('aucun module', ''), ''];
+  if (installe) return [pill('installé · ' + c.version, 'ok'), c.existe ? deja() : creer()];
+  if (c.version) return [pill('disponible · ' + c.version, 'i'), c.existe ? deja() : creer()];
+  return [pill('pas encore écrit', ''), creer('à écrire')];
+}
+const PAGES = {
+  detect(){
+    const t = trouves(), o = opt();
+    let bloc;
+    if (!t.length) bloc = `<div class="verdict"><span class="vm n"></span><div style="flex:1"><p class="vt">Aucun panneau d'hébergement sur cette machine</p><p class="vs">Cassandra ne pose pas de panneau : elle pilote celui qui est là. Le bon ordre, dit dans le guide d'installation du dépôt : <b>d'abord le panneau, ensuite Cassandra</b> — son pare-feu garde alors ouverts les ports du panneau. Un panneau posé après coup est vu à la passe suivante de Panel Detect, mais ses ports peuvent rester fermés : le guide dit comment les ouvrir. Tant qu’il n’y a pas de panneau, l’entrée « Hébergement » n’est pas dans le menu ; la machine est lue telle quelle (Sites, La machine) et les routes passent par ce que Cassandra sait faire seule.</p><div class="gestes"><button class="btn p" onclick="toast('Ouvre le guide d’installation du dépôt (hors maquette).')">Le guide : installer un panneau avant Cassandra</button><button class="btn" onclick="toast('Ouvre Parc › Sites (hors maquette).')">Ouvrir Sites</button></div></div></div>`;
+    else if (t.length > 1) bloc = `<div class="verdict"><span class="vm d"></span><div style="flex:1"><p class="vt">Deux panneaux sur la même machine : FastPanel et HestiaCP</p><p class="vs">Ils écrivent tous deux la configuration de nginx et de PHP : l’un peut défaire l’autre. Choisis le module qui pilote ; l’autre panneau est montré, jamais piloté, et la cloche le rappelle. Le menu dira « Hébergement (deux panneaux) » tant que rien n’est choisi. ${creer('à trancher')}</p></div></div>
+      <div class="tuiles" style="margin-top:12px">${['fastpanel', 'hestia'].map(k => `<div class="tuile"><span class="t">${ico('machine')}${E(P[k].nom)} ${E(P[k].ver)}<small>module ${E(CATALOGUE[k].version)}</small></span><p>${E(P[k].preuves.map(p => p[1]).slice(0, 2).join(' · '))}</p><div class="gestes"><button class="btn s p" onclick="S.suivi='${k}';S.choisi=true;aller('vue')">Piloter avec le module ${E(P[k].nom)}</button></div></div>`).join('')}</div>`;
+    else if (!o.module && P[t[0]]) bloc = `<div class="verdict"><span class="vm w"></span><div style="flex:1"><p class="vt">${E(P[t[0]].nom)} ${E(P[t[0]].ver)} détecté ; son module est au catalogue, pas encore installé</p><p class="vs">Preuves : ${E(P[t[0]].preuves.map(p => p[1]).slice(0, 2).join(' · '))}. Sans son module, Cassandra ne lit ni ne pilote rien du panneau. Le module s’installe par le geste habituel du module Modules, puis le menu devient « Hébergement (${E(P[t[0]].nom)}) ».</p><div class="gestes"><button class="btn p" onclick="installerModule('${t[0]}')">Installer le module ${E(P[t[0]].nom)}</button></div></div></div>`;
+    else if (!o.module) bloc = `<div class="verdict"><span class="vm w"></span><div style="flex:1"><p class="vt">${E(SANS_PILOTE[t[0]])} détecté ; aucun module ne le pilote encore</p><p class="vs">Cassandra le nomme dans le menu — « Hébergement (${E(nomDetecte())}) » — mais n’agit pas à sa place : elle lit ce que la machine sert (nginx, certificats, PHP, MariaDB). Un module ${E(nomDetecte())} pourra rejoindre le catalogue. ${creer('à trancher')}</p></div></div>`;
+    else { const px = PX(); bloc = `<div class="verdict"><span class="vm ${S.panne ? 'd' : ''}"></span><div style="flex:1"><p class="vt">${E(px.nom)} ${E(px.ver)} détecté, piloté par son module ${E(CATALOGUE[cle()].version)}</p><p class="vs">Détecté le 05-09-2026, inchangé depuis (vérifié à chaque passe du Sensorium). Le menu dit « ${E(libelle())} » ; l’onglet s’ouvre sur l’écran Hébergement du module.</p><div class="gestes"><button class="btn p" onclick="aller('vue')">Ouvrir ${E(libelle())}</button></div></div></div>`; }
+    const preuves = SIGNES.map(([k, nom, sig]) => { const ok = t.includes(k); return `<div class="pv"><span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '·'}</span><div><b style="color:var(--${ok ? 'strong' : 'muted'})">${E(nom)}</b><small>${E(ok && P[k] ? P[k].preuves.map(p => p[0] + ' ' + p[1]).join(' · ') : sig)}</small></div><span></span></div>`; }).join('');
+    const cat = Object.keys(CATALOGUE).concat(['froxlor']).map(k => { const [p, tag] = etatCatalogue(k), nom = P[k] ? P[k].nom : 'Froxlor'; return `<div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr) auto"><div class="nm"><b>Module ${E(nom)}${t.includes(k) ? ' <span class="pl i">sur cette machine</span>' : ''}</b><small>${E(P[k] ? P[k].lic + ' · ' + P[k].acces[0][0] : 'gestes différés, API à clé')}</small></div><div class="mil" style="white-space:normal">${E(P[k] ? P[k].pieges[0] : 'reconnu par Panel Detect ; pas de module prévu pour l’instant')}</div><div class="cote">${p}${tag}</div></div>`; }).join('');
+    let h = tete('detect', 'le module Panel Detect ' + neuf, 'Le panneau détecté') + `<section class="carte sec">${bloc}</section>`
+      + sec('Le catalogue des modules de panneau', 'le module Modules, famille « hebergement » · il grandit avec le temps', `<div class="rows">${cat}</div>`)
+      + sec('Les preuves', 'dix signatures cherchées à chaque passe du Sensorium ' + creer(), preuves, `<button class="btn s" onclick="toast('Détection refaite : mêmes preuves.')">Refaire la détection</button>`);
+    if (face() !== 'module') return h;
+    const px = PX();
+    const acces = px.acces.map(a => `<div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto"><div class="nm"><b>${E(a[0])}</b><small>${E(a[2])}</small></div><div class="mil" style="white-space:normal">${E(a[1])}</div><div class="cote">${a[3] === 'ok' ? (S.panne && a === px.acces[0] ? pill('délai dépassé', 'd') : pill('répond', 'ok')) : a[3] === 'i' ? pill('différé', 'i') : pill('non utilisée', '')}</div></div>`).join('');
+    const capa = RAIL().filter(r => r[0] !== 'vue').map(([id, , titre]) => { const c = capDe(id), n = NIV[c[0]]; return `<div class="row" style="grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) auto;cursor:pointer" onclick="aller('${id}')"><div class="nm"><b>${E(titre)}</b>${px.mots[id] ? `<small>« ${E(px.mots[id])} »</small>` : ''}</div><div class="mil" style="white-space:normal">${E(c[1])}${c[2] ? ' → ' + E(c[2]) : ''}</div><div class="cote">${pill(n[0], n[1])}</div></div>`; }).join('');
+    return h + sec('Comment le module ' + E(px.nom) + ' lui parle', 'les voies d’accès, de la plus sûre à la moins sûre', `<div class="rows">${acces}</div>`)
+      + sec('Ce que le module permet', 'section par section · un clic ouvre la section', `<div class="rows">${capa}</div>`)
+      + sec('Ce qu’il faut savoir de ' + E(px.nom), 'tiré des dossiers de recherche', `<ul class="plan" style="list-style:disc">${px.pieges.map(p => `<li>${E(p)}</li>`).join('')}</ul>`);
+  },
+};
+IC.boucle = '<path d="M4 9h13l-3-3M20 15H7l3 3"/>';
+// LES ROUTES : ce que chaque module d'hébergement demande, et qui le sert sur cette machine.
+PAGES.routes = function(){
+  const rk = face() === 'module' ? cle() : 'nu', px = face() === 'module' ? PX() : null, t = trouves();
+  const qui = rk === 'nu' ? (t.length > 1 ? 'aucun module tant que tu n’as pas choisi' : t.length && P[t[0]] ? 'Cassandra seule, en attendant le module ' + P[t[0]].nom : 'Cassandra seule : aucun panneau') : 'le module ' + px.nom;
+  const lignes = ROUTES.map(([id, quoi, par, m]) => {
+    const v = m[rk];
+    const cas = v == null ? pill('personne', '') : /^(Sensorium|ClamAV|certbot|rclone|système|systemd|nginx)/.test(v) ? pill('Cassandra', 'i') : /^à vérifier/.test(v) ? pill('à vérifier', 'w') : pill('le panneau', 'ok');
+    const effet = v == null ? (id === 'courrier' ? 'la section Courrier dit « ce panneau ne le fait pas »' : id === 'zones' ? 'Zones DNS ne montre que les zones publiques' : id === 'comptes' ? 'pas de lien de compte à proposer' : id === 'crons' ? 'Automatismes montre les crontabs telles quelles' : 'rien à protéger') : '';
+    return `<tr><td style="white-space:normal">${E(quoi)}<br><span class="mono" style="font-size:11.5px;color:var(--muted);font-weight:500">paneldetect.${E(id)}</span></td><td style="white-space:normal">${cas} <span class="mono" style="font-size:12px">${E(v || '')}</span>${effet ? `<br><small style="color:var(--soft)">${E(effet)}</small>` : ''}</td><td style="white-space:normal;color:var(--soft)">${E(par)}</td></tr>`;
+  }).join('');
+  return tete('routes', 'Panel Detect relie chaque module de Cassandra au panneau ' + neuf, 'Les routes')
+    + `<div class="cap"><div><b>Sur cette machine, les routes passent par : ${E(qui)}.</b> Sites, Certificats, Zones DNS, Sauvegardes, Sécurité, NetBird, Panorama et Comptes ne parlent plus au panneau en direct : ils demandent à Panel Detect, qui passe au module du panneau détecté — ou, à défaut, à ce que Cassandra sait faire seule. Changer de panneau ne demande alors de toucher qu’un module. ${creer()}</div></div>`
+    + sec('Fonction par fonction', ROUTES.length + ' routes', `<div class="mat-w"><table><thead><tr><th>La fonction</th><th>Servie par, sur cette machine</th><th>Demandée par</th></tr></thead><tbody>${lignes}</tbody></table></div>`)
+    + sec('Ce qui change dans les modules', 'aujourd’hui, neuf modules appellent FastPanel en dur ; Automatismes doit apprendre à le connaître', `<ul class="plan" style="list-style:disc">
+        <li><b>Certificats</b> renouvelle par <span class="mono">fastpanel.ssl_renouveler</span> et écoute <span class="mono">fastpanel.certificat_renouvele</span> → <span class="mono">paneldetect.ssl_renouveler</span>, et un événement au nom commun.</li>
+        <li><b>Sites</b> lit <span class="mono">fastpanel.sites</span>, <span class="mono">.bases</span>, <span class="mono">.mail</span>, <span class="mono">.php</span>, <span class="mono">.audit</span>, <span class="mono">.scans_cibles</span> → les routes du même nom.</li>
+        <li><b>Zones DNS</b> et <b>NetBird</b> lisent <span class="mono">fastpanel.sites</span> et <span class="mono">fastpanel.dns</span> ; NetBird publie ses routes dans un site FastPanel → <span class="mono">paneldetect.proxy</span>.</li>
+        <li><b>Sauvegardes</b> confie sites et bases au moteur « fastpanel » → <span class="mono">paneldetect.copies</span> ; sans panneau, rclone.</li>
+        <li><b>Sécurité</b> lit le pare-feu par <span class="mono">fastpanel.parefeu</span> → <span class="mono">paneldetect.parefeu</span> ; sans panneau, le pare-feu du système.</li>
+        <li><b>Automatismes</b> lit toutes les crontabs, mais ne sait pas lesquelles le panneau a posées → <span class="mono">paneldetect.crons</span> : il les marque « au panneau », et les modifie par le panneau, qui sinon réécrirait la crontab par-dessus.</li>
+        <li><b>Panorama</b> (six sources « panneau »), <b>Comptes</b> (pseudo et portrait FastPanel) et le <b>noyau</b> (verrou de « fastuser ») → les routes du même nom.</li></ul>
+      <p class="note">Le module FastPanel ne change pas de capacités : Panel Detect les relaie. C’est le seul travail « à plat » de la refonte : brancher ces neuf modules sur les routes. ${creer()}</p>`);
+};
+function installerModule(k){
+  const p = P[k];
+  $('feuille').innerHTML = `<h3>Installer le module ${E(p.nom)}</h3><p>Le panneau est déjà là : seul le module de Cassandra s’installe, par le geste du module Modules. Rien n’est écrit dans le panneau.</p>
+    <dl><dt>Ce qui se passe</dt><dd><ol class="plan"><li>Le module est pris au catalogue, son intégrité vérifiée.</li><li>Sa table fermée de commandes root est posée chez le courtier (${E(p.acces[0][0])}).</li><li>Il se prouve par une première lecture : sites, bases, comptes.</li><li>Le menu devient « Hébergement (${E(p.nom)}) ».</li></ol></dd>
+    <dt>Pour défaire</dt><dd>Retirer le module : le panneau reste tel quel, Cassandra cesse de le piloter, le menu revient à « Hébergement (${E(p.nom)}) » sans écran de gestion.</dd></dl>
+    <div class="gestes"><button class="btn" onclick="fermer()">Annuler</button><button class="btn p" onclick="fermer();S.e='hestia';$('choix').value='hestia';aller('vue');toast('Module ${E(p.nom)} installé : le menu dit « Hébergement (${E(p.nom)}) ».')">Installer le module</button></div>`;
+  $('voile').classList.add('on');
+}
+
+// ───────────────────────────── L'ÉCRAN HÉBERGEMENT D'UN MODULE : le même pour tous ; chacun n'offre que les contrôles que son panneau permet
+function banniere(id){
+  const c = capDe(id), px = PX(), n = NIV[c[0]];
+  if (S.e === 'deux') return `<div class="cap w"><div><b>Deux panneaux sur cette machine.</b> Le module ${E(px.nom)} pilote ; ${E(px.nom === 'FastPanel' ? 'HestiaCP' : 'FastPanel')} est montré par Panel Detect, jamais piloté.</div><div class="gestes"><button class="btn s" onclick="aller('detect')">Panel Detect</button></div></div>`;
+  if (S.panne && !['a', 'n', 'c'].includes(c[0])) return `<div class="cap d"><div><b>${E(px.nom)} ne répond plus</b> (${E(px.acces[0][0])} : délai dépassé il y a 4 min). La liste ci-dessous est la <b>dernière connue</b>, grisée et datée ; aucun geste tant que la voie n'est pas revenue. ${deja('détecteur « injoignable »')}</div><div class="gestes"><button class="btn s" onclick="aller('detect')">Les voies d'accès</button></div></div>`;
+  if (c[0] === 'g') return `<div class="cap"><div>${pill(n[0], n[1])} &nbsp;lu par <span class="mono">${E(c[1])}</span></div></div>`;
+  if (c[0] === 'l') return `<div class="cap"><div>${pill(n[0], n[1])} &nbsp;lu par <span class="mono">${E(c[1])}</span>. ${E(px.nom)} n'offre pas de geste ici.</div></div>`;
+  if (c[0] === 'p') return `<div class="cap w"><div>${pill(n[0], n[1])} &nbsp;<b>${E(px.nom)} ne le fait qu'en partie</b> : ${E(c[1])}.</div><div class="gestes"><button class="btn s" onclick="toast('Ouvre ${E(px.nom)} (hors maquette).')">Ouvrir dans ${E(px.nom)}</button></div></div>`;
+  if (c[0] === 'c') return `<div class="cap"><div>${pill(n[0], n[1])} &nbsp;<b>${E(px.nom)} ne le fait pas : Cassandra s'en charge</b> · ${E(c[1])}. ${creer(id === 'av' ? 'à trancher' : '')}</div></div>`;
+  return '';
+}
+function absente(id){
+  const c = capDe(id), px = PX();
+  const pourquoi = c[0] === 'a' ? `Avec ${E(px.nom)}, cela ne passe pas par ce module : <b>${E(c[1])}</b>. Cassandra le montre déjà dans <b>${E(c[2])}</b>.` : `<b>${E(c[1])}.</b> Ce n'est pas une panne : c'est ce que ${E(px.nom)} propose.`;
+  const extra = {mail: 'Le courrier de ces domaines est servi ailleurs : leurs MX pointent vers mx.fournisseur.test (lu dans la zone publique).', dns: 'Les zones publiques des domaines sont lues et suivies par Zones DNS.'}[id] || '';
+  return tete(id, '') + `<div class="cap n"><div>${pill(NIV[c[0]][0], NIV[c[0]][1])} &nbsp;${pourquoi}${extra ? '<br><span style="color:var(--soft)">' + E(extra) + '</span>' : ''}</div>${c[2] ? `<div class="gestes"><button class="btn s p" onclick="toast('Ouvre ${E(c[2])} (hors maquette).')">Ouvrir ${E(c[2])} ↗</button></div>` : ''}</div>
+    <p class="note">${c[0] === 'a' ? 'La section reste dans le menu, en pointillés, et mène au module qui la tient : un seul endroit pour chaque chose.' : 'La section reste dans le menu, en pointillés : on voit d’un coup d’œil ce que ce panneau ne fait pas.'}</p>`;
+}
+function cmdDe(g){ if (g.tous) return g.tous; const c = g.c[cle()]; return c === undefined ? null : c; }
+function gestes(id){
+  const L = GESTES.filter(g => g.s === id); if (!L.length) return '';
+  const px = PX();
+  return sec('Les gestes', `avec ${E(px.nom)} · chacun passe par une feuille de confirmation, puis le journal d'administration`, `<div class="rows">${L.map(g => {
+    const c = cmdDe(g), n = NATURES[g.nat];
+    const etiq = g.neuf ? neuf : g.tous || cle() === 'fastpanel' ? deja() : creer();
+    const ver = c && /^à vérifier/.test(c) ? creer('à vérifier') : '';
+    const cmd = c == null ? `<span class="cmdl no">${E(px.nom)} ne le permet pas — à faire dans le panneau</span>` : `<span class="cmdl" title="${E(c)}">${E(c)}</span>`;
+    const bouton = c == null ? `<button class="btn s" onclick="toast('Ouvre ${E(px.nom)} (hors maquette).')">Ouvrir dans ${E(px.nom)}</button>` : `<button class="btn s ${g.nat === 'destructif' ? 'd' : ''}" ${S.panne || ver ? 'disabled' : ''} onclick="confirmer('${id}','${g.id}')">${g.nat === 'lecture' ? 'Sonder' : 'Faire'}</button>`;
+    return `<div class="ge"><div><b>${E(g.t)}${etiq}</b><small>${pill(n[0], n[1])} · preuve : ${E(g.preuve)}</small></div><div>${cmd}${ver}</div>${bouton}</div>`;
+  }).join('')}</div>`);
+}
+function confirmer(id, gid){
+  const g = GESTES.find(x => x.s === id && x.id === gid), px = PX(), c = cmdDe(g);
+  const ex = g.ex.replace('{site}', 'blog.exemple.test');
+  const cmd = String(c).replace(/\{site\}/g, 'blog.exemple.test').replace(/\{compte\}/g, 'client1').replace(/\{zone\}/g, 'boutique.exemple.test').replace(/\{base\}/g, 'boutique_stats').replace(/\{nom\}/g, '_verif').replace(/\{utilisateur\}/g, 'client1_stats').replace(/\{racine du site\}/g, '/var/www/client1/data/www/blog.exemple.test').replace(/\{archive\}/g, 'client1.2026-11-12_03-00.tar');
+  $('feuille').innerHTML = `<h3>${E(g.t)} · ${E(ex)}</h3><p>Avec ${E(px.nom)}. Rien d'autre que cette commande n'est lancé : elle vient du catalogue fermé du module, jamais composée à la volée.</p>
+    <dl><dt>Ce qui sera lancé</dt><dd><pre>${E(cmd)}</pre></dd>
+    <dt>La preuve, relue après</dt><dd>${E(g.preuve)}</dd>
+    <dt>Pour défaire</dt><dd>${g.def ? E(g.def) + ' — proposé dans « Gestes de cette session »' : 'rien à défaire (lecture ou geste sans retour)'}</dd>
+    ${g.nat === 'destructif' ? `<dt>Avant</dt><dd>Une copie est faite et vérifiée ; sans elle, le geste ne part pas.</dd>` : ''}</dl>
+    <div class="gestes"><button class="btn" onclick="fermer()">Annuler</button><button class="btn p ${g.nat === 'destructif' ? 'd' : ''}" onclick="fait('${id}','${gid}','${E(ex)}')">${E(g.t)}</button></div>`;
+  $('voile').classList.add('on');
+}
+function fait(id, gid, ex){ const g = GESTES.find(x => x.s === id && x.id === gid); S.gestes.unshift([g.t, ex, 'prouvé : ' + g.preuve, g.def]); fermer(); toast(g.t + ' : fait et prouvé.'); rendre(); }
+function fermer(){ $('voile').classList.remove('on'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fermer(); });
+function liste(id){
+  const L = donnees(id), mu = S.panne;
+  const lignes = L.map((r, i) => `<div class="row" style="cursor:pointer;${mu ? 'opacity:.5;filter:grayscale(1)' : ''}" onclick="fiche('${id}',${i})"><div class="nm"><b>${E(r[0])}</b><small>${E(r[1])}</small></div><div class="mil">${E(r[2])}</div><div class="cote">${r[3]}</div></div>`).join('');
+  return lignes ? `<div class="rows">${lignes}</div>` : `<div class="vide"><b>Aucun élément · lecture réussie.</b></div>`;
+}
+function fiche(id, i){
+  const r = donnees(id)[i], px = PX(), c = capDe(id);
+  $('feuille').innerHTML = `<h3>${E(r[0])}</h3><p>${E(titreDe(id))} · ${E(px.nom)}</p><dl><dt>Ce que le panneau en dit</dt><dd>${E(r[1])}${r[2] ? ' · ' + E(r[2]) : ''}</dd><dt>Lu par</dt><dd class="mono">${E(c[1])} · ${S.panne ? 'dernière lecture il y a 4 min' : 'il y a 12 s'}</dd></dl>
+    <div class="gestes"><button class="btn" onclick="toast('Ouvre la conversation sur ${E(r[0])}.')">Analyser avec Cassandra</button><button class="btn p" onclick="fermer()">Fermer</button></div>`;
+  $('voile').classList.add('on');
+}
+function section(id){
+  if (face() !== 'module') return PAGES.detect();
+  const c = capDe(id);
+  if (c[0] === 'a' || c[0] === 'n') return absente(id);
+  const n = donnees(id).length;
+  return tete(id, `${n || 'aucun'} · ${E(c[1])}`) + banniere(id)
+    + sec(({ftp: 'Les comptes FTP', dns: 'Les zones', php: 'Le PHP de chaque site', sauv: 'Les copies, site par site', stats: 'Les chiffres du jour', services: 'Les services de l’hébergement'})[id] || 'Les ' + titreDe(id).toLowerCase(), age(), `<div class="chips"><input type="search" placeholder="Chercher…" aria-label="Chercher dans la section"></div>` + liste(id), cass('Analyse « ' + titreDe(id) + ' » de l’hébergement'))
+    + gestes(id);
+}
+PAGES.vue = function(){
+  if (face() !== 'module') return PAGES.detect();
+  const px = PX(), m = px.nom;
+  const vig = [];
+  if (!S.panne){
+    if (S.e === 'deux') vig.push(['d', (m === 'FastPanel' ? 'HestiaCP' : 'FastPanel') + ' est aussi installé : il n’est pas piloté, et peut réécrire nginx et PHP.', 'detect', 'Panel Detect']);
+    px.vig.filter(v => !['sauv', 'certs', 'av', 'services', 'crons', 'sites'].includes(v[2])).forEach(v => vig.push(v));
+    vig.push(['d', '1 site sur un PHP en fin de vie (7.4) : atelier.exemple.test.', 'php', 'voir']);
+    if (capDe('mail')[0] !== 'n') vig.push(['w', 'La boîte contact@boutique.exemple.test est pleine à 92 %.', 'mail', 'voir']);
+  }
+  const ici = (k, b, em, cl, src) => `<div class="kp"><span>${k}</span><b class="${S.panne ? 'mu' : cl}">${S.panne ? 'dernier connu : ' + b : b}</b><em>${em}</em><small>${E(src)}</small></div>`;
+  const absent = (k, id) => `<div class="kp"><span>${k}</span><b class="mu">ce panneau ne le fait pas</b><small>${E(capDe(id)[1])}</small></div>`;
+  const kpis = ici('PHP', '3 versions', '1 site en fin de vie', 'd', capDe('php')[1]) + ici('Bases', '3', '1,8 Go en tout', '', capDe('bases')[1])
+    + (capDe('mail')[0] === 'n' ? absent('Gestion e-mail', 'mail') : ici('Boîtes e-mail', '3', '1 presque pleine', 'w', capDe('mail')[1]))
+    + (capDe('ftp')[0] === 'n' ? absent('FTP', 'ftp') : ici('Comptes FTP', '2', '1 jamais utilisé', '', capDe('ftp')[1])) + ici('Comptes du panneau', '3', '1 lié à Cassandra', '', capDe('comptes')[1]);
+  const titre = S.panne ? m + ' ne répond plus' : vig.length ? vig[0][1].replace(/\.$/, '') + (vig.length > 1 ? ' (+' + (vig.length - 1) + ')' : '') : 'Rien ne demande un geste dans le panneau';
+  const sous = S.panne ? 'Les chiffres ci-dessous sont les derniers connus, grisés et datés ; aucun geste tant que la voie n’est pas revenue.' : `Ici, seulement ce que ${E(m)} tient et qu’aucun autre module ne montre : PHP, bases, e-mail, FTP, comptes du panneau, et son catalogue d’opérations. Le reste vit dans son module — en bas, une tuile chacun.`;
+  const verdict = `<section class="carte sec"><div class="verdict"><span class="vm ${S.panne || vig.some(v => v[0] === 'd') ? 'd' : vig.length ? 'w' : ''}"></span><div style="flex:1"><p class="vt">${E(titre)}</p><p class="vs">${sous}</p>
+    <div class="gestes">${S.panne ? '' : `<button class="btn p" onclick="aller('php')">Voir les PHP</button>`}<button class="btn" onclick="toast('Ouvre ${E(px.ui)} (hors maquette).')">Ouvrir ${E(m)}</button><button class="btn" onclick="aller('ops')">Opérations</button></div></div></div>
+    <div class="kpis">${kpis}</div></section>`;
+  const geste = sec('Ce qui demande un geste', 'dans le panneau · le reste sonne dans son module', vig.length ? vig.map(v => `<div class="al"><i class="${v[0] === 'd' ? 'd' : v[0] === 'i' ? 'i' : ''}"></i><div><b>${E(v[1])}</b></div><button class="btn s" onclick="${v[2].startsWith('ext:') ? `toast('Ouvre ${E(v[2].slice(4))} (hors maquette).')` : `aller('${v[2]}')`}">${E(v[3])}</button></div>`).join('') : `<div class="vide">${S.panne ? 'Inconnu tant que le panneau ne répond pas : rien n’est affiché à la place.' : 'Rien ne demande un geste dans le panneau.'}</div>`);
+  // Ce qui vit ailleurs : une tuile par module, son chiffre et son état, qui s'ouvre chez lui (comme sur la page « La machine »).
+  const T = [['Sites', 'globe', '5', 'tous en ligne', ['1 PHP en fin de vie', 'd'], 'Parc › Sites'], ['Certificats', 'cadenas', '5/5', 'le premier expire dans 12 j', ['12 j', 'w'], 'Certificats'],
+    ['Sauvegardes', 'archive', '4/5', '1 site sans copie', ['sans copie', 'd'], 'Sauvegardes'], ['Zones DNS', 'globe', '2', 'servies par le panneau', null, 'Zones DNS'],
+    ['Services', 'services', '6/7', 'pure-ftpd arrêté', ['1 arrêté', 'w'], 'Panorama › La machine'], ['Crons', 'fil', '2', 'dont 2 posés par le panneau', null, 'Automatismes'],
+    ['Antivirus', 'bouclier', capDe('av')[0] === 'g' || cle() === 'fastpanel' ? 'il y a 97 j' : 'jamais', 'dernier balayage', ['à relancer', 'w'], 'Sécurité › Outils'], ['Pare-feu', 'bouclier', '12', 'règles du panneau', null, 'Sécurité › Pare-feu']];
+  const ailleurs = sec('Ce qui vit ailleurs', 'chaque module montre et gère le sien ; Panel Detect lui passe les données du panneau', `<div class="grille">${T.map(t => `<div class="tu ext" role="link" tabindex="0" onclick="toast('Ouvre ${E(t[5])} (hors maquette).')"><span class="tt">${ico(t[1])}<b>${E(t[0])}</b>${t[4] && !S.panne ? pill(t[4][0], t[4][1]) : ''}</span><span class="gr">${E(t[2])}</span><span class="li"><span class="n">${E(t[3])}</span></span><span class="tp">↗ ${E(t[5])}</span></div>`).join('')}</div>`);
+  const sources = sec('D’où viennent les chiffres', 'et leur âge', `<div class="rows">${px.acces.map(a => `<div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto"><div class="nm"><b>${E(a[0])}</b><small>${E(a[2])}</small></div><div class="mil" style="white-space:normal">${E(a[1])}</div><div class="cote">${a[3] === 'ok' ? (S.panne && a === px.acces[0] ? pill('injoignable', 'd') : pill('il y a 12 s', 'ok')) : a[3] === 'i' ? pill('≈ 1 min', 'i') : pill('non utilisée', '')}</div></div>`).join('')}</div><p class="note">Un chiffre sans source n'est pas affiché ; un vide lu avec succès se dit « aucun ». ${deja()}</p>`);
+  const session = sec('Gestes de cette session', '', S.gestes.length ? `<div class="rows">${S.gestes.map(g => `<div class="row"><div class="nm"><b>${E(g[0])}</b><small>${E(g[1])}</small></div><div class="mil">${E(g[2])}</div><div class="cote">${g[3] ? `<button class="btn s" onclick="toast('${E(g[3])} (hors maquette).')">${E(g[3])}</button>` : ''}</div></div>`).join('')}</div>` : '<div class="vide">Aucun geste confirmé depuis l’ouverture. Le journal complet est dans Journaux.</div>');
+  return tete('vue', cle() === 'fastpanel' ? 'l’écran d’aujourd’hui, sans ce que les autres modules tiennent déjà' : 'le même écran, avec les contrôles que ' + E(m) + ' permet ' + creer()) + verdict + geste + ailleurs + `<div class="duo2">${sources}${session}</div>`;
+};
+PAGES.ops = function(){
+  if (face() !== 'module') return PAGES.detect();
+  const px = PX(), k = cle(), garde = g => capDe(g.s)[0] !== 'a', L = GESTES.filter(g => !g.tous && g.c[k] != null && garde(g)), ex = GESTES.filter(g => !g.tous && g.c[k] === null && garde(g));
+  return tete('ops', `${L.length} · ${E(capDe('ops')[1])}`) + banniere('ops')
+    + sec('Le catalogue d’opérations du module ' + E(px.nom), 'chaque opération nommée et vérifiée ' + (k === 'fastpanel' ? deja() : creer()), `<div class="rows">${L.map(g => `<div class="ge"><div><b>${E(g.t)}</b><small>${pill(NATURES[g.nat][0], NATURES[g.nat][1])} · ${E(titreDe(g.s))}</small></div><div><span class="cmdl">${E(g.c[k])}</span></div><button class="btn s" ${S.panne || /^à vérifier/.test(g.c[k]) ? 'disabled' : ''} onclick="confirmer('${g.s}','${g.id}')">Lancer</button></div>`).join('')}</div>${ex.length ? `<p class="note">${E(px.nom)} ne permet pas : ${ex.map(g => E(g.t.toLowerCase())).join(', ')}.</p>` : ''}<p class="note">Certificats, copies, zones, antivirus et services se lancent depuis leur module : il passe par le panneau grâce aux routes de Panel Detect. Ce catalogue ne garde que ce qu’aucun autre module ne fait.</p>`);
+};
+PAGES.compat = function(){
+  const cols = ['fastpanel', 'hestia', 'cloudpanel', 'cyberpanel', 'aapanel', 'virtualmin', 'ispconfig'];
+  const lignes = SECTIONS.filter(s => !['vue', 'panneau'].includes(s[0])).map(([id, , titre]) => `<tr><td>${E(titre)}</td>${cols.map(k => { const c = P[k].cap[id]; return `<td><span class="cel ${c[0]}" title="${E(P[k].nom + ' — ' + NIV[c[0]][0] + ' : ' + c[1])}">${NIV[c[0]][2]}</span></td>`; }).join('')}</tr>`).join('');
+  return `<p class="fil">La maquette › Le catalogue, panneau par panneau</p><div class="tete"><h1>Le catalogue, panneau par panneau</h1><span class="meta">ce que l’écran Hébergement de chaque module offrira · survoler une case pour la source</span></div>`
+    + sec('Ce que chaque module permettra', '<b>G</b> lecture et gestes · <b>L</b> lecture seule · <b>P</b> en partie · <b>C</b> Cassandra s’en charge · <b>→</b> vit dans un autre module · <b>—</b> le panneau ne le fait pas', `<div class="mat-w"><table class="mat"><thead><tr><th>Section</th>${cols.map(k => `<th class="${k === cle() ? 'ici' : ''}">${E(P[k].nom)}</th>`).join('')}</tr></thead><tbody>${lignes}</tbody></table></div>
+      <p class="note">Hors grille : <b>Froxlor</b> — reconnu par Panel Detect, module plus tard ; <b>Plesk</b> et <b>cPanel</b> — reconnus, payants, sans module. ${creer('à trancher')}</p>`)
+    + sec('Comment c’est bâti', 'l’architecture retenue le 12-11-2026 ' + creer(), `<ol class="plan">
+      <li><b>Le panneau d’abord, Cassandra ensuite.</b> Le guide d’installation du dépôt le conseille : le pare-feu de Cassandra garde alors ouverts les ports du panneau, et rien ne se dispute iptables ni fail2ban. Cassandra n’installe jamais de panneau : elle pilote celui qui est là.</li>
+      <li><b>Panel Detect</b>, un petit module : il cherche les dix signatures à chaque passe du Sensorium, dit quel panneau est là, propose son module au catalogue, et donne au menu son nom — « Hébergement (FastPanel) ». Deux panneaux ou un panneau inconnu : il le dit, sans rien piloter.</li>
+      <li><b>Les routes</b> : Sites, Certificats, Zones DNS, Sauvegardes, Sécurité, NetBird, Panorama et Comptes ne parlent plus au panneau en direct. Ils demandent « paneldetect.&lt;fonction&gt; », que Panel Detect passe au module du panneau détecté — ou, sans panneau, à ce que Cassandra sait faire seule.</li>
+      <li><b>Un module par panneau</b>, famille « hebergement » du module Modules — c’est le catalogue, et il grandit avec le temps. Le module FastPanel d’aujourd’hui en est le premier.</li>
+      <li><b>Le même écran Hébergement pour tous</b> : mêmes sections, même grammaire (verdict, chiffres sourcés et datés, feuille de confirmation, journal). Chaque module n’y offre que les contrôles que son panneau permet ; le reste est dit, en pointillés.</li>
+      <li><b>Pas de doublon</b> : sites → Sites ; certificats → Certificats ; zones → Zones DNS ; copies → Sauvegardes ; crons → Automatismes ; antivirus et pare-feu → Sécurité ; services et statistiques → La machine. L’écran Hébergement ne garde que ce qu’aucun autre module ne tient : PHP, bases, courrier, FTP, comptes du panneau, opérations.</li></ol>`)
+    + sec('Les sources', 'les quatre dossiers de recherche du 12-11-2026', `<p class="note src">HestiaCP : <a>hestiacp.com/docs/reference/cli.html</a> · CloudPanel : <a>cloudpanel.io/docs/v2/cloudpanel-cli</a> · CyberPanel : <a>github.com/usmannasir/cyberpanel</a>, CVE-2024-51567 · aaPanel : <a>aapanel.com/Document/api.pdf</a>, <a>github.com/aaPanel/aaPanel</a> · Virtualmin : <a>virtualmin.com/docs/development/remote-api</a>, <a>github.com/virtualmin/virtualmin-gpl</a> · ISPConfig : <a>git.ispconfig.org (remoting_client/API-docs)</a> · Froxlor : <a>docs.froxlor.org/latest/api-guide</a>.</p>`);
+};
+PAGES.corr = function(){
+  const R = [
+    ['L’entrée de menu « Hébergement »', 'Hébergement (FastPanel)', 'le nom entre parenthèses vient de Panel Detect ; sans panneau, l’entrée disparaît ' + neuf],
+    ['Domaines (la liste des sites du panneau)', 'Parc › Sites', 'la section devient « Sites » et renvoie au module Sites, déjà nourri par le panneau : plus de liste en double'],
+    ['Les appels « fastpanel.* » de Sites, Certificats, Zones DNS, Sauvegardes, Sécurité, NetBird, Panorama, Comptes, noyau', 'Panel Detect › Les routes', 'chacun demande « paneldetect.<fonction> », servie par le module du panneau détecté ' + creer()],
+    ['Tout l’onglet : rail en cinq familles, vue d’ensemble (verdict, 5 chiffres, gestes, domaines, sources, gestes de la session), toutes ses sections, sa fiche à droite', 'L’écran Hébergement du module FastPanel', 'à l’identique'],
+    ['Opérations (catalogue mogwai, filtres, exclusions)', 'Opérations', 'identique'],
+    ['PHP · Bases · FTP · Comptes du panneau', 'les mêmes sections', 'identiques : personne d’autre ne les tient'],
+    ['Courrier (les boîtes du serveur)', 'Gestion e-mail', 'renommé : « Courrier » est la messagerie des utilisateurs'],
+    ['Certificats · sonde · émettre · renouvellement', 'Certificats', 'le module Certificats, qui émet par le panneau (route ssl_renouveler)'],
+    ['Sauvegardes · plans · lancer · stockage · restaurer', 'Sauvegardes', 'le module Sauvegardes, qui confie sites et bases au panneau (route copies)'],
+    ['DNS · ajouter un enregistrement', 'Zones DNS', 'le module Zones DNS, qui écrit dans le panneau (route zones)'],
+    ['Analyses antivirus · lancer · rapports · régler', 'Sécurité › Outils', 'à côté de ClamAV, Lynis et Trivy (route analyses)'],
+    ['Statistiques (processeur, charge, mémoire, disque)', 'Panorama › La machine', 'déjà mesurés par le Sensorium'],
+    ['Vue d’ensemble : 5 chiffres, domaines', 'Vue d’ensemble', 'les chiffres de ce que le panneau seul tient ; le reste en tuiles « Ce qui vit ailleurs », qui s’ouvrent chez leur module'],
+    ['Crons du panneau · fiche · lancer', 'Parc › Automatismes', 'la section renvoie à Automatismes, qui lit déjà toutes les crontabs ; la route « paneldetect.crons » lui dit lesquels sont au panneau ' + creer()],
+    ['Services · relancer · arrêter · diagnostic · WebSocket', 'Panorama › La machine', 'les services et leurs gestes y sont déjà'],
+    ['En-tête : point du panneau, relevé et âge, Relever, recherche', 'En-tête', '+ le panneau détecté et la version du module, cliquables vers Panel Detect'],
+    ['Pare-feu du panneau (fastpanel.parefeu*)', 'Sécurité › Pare-feu', 'inchangé'],
+    ['Détecteurs : injoignable, accès refusé, service tombé, certificat proche, sauvegarde manquante, PHP en fin de vie', 'Cloche', 'portés par chaque module ; + « panneau changé », « deux panneaux » par Panel Detect ' + creer()],
+    ['—', 'Panel Detect', 'nouveau module : détection, catalogue des modules de panneau, nom du menu ' + creer()],
+    ['—', 'Le guide d’installation du dépôt', 'nouveau : « installer le panneau avant Cassandra » ' + creer()],
+  ];
+  return `<p class="fil">La maquette › Ancienne page → nouvelle</p><div class="tete"><h1>Ancienne page → nouvelle</h1><span class="meta">tout ce que l’onglet actuel montre et fait, et où il se retrouve</span></div>`
+    + sec('Rien n’est perdu', R.length + ' lignes', `<table><thead><tr><th>Aujourd’hui</th><th>Demain</th><th>Ce qui change</th></tr></thead><tbody>${R.map(r => `<tr><td style="white-space:normal">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>`);
+};
+['stats', 'sites', 'certs', 'php', 'av', 'bases', 'sauv', 'mail', 'ftp', 'dns', 'comptes', 'services', 'crons'].forEach(id => PAGES[id] = () => section(id));
+
+// ───────────────────────────── navigation
+function panneau(e){ S.e = e; S.suivi = 'fastpanel'; S.choisi = false; S.gestes = []; S.page = face() === 'module' ? 'vue' : 'detect'; $('choix').value = e; rendre(); majAdresse(); }
+function aller(p){ S.page = p; rendre(); scrollTo({top: 0}); majAdresse(); }
+function majAdresse(){ try { history.replaceState(null, '', '#' + S.page + '/' + S.e + (S.panne ? '/panne' : '')); } catch (e) {} }
+function theme(){ const r = document.documentElement, sombre = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches; r.dataset.theme = sombre ? 'light' : 'dark'; }
+function rendre(){ menu(); $('page').innerHTML = (PAGES[S.page] || PAGES.detect)(); }
+$('choix').innerHTML = Object.entries(ETATS).map(([k, v]) => `<option value="${k}">${E(v[0])}</option>`).join('');
+const depart = location.hash.slice(1).split('/');
+if (ETATS[depart[1]]) S.e = depart[1];
+S.page = PAGES[depart[0]] ? depart[0] : (face() === 'module' ? 'vue' : 'detect');
+if (depart[2] === 'panne') { S.panne = true; $('b-panne').setAttribute('aria-pressed', 'true'); }
+if (depart.includes('sombre')) document.documentElement.dataset.theme = 'dark';
+$('choix').value = S.e;
+rendre();
+const g = depart.find(x => /^geste:/.test(x)); if (g) { const [, s, id] = g.split(':'); confirmer(s, id); }
+if (depart.includes('module')) installerModule('hestia');
+</script>
+</body>
+</html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : une maquette, aucun code de Cassandra ne la charge -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : interface/CN_index.html (#tab-fastpanel) et interface/CN_app.js (FP2, fp2*) : l'onglet d'aujourd'hui ; modules/fastpanel : le futur premier pilote ; docs/CN_maquette-systeme.html : la grammaire commune -->

@@ -12,7 +12,7 @@
 <!-- RÔLE       : Les modules -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=02492b ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=242272 ▼▼▼ -->
 # Les modules
 
 Ce catalogue est **généré** depuis les manifestes (`python outils/CN_catalogue_modules.py`) ; un banc vérifie qu'il est à jour. Chaque module est un dossier
@@ -22,7 +22,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 - **instance** : n'existe que dans la société principale (sécurité, observabilité, sauvegardes, gestion des modules…).
 - **base par société** : les données du module sont séparées société par société.
 
-50 modules.
+51 modules.
 
 ## Socle
 
@@ -64,6 +64,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 | Module | Importance | Ce qu'il fait |
 |---|---|---|
 | `fastpanel` — FastPanel | important | Le pont vers le panneau d'hébergement FastPanel. |
+| `paneldetect` — Panel Detect | important | Reconnaît le panneau d'hébergement installé sur la machine (FastPanel, HestiaCP, CloudPanel, CyberPanel, aaPanel, Virtualmin, ISPConfig, Froxlor, Plesk, cPanel) et relie… |
 | `sites` — Sites | important | Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau… |
 
 ## Réseau
@@ -102,7 +103,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 
 | Module | Importance | Ce qu'il fait |
 |---|---|---|
-| `canaux` — Canaux | optionnel | Les canaux Telegram : l'état du client et le miroir (porter ses conversations sur Telegram, par compte). |
+| `canaux` — Canaux | optionnel | Les canaux : porter une notification hors de la cloche quand la politique de son destinataire le demande (Telegram aujourd'hui ; le courriel et le webhook disent ce… |
 | `telegram` — Robot Telegram | optionnel | Le robot Telegram de chaque compte : il porte les notifications de CE compte vers SON téléphone, et ne lit rien de ce qu'on lui écrit (le premier message sert seulement… |
 
 ## Échanges

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #dae9ce
+# VERSION CN : 0.3.0  #cf4655
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=dae9ce ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=cf4655 ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -1303,6 +1303,15 @@ def brancher(ctx):
     def defaire_restauration(c, res):
         raise ValueError("aucun retour : la restauration a remplacé les fichiers et bases du compte « %s » par ceux de la copie %s" % (res.get("compte"), res.get("copie")))
 
+    # ---- les routes, pour Panel Detect : la capacité de ce module qui sert chaque fonction de l'hébergement (modules/paneldetect)
+    ROUTES = {"sites": "sites", "php": "php", "bases": "bases", "base_creer": "base_creer", "base_supprimer": "base_supprimer", "courrier": "mail", "ftp": "ftp",
+              "comptes": "utilisateurs", "comptes_cles": "utilisateur_cles", "avatar": "avatar", "certificats": "certificats", "ssl_renouveler": "ssl_renouveler",
+              "zones": "dns", "dns_enregistrer": "dns_enregistrer", "copies": "sauvegardes", "plans": "plans", "copie_restaurer": "copie_restaurer",
+              "analyses": "scans_cibles", "parefeu": "parefeu", "services": "services", "audit": "audit"}
+
+    def routes(c):
+        return {"panneau": "fastpanel", "nom": "FastPanel", "routes": {f: "fastpanel." + cap for f, cap in ROUTES.items()}}
+
     # ---- inscription
     c = ctx
     c.moteur("releve", releve)
@@ -1315,7 +1324,7 @@ def brancher(ctx):
     c.detecteur("php_fin_support", det_php)
     for cid, f in (("sante", sante), ("resume", resume), ("utilisateurs", utilisateurs), ("sites", sites), ("bases", bases), ("ftp", ftp), ("mail", mail), ("dns", dns),
                    ("sauvegardes", sauvegardes), ("plans", plans), ("stockages", stockages), ("services", services), ("certificats", certificats),
-                   ("ssl_sonder", ssl_sonder), ("utilisateur_cles", utilisateur_cles), ("scans_cibles", scans_cibles), ("copies_du_plan", copies_du_plan), ("php", php), ("audit", audit), ("parefeu", parefeu), ("avatar", avatar)):
+                   ("ssl_sonder", ssl_sonder), ("utilisateur_cles", utilisateur_cles), ("scans_cibles", scans_cibles), ("copies_du_plan", copies_du_plan), ("php", php), ("audit", audit), ("parefeu", parefeu), ("avatar", avatar), ("routes", routes)):
         c.implementer(cid, f)
     c.implementer("service_relancer", relancer, prouver_service, defaire_service, simuler=lambda x, service="", action="restart", **_: "ferait « %s » sur le service %s" % (action, service))
     c.implementer("service_arreter", arreter, prouver_service, defaire_service, simuler=lambda x, service="", **_: "arrêterait le service %s (il serait relancé au retour arrière)" % service)
