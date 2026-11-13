@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #2741ff
+// VERSION CN : 0.1.0  #df9f29
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine les pages du module sites (vue d'ensemble, tous les sites, la page d'un site, alertes, disponibilité, demandes, journal) ; ses pages sont les sous-entrées de « Sites » dans le menu de gauche
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.sites) qui remplace l'onglet V18 « mysites » ; tout vient des capacités sites.* ; l'état vit hors de la scène, car le shell la redessine à chaque ouverture ; window.stVue reçoit la page demandée par le menu, window.stOpen ouvre un site depuis un autre écran
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=2741ff ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=df9f29 ▼▼▼
 // Sites : l'écran du module. Il remplace l'onglet V18 « mysites » ; ses pages sont les sous-menus de « Sites » dans le menu de gauche
 // (le rail interne de l'ancien écran a disparu). Lot 1 : ce que les capacités sites.* savaient déjà rendre. Lot 2 : les incidents (une panne est un objet
 // qu'on dépanne), le calendrier d'un site, les sociétés, la preuve de propriété, les objectifs et les réglages.
@@ -33,7 +33,7 @@
     journal: "Les gestes faits sur les sites et ce que la veille a vu, fondus.",
     reglages: "Ce que l’écran appelle une panne, et ce que chacun — agents compris — peut faire sur les sites.",
   };
-  const ONGLETS = [["apercu", "Aperçu"], ["dispo", "Disponibilité"], ["heberg", "Hébergement"], ["secu", "Sécurité"], ["liens", "Liens"], ["journal", "Journal"]];
+  const ONGLETS = [["apercu", "Aperçu"], ["dispo", "Disponibilité"], ["heberg", "Sur le serveur"], ["secu", "Sécurité"], ["liens", "Liens"], ["journal", "Journal"]];
   const VERBES = { declare: "déclaré", declare_annule: "déclaration annulée", declare_a_prouver: "déclaré, à prouver", prouve: "propriété prouvée", retire: "retiré", attribue: "attribué", transfere: "transféré", demande: "adossement demandé", adossement_fait: "adossé", adossement_refuse: "adossement refusé",
     accord: "accord donné", lien: "rattaché", delie: "lien retiré", panne: "coupure", retour: "de retour", decouverte: "découvert", societe: "société attribuée", objectif: "objectif posé", incident_pris: "incident pris en charge", incident_clos: "incident clos", alerte_acceptee: "alerte acceptée", alerte_reprise: "alerte reprise" };
   const FAMILLES = [["", "tout"], ["coupures", "coupures et incidents"], ["gestes", "gestes"], ["demandes", "demandes, preuves et accords"]];
@@ -557,7 +557,7 @@
       return panneau + '<h4>Copies de sauvegarde</h4><p class="note">Une copie couvre tout le compte du panneau, pas ce seul site. La restaurer demande d’être le propriétaire, ou son accord.</p>' +
         (!c ? '<div class="acts"><button class="btn" data-a="copies" data-d="' + esc(f.domaine) + '">Voir les copies</button></div>' : c.erreur ? '<div class="bandeau al"><div class="sp">' + esc(c.erreur) + "</div></div>" : (c.l.length ? '<div class="rows">' + c.l.map((x) => '<div class="row c2">' + K.pill(x.partielle ? "partielle" : "complète", x.partielle ? "al" : "ok") + '<span class="nm"><b>' + esc(String(x.debut || "").replace("T", " ").slice(0, 16)) + "</b><small>" + (x.compte ? "compte " + esc(x.compte) + " · " : "") + (x.octets ? nb(Math.round(x.octets / 1048576)) + " Mo" : "") + ((x.bases || []).length ? " · bases : " + esc(x.bases.join(", ")) : "") + '</small></span><button class="btn mini dng" data-a="restaurer" data-d="' + esc(f.domaine) + '" data-id="' + esc(x.id) + '"' + (peut ? "" : ' disabled title="accord du propriétaire requis"') + ">Restaurer</button></div>").join("") + "</div>" : '<p class="note">Aucune copie pour ce compte.</p>')) +
         (f.accord ? '<div class="bandeau in"><div class="sp">Accord de restauration donné par ' + esc(f.accord.par) + " jusqu’au " + esc(heure(f.accord.jusqu_a)) + ".</div></div>" : f.gestes.accorder ? '<div class="acts"><button class="btn" data-a="accorder" data-d="' + esc(f.domaine) + '">Autoriser l’administrateur à restaurer (24 h)</button></div>' : "") +
-        (admin() ? '<h4>Dans Hébergement</h4><p class="note">Pour agir sur le panneau lui-même (bases, DNS, courrier, comptes).</p><div class="acts"><button class="btn mini" data-a="hebergement" data-d="' + esc(f.domaine) + '">Ouvrir Hébergement</button></div>' : "");
+        (admin() ? '<h4>Ses voisins</h4><p class="note">Chaque chose a son module : le panneau n’a plus de page à part.</p><div class="acts"><button class="btn mini" data-a="vers" data-e="bases:bd_vue" data-t="Bases de données">Ses bases ↗ Bases de données</button><button class="btn mini" data-a="vers" data-e="gestionmail:gm_vue" data-t="Gestion e-mail">Ses boîtes ↗ Gestion e-mail</button><button class="btn mini" data-a="certificats">Son certificat ↗ Certificats</button></div>' : "");
     },
     // L'onglet Sécurité de la maquette : le trafic, puis tout ce qui expire, puis ce que les agents peuvent faire sur ce site.
     async secu(f, s) {
@@ -623,7 +623,7 @@
     recharger: async () => { S.lu = 0; S.copies = null; await rendre(); },
     certificats: () => { if (CASS.ouvrirEcran) CASS.ouvrirEcran("certificats:c_liste", "Certificats"); },
     courbes: () => { try { MX.demande = "site_up"; } catch (e) { /* l'Historique s'ouvrira sur sa page d'accueil */ } window.switchTab("history"); },
-    hebergement: (b) => { if (typeof window.fpVersSite === "function") window.fpVersSite(b.dataset.d, "domains"); else window.switchTab("fastpanel"); },
+    vers: (b) => { if (CASS.ouvrirEcran) CASS.ouvrirEcran(b.dataset.e, b.dataset.t); },
     async declarer() {
       const preuve = portee().preuve_exigee && !admin();
       const m = await fenetre("Déclarer un site", champ("Nom du site", '<input type="text" data-n placeholder="mon-site.exemple.fr" autocomplete="off">', "Le nom nu : « www. », le protocole et le chemin sont retirés. Un site du panneau ne se déclare pas : il s’attribue." + (preuve ? " Il te sera ensuite demandé de prouver qu’il est à toi (un enregistrement DNS ou un fichier)." : "")), "Déclarer");
