@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.3.1  #3c119a
+# VERSION CN : 0.3.2  #3c119a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Prouve que le pont tient : sans FastPanel il dort, avec lui la copie existe, se lit, et la minuterie tourne.
 # MÉTHODE    : cherche FastPanel ; si présent, ouvre la copie en lecture et compte ses tables.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=3c119a ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=3c119a ▼▼▼
 set -eu
 : "${CASSANDRA_DONNEES:?}" "${CASSANDRA_UTILISATEUR:?}"
 panneau=""

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : paneldetect
 # ZONE       : CN
-# VERSION CN : 0.2.0  #7e0a46
+# VERSION CN : 0.2.1  #b4cac3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Panel Detect : quel panneau d'hébergement pilote cette machine, et par quel module de Cassandra.
 # MÉTHODE    : des signatures de fichiers, sans rien lancer ; le module d'un panneau porte son identifiant et déclare ses routes par « <module>.routes », chacune vérifiée contre son manifeste ; les lectures sont relayées pour le compte qui demande, les gestes jamais.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=7e0a46 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.1 empreinte=b4cac3 ▼▼▼
 """Panel Detect : quel panneau d'hébergement pilote cette machine, et par quel module de Cassandra.
 
 Le panneau s'installe AVANT Cassandra ; Cassandra n'en installe jamais. Ce module :
@@ -74,6 +74,7 @@ FONCTIONS = (
     ("parefeu_trancher", "Garder ou annuler une règle posée à l'essai", "Sécurité"),
     ("services", "Les services de l'hébergement", "Panorama, La machine"),
     ("audit", "L'audit : certificats, PHP, copies", "Sites, Panorama"),
+    ("adresse", "L'adresse web du panneau (pour ouvrir phpMyAdmin)", "Bases de données"),
 )
 FONCTIONS_IDS = tuple(f[0] for f in FONCTIONS)
 DUREE_ROUTES_S = 30

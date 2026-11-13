@@ -1,0 +1,63 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Bases de données
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : bases
+# ZONE       : CN
+# VERSION CN : 0.1.0  #c9801e
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les bases de données du serveur (nom, utilisateur, site lié, taille, dernière copie), lues par le panneau d'hébergement détecté : le module ne nomme aucun panneau, il demande à Panel Detect. Créer et supprimer une base se font par le panneau, au nom de la personne et avec sa confirmation ; le mot de passe d'une base neuve n'est montré qu'une fois.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c9801e ▼▼▼
+[module]
+id = "bases"
+nom = "Bases de données"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les bases de données du serveur (nom, utilisateur, site lié, taille, dernière copie), lues par le panneau d'hébergement détecté : le module ne nomme aucun panneau, il demande à Panel Detect. Créer et supprimer une base se font par le panneau, au nom de la personne et avec sa confirmation ; le mot de passe d'une base neuve n'est montré qu'une fois."
+confiance = "interne"
+famille = "hebergement"
+groupe = "parc"
+proprietaire = "cassandra"
+importance = "optionnel"
+sans = "Plus de page pour voir, créer ou supprimer les bases du serveur : il faut passer par le panneau lui-même."
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "voir"
+libelle = "Voir les bases de données du serveur"
+
+[[capacites]]
+id = "lister"
+libelle = "Les bases du serveur par le panneau détecté : « absent » (aucun panneau ne les sert), « muet » (il n'a pas répondu) ou la liste, avec les utilisateurs et les comptes pour le formulaire de création"
+risque = "lecture"
+droit = "voir"
+
+[[ecrans]]
+id = "bd_vue"
+libelle = "Bases de données"
+domaine = "socle"
+gabarit = "libre"
+
+[[menus]]
+id = "bases"
+libelle = "Bases de données"
+ecran = "bd_vue"
+ordre = 45
+role = "admin"
+icone = "db"
+droit = "voir"
+
+[permissions]
+lectures = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

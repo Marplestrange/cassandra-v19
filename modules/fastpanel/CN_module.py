@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.3.1  #3a3767
+# VERSION CN : 0.3.2  #46fd06
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=3a3767 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=46fd06 ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -1309,7 +1309,12 @@ def brancher(ctx):
               "zones": "dns", "dns_enregistrer": "dns_enregistrer", "copies": "sauvegardes", "plans": "plans", "copie_restaurer": "copie_restaurer",
               "analyses": "scans_cibles", "parefeu": "parefeu", "services": "services", "audit": "audit",
               "copies_du_plan": "copies_du_plan", "parefeu_regle_poser": "parefeu_regle_poser", "parefeu_regle_retirer": "parefeu_regle_retirer",
-              "parefeu_politique": "parefeu_politique", "parefeu_trancher": "parefeu_trancher"}
+              "parefeu_politique": "parefeu_politique", "parefeu_trancher": "parefeu_trancher", "adresse": "adresse"}
+
+    def adresse(c):
+        """L'adresse web du panneau, telle que l'administrateur l'a réglée ('' s'il ne l'a pas fait : on ne devine pas une adresse que le navigateur ne pourrait pas joindre).
+        phpMyAdmin s'ouvre à « <adresse>/phpmyadmin/ »."""
+        return {"url": str(_reglage("url", "") or "").strip().rstrip("/")}
 
     def routes(c):
         return {"panneau": "fastpanel", "nom": "FastPanel", "routes": {f: "fastpanel." + cap for f, cap in ROUTES.items()}}
@@ -1326,7 +1331,7 @@ def brancher(ctx):
     c.detecteur("php_fin_support", det_php)
     for cid, f in (("sante", sante), ("resume", resume), ("utilisateurs", utilisateurs), ("sites", sites), ("bases", bases), ("ftp", ftp), ("mail", mail), ("dns", dns),
                    ("sauvegardes", sauvegardes), ("plans", plans), ("stockages", stockages), ("services", services), ("certificats", certificats),
-                   ("ssl_sonder", ssl_sonder), ("utilisateur_cles", utilisateur_cles), ("scans_cibles", scans_cibles), ("copies_du_plan", copies_du_plan), ("php", php), ("audit", audit), ("parefeu", parefeu), ("avatar", avatar), ("routes", routes)):
+                   ("ssl_sonder", ssl_sonder), ("utilisateur_cles", utilisateur_cles), ("scans_cibles", scans_cibles), ("copies_du_plan", copies_du_plan), ("php", php), ("audit", audit), ("parefeu", parefeu), ("avatar", avatar), ("adresse", adresse), ("routes", routes)):
         c.implementer(cid, f)
     c.implementer("service_relancer", relancer, prouver_service, defaire_service, simuler=lambda x, service="", action="restart", **_: "ferait « %s » sur le service %s" % (action, service))
     c.implementer("service_arreter", arreter, prouver_service, defaire_service, simuler=lambda x, service="", **_: "arrêterait le service %s (il serait relancé au retour arrière)" % service)

@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.1)  #d91c41
+# VERSION EC : EC0 (référence 0.3.2)  #d91c41
 # HÔTE CN    : CN_module.py · audit @1.0
 # RÔLE       : range les sites du panneau par ce qui demande de l'attention : certificats échus ou proches, versions de PHP en fin de support ou bientôt.
 # MÉTHODE    : fonction pure sur les sites déjà lus : un tri par état de certificat ; la fin de support d'une version de PHP vient d'une table (la politique du dépôt) comparée à l'instant reçu.

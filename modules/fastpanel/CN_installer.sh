@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.3.1  #282544
+# VERSION CN : 0.3.2  #282544
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Donne au service de Cassandra la lecture de la base de FastPanel, par une copie rafraîchie chaque minute (la base d'origine reste à root).
 # MÉTHODE    : une minuterie systemd lance CN_copie_panneau.py en root ; le réglage « base_panneau » désigne la copie. Sans FastPanel : rien à faire.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=282544 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=282544 ▼▼▼
 set -eu
 : "${CASSANDRA_DONNEES:?}" "${CASSANDRA_CONFIG:?}" "${CASSANDRA_UTILISATEUR:?}" "${CASSANDRA_MODULE_DIR:?}" "${CASSANDRA_PREFIXE:?}"
 panneau=""

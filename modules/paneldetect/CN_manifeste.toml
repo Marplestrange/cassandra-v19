@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : paneldetect
 # ZONE       : CN
-# VERSION CN : 0.2.0  #2ce918
+# VERSION CN : 0.2.1  #1b8268
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Reconnaît le panneau d'hébergement installé sur la machine (FastPanel, HestiaCP, CloudPanel, CyberPanel, aaPanel, Virtualmin, ISPConfig, Froxlor, Plesk, cPanel) et relie chaque module de Cassandra au module qui le pilote : les lectures passent par lui, les gestes y trouvent leur capacité. Changer de panneau ne touche alors qu'un module. Il n'installe jamais de panneau : le panneau vient avant Cassandra.
 # MÉTHODE    : deux capacités de lecture (etat, lire), deux détecteurs, une page dans Paramètres ; l'introspection pour trouver les modules de la famille « hebergement », les lectures pour relayer.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=2ce918 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.1 empreinte=1b8268 ▼▼▼
 [module]
 id = "paneldetect"
 nom = "Panel Detect"
-version = "0.2.0"
+version = "0.2.1"
 noyau_min = "0.1.0"
 description = "Reconnaît le panneau d'hébergement installé sur la machine (FastPanel, HestiaCP, CloudPanel, CyberPanel, aaPanel, Virtualmin, ISPConfig, Froxlor, Plesk, cPanel) et relie chaque module de Cassandra au module qui le pilote : les lectures passent par lui, les gestes y trouvent leur capacité. Changer de panneau ne touche alors qu'un module. Il n'installe jamais de panneau : le panneau vient avant Cassandra."
 confiance = "interne"

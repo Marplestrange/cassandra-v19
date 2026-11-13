@@ -12,7 +12,7 @@
 <!-- RÔLE       : Les modules -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=242272 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d8f1fb ▼▼▼ -->
 # Les modules
 
 Ce catalogue est **généré** depuis les manifestes (`python outils/CN_catalogue_modules.py`) ; un banc vérifie qu'il est à jour. Chaque module est un dossier
@@ -22,7 +22,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 - **instance** : n'existe que dans la société principale (sécurité, observabilité, sauvegardes, gestion des modules…).
 - **base par société** : les données du module sont séparées société par société.
 
-51 modules.
+52 modules.
 
 ## Socle
 
@@ -66,6 +66,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 | `fastpanel` — FastPanel | important | Le pont vers le panneau d'hébergement FastPanel. |
 | `paneldetect` — Panel Detect | important | Reconnaît le panneau d'hébergement installé sur la machine (FastPanel, HestiaCP, CloudPanel, CyberPanel, aaPanel, Virtualmin, ISPConfig, Froxlor, Plesk, cPanel) et relie… |
 | `sites` — Sites | important | Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau… |
+| `bases` — Bases de données | optionnel | Les bases de données du serveur (nom, utilisateur, site lié, taille, dernière copie), lues par le panneau d'hébergement détecté : le module ne nomme aucun panneau, il… |
 
 ## Réseau
 

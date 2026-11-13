@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.3.1  #b3ec25
+# VERSION CN : 0.3.2  #909fb6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers le panneau d'hébergement FastPanel. Lit le parc (comptes, sites, certificats, bases, FTP, courrier, DNS, sauvegardes, services) dans la base du panneau, ouverte en lecture seule, et agit par son API : services, certificats, bases, stockages et plans de sauvegarde, avec preuve et retour arrière. Surveille les services tombés, les certificats proches de l'échéance, les sauvegardes absentes ou périmées et les versions de PHP en fin de support. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=b3ec25 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=909fb6 ▼▼▼
 [module]
 id = "fastpanel"
 nom = "FastPanel"
-version = "0.3.1"
+version = "0.3.2"
 noyau_min = "0.1.0"
 description = "Le pont vers le panneau d'hébergement FastPanel. Lit le parc (comptes, sites, certificats, bases, FTP, courrier, DNS, sauvegardes, services) dans la base du panneau, ouverte en lecture seule, et agit par son API : services, certificats, bases, stockages et plans de sauvegarde, avec preuve et retour arrière. Surveille les services tombés, les certificats proches de l'échéance, les sauvegardes absentes ou périmées et les versions de PHP en fin de support. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"
@@ -251,6 +251,12 @@ droit = "voir"
 [[capacites]]
 id = "audit"
 libelle = "L'audit du parc : certificats, sauvegardes, PHP (recalculé à l'instant)"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "adresse"
+libelle = "L'adresse web du panneau, telle que réglée (phpMyAdmin s'y ouvre) : vide tant que personne ne l'a renseignée"
 risque = "lecture"
 droit = "voir"
 
