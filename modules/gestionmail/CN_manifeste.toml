@@ -1,0 +1,63 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Gestion e-mail
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : gestionmail
+# ZONE       : CN
+# VERSION CN : 0.1.0  #273599
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les boîtes e-mail hébergées sur le serveur (adresse, domaine, place prise sur le quota), lues par le panneau d'hébergement détecté : le module ne nomme aucun panneau, il demande à Panel Detect. « Courrier » reste la messagerie des utilisateurs ; ici, c'est le serveur de courrier qu'on regarde.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=273599 ▼▼▼
+[module]
+id = "gestionmail"
+nom = "Gestion e-mail"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les boîtes e-mail hébergées sur le serveur (adresse, domaine, place prise sur le quota), lues par le panneau d'hébergement détecté : le module ne nomme aucun panneau, il demande à Panel Detect. « Courrier » reste la messagerie des utilisateurs ; ici, c'est le serveur de courrier qu'on regarde."
+confiance = "interne"
+famille = "hebergement"
+groupe = "parc"
+proprietaire = "cassandra"
+importance = "optionnel"
+sans = "Plus de page pour voir les boîtes e-mail du serveur et celles qui sont presque pleines : il faut passer par le panneau lui-même."
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "voir"
+libelle = "Voir les boîtes e-mail hébergées sur le serveur"
+
+[[capacites]]
+id = "lister"
+libelle = "Les boîtes e-mail du serveur par le panneau détecté : « absent » (aucun panneau ne les sert), « muet » (il n'a pas répondu) ou la liste, avec la place prise sur chaque quota"
+risque = "lecture"
+droit = "voir"
+
+[[ecrans]]
+id = "gm_vue"
+libelle = "Gestion e-mail"
+domaine = "socle"
+gabarit = "libre"
+
+[[menus]]
+id = "gestionmail"
+libelle = "Gestion e-mail"
+ecran = "gm_vue"
+ordre = 46
+role = "admin"
+icone = "mail"
+droit = "voir"
+
+[permissions]
+lectures = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)
