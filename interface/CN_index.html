@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=cfd784 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=fef24c ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -440,7 +440,6 @@
              un cron qui s'arrête ne lève aucune erreur, il se tait. -->
         <div class="sb-item" data-tab="crons" onclick="switchTab('crons')"><span class="sb-dot"></span>Automatismes<span id="cron-badge" style="display:none;background:var(--danger);color:var(--on-accent);border-radius:8px;padding:0 5px;font-size:9px;margin-left:6px"></span></div>
         <div class="sb-item" data-tab="mysites" onclick="switchTab('mysites')"><span class="sb-dot"></span>Sites</div>
-        <div class="sb-item" data-tab="fastpanel" onclick="switchTab('fastpanel')"><span class="sb-dot"></span>Hébergement</div>
         <div class="sb-item" data-tab="fleet" onclick="switchTab('fleet')"><span class="sb-dot"></span>Flotte</div>
         <div class="sb-item" data-tab="securite" onclick="switchTab('securite')"><span class="sb-dot"></span>Sécurité</div>
       </div>
@@ -580,55 +579,6 @@
   </div>
 
 
-  <!-- ========== ONGLET FASTPANEL2 ========== -->
-  <div id="tab-fastpanel" class="tab-content mx-app">
-    <!-- HÉBERGEMENT, refait le 19-09 dans la grammaire commune (maquette v1) : titre et légende, rail en
-         cinq familles, la page en cartes, un verdict en tête. Le bandeau, la bannière des vigilances et
-         le volet « Fiche » ont fondu dans la vue d'ensemble et dans un panneau à droite. Les identifiants
-         fpnav-*, fpbadge-*, fpetat-*, fp-main-area, fp-side-etat sont conservés : le chargement des
-         sections et du résumé les écrit encore. -->
-    <header class="mx-head">
-      <div><h1>Hébergement</h1></div>
-      <div class="fp2-releve">
-        <span class="fp2-panneau" id="fp2-panneau" title="État de l'API du panneau"><i></i>panneau</span>
-        <span class="mx-meta">relevé <b id="fp2-releve">–</b> · <b id="fp2-age">jamais</b></span>
-        <button class="mx-btn" onclick="fp2Relever()" title="Relire le résumé, l'audit et la section ouverte">Relever</button>
-      </div>
-    </header>
-    <div class="mx-body">
-      <aside class="mx-rail" aria-label="Hébergement">
-        <div class="mx-rail-h"><b>Le panneau</b><span id="fp-side-etat" style="display:none"></span><span>un clic ouvre la section</span></div>
-        <div class="fp2-rech"><input id="fp-rech" type="search" autocomplete="off" placeholder="Chercher un site, une base, un compte…"
-             aria-label="Chercher dans la section ouverte" oninput="fp2Filtrer(this.value)"></div>
-        <nav class="mx-list" id="fp-nav" aria-label="Sections de l'hébergement">
-          <div class="mx-fam">Le panneau</div>
-          <button class="mx-item" type="button" id="fpnav-vue" onclick="fpNav('vue')"><span class="mx-dot" id="fpetat-vue"></span><span class="nm">Vue d'ensemble</span><span class="mx-st"></span></button>
-          <button class="mx-item" type="button" id="fpnav-ops" onclick="fpNav('ops')" title="Le catalogue des opérations du panneau, chacune nommée et vérifiée"><span class="mx-dot" id="fpetat-ops"></span><span class="nm">Opérations</span><span class="mx-st" id="fpbadge-ops"></span></button>
-          <button class="mx-item" type="button" id="fpnav-stats" onclick="fpNav('stats')"><span class="mx-dot" id="fpetat-stats"></span><span class="nm">Statistiques</span><span class="mx-st"></span></button>
-          <div class="mx-fam">Les sites</div>
-          <button class="mx-item" type="button" id="fpnav-domains" onclick="fpNav('domains')"><span class="mx-dot" id="fpetat-domains"></span><span class="nm">Domaines</span><span class="mx-st" id="fpbadge-domains">–</span></button>
-          <button class="mx-item" type="button" id="fpnav-ssl" onclick="fpNav('ssl')"><span class="mx-dot" id="fpetat-ssl"></span><span class="nm">Certificats</span><span class="mx-st" id="fpbadge-ssl">–</span></button>
-          <button class="mx-item" type="button" id="fpnav-php" onclick="fpNav('php')"><span class="mx-dot" id="fpetat-php"></span><span class="nm">PHP</span><span class="mx-st" id="fpbadge-php">–</span></button>
-          <button class="mx-item" type="button" id="fpnav-scans" onclick="fpNav('scans')"><span class="mx-dot" id="fpetat-scans"></span><span class="nm">Analyses antivirus</span><span class="mx-st" id="fpbadge-scans">–</span></button>
-          <div class="mx-fam">Les données</div>
-          <button class="mx-item" type="button" id="fpnav-databases" onclick="fpNav('databases')"><span class="mx-dot" id="fpetat-databases"></span><span class="nm">Bases</span><span class="mx-st" id="fpbadge-databases">–</span></button>
-          <button class="mx-item" type="button" id="fpnav-backups" onclick="fpNav('backups')"><span class="mx-dot" id="fpetat-backups"></span><span class="nm">Sauvegardes</span><span class="mx-st" id="fpbadge-backups">–</span></button>
-          <div class="mx-fam">Communication</div>
-          <button class="mx-item" type="button" id="fpnav-mail" onclick="fpNav('mail')"><span class="mx-dot" id="fpetat-mail"></span><span class="nm">Courrier</span><span class="mx-st" id="fpbadge-mail">–</span></button>
-          <button class="mx-item" type="button" id="fpnav-ftp" onclick="fpNav('ftp')"><span class="mx-dot" id="fpetat-ftp"></span><span class="nm">FTP</span><span class="mx-st" id="fpbadge-ftp">–</span></button>
-          <button class="mx-item" type="button" id="fpnav-dns" onclick="fpNav('dns')"><span class="mx-dot" id="fpetat-dns"></span><span class="nm">DNS</span><span class="mx-st" id="fpbadge-dns">–</span></button>
-          <div class="mx-fam">La machine</div>
-          <button class="mx-item" type="button" id="fpnav-users" onclick="fpNav('users')"><span class="mx-dot" id="fpetat-users"></span><span class="nm">Comptes du panneau</span><span class="mx-st" id="fpbadge-users">–</span></button>
-          <button class="mx-item" type="button" id="fpnav-services" onclick="fpNav('services')"><span class="mx-dot" id="fpetat-services"></span><span class="nm">Services</span><span class="mx-st" id="fpbadge-services">–</span></button>
-          <button class="mx-item" type="button" id="fpnav-crons" onclick="fpNav('crons')"><span class="mx-dot" id="fpetat-crons"></span><span class="nm">Crons</span><span class="mx-st" id="fpbadge-crons">–</span></button>
-        </nav>
-        <div class="fp2-rail-pied">Chaque chiffre dit sa source — base du panneau, API, collecteur ou sonde — et son âge.</div>
-      </aside>
-      <main class="mx-main" id="fp-main-area"><div class="empty-state" style="padding:40px">Chargement de l'hébergement…</div></main>
-    </div>
-    <!-- la fiche d'une ligne : un panneau à droite, ouvert par un clic, fermé par un clic ou Échap -->
-    <div class="fp2-fiche-voile" id="fp2-fiche-voile" onclick="if(event.target===this)fp2FicheFermer()"><aside class="fp2-fiche" id="fp2-fiche" role="dialog" aria-modal="true" aria-label="Fiche"></aside></div>
-  </div>
   <div id="tab-fleet" class="tab-content mx-app">
     <header class="mx-head">
       <div><h1>Flotte</h1></div>

@@ -137,6 +137,13 @@ l'administrateur : `docs/CN_EVOLUTION.md` (§ 7) dit l'état exact. La définiti
 
 Sur un serveur Linux neuf avec systemd (Debian ou Ubuntu de préférence), en root :
 
+**Le panneau d'hébergement s'installe avant Cassandra, jamais par elle.** Si la machine doit héberger des sites, installez d'abord le panneau de votre
+choix (FastPanel aujourd'hui), puis Cassandra : elle le reconnaît à ses traces sur le disque (module `paneldetect`, Paramètres › Général › Panel Detect),
+propose son module au catalogue des modules (famille `hebergement`) et le pilote ; elle n'installe, ne met à jour ni ne retire jamais un panneau.
+Sans panneau, tout le reste fonctionne : les écrans qui en dépendent (Bases de données, Gestion e-mail, l'onglet « Sur le serveur » des sites,
+Sécurité › Accès) disent « aucun panneau » au lieu de mentir. Il n'y a plus d'onglet Hébergement : chaque fonction vit dans le module qui la porte.
+
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Marplestrange/cassandra-v19/main/CN_amorcer.sh | sudo bash
 ```

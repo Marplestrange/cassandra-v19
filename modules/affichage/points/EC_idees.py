@@ -8,19 +8,19 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.5)  #d007c4
+# VERSION EC : EC0 (référence 0.7.5)  #70f537
 # HÔTE CN    : CN_module.py · idees @1.0
 # RÔLE       : classe, pour la page où l'on est et l'interlocuteur du panneau, au plus quelques idées : ce qui brûle d'abord, ce qui touche la page ensuite, chacune avec sa raison.
 # MÉTHODE    : fonction pure : les alertes du jour reçues en entrée, l'heure, ce qui vient d'être fait ou refusé ; un geste n'est proposé que s'il figure dans la liste que le nexus transmet, jamais inventé.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=idees contrat=@1.0 version=EC0 empreinte=d007c4 ▼▼▼
+# ▼▼▼ BORNE EC point=idees contrat=@1.0 version=EC0 empreinte=70f537 ▼▼▼
 
 BASE = {"brule": 100, "regarder": 60, "jour": 45}
 SEUIL_URGENT = 85
 MAX_IDEES = 8
 OU_ENTREE = {"sites": "sites", "ssl": "sites", "bureau": "accueil", "mail": "accueil", "cloche": "accueil", "proj": "accueil", "securite": "securite",
              "evolution": "evolution", "flotte": "flotte", "fleet": "flotte", "sensorium": "sensorium", "journal": "journaux", "crons": "automatismes",
-             "planifie": "automatismes", "memoire": "memoire", "proactif": "proactivite", "fastpanel": "hebergement", "vue": "panorama",
+             "planifie": "automatismes", "memoire": "memoire", "proactif": "proactivite", "fastpanel": "sites", "vue": "panorama",
              "tache": "accueil", "rappel": "accueil", "event": "accueil", "decision": "accueil", "mandat": "accueil", "note": "accueil"}
 
 

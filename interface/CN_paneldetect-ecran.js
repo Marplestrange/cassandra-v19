@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #32c021
+// VERSION CN : 0.1.0  #5dce08
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : paneldetect-ecran.js
 // MÉTHODE    : une scène (CASS.sceneSurMesure.paneldetect) qui lit paneldetect.etat et seulement elle ; la feuille de style est celle de la maquette validée, portée par .pd.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=32c021 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5dce08 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS, K = CASS.kit, esc = K.esc, agir = K.agir;
@@ -71,7 +71,7 @@
       if (S.erreur) { racine.innerHTML = tete + '<section class="carte sec"><p class="err">' + esc(S.erreur) + "</p></section>"; return; }
       if (!e) { racine.innerHTML = tete + '<section class="carte sec"><p class="vide">Lecture…</p></section>'; return; }
       racine.innerHTML = tete + verdict(e) + routes(e) +
-        sec("Opérations du panneau", "ce qu’aucun autre module ne fait · réservé à l’administrateur", '<p class="note" style="margin:0">Elles restent dans Hébergement › Opérations jusqu’à ce que l’onglet soit éclaté entre ses nouveaux modules ; elles viendront ici ensuite.</p>') +
+        sec("Opérations du panneau", "ce qu’aucun autre module ne fait · réservé à l’administrateur", '<p class="note" style="margin:0">L’onglet Hébergement est retiré : ces opérations (services du panneau, crons, analyses par site, lancement d’un plan de sauvegarde) restent servies par le module du panneau, mais n’ont pas encore d’écran ; elles viendront ici.</p>') +
         catalogue(e) + preuves(e) +
         sec("Sans panneau", "", '<p class="note" style="margin:0">Le guide d’installation le dit : d’abord le panneau, ensuite Cassandra. Sans panneau, Bases de données et Gestion e-mail ne sont pas dans le menu ; Sites, Certificats, Sauvegardes et Sécurité font avec ce que Cassandra sait faire seule.</p>');
     }

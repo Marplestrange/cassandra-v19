@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8a799a
+// VERSION CN : 0.1.0  #a7de8c
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8a799a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a7de8c ▼▼▼
 // La machine : la page du Panorama qui remplace le tiroir « Détails système » (maquette : docs/CN_maquette-systeme.html).
 // Une seule page où tout se voit d'un coup d'œil, une tuile par sujet ; le détail d'un sujet s'ouvre au clic, « ‹ La machine » y ramène.
 // Tout vient d'UNE lecture, vue.machine, qui compose ce que les modules relèvent déjà ; les ressources et les processus se relisent seuls
@@ -91,7 +91,7 @@
     const ic = { ports: "bouclier", bannies: "bouclier", certs: "bouclier", tailscale: "globe", netbird: "bouclier", heberg: "base", depots: "base" }[v.cle] || "ailleurs";
     let corps = gr(esc(v.chiffre == null ? "—" : String(v.chiffre)), v.pastille && v.pastille[1] === "w" && v.cle === "depots" ? "w" : "");
     if (v.cle === "heberg") {
-      corps += '<span class="li" style="flex-wrap:wrap;gap:2px 8px">' + Object.keys(v.details).filter((k) => v.details[k] != null).map((k) => '<button class="lk" data-a="module" data-e="hebergement" data-v="" data-ou="Hébergement › ' + esc(k) + '">' + esc(k) + " <b>" + esc(v.details[k]) + "</b></button>").join("") + "</span>";
+      corps += '<span class="li" style="flex-wrap:wrap;gap:2px 8px">' + Object.keys(v.details).filter((k) => v.details[k] != null).map((k) => '<button class="lk" data-a="module" data-e="sites" data-v="" data-ou="Sites › ' + esc(k) + '">' + esc(k) + " <b>" + esc(v.details[k]) + "</b></button>").join("") + "</span>";
     } else corps += v.lignes.map((l) => li(esc(l))).join("");
     if (v.cle === "certs") corps += '<span class="li"><button class="btn s" data-a="demander" data-q="Certificats SSL expirants ?">Demander</button></span>';
     return tuile(v.cle, ic, v.titre, v.pastille, corps, v.ou, act);

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.5.1  #a5b4c4
+# VERSION CN : 0.5.1  #f6da0b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=a5b4c4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=f6da0b ▼▼▼
 """La machine : ce que la page « La machine » du Panorama affiche, composé à partir de ce que les modules relèvent déjà.
 
 Une fonction PURE (`composer`) : en entrée, la réponse de chaque source (ou son silence) ; en sortie, des données prêtes à dessiner. Rien n'est
@@ -463,7 +463,7 @@ def composer(s: dict, maintenant: str = "") -> dict:
         arretes = 0          # le panneau dit « arrêtés » des services que systemd voit tourner : on ne reprend pas ce chiffre tant qu'il n'est pas fiable (la page Services fait foi)
         compte = lambda cle: len(_liste(_ok(s, cle))) if _etat(s, cle) == "ok" else None    # noqa: E731
         copies = _liste(_ok(s, "panneau_copies")) if _etat(s, "panneau_copies") == "ok" else None
-        voisin("heberg", "Hébergement", "Parc › Hébergement", ["hebergement", ""], "module", len(_liste(_ok(s, "panneau_sites"))), [], ["%d arrêté%s" % (arretes, "s" if arretes > 1 else ""), "w"] if arretes else None,
+        voisin("heberg", "Hébergement", "Parc › Sites", ["sites", ""], "module", len(_liste(_ok(s, "panneau_sites"))), [], ["%d arrêté%s" % (arretes, "s" if arretes > 1 else ""), "w"] if arretes else None,
                "panneau FastPanel", {"sites": len(_liste(_ok(s, "panneau_sites"))), "services": ("%d arrêté%s" % (arretes, "s" if arretes > 1 else "")) if arretes else ("%d actifs" % len(sv) if sv else None),
                                      "bases": compte("panneau_bases"), "boîtes": compte("panneau_mail"), "copies": len(copies) if copies is not None else None, "comptes": compte("panneau_comptes")})
     elif "fastpanel2" in {str(x.get("name")) for x in _liste(_ok(s, "services"))}:

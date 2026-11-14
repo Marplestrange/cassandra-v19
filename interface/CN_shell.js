@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f2918a
+// VERSION CN : 0.1.0  #c52efe
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f2918a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=c52efe ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -108,9 +108,9 @@
 
   // ── 2. le rail ─────────────────────────────────────────────────────────────
   // Quel module fait vivre quel écran V18. Un écran dont le module n'est pas actif n'est pas proposé ; les écrans sans module connu restent.
-  CASS.dependances = { evolution: ["evolution"], memory: ["memoire"], sensorium: ["sensorium"], overview: ["vue"], history: ["mesures"], securite: ["securite"], mysites: ["sites"], fastpanel: ["fastpanel"] };
+  CASS.dependances = { evolution: ["evolution"], memory: ["memoire"], sensorium: ["sensorium"], overview: ["vue"], history: ["mesures"], securite: ["securite"], mysites: ["sites"] };
   // Les modules qu'un écran V18 couvre déjà : leur entrée de menu ne s'ajoute pas une seconde fois.
-  CASS.couvre = { evolution: "evolution", memoire: "memory", sensorium: "sensorium", sites: "mysites", fastpanel: "fastpanel", courrier: "bureau", notes: "bureau", taches: "bureau", agenda: "bureau", contacts: "bureau", projets: "bureau", comptes: "settings", modeles: "settings", agents: "salon", salon: "salon", journal: "journal", notifications: "bureau", planifie: "crons", flotte: "fleet", vue: "overview", mesures: "history", securite: "securite" };
+  CASS.couvre = { evolution: "evolution", memoire: "memory", sensorium: "sensorium", sites: "mysites", courrier: "bureau", notes: "bureau", taches: "bureau", agenda: "bureau", contacts: "bureau", projets: "bureau", comptes: "settings", modeles: "settings", agents: "salon", salon: "salon", journal: "journal", notifications: "bureau", planifie: "crons", flotte: "fleet", vue: "overview", mesures: "history", securite: "securite" };
   function actifs(modules) { return new Set((modules || []).filter((m) => m.etat === "actif" || m.actif).map((m) => m.id)); }
 
   function rail(modules, arbre) {
