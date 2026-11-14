@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #726fe1
+// VERSION CN : 0.1.0  #4e279c
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=726fe1 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4e279c ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -6201,10 +6201,18 @@ function scAcces(){
         + scL(scP('', (cg.gestes_invites_24h || 0) + ' GESTE' + ((cg.gestes_invites_24h || 0) > 1 ? 'S' : '')), 'Gestes d’agents invités, 24 h', 'Chacun s’inscrit d’office au journal des agents.', ''));
 }
 // Les comptes du panneau et les comptes FTP : lus par la route que Panel Detect donne (securite.acces_panneau). « absent », « muet » et « aucun » se disent chacun.
+function scRoles(r){
+    // le panneau rend ses rôles tantôt en liste, tantôt en texte JSON (["ROLE_SUPER_ADMIN"]) : on les dit en clair
+    let L = r;
+    if (typeof r === 'string') { try { L = JSON.parse(r); } catch(e) { L = [r]; } }
+    if (!Array.isArray(L)) L = L ? [String(L)] : [];
+    const noms = L.map(function(x){ return String(x).replace(/^ROLE_/, '').replace(/_/g, ' ').toLowerCase(); }).filter(Boolean);
+    return noms.length ? noms.join(', ') : 'compte';
+}
 async function scAccesPanneau(){
     let d = null;
     try { d = await apiPost('/api/securite/acces-panneau', {}); } catch(e) { d = null; }
-    const dit = function(blocs, meta, e, vide){
+    const dit = function(blocs, meta, e){
         if (!d || !d.ok) return scHtml(blocs, '<div class="empty-state">Lecture impossible' + (d && d.error ? ' : ' + mxE(d.error) : '') + '.</div>');
         if (e.etat === 'absent') return scHtml(blocs, '<div class="empty-state">Aucun panneau d’hébergement ne sert cette liste sur cette machine.</div>');
         if (e.etat === 'muet') return scHtml(blocs, '<div class="empty-state">Le panneau ne répond pas : ce n’est pas « aucun ». Réessaie, ou regarde Panel Detect.</div>');
@@ -6217,7 +6225,7 @@ async function scAccesPanneau(){
         scHtml('sc-panneau', C.liste.length ? C.liste.map(function(c){
             const nb = (c.sites || 0) + ' site' + ((c.sites || 0) > 1 ? 's' : '') + ' · ' + (c.bases || 0) + ' base' + ((c.bases || 0) > 1 ? 's' : '');
             return scL(scP(c.ssh ? 'regarder' : '', c.ssh ? 'SSH OUVERT' : 'SANS SSH'), '<span class="sc-mono">' + mxE(c.compte) + '</span>',
-                mxE((c.roles || 'compte') + (c.cree ? ' · créé le ' + String(c.cree).slice(0, 10) : '') + ' · ' + nb + (c.statut && c.statut !== 'active' ? ' · ' + c.statut : '')) + '<span id="sc-cles-' + mxE(c.compte) + '"></span>',
+                mxE(scRoles(c.roles) + (c.cree ? ' · créé le ' + String(c.cree).slice(0, 10) : '') + ' · ' + nb + (c.statut && c.statut !== 'active' ? ' · ' + c.statut : '')) + '<span id="sc-cles-' + mxE(c.compte) + '"></span>',
                 c.ssh ? scB('Clés SSH', "scAccesCles('" + mxE(c.compte).replace(/'/g, '') + "')") : '');
         }).join('') : '<div class="empty-state">Aucun compte sur le panneau · lecture réussie.</div>');
     }
