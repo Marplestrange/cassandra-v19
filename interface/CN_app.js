@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b2e947
+// VERSION CN : 0.1.0  #726fe1
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b2e947 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=726fe1 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -5978,7 +5978,7 @@ function scPeindre(){
     dot('verdict', V.niveau, 0);
     fam.forEach(function(f){ dot(f.page, f.niveau, f.niveau === 'ok' ? 0 : f.n); });
     dot('ailleurs', (A.mes_cles ? '' : 'regarder'), 0);
-    scExposition(); scParefeu(); scAcces(); scDefenses(); scOutils(); scMaj(); scAilleurs();
+    scExposition(); scParefeu(); scAcces(); scAccesPanneau(); scDefenses(); scOutils(); scMaj(); scAilleurs();
     scTexte('sc-audit-go', d.audit_en_cours ? 'Rédaction en cours…' : 'Rédiger un nouvel audit');
     const go = document.getElementById('sc-audit-go'); if (go) go.disabled = !!d.audit_en_cours;
 }
@@ -6199,6 +6199,41 @@ function scAcces(){
     scHtml('sc-comptes', '<dt>Avec un shell</dt><dd>' + mxE((C.shells || []).join(', ') || '—') + '</dd><dt>Administrateurs (sudo)</dt><dd>' + mxE((C.sudo || []).join(', ') || '—') + '</dd>');
     scHtml('sc-cass', scL(scP('', (cg.sessions || 0) + ' SESSION' + ((cg.sessions || 0) > 1 ? 'S' : '')), 'Sessions ouvertes, tous comptes', 'Le geste de la machine : tout le monde dehors, sauf vous.', scB('Déconnecter tout le monde', 'scSessions()', 'sc-danger'))
         + scL(scP('', (cg.gestes_invites_24h || 0) + ' GESTE' + ((cg.gestes_invites_24h || 0) > 1 ? 'S' : '')), 'Gestes d’agents invités, 24 h', 'Chacun s’inscrit d’office au journal des agents.', ''));
+}
+// Les comptes du panneau et les comptes FTP : lus par la route que Panel Detect donne (securite.acces_panneau). « absent », « muet » et « aucun » se disent chacun.
+async function scAccesPanneau(){
+    let d = null;
+    try { d = await apiPost('/api/securite/acces-panneau', {}); } catch(e) { d = null; }
+    const dit = function(blocs, meta, e, vide){
+        if (!d || !d.ok) return scHtml(blocs, '<div class="empty-state">Lecture impossible' + (d && d.error ? ' : ' + mxE(d.error) : '') + '.</div>');
+        if (e.etat === 'absent') return scHtml(blocs, '<div class="empty-state">Aucun panneau d’hébergement ne sert cette liste sur cette machine.</div>');
+        if (e.etat === 'muet') return scHtml(blocs, '<div class="empty-state">Le panneau ne répond pas : ce n’est pas « aucun ». Réessaie, ou regarde Panel Detect.</div>');
+        return null;
+    };
+    const C = d && d.comptes || {liste: []}, F = d && d.ftp || {liste: []};
+    scTexte('sc-panneau-meta', d && d.ok && C.etat === 'ok' ? C.liste.length + ' compte' + (C.liste.length > 1 ? 's' : '') + ' · ' + (d.ssh_ouverts || 0) + ' avec SSH' : 'par le panneau détecté');
+    scTexte('sc-ftp-meta', d && d.ok && F.etat === 'ok' ? (F.liste.length || 'aucun') + (d.ftp_suspendus ? ' · ' + d.ftp_suspendus + ' suspendu' + (d.ftp_suspendus > 1 ? 's' : '') : '') : 'par le panneau détecté');
+    if (dit('sc-panneau', 'sc-panneau-meta', C) === null) {
+        scHtml('sc-panneau', C.liste.length ? C.liste.map(function(c){
+            const nb = (c.sites || 0) + ' site' + ((c.sites || 0) > 1 ? 's' : '') + ' · ' + (c.bases || 0) + ' base' + ((c.bases || 0) > 1 ? 's' : '');
+            return scL(scP(c.ssh ? 'regarder' : '', c.ssh ? 'SSH OUVERT' : 'SANS SSH'), '<span class="sc-mono">' + mxE(c.compte) + '</span>',
+                mxE((c.roles || 'compte') + (c.cree ? ' · créé le ' + String(c.cree).slice(0, 10) : '') + ' · ' + nb + (c.statut && c.statut !== 'active' ? ' · ' + c.statut : '')) + '<span id="sc-cles-' + mxE(c.compte) + '"></span>',
+                c.ssh ? scB('Clés SSH', "scAccesCles('" + mxE(c.compte).replace(/'/g, '') + "')") : '');
+        }).join('') : '<div class="empty-state">Aucun compte sur le panneau · lecture réussie.</div>');
+    }
+    if (dit('sc-ftp', 'sc-ftp-meta', F) === null) {
+        scHtml('sc-ftp', F.liste.length ? F.liste.map(function(f){
+            return scL(scP(f.statut === 'suspendu' ? 'regarder' : 'ok', f.statut === 'suspendu' ? 'SUSPENDU' : 'ACTIF'), '<span class="sc-mono">' + mxE(f.compte) + '</span>',
+                mxE((f.dossier || '—') + (f.site ? ' · site ' + f.site : '') + (f.proprietaire ? ' · compte ' + f.proprietaire : '')), '');
+        }).join('') : '<div class="empty-state">Aucun compte FTP · lecture réussie : personne n’entre en FTP.</div>');
+    }
+}
+async function scAccesCles(compte){
+    const e = document.getElementById('sc-cles-' + compte); if (!e) return;
+    let d = null;
+    try { d = await apiPost('/api/securite/acces-cles', {compte: compte}); } catch(x) { d = null; }
+    if (!d || !d.ok || d.etat !== 'ok') { e.innerHTML = ' · clés illisibles'; return; }
+    e.innerHTML = ' · ' + (d.cles.length ? d.cles.length + ' clé' + (d.cles.length > 1 ? 's' : '') + ' : ' + d.cles.map(function(k){ return mxE(k.nom + (k.type ? ' (' + k.type + ')' : '')); }).join(', ') : 'aucune clé autorisée');
 }
 function scDefenses(){
     const f = SC.d.fail2ban || {}, cg = SC.d.cage || {};

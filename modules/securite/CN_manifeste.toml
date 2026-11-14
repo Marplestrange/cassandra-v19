@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.6.1  #0b66b0
+# VERSION CN : 0.7.0  #a369b3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.6.1 empreinte=0b66b0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.7.0 empreinte=a369b3 ▼▼▼
 [module]
 id = "securite"
 nom = "Sécurité"
-version = "0.6.1"
+version = "0.7.0"
 noyau_min = "0.1.0"
 description = "La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel)."
 confiance = "interne"
@@ -82,6 +82,18 @@ droit = "voir"
 [[capacites]]
 id = "etat"
 libelle = "L'état de sécurité de la machine, calculé sur les relevés : services à l'écoute et qui peut les joindre, pare-feu du noyau, accès SSH, fail2ban, mises à jour, et un verdict. Un relevé qui manque est dit manquant"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "acces_panneau"
+libelle = "Sécurité › Accès : les comptes du panneau d'hébergement (rôles, accès SSH, quota, sites et bases) et les comptes FTP, lus par le panneau détecté : « absent », « muet » ou la liste"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "acces_cles"
+libelle = "Les clés SSH autorisées d'un compte du panneau, par le panneau détecté : leur nombre et leur nom, jamais la clé"
 risque = "lecture"
 droit = "voir"
 

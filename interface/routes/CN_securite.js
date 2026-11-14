@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #39365d
+// VERSION CN : 0.1.0  #450be4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La sécurité : /api/securite/* (V18) -> capacités securite.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=39365d ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=450be4 ▼▼▼
 /* La sécurité : /api/securite/* (V18) -> capacités securite.* du noyau.
    Les gestes directs rares de la V18 (bannir, fermer un chemin d'un site, robots) ne sont pas encore portés : dits tels quels. */
 (function () {
@@ -27,6 +27,8 @@
 
   // L'état de la machine : composé par le module sur les relevés bruts du courtier (services à l'écoute, pare-feu du noyau, SSH, fail2ban, mises à jour).
   P("/api/securite", "securite.etat", { args: () => ({}), sortie: (x) => x });
+  P("/api/securite/acces-panneau", "securite.acces_panneau", { args: () => ({}), sortie: (x) => ok(x) });
+  P("/api/securite/acces-cles", "securite.acces_cles", { args: (r) => ({ compte: String(r.body.compte || "") }), sortie: (x) => ok(x) });
   P("/api/securite/images", "securite.images", { args: () => ({}), sortie: (x) => x });
   P("/api/securite/gestes", "securite.gestes", { args: () => ({}), sortie: (x) => ok(x) });
   P("/api/securite/journal", "securite.journal", { args: (r) => ({ limite: +(r.body.limite || 120) }), sortie: (x) => ok(x) });

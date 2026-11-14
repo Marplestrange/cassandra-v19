@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.6.1  #cd8175
+# VERSION CN : 0.6.1  #c162ee
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes, le journal, les audits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.6.1 empreinte=cd8175 ▼▼▼
+# ▼▼▼ BORNE CN version=0.6.1 empreinte=c162ee ▼▼▼
 """La sécurité : les gestes, le journal, les audits.
 
 Porté de la V18 (`securite_*`, `_sec_gestes`), avec ses leçons :
@@ -57,6 +57,15 @@ def lire_route(ctx, fonction: str, **args):
     if not cap:
         raise PermissionError("aucun panneau d'hébergement ne sert « %s »" % fonction)
     return ctx.executer_lecture(cap, **args)
+
+
+def lire_etat(ctx, fonction: str, **args):
+    """(état, valeur) d'une fonction de l'hébergement : « absent » (aucune route, ou droit refusé), « muet » (le panneau n'a pas répondu), « ok » (la valeur, éventuellement vide)."""
+    try:
+        v = lire_route(ctx, fonction, **args)
+    except PermissionError:
+        return "absent", None
+    return ("ok", v) if v is not None else ("muet", None)
 
 
 def brancher(ctx):
@@ -488,7 +497,26 @@ def brancher(ctx):
     def defaire_audit(c, res):
         db.ecrire("DELETE FROM securite_audits WHERE id=?", (res["id"],))
 
-    for cid, f in (("gestes", gestes), ("journal", journal), ("audits", audits), ("mesurer", mesurer), ("etat", etat), ("images", images_page)):
+    def acces_panneau(c):
+        """Sécurité › Accès : les comptes du panneau et les comptes FTP, lus par la route de Panel Detect. Chaque bloc dit « absent », « muet » ou la liste, sans les confondre."""
+        sortie = {}
+        for fonction in ("comptes", "ftp"):
+            etat_, v = lire_etat(ctx, fonction)
+            liste = [x for x in (v if isinstance(v, list) else []) if isinstance(x, dict)]
+            sortie[fonction] = {"etat": etat_, "liste": liste}
+        sortie["comptes"]["liste"] = [{**x, "ssh": bool(x.get("ssh"))} for x in sortie["comptes"]["liste"]]
+        sortie["ftp_suspendus"] = sum(1 for x in sortie["ftp"]["liste"] if x.get("statut") == "suspendu")
+        sortie["ssh_ouverts"] = sum(1 for x in sortie["comptes"]["liste"] if x["ssh"])
+        return sortie
+
+    def acces_cles(c, compte=""):
+        """Les clés SSH autorisées d'un compte du panneau (une clé vaut un accès shell) : leur nombre et leur nom, jamais la clé elle-même."""
+        etat_, v = lire_etat(ctx, "comptes_cles", compte=str(compte or ""))
+        cles = [x for x in ((v or {}).get("cles") if isinstance(v, dict) else []) or [] if isinstance(x, dict)]
+        return {"etat": etat_, "compte": str(compte or ""), "cles": [{"nom": str(x.get("name") or x.get("comment") or x.get("title") or "(sans nom)")[:80],
+                                                                       "type": str(x.get("type") or x.get("key_type") or "")[:20]} for x in cles]}
+
+    for cid, f in (("acces_panneau", acces_panneau), ("acces_cles", acces_cles), ("gestes", gestes), ("journal", journal), ("audits", audits), ("mesurer", mesurer), ("etat", etat), ("images", images_page)):
         ctx.implementer(cid, f)
     ctx.implementer("ssh_mdp", faire_ssh("ssh_mdp"), prouve_ssh("passwordauthentication", "no"), defaire_ssh)
     ctx.implementer("ssh_x11", faire_ssh("ssh_x11"), prouve_ssh("x11forwarding", "no"), defaire_ssh)
