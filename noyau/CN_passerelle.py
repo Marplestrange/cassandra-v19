@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #37742a
+# VERSION CN : 0.1.0  #14ccb3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=37742a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=14ccb3 ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -30,6 +30,8 @@ Sécurité de base : écoute locale par défaut, corps limité à 1 Mo, JSON seu
 """
 from __future__ import annotations
 
+import base64
+import hashlib
 import hmac
 import json
 import logging
@@ -37,6 +39,7 @@ import mimetypes
 import os
 import re
 import secrets
+import struct
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -57,6 +60,10 @@ COOKIE = "cassandra_session"
 COOKIE_HOTE = "__Host-cassandra_session"      # le préfixe oblige le navigateur à exiger Secure, Path=/ et aucun Domain : un sous-domaine ne peut plus réécrire la session
 HSTS = "max-age=31536000; includeSubDomains"
 BOUCLES = ("127.0.0.1", "::1", "localhost")
+WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"       # RFC 6455 §1.3 : la constante qui entre dans la réponse de la poignée de main
+WS_PAS = 5.0                                           # secondes entre deux mesures poussées
+WS_PAR_COMPTE = 6                                      # flux ouverts en même temps par un même compte (un onglet en prend un)
+WS_TRAME_MAX = 64 * 1024                               # le navigateur n'a rien à nous dire : une trame plus grosse est une faute, pas un message
 
 
 def cookie_secure_effectif(demande, hote, proxy, env=None) -> bool:
@@ -92,6 +99,7 @@ class Passerelle:
         self.cookie_secure = cookie_secure_effectif(cookie_secure, self.hote, self.proxy)
         self.serveur = None
         self.fil = None
+        self._verrou_ws, self._flux = threading.Lock(), {}          # compte -> flux WebSocket ouverts
         self._verrou_premier, self._premier_echecs, self._premier_pause = threading.Lock(), 0, 0.0
         passerelle = self
 
@@ -273,6 +281,8 @@ class Passerelle:
                 return self._premier(h, methode)
             if chemin.startswith("/api/public/"):
                 return self._public(h, methode, chemin[len("/api/public/"):])
+            if methode == "GET" and chemin == "/ws":
+                return self._ws(h, url)
             if methode == "GET" and not chemin.startswith("/api/"):
                 return self._statique(h, chemin)
             qui = self._qui(h)
@@ -311,6 +321,153 @@ class Passerelle:
         except Exception:
             log.exception("passerelle : erreur interne")
             return self._repondre(h, 500, {"erreur": "erreur interne"})
+
+    # ---- le flux poussé (WebSocket, RFC 6455) ----
+    # Stdlib seule. L'interface ouvre « /ws » une fois connectée : tant que le flux tient, elle cesse d'interroger les mesures. Ce flux ne pousse QUE ce que
+    # l'interface sait lire aujourd'hui sans sonder : les mesures de la machine (`metrics`, `health`) et un battement (`vie`). Il n'écoute rien : les trames
+    # du navigateur ne servent qu'à répondre aux pings et à fermer.
+    @staticmethod
+    def _ws_trame(op: int, charge: bytes = b"") -> bytes:
+        n = len(charge)
+        tete = bytes([0x80 | op])
+        if n < 126:
+            tete += bytes([n])
+        elif n < 65536:
+            tete += b"\x7e" + struct.pack(">H", n)
+        else:
+            tete += b"\x7f" + struct.pack(">Q", n)
+        return tete + charge
+
+    @staticmethod
+    def _ws_lire_trame(rfile):
+        """(op, charge) ou None si la connexion est finie, ou si la trame est une faute (non masquée, trop grosse) : on ferme."""
+        def octets(n):
+            b = rfile.read(n)
+            if b is None or len(b) < n:
+                raise EOFError
+            return b
+        try:
+            b0, b1 = octets(2)
+            n = b1 & 0x7F
+            if n == 126:
+                n = struct.unpack(">H", octets(2))[0]
+            elif n == 127:
+                n = struct.unpack(">Q", octets(8))[0]
+            if not (b1 & 0x80) or n > WS_TRAME_MAX:          # RFC 6455 §5.1 : tout ce que dit un navigateur est masqué
+                return None
+            masque = octets(4)
+            charge = bytearray(octets(n)) if n else bytearray()
+        except (EOFError, OSError, ValueError):
+            return None
+        for i in range(len(charge)):
+            charge[i] ^= masque[i % 4]
+        return b0 & 0x0F, bytes(charge)
+
+    def _ws(self, h, url):
+        """GET /ws : la poignée de main, puis un fil qui pousse les mesures jusqu'à ce que le navigateur parte ou que la session tombe."""
+        def ent(nom):
+            return (h.headers.get(nom) or "").strip()
+        if "websocket" not in ent("Upgrade").lower() or "upgrade" not in ent("Connection").lower():
+            return self._repondre(h, 426, {"erreur": "WebSocket attendue (Upgrade: websocket) — le proxy transmet-il bien l'en-tête Upgrade ?"})
+        cle = ent("Sec-WebSocket-Key")
+        try:
+            cle_ok = len(base64.b64decode(cle, validate=True)) == 16
+        except ValueError:
+            cle_ok = False
+        if ent("Sec-WebSocket-Version") != "13" or not cle_ok:
+            return self._repondre(h, 400, {"erreur": "poignée de main WebSocket illisible (version 13 et clé de 16 octets exigées)"})
+        if self._origine_etrangere(h):
+            return self._repondre(h, 403, {"erreur": "requête venue d'un autre site (en-tête Origin)"})
+        qui = self._qui(h)
+        if qui is None:                                       # le cookie d'abord ; à défaut le jeton de la session en paramètre (le navigateur ne peut pas poser d'en-tête)
+            jeton = (parse_qs(url.query).get("token") or [""])[0]
+            v = self.noyau.identite.valider(jeton) if len(jeton) == 64 else {"ok": False}
+            if v.get("ok"):
+                qui = (v["compte"], "humain", v["admin"], jeton)
+        if qui is None:
+            return self._repondre(h, 401, {"erreur": "authentification requise"})
+        compte, acteur, admin, jeton = qui
+        with self._verrou_ws:
+            if self._flux.get(compte, 0) >= WS_PAR_COMPTE:
+                return self._repondre(h, 429, {"erreur": "trop de flux ouverts pour ce compte"})
+            self._flux[compte] = self._flux.get(compte, 0) + 1
+        try:
+            accept = base64.b64encode(hashlib.sha1((cle + WS_GUID).encode("ascii")).digest()).decode("ascii")
+            h.send_response(101, "Switching Protocols")
+            h.send_header("Upgrade", "websocket")
+            h.send_header("Connection", "Upgrade")
+            h.send_header("Sec-WebSocket-Accept", accept)
+            h.send_header("Cache-Control", "no-store")
+            h.end_headers()
+            h.wfile.flush()
+            h.close_connection = True
+            self._ws_servir(h, compte, acteur, jeton)
+        finally:
+            with self._verrou_ws:
+                self._flux[compte] = max(0, self._flux.get(compte, 1) - 1)
+
+    def _ws_servir(self, h, compte, acteur, jeton):
+        fin, ecrire = threading.Event(), threading.Lock()
+
+        def envoyer(op, charge=b""):
+            with ecrire:
+                try:
+                    h.wfile.write(self._ws_trame(op, charge))
+                    h.wfile.flush()
+                    return True
+                except (OSError, ValueError):
+                    fin.set()
+                    return False
+
+        def ecouter():                                        # ne sert qu'à répondre aux pings et à voir partir le navigateur
+            while not fin.is_set():
+                t = self._ws_lire_trame(h.rfile)
+                if t is None:
+                    break
+                op, charge = t
+                if op == 0x8:
+                    envoyer(0x8, charge[:2])
+                    break
+                if op == 0x9:
+                    envoyer(0xA, charge[:125])
+            fin.set()
+
+        threading.Thread(target=ecouter, name="passerelle-ws-lecture", daemon=True).start()
+        dernier_ping = time.monotonic()
+        try:
+            while not fin.is_set() and self.serveur is not None:
+                if not self.noyau.identite.valider(jeton).get("ok"):       # session fermée ou expirée : le flux s'arrête avec elle
+                    envoyer(0x8, struct.pack(">H", 1008))
+                    break
+                trame = self._ws_mesures(compte, acteur)
+                if not envoyer(0x1, json.dumps(trame, ensure_ascii=False, default=str).encode("utf-8")):
+                    break
+                if time.monotonic() - dernier_ping > 25:          # tient les proxys éveillés (nginx coupe un flux muet au bout de 60 s)
+                    envoyer(0x9)
+                    dernier_ping = time.monotonic()
+                fin.wait(WS_PAS)
+        finally:
+            fin.set()
+            try:
+                h.connection.shutdown(2)                          # réveille le fil de lecture, qui attend une trame
+            except OSError:
+                pass
+
+    def _ws_mesures(self, compte, acteur) -> dict:
+        """Les mesures de la machine si ce compte a le droit de les lire (mêmes droits que GET /api/metrics), sinon un battement."""
+        ex = self.noyau.executeur
+        try:
+            m = ex.executer("sensorium.metriques", acteur, {}, compte=compte)
+            if m.get("statut") != "faite":
+                return {"type": "vie"}
+            trame = {"type": "metrics", "metrics": m.get("resultat") or {}}
+            s = ex.executer("sensorium.sante", acteur, {}, compte=compte)
+            if s.get("statut") == "faite" and (s.get("resultat") or {}).get("score") is not None:
+                trame["health"] = {"score": s["resultat"]["score"], "status": s["resultat"].get("statut", "")}
+            return trame
+        except Exception:
+            log.exception("passerelle : mesures du flux")
+            return {"type": "vie"}
 
     def _statique(self, h, chemin):
         """Un fichier du dossier de l'interface, jamais autre chose : pas de remontée (..), pas de lien qui sorte du dossier, extensions connues."""

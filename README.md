@@ -159,6 +159,21 @@ s'installent avec le module voix.
 ```
 
 L'application écoute sur `127.0.0.1:9000` : ouvrez-la par un tunnel (`ssh -L 9000:127.0.0.1:9000 utilisateur@serveur`) ou derrière un proxy HTTPS.
+Derrière nginx, le flux des mesures en direct (`/ws`) demande que le proxy transmette l'en-tête `Upgrade` ; sans cela l'interface interroge toutes les 30 s, rien d'autre ne change :
+
+```nginx
+location = /ws {
+    proxy_pass http://127.0.0.1:9000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "Upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 1h;
+}
+```
+
 **Le premier compte créé sur l'écran de connexion devient le superadministrateur** : créez-le tout de suite.
 
 Mise à jour : relancer la même commande, ou `./CN_deploy.sh` dans `/opt/cassandra-sources`. Une nouvelle version se pose à côté de l'ancienne,
